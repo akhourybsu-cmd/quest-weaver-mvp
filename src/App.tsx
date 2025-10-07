@@ -12,6 +12,7 @@ import CampaignHub from "./pages/CampaignHub";
 import SessionDM from "./pages/SessionDM";
 import SessionPlayer from "./pages/SessionPlayer";
 import CombatMap from "./pages/CombatMap";
+import Notes from "./pages/Notes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => {
             <Route path="/session/dm" element={<SessionDM />} />
             <Route path="/session/player" element={<SessionPlayer />} />
             <Route path="/map" element={<CombatMap />} />
+            <Route path="/notes" element={<Notes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

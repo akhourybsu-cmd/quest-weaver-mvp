@@ -7,10 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2 } from "lucide-react";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Campaign {
   id: string;
@@ -41,6 +51,7 @@ const CampaignHub = () => {
   const [myCharacters, setMyCharacters] = useState<Character[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
+  const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     fetchMyCampaigns();
@@ -147,6 +158,33 @@ const CampaignHub = () => {
 
   const handleContinueCampaign = (campaignId: string) => {
     navigate(`/session/dm?campaign=${campaignId}`);
+  };
+
+  const handleDeleteCampaign = async () => {
+    if (!deletingCampaign) return;
+
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .delete()
+        .eq("id", deletingCampaign.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Campaign deleted",
+        description: `${deletingCampaign.name} has been removed`,
+      });
+
+      setDeletingCampaign(null);
+      await fetchMyCampaigns();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting campaign",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateCampaign = async () => {
@@ -332,13 +370,23 @@ const CampaignHub = () => {
                                   </Badge>
                                 </div>
                               </div>
-                              <Button
-                                onClick={() => handleContinueCampaign(campaign.id)}
-                                size="sm"
-                              >
-                                <PlayCircle className="w-4 h-4 mr-2" />
-                                Continue
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  onClick={() => handleContinueCampaign(campaign.id)}
+                                  size="sm"
+                                >
+                                  <PlayCircle className="w-4 h-4 mr-2" />
+                                  Continue
+                                </Button>
+                                <Button
+                                  onClick={() => setDeletingCampaign(campaign)}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -577,6 +625,34 @@ const CampaignHub = () => {
           onCancel={handleCancelSelection}
         />
       )}
+
+      {/* Delete Campaign Confirmation */}
+      <AlertDialog open={!!deletingCampaign} onOpenChange={(open) => !open && setDeletingCampaign(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deletingCampaign?.name}</strong> and all associated data including:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>All encounters and combat data</li>
+                <li>Player characters in this campaign</li>
+                <li>Maps, handouts, and notes</li>
+                <li>Quest logs and loot</li>
+              </ul>
+              <p className="mt-3 font-semibold">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCampaign}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Campaign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

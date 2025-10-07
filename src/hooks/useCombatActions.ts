@@ -37,8 +37,10 @@ export const useCombatActions = () => {
         return;
       }
 
+      const validatedData = validation.data;
+
       const { data, error } = await supabase.functions.invoke('apply-damage', {
-        body: validation.data,
+        body: validatedData,
       });
 
       if (error) throw error;
@@ -89,8 +91,10 @@ export const useCombatActions = () => {
         return;
       }
 
+      const validatedData = validation.data;
+
       const { data, error } = await supabase.functions.invoke('apply-healing', {
-        body: validation.data,
+        body: validatedData,
       });
 
       if (error) throw error;
@@ -134,8 +138,10 @@ export const useCombatActions = () => {
         return;
       }
 
+      const validatedData = validation.data;
+
       const { data, error } = await supabase.functions.invoke('roll-initiative', {
-        body: validation.data,
+        body: validatedData,
       });
 
       if (error) throw error;

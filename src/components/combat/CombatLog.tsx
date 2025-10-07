@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText } from "lucide-react";
@@ -6,15 +8,54 @@ interface LogEntry {
   id: string;
   round: number;
   message: string;
-  actionType: string;
-  createdAt: string;
+  action_type: string;
+  created_at: string;
 }
 
 interface CombatLogProps {
-  entries: LogEntry[];
+  encounterId: string;
 }
 
-const CombatLog = ({ entries }: CombatLogProps) => {
+const CombatLog = ({ encounterId }: CombatLogProps) => {
+  const [entries, setEntries] = useState<LogEntry[]>([]);
+
+  useEffect(() => {
+    fetchLog();
+
+    const channel = supabase
+      .channel('combat-log-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'combat_log',
+          filter: `encounter_id=eq.${encounterId}`,
+        },
+        () => fetchLog()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [encounterId]);
+
+  const fetchLog = async () => {
+    const { data, error } = await supabase
+      .from("combat_log")
+      .select("*")
+      .eq("encounter_id", encounterId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Error fetching combat log:", error);
+      return;
+    }
+
+    setEntries(data || []);
+  };
   const getActionColor = (type: string) => {
     switch (type) {
       case "damage":
@@ -53,7 +94,7 @@ const CombatLog = ({ entries }: CombatLogProps) => {
                   <span className="text-muted-foreground">
                     [Round {entry.round}]
                   </span>{" "}
-                  <span className={getActionColor(entry.actionType)}>
+                  <span className={getActionColor(entry.action_type)}>
                     {entry.message}
                   </span>
                 </div>

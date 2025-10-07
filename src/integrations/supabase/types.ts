@@ -119,6 +119,7 @@ export type Database = {
           dex_save: number | null
           id: string
           immunities: Database["public"]["Enums"]["damage_type"][] | null
+          initiative_bonus: number
           int_save: number | null
           level: number
           max_hp: number
@@ -145,6 +146,7 @@ export type Database = {
           dex_save?: number | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
+          initiative_bonus?: number
           int_save?: number | null
           level?: number
           max_hp: number
@@ -171,6 +173,7 @@ export type Database = {
           dex_save?: number | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
+          initiative_bonus?: number
           int_save?: number | null
           level?: number
           max_hp?: number

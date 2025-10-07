@@ -153,6 +153,9 @@ const CharacterCreationDialog = ({ open, campaignId, onComplete }: CharacterCrea
         level
       );
 
+      // Calculate initiative bonus (usually dex modifier)
+      const initiative_bonus = calculateModifier(abilityScores.dexterity);
+
       const { error } = await supabase.from("characters").insert({
         user_id: user.id,
         campaign_id: campaignId,
@@ -172,6 +175,7 @@ const CharacterCreationDialog = ({ open, campaignId, onComplete }: CharacterCrea
         int_save,
         wis_save,
         cha_save,
+        initiative_bonus,
         resistances: [],
         vulnerabilities: [],
         immunities: [],

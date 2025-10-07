@@ -62,10 +62,14 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
   const [advantageMode, setAdvantageMode] = useState("normal");
   const [halfOnSuccess, setHalfOnSuccess] = useState(false);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = () => {
+    if (loading) return;
+    
     const dcNum = parseInt(dc);
     if (ability && dcNum && description) {
+      setLoading(true);
       onPromptSave({
         ability,
         dc: dcNum,
@@ -79,6 +83,7 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
       setTargetScope("party");
       setAdvantageMode("normal");
       setHalfOnSuccess(false);
+      setLoading(false);
       setOpen(false);
     }
   };
@@ -180,8 +185,8 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
             />
           </div>
 
-          <Button onClick={handleSubmit} className="w-full">
-            Send Save Prompt
+          <Button onClick={handleSubmit} className="w-full" disabled={loading || !dc || !description}>
+            {loading ? "Sending..." : "Send Save Prompt"}
           </Button>
         </div>
       </DialogContent>

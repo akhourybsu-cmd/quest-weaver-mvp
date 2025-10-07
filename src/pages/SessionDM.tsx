@@ -229,29 +229,30 @@ const SessionDM = () => {
   }) => {
     if (!activeEncounter) return;
 
-    const { error } = await supabase.from("save_prompts").insert([{
-      encounter_id: activeEncounter.id,
-      ability: data.ability as any,
-      dc: data.dc,
-      description: data.description,
-      target_scope: data.targetScope,
-      advantage_mode: data.advantageMode,
-      half_on_success: data.halfOnSuccess,
-    }]);
+    try {
+      const { error } = await supabase.from("save_prompts").insert([{
+        encounter_id: activeEncounter.id,
+        ability: data.ability as any,
+        dc: data.dc,
+        description: data.description,
+        target_scope: data.targetScope,
+        advantage_mode: data.advantageMode,
+        half_on_success: data.halfOnSuccess,
+      }]);
 
-    if (error) {
+      if (error) throw error;
+
+      toast({
+        title: "Save Prompt Sent",
+        description: `${data.targetScope === 'party' ? 'Party' : 'All combatants'} must make a ${data.ability} save (DC ${data.dc})`,
+      });
+    } catch (error: any) {
       toast({
         title: "Error sending save prompt",
-        description: error.message,
+        description: error.message || "Failed to send save prompt",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Save Prompt Sent",
-      description: `${data.targetScope === 'party' ? 'Party' : 'All combatants'} must make a ${data.ability} save (DC ${data.dc})`,
-    });
   };
 
   const getHPColor = (current: number, max: number) => {

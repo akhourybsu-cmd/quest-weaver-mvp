@@ -42,6 +42,7 @@ interface EffectDialogProps {
 
 const EffectDialog = ({ encounterId, currentRound, characters }: EffectDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [source, setSource] = useState("");
@@ -55,6 +56,8 @@ const EffectDialog = ({ encounterId, currentRound, characters }: EffectDialogPro
   const { toast } = useToast();
 
   const handleSubmit = async () => {
+    if (loading) return;
+    
     if (!name || !targetCharacterId) {
       toast({
         title: "Missing fields",
@@ -64,49 +67,66 @@ const EffectDialog = ({ encounterId, currentRound, characters }: EffectDialogPro
       return;
     }
 
-    const endRound = duration ? currentRound + parseInt(duration) : null;
+    setLoading(true);
 
-    const { error } = await supabase.from("effects").insert([{
-      encounter_id: encounterId,
-      character_id: targetCharacterId,
-      name,
-      description: description || null,
-      source: source || null,
-      start_round: currentRound,
-      end_round: endRound,
-      requires_concentration: requiresConcentration,
-      concentrating_character_id: requiresConcentration ? concentratingCharacterId : null,
-      damage_per_tick: damagePerTick ? parseInt(damagePerTick) : null,
-      damage_type_per_tick: damagePerTick ? (damageType as any) : null,
-      ticks_at: tickTiming as any,
-    }]);
+    try {
+      const endRound = duration ? currentRound + parseInt(duration) : null;
 
-    if (error) {
+      const { error } = await supabase.functions.invoke('manage-effect', {
+        body: {
+          action: 'create',
+          encounterId,
+          effectData: {
+            character_id: targetCharacterId,
+            name,
+            description: description || null,
+            source: source || null,
+            start_round: currentRound,
+            end_round: endRound,
+            requires_concentration: requiresConcentration,
+            concentrating_character_id: requiresConcentration ? concentratingCharacterId : null,
+            damage_per_tick: damagePerTick ? parseInt(damagePerTick) : null,
+            damage_type_per_tick: damagePerTick ? damageType : null,
+            ticks_at: tickTiming,
+          }
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Error adding effect",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Effect added",
+        description: `${name} applied to character`,
+      });
+
+      // Reset form
+      setName("");
+      setDescription("");
+      setSource("");
+      setTargetCharacterId("");
+      setDuration("");
+      setRequiresConcentration(false);
+      setConcentratingCharacterId("");
+      setDamagePerTick("");
+      setDamageType("fire");
+      setTickTiming("end");
+      setOpen(false);
+    } catch (error: any) {
       toast({
         title: "Error adding effect",
-        description: error.message,
+        description: error.message || "Unknown error",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Effect added",
-      description: `${name} applied to character`,
-    });
-
-    // Reset form
-    setName("");
-    setDescription("");
-    setSource("");
-    setTargetCharacterId("");
-    setDuration("");
-    setRequiresConcentration(false);
-    setConcentratingCharacterId("");
-    setDamagePerTick("");
-    setDamageType("fire");
-    setTickTiming("end");
-    setOpen(false);
   };
 
   return (
@@ -259,8 +279,8 @@ const EffectDialog = ({ encounterId, currentRound, characters }: EffectDialogPro
             </>
           )}
 
-          <Button onClick={handleSubmit} className="w-full">
-            Add Effect
+          <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+            {loading ? "Adding..." : "Add Effect"}
           </Button>
         </div>
       </DialogContent>

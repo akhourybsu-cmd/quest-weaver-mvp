@@ -32,12 +32,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      console.log("Starting auth with:", { email, isLogin });
+      
       // Validate input
       const validation = authSchema.safeParse({ email, password });
       if (!validation.success) {
         const firstError = validation.error.issues[0];
+        console.error("Validation error:", firstError);
         throw new Error(firstError.message);
       }
+
+      console.log("Validation passed, attempting", isLogin ? "sign in" : "sign up");
 
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -46,6 +51,7 @@ const Auth = () => {
         });
         
         if (error) {
+          console.error("Sign in error:", error);
           // Provide more helpful error messages
           if (error.message.includes("Invalid login credentials")) {
             throw new Error("Invalid email or password. Please check your credentials or sign up if you don't have an account.");
@@ -53,6 +59,7 @@ const Auth = () => {
           throw error;
         }
         
+        console.log("Sign in successful!");
         toast({
           title: "Welcome back!",
           description: "Successfully signed in.",
@@ -67,6 +74,7 @@ const Auth = () => {
         });
         
         if (error) {
+          console.error("Sign up error:", error);
           // Handle specific signup errors
           if (error.message.includes("User already registered")) {
             throw new Error("An account with this email already exists. Please sign in instead.");
@@ -74,6 +82,7 @@ const Auth = () => {
           throw error;
         }
         
+        console.log("Sign up successful!");
         toast({
           title: "Account created!",
           description: "You can now sign in with your credentials.",
@@ -82,12 +91,14 @@ const Auth = () => {
         setPassword(""); // Clear password
       }
     } catch (error: any) {
+      console.error("Auth error caught:", error);
       toast({
         title: isLogin ? "Sign in failed" : "Sign up failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
+      console.log("Auth flow complete, setting loading to false");
       setLoading(false);
     }
   };

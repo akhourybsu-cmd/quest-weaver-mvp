@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Sword, Users, Plus, LogIn, Scroll, LogOut } from "lucide-react";
+import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
 
 const CampaignHub = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const CampaignHub = () => {
   const [campaignCode, setCampaignCode] = useState("");
   const [campaignName, setCampaignName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCharacterCreation, setShowCharacterCreation] = useState(false);
+  const [joinedCampaignId, setJoinedCampaignId] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -59,14 +62,34 @@ const CampaignHub = () => {
     if (!campaignCode.trim()) return;
     setLoading(true);
     try {
-      const { data: campaign, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Find campaign by code
+      const { data: campaign, error: campaignError } = await supabase
         .from("campaigns")
-        .select("id")
+        .select("id, code")
         .eq("code", campaignCode.toUpperCase())
         .single();
 
-      if (error) throw new Error("Campaign not found");
-      navigate(`/session/player?campaign=${campaign.id}`);
+      if (campaignError) throw new Error("Campaign not found");
+
+      // Check if user already has a character in this campaign
+      const { data: existingCharacter } = await supabase
+        .from("characters")
+        .select("id")
+        .eq("campaign_id", campaign.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingCharacter) {
+        // User already has a character, go directly to session
+        navigate(`/session/player?campaign=${campaign.code}`);
+      } else {
+        // User needs to create a character
+        setJoinedCampaignId(campaign.id);
+        setShowCharacterCreation(true);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -75,6 +98,23 @@ const CampaignHub = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCharacterCreated = async () => {
+    setShowCharacterCreation(false);
+    
+    // Get the campaign code to redirect
+    if (joinedCampaignId) {
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("code")
+        .eq("id", joinedCampaignId)
+        .single();
+
+      if (campaign) {
+        navigate(`/session/player?campaign=${campaign.code}`);
+      }
     }
   };
 
@@ -241,6 +281,15 @@ const CampaignHub = () => {
           </Card>
         </div>
       </div>
+
+      {/* Character Creation Dialog */}
+      {joinedCampaignId && (
+        <CharacterCreationDialog
+          open={showCharacterCreation}
+          campaignId={joinedCampaignId}
+          onComplete={handleCharacterCreated}
+        />
+      )}
     </div>
   );
 };

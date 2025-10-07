@@ -105,13 +105,13 @@ const SessionPlayer = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // First get campaign by code
-    const { data: campaigns } = await supabase
+    // Get campaign by code
+    const { data: campaigns, error: campaignError } = await supabase
       .from("campaigns")
       .select("id")
       .eq("code", campaignCode);
 
-    if (!campaigns || campaigns.length === 0) {
+    if (campaignError || !campaigns || campaigns.length === 0) {
       toast({
         title: "Campaign not found",
         description: "Invalid campaign code",
@@ -141,7 +141,7 @@ const SessionPlayer = () => {
     if (!data) {
       toast({
         title: "No character found",
-        description: "Create a character to join this campaign",
+        description: "Please create a character first",
         variant: "destructive",
       });
       navigate("/campaign-hub");

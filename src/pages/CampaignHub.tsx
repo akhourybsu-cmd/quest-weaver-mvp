@@ -164,6 +164,15 @@ const CampaignHub = () => {
     if (!deletingCampaign) return;
 
     try {
+      // First, unassign all characters from this campaign
+      const { error: characterError } = await supabase
+        .from("characters")
+        .update({ campaign_id: null })
+        .eq("campaign_id", deletingCampaign.id);
+
+      if (characterError) throw characterError;
+
+      // Then delete the campaign
       const { error } = await supabase
         .from("campaigns")
         .delete()
@@ -173,11 +182,11 @@ const CampaignHub = () => {
 
       toast({
         title: "Campaign deleted",
-        description: `${deletingCampaign.name} has been removed`,
+        description: `${deletingCampaign.name} has been removed and characters have been unassigned`,
       });
 
       setDeletingCampaign(null);
-      await fetchMyCampaigns();
+      await Promise.all([fetchMyCampaigns(), fetchMyCharacters()]);
     } catch (error: any) {
       toast({
         title: "Error deleting campaign",
@@ -635,11 +644,13 @@ const CampaignHub = () => {
               This will permanently delete <strong>{deletingCampaign?.name}</strong> and all associated data including:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>All encounters and combat data</li>
-                <li>Player characters in this campaign</li>
                 <li>Maps, handouts, and notes</li>
                 <li>Quest logs and loot</li>
               </ul>
-              <p className="mt-3 font-semibold">This action cannot be undone.</p>
+              <p className="mt-3 text-muted-foreground">
+                Characters assigned to this campaign will be unassigned and returned to your character list.
+              </p>
+              <p className="mt-2 font-semibold">This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

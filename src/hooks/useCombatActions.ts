@@ -28,19 +28,18 @@ export const useCombatActions = () => {
       });
 
       if (!validation.success) {
+        const errorMsg = (validation as { success: false; error: string }).error;
         toast({
           title: "Invalid input",
-          description: validation.error,
+          description: errorMsg,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      const validatedData = validation.data;
-
       const { data, error } = await supabase.functions.invoke('apply-damage', {
-        body: validatedData,
+        body: validation.data,
       });
 
       if (error) throw error;
@@ -82,19 +81,18 @@ export const useCombatActions = () => {
       });
 
       if (!validation.success) {
+        const errorMsg = (validation as { success: false; error: string }).error;
         toast({
           title: "Invalid input",
-          description: validation.error,
+          description: errorMsg,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      const validatedData = validation.data;
-
       const { data, error } = await supabase.functions.invoke('apply-healing', {
-        body: validatedData,
+        body: validation.data,
       });
 
       if (error) throw error;
@@ -129,19 +127,18 @@ export const useCombatActions = () => {
       });
 
       if (!validation.success) {
+        const errorMsg = (validation as { success: false; error: string }).error;
         toast({
           title: "Invalid input",
-          description: validation.error,
+          description: errorMsg,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      const validatedData = validation.data;
-
       const { data, error } = await supabase.functions.invoke('roll-initiative', {
-        body: validatedData,
+        body: validation.data,
       });
 
       if (error) throw error;

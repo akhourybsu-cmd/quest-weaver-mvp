@@ -50,19 +50,20 @@ export const EffectSchema = z.object({
 });
 
 // Helper to safely parse and validate
-export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; error: string } {
-  try {
-    const result = schema.parse(data);
-    return { success: true, data: result };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.issues[0];
-      return { 
-        success: false, 
-        error: `${firstError.path.join('.')}: ${firstError.message}` 
-      };
-    }
-    return { success: false, error: 'Validation failed' };
+export function validateInput<T>(
+  schema: z.ZodSchema<T>, 
+  data: unknown
+): { success: true; data: T } | { success: false; error: string } {
+  const result = schema.safeParse(data);
+  
+  if (result.success) {
+    return { success: true, data: result.data };
+  } else {
+    const firstError = result.error.issues[0];
+    return { 
+      success: false, 
+      error: `${firstError.path.join('.')}: ${firstError.message}` 
+    };
   }
 }
 

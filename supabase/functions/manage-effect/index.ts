@@ -31,15 +31,24 @@ serve(async (req) => {
     // Validate DM authority
     const { data: encounter } = await supabase
       .from('encounters')
-      .select(`
-        campaign_id,
-        campaigns!inner(dm_user_id)
-      `)
+      .select('campaign_id')
       .eq('id', encounterId)
       .single();
 
-    const dmUserId = encounter?.campaigns?.[0]?.dm_user_id || encounter?.campaigns?.dm_user_id;
-    if (!encounter || dmUserId !== user.id) {
+    if (!encounter) {
+      return new Response(JSON.stringify({ error: 'Encounter not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('dm_user_id')
+      .eq('id', encounter.campaign_id)
+      .single();
+
+    if (!campaign || campaign.dm_user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Only DM can manage effects' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

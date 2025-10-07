@@ -68,9 +68,9 @@ const SessionDM = () => {
     loadUser();
     fetchCampaignData();
     
-    // Subscribe to character changes
+    // Subscribe to character changes with unique channel names
     const charactersChannel = supabase
-      .channel('characters-changes')
+      .channel(`dm-characters:${campaignId}`)
       .on(
         'postgres_changes',
         {
@@ -85,7 +85,7 @@ const SessionDM = () => {
 
     // Subscribe to encounter changes
     const encountersChannel = supabase
-      .channel('encounters-changes')
+      .channel(`dm-encounters:${campaignId}`)
       .on(
         'postgres_changes',
         {
@@ -204,50 +204,70 @@ const SessionDM = () => {
     const character = characters.find(c => c.id === characterId);
     if (!character) return;
 
-    let finalDamage = amount;
+    // CORRECT DAMAGE PIPELINE PER D&D 5E:
+    // 1. Check immunity → damage = 0
+    // 2. Apply resistance XOR vulnerability (cancel if both)
+    // 3. Apply to temp HP
+    // 4. Apply to current HP
+    // 5. Check concentration if applicable
 
-    // Apply resistances (half damage)
-    if (character.resistances?.includes(damageType)) {
-      finalDamage = Math.floor(amount / 2);
-      toast({
-        title: "Resistance Applied",
-        description: `${character.name} resists ${damageType} damage. ${amount} → ${finalDamage}`,
-      });
-    }
+    let damage = amount;
+    const steps: string[] = [];
 
-    // Apply vulnerabilities (double damage)
-    if (character.vulnerabilities?.includes(damageType)) {
-      finalDamage = amount * 2;
-      toast({
-        title: "Vulnerability Applied",
-        description: `${character.name} is vulnerable to ${damageType} damage. ${amount} → ${finalDamage}`,
-      });
-    }
-
-    // Apply immunities (zero damage)
+    // Step 1: Immunity check
     if (character.immunities?.includes(damageType)) {
-      finalDamage = 0;
       toast({
-        title: "Immunity Applied",
-        description: `${character.name} is immune to ${damageType} damage!`,
+        title: "Immune!",
+        description: `${character.name} is immune to ${damageType} damage`,
       });
+      
+      await supabase.from("combat_log").insert({
+        encounter_id: activeEncounter?.id,
+        character_id: characterId,
+        round: activeEncounter?.current_round || 0,
+        action_type: "damage",
+        message: `${character.name} is immune to ${amount} ${damageType} damage`,
+      });
+      return;
     }
 
-    // Calculate new HP (consider temp HP first)
-    let remainingDamage = finalDamage;
-    let newTempHP = character.temp_hp;
-    
+    // Step 2: Resistance XOR Vulnerability
+    const hasResistance = character.resistances?.includes(damageType) || false;
+    const hasVulnerability = character.vulnerabilities?.includes(damageType) || false;
+
+    if (hasResistance && hasVulnerability) {
+      steps.push("Both resistance and vulnerability cancel out");
+    } else if (hasResistance) {
+      damage = Math.floor(damage / 2);
+      steps.push(`Resistant - halved to ${damage}`);
+    } else if (hasVulnerability) {
+      damage = damage * 2;
+      steps.push(`Vulnerable - doubled to ${damage}`);
+    }
+
+    // Step 3: Apply to temp HP first
+    let tempHpLost = 0;
+    let newTempHP = character.temp_hp || 0;
+    let remainingDamage = damage;
+
     if (newTempHP > 0) {
-      if (remainingDamage >= newTempHP) {
-        remainingDamage -= newTempHP;
-        newTempHP = 0;
-      } else {
-        newTempHP -= remainingDamage;
-        remainingDamage = 0;
-      }
+      tempHpLost = Math.min(damage, newTempHP);
+      newTempHP = Math.max(0, newTempHP - damage);
+      remainingDamage = Math.max(0, damage - (character.temp_hp || 0));
+      steps.push(`${tempHpLost} absorbed by temp HP`);
     }
 
+    // Step 4: Apply to current HP
+    const hpLost = Math.min(remainingDamage, character.current_hp);
     const newHP = Math.max(0, character.current_hp - remainingDamage);
+    
+    if (hpLost > 0) {
+      steps.push(`${hpLost} HP lost`);
+    }
+
+    // Step 5: Check concentration
+    // TODO: Check if character is concentrating and prompt save if needed
+    // DC = max(10, floor(damage / 2))
 
     const { error } = await supabase
       .from("characters")
@@ -273,14 +293,22 @@ const SessionDM = () => {
         character_id: characterId,
         round: activeEncounter.current_round,
         action_type: "damage",
-        message: `${character.name} took ${finalDamage} ${damageType} damage`,
-        details: { amount: finalDamage, type: damageType, original: amount },
+        message: `${character.name} took ${damage} ${damageType} damage (${amount} base)`,
+        details: { 
+          finalDamage: damage, 
+          type: damageType, 
+          baseDamage: amount,
+          tempHpLost,
+          hpLost,
+          steps 
+        },
       });
     }
 
+    const summary = steps.length > 0 ? ` (${steps.join(", ")})` : "";
     toast({
       title: "Damage Applied",
-      description: `${character.name} took ${finalDamage} damage`,
+      description: `${character.name} took ${damage} ${damageType} damage${summary}`,
     });
   };
 

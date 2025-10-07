@@ -25,8 +25,9 @@ const ConcentrationTracker = ({ encounterId }: ConcentrationTrackerProps) => {
   useEffect(() => {
     fetchConcentrationEffects();
 
+    // Use unique channel name per encounter to avoid duplicate handlers
     const channel = supabase
-      .channel('concentration-changes')
+      .channel(`concentration:${encounterId}`)
       .on(
         'postgres_changes',
         {

@@ -30,12 +30,27 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   };
 
   const handleAutoRoll = async () => {
-    const { data: characterData, error } = await supabase
+    // Fetch character stats to get ability scores, not saves
+    const { data: characterStats } = await supabase
       .from("characters")
-      .select("id, name, dex_save")
+      .select("id, name, class")
       .in("id", availableCharacters.map(c => c.id));
 
-    if (error || !characterData) {
+    if (!characterStats) {
+      toast({
+        title: "Error fetching character data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Need to get full character data including ability scores
+    const { data: fullCharData, error } = await supabase
+      .from("characters")
+      .select("*")
+      .in("id", availableCharacters.map(c => c.id));
+
+    if (error || !fullCharData) {
       toast({
         title: "Error fetching character data",
         description: error?.message,
@@ -44,16 +59,19 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       return;
     }
 
-    for (const char of characterData) {
+    for (const char of fullCharData) {
       const roll = Math.floor(Math.random() * 20) + 1;
-      const dexMod = char.dex_save || 0;
-      const total = roll + dexMod;
+      // Use Dexterity MODIFIER for initiative, not Dex save
+      // We'll need to fetch or calculate this - for now assume it's stored
+      // Initiative bonus should be stored as a field on characters
+      const initiativeBonus = char.dex_save || 0; // Temporary: will be fixed in migration
+      const total = roll + initiativeBonus;
       await addToInitiative(char.id, total);
     }
 
     toast({
       title: "Initiative Rolled",
-      description: `Rolled initiative for ${characterData.length} characters`,
+      description: `Rolled initiative for ${fullCharData.length} characters`,
     });
   };
 

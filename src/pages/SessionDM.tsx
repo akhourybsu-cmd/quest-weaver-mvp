@@ -230,21 +230,33 @@ const SessionDM = () => {
     if (!activeEncounter) return;
 
     try {
+      // Compute targets server-side using helper function
+      const { data: targets } = await supabase.rpc('compute_save_prompt_targets', {
+        _encounter_id: activeEncounter.id,
+        _target_scope: data.targetScope as any,
+        _target_character_ids: null
+      });
+
+      const targetCount = targets?.length || 0;
+
       const { error } = await supabase.from("save_prompts").insert([{
         encounter_id: activeEncounter.id,
         ability: data.ability as any,
         dc: data.dc,
         description: data.description,
-        target_scope: data.targetScope,
-        advantage_mode: data.advantageMode,
+        target_scope: data.targetScope as any,
+        advantage_mode: data.advantageMode as any,
         half_on_success: data.halfOnSuccess,
+        target_character_ids: targets,
+        expected_responses: targetCount,
+        received_responses: 0,
       }]);
 
       if (error) throw error;
 
       toast({
         title: "Save Prompt Sent",
-        description: `${data.targetScope === 'party' ? 'Party' : 'All combatants'} must make a ${data.ability} save (DC ${data.dc})`,
+        description: `${targetCount} combatant${targetCount !== 1 ? 's' : ''} must make a ${data.ability} save (DC ${data.dc})`,
       });
     } catch (error: any) {
       toast({

@@ -856,45 +856,51 @@ export type Database = {
       save_prompts: {
         Row: {
           ability: Database["public"]["Enums"]["ability_score"]
-          advantage_mode: string | null
+          advantage_mode: Database["public"]["Enums"]["advantage_mode_enum"]
           created_at: string | null
           dc: number
           description: string
           encounter_id: string | null
+          expected_responses: number | null
           expires_at: string | null
           half_on_success: boolean | null
           id: string
-          status: string
+          received_responses: number | null
+          status: Database["public"]["Enums"]["save_prompt_status"]
           target_character_ids: string[] | null
-          target_scope: string | null
+          target_scope: Database["public"]["Enums"]["target_scope_enum"]
         }
         Insert: {
           ability: Database["public"]["Enums"]["ability_score"]
-          advantage_mode?: string | null
+          advantage_mode?: Database["public"]["Enums"]["advantage_mode_enum"]
           created_at?: string | null
           dc: number
           description: string
           encounter_id?: string | null
+          expected_responses?: number | null
           expires_at?: string | null
           half_on_success?: boolean | null
           id?: string
-          status?: string
+          received_responses?: number | null
+          status?: Database["public"]["Enums"]["save_prompt_status"]
           target_character_ids?: string[] | null
-          target_scope?: string | null
+          target_scope?: Database["public"]["Enums"]["target_scope_enum"]
         }
         Update: {
           ability?: Database["public"]["Enums"]["ability_score"]
-          advantage_mode?: string | null
+          advantage_mode?: Database["public"]["Enums"]["advantage_mode_enum"]
           created_at?: string | null
           dc?: number
           description?: string
           encounter_id?: string | null
+          expected_responses?: number | null
           expires_at?: string | null
           half_on_success?: boolean | null
           id?: string
-          status?: string
+          received_responses?: number | null
+          status?: Database["public"]["Enums"]["save_prompt_status"]
           target_character_ids?: string[] | null
-          target_scope?: string | null
+          target_scope?: Database["public"]["Enums"]["target_scope_enum"]
         }
         Relationships: [
           {
@@ -1032,6 +1038,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_save_prompt_targets: {
+        Args: {
+          _encounter_id: string
+          _target_character_ids: string[]
+          _target_scope: Database["public"]["Enums"]["target_scope_enum"]
+        }
+        Returns: string[]
+      }
       is_campaign_member: {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
@@ -1039,6 +1053,7 @@ export type Database = {
     }
     Enums: {
       ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"
+      advantage_mode_enum: "normal" | "advantage" | "disadvantage"
       damage_type:
         | "acid"
         | "bludgeoning"
@@ -1054,6 +1069,8 @@ export type Database = {
         | "slashing"
         | "thunder"
       effect_tick_timing: "start" | "end" | "round"
+      save_prompt_status: "active" | "resolved" | "expired"
+      target_scope_enum: "party" | "all" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1182,6 +1199,7 @@ export const Constants = {
   public: {
     Enums: {
       ability_score: ["STR", "DEX", "CON", "INT", "WIS", "CHA"],
+      advantage_mode_enum: ["normal", "advantage", "disadvantage"],
       damage_type: [
         "acid",
         "bludgeoning",
@@ -1198,6 +1216,8 @@ export const Constants = {
         "thunder",
       ],
       effect_tick_timing: ["start", "end", "round"],
+      save_prompt_status: ["active", "resolved", "expired"],
+      target_scope_enum: ["party", "all", "custom"],
     },
   },
 } as const

@@ -16,6 +16,7 @@ import ConditionsManager from "@/components/combat/ConditionsManager";
 import EffectsList from "@/components/combat/EffectsList";
 import InitiativeTracker from "@/components/combat/InitiativeTracker";
 import SavePromptDialog from "@/components/combat/SavePromptDialog";
+import SavePromptsList from "@/components/combat/SavePromptsList";
 import DamageInput from "@/components/combat/DamageInput";
 import EffectDialog from "@/components/combat/EffectDialog";
 
@@ -452,6 +453,7 @@ const SessionDM = () => {
                     characters={characters.map(c => ({ id: c.id, name: c.name }))}
                   />
                 </div>
+                <SavePromptsList encounterId={activeEncounter.id} />
                 <InitiativeTracker
                   encounterId={activeEncounter.id}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}

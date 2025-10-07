@@ -1,33 +1,94 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sword, Users, Plus, LogIn, Scroll } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut } from "lucide-react";
 
 const CampaignHub = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [campaignCode, setCampaignCode] = useState("");
   const [campaignName, setCampaignName] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateCampaign = () => {
-    if (campaignName.trim()) {
-      // Generate a simple campaign code
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleCreateCampaign = async () => {
+    if (!campaignName.trim()) return;
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      navigate(`/session/dm?campaign=${code}`);
+      const { data, error } = await supabase
+        .from("campaigns")
+        .insert({
+          code,
+          name: campaignName,
+          dm_user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      toast({
+        title: "Campaign created!",
+        description: `Campaign code: ${code}`,
+      });
+      navigate(`/session/dm?campaign=${data.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleJoinCampaign = () => {
-    if (campaignCode.trim()) {
-      navigate(`/session/player?campaign=${campaignCode}`);
+  const handleJoinCampaign = async () => {
+    if (!campaignCode.trim()) return;
+    setLoading(true);
+    try {
+      const { data: campaign, error } = await supabase
+        .from("campaigns")
+        .select("id")
+        .eq("code", campaignCode.toUpperCase())
+        .single();
+
+      if (error) throw new Error("Campaign not found");
+      navigate(`/session/player?campaign=${campaign.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleSignOut}
+        className="absolute top-4 right-4"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -80,11 +141,12 @@ const CampaignHub = () => {
                   </div>
                   <Button
                     onClick={handleCreateCampaign}
+                    disabled={loading || !campaignName.trim()}
                     className="w-full h-12 text-base"
                     size="lg"
                   >
                     <Plus className="w-5 h-5 mr-2" />
-                    Create Campaign
+                    {loading ? "Creating..." : "Create Campaign"}
                   </Button>
                 </div>
 
@@ -118,11 +180,12 @@ const CampaignHub = () => {
                   </div>
                   <Button
                     onClick={handleJoinCampaign}
+                    disabled={loading || !campaignCode.trim()}
                     className="w-full h-12 text-base"
                     size="lg"
                   >
                     <LogIn className="w-5 h-5 mr-2" />
-                    Join Campaign
+                    {loading ? "Joining..." : "Join Campaign"}
                   </Button>
                 </div>
 

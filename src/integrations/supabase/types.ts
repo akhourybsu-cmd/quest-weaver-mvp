@@ -14,7 +14,421 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          code: string
+          created_at: string | null
+          dm_user_id: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          dm_user_id: string
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          dm_user_id?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      characters: {
+        Row: {
+          ac: number
+          campaign_id: string | null
+          cha_save: number | null
+          class: string
+          con_save: number | null
+          created_at: string | null
+          current_hp: number
+          dex_save: number | null
+          id: string
+          immunities: Database["public"]["Enums"]["damage_type"][] | null
+          int_save: number | null
+          level: number
+          max_hp: number
+          name: string
+          passive_perception: number | null
+          proficiency_bonus: number
+          resistances: Database["public"]["Enums"]["damage_type"][] | null
+          speed: number | null
+          str_save: number | null
+          temp_hp: number | null
+          updated_at: string | null
+          user_id: string
+          vulnerabilities: Database["public"]["Enums"]["damage_type"][] | null
+          wis_save: number | null
+        }
+        Insert: {
+          ac: number
+          campaign_id?: string | null
+          cha_save?: number | null
+          class: string
+          con_save?: number | null
+          created_at?: string | null
+          current_hp: number
+          dex_save?: number | null
+          id?: string
+          immunities?: Database["public"]["Enums"]["damage_type"][] | null
+          int_save?: number | null
+          level?: number
+          max_hp: number
+          name: string
+          passive_perception?: number | null
+          proficiency_bonus: number
+          resistances?: Database["public"]["Enums"]["damage_type"][] | null
+          speed?: number | null
+          str_save?: number | null
+          temp_hp?: number | null
+          updated_at?: string | null
+          user_id: string
+          vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
+          wis_save?: number | null
+        }
+        Update: {
+          ac?: number
+          campaign_id?: string | null
+          cha_save?: number | null
+          class?: string
+          con_save?: number | null
+          created_at?: string | null
+          current_hp?: number
+          dex_save?: number | null
+          id?: string
+          immunities?: Database["public"]["Enums"]["damage_type"][] | null
+          int_save?: number | null
+          level?: number
+          max_hp?: number
+          name?: string
+          passive_perception?: number | null
+          proficiency_bonus?: number
+          resistances?: Database["public"]["Enums"]["damage_type"][] | null
+          speed?: number | null
+          str_save?: number | null
+          temp_hp?: number | null
+          updated_at?: string | null
+          user_id?: string
+          vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
+          wis_save?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "characters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_log: {
+        Row: {
+          action_type: string
+          character_id: string | null
+          created_at: string | null
+          details: Json | null
+          encounter_id: string | null
+          id: string
+          message: string
+          round: number
+        }
+        Insert: {
+          action_type: string
+          character_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          encounter_id?: string | null
+          id?: string
+          message: string
+          round: number
+        }
+        Update: {
+          action_type?: string
+          character_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          encounter_id?: string | null
+          id?: string
+          message?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_log_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_log_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      effects: {
+        Row: {
+          character_id: string | null
+          concentrating_character_id: string | null
+          created_at: string | null
+          damage_per_tick: number | null
+          damage_type_per_tick:
+            | Database["public"]["Enums"]["damage_type"]
+            | null
+          description: string | null
+          encounter_id: string | null
+          end_round: number | null
+          id: string
+          name: string
+          notes: string | null
+          requires_concentration: boolean | null
+          source: string | null
+          start_round: number
+          ticks_at: Database["public"]["Enums"]["effect_tick_timing"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          character_id?: string | null
+          concentrating_character_id?: string | null
+          created_at?: string | null
+          damage_per_tick?: number | null
+          damage_type_per_tick?:
+            | Database["public"]["Enums"]["damage_type"]
+            | null
+          description?: string | null
+          encounter_id?: string | null
+          end_round?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          requires_concentration?: boolean | null
+          source?: string | null
+          start_round: number
+          ticks_at?: Database["public"]["Enums"]["effect_tick_timing"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          character_id?: string | null
+          concentrating_character_id?: string | null
+          created_at?: string | null
+          damage_per_tick?: number | null
+          damage_type_per_tick?:
+            | Database["public"]["Enums"]["damage_type"]
+            | null
+          description?: string | null
+          encounter_id?: string | null
+          end_round?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          requires_concentration?: boolean | null
+          source?: string | null
+          start_round?: number
+          ticks_at?: Database["public"]["Enums"]["effect_tick_timing"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "effects_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "effects_concentrating_character_id_fkey"
+            columns: ["concentrating_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "effects_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounters: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          current_round: number | null
+          id: string
+          is_active: boolean | null
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          current_round?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          current_round?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      initiative: {
+        Row: {
+          character_id: string | null
+          created_at: string | null
+          encounter_id: string | null
+          id: string
+          initiative_roll: number
+          is_current_turn: boolean | null
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          id?: string
+          initiative_roll: number
+          is_current_turn?: boolean | null
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          id?: string
+          initiative_roll?: number
+          is_current_turn?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "initiative_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "initiative_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      save_prompts: {
+        Row: {
+          ability: Database["public"]["Enums"]["ability_score"]
+          created_at: string | null
+          dc: number
+          description: string
+          encounter_id: string | null
+          id: string
+          target_character_ids: string[] | null
+        }
+        Insert: {
+          ability: Database["public"]["Enums"]["ability_score"]
+          created_at?: string | null
+          dc: number
+          description: string
+          encounter_id?: string | null
+          id?: string
+          target_character_ids?: string[] | null
+        }
+        Update: {
+          ability?: Database["public"]["Enums"]["ability_score"]
+          created_at?: string | null
+          dc?: number
+          description?: string
+          encounter_id?: string | null
+          id?: string
+          target_character_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "save_prompts_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      save_results: {
+        Row: {
+          character_id: string | null
+          created_at: string | null
+          id: string
+          modifier: number
+          roll: number
+          save_prompt_id: string | null
+          success: boolean
+          total: number
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string | null
+          id?: string
+          modifier: number
+          roll: number
+          save_prompt_id?: string | null
+          success: boolean
+          total: number
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string | null
+          id?: string
+          modifier?: number
+          roll?: number
+          save_prompt_id?: string | null
+          success?: boolean
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "save_results_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "save_results_save_prompt_id_fkey"
+            columns: ["save_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "save_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +437,22 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"
+      damage_type:
+        | "acid"
+        | "bludgeoning"
+        | "cold"
+        | "fire"
+        | "force"
+        | "lightning"
+        | "necrotic"
+        | "piercing"
+        | "poison"
+        | "psychic"
+        | "radiant"
+        | "slashing"
+        | "thunder"
+      effect_tick_timing: "start" | "end" | "round"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +579,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      ability_score: ["STR", "DEX", "CON", "INT", "WIS", "CHA"],
+      damage_type: [
+        "acid",
+        "bludgeoning",
+        "cold",
+        "fire",
+        "force",
+        "lightning",
+        "necrotic",
+        "piercing",
+        "poison",
+        "psychic",
+        "radiant",
+        "slashing",
+        "thunder",
+      ],
+      effect_tick_timing: ["start", "end", "round"],
+    },
   },
 } as const

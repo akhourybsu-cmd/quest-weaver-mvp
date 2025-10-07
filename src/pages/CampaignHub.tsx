@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle } from "lucide-react";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
+import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Badge } from "@/components/ui/badge";
 
 interface Campaign {
@@ -18,6 +19,15 @@ interface Campaign {
   player_count: number;
 }
 
+interface Character {
+  id: string;
+  name: string;
+  class: string;
+  level: number;
+  campaign_id: string | null;
+  campaign_name?: string;
+}
+
 const CampaignHub = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,12 +35,16 @@ const CampaignHub = () => {
   const [campaignName, setCampaignName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showCharacterCreation, setShowCharacterCreation] = useState(false);
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
   const [joinedCampaignId, setJoinedCampaignId] = useState<string | null>(null);
   const [myCampaigns, setMyCampaigns] = useState<Campaign[]>([]);
+  const [myCharacters, setMyCharacters] = useState<Character[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
+  const [loadingCharacters, setLoadingCharacters] = useState(true);
 
   useEffect(() => {
     fetchMyCampaigns();
+    fetchMyCharacters();
   }, []);
 
   const fetchMyCampaigns = async () => {
@@ -84,6 +98,51 @@ const CampaignHub = () => {
       title: "Code copied!",
       description: `Campaign code ${code} copied to clipboard`,
     });
+  };
+
+  const fetchMyCharacters = async () => {
+    setLoadingCharacters(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: characters, error } = await supabase
+        .from("characters")
+        .select("id, name, class, level, campaign_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch campaign names for characters assigned to campaigns
+      const charactersWithCampaigns = await Promise.all(
+        (characters || []).map(async (character) => {
+          if (character.campaign_id) {
+            const { data: campaign } = await supabase
+              .from("campaigns")
+              .select("name")
+              .eq("id", character.campaign_id)
+              .single();
+
+            return {
+              ...character,
+              campaign_name: campaign?.name,
+            };
+          }
+          return character;
+        })
+      );
+
+      setMyCharacters(charactersWithCampaigns);
+    } catch (error: any) {
+      toast({
+        title: "Error loading characters",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCharacters(false);
+    }
   };
 
   const handleContinueCampaign = (campaignId: string) => {
@@ -154,9 +213,9 @@ const CampaignHub = () => {
         // User already has a character, go directly to session
         navigate(`/session/player?campaign=${campaign.code}`);
       } else {
-        // User needs to create a character
+        // Show character selection dialog
         setJoinedCampaignId(campaign.id);
-        setShowCharacterCreation(true);
+        setShowCharacterSelection(true);
       }
     } catch (error: any) {
       toast({
@@ -171,6 +230,11 @@ const CampaignHub = () => {
 
   const handleCharacterCreated = async () => {
     setShowCharacterCreation(false);
+    await fetchMyCharacters();
+  };
+
+  const handleCharacterSelected = async () => {
+    setShowCharacterSelection(false);
     
     // Get the campaign code to redirect
     if (joinedCampaignId) {
@@ -184,6 +248,11 @@ const CampaignHub = () => {
         navigate(`/session/player?campaign=${campaign.code}`);
       }
     }
+  };
+
+  const handleCancelSelection = () => {
+    setShowCharacterSelection(false);
+    setJoinedCampaignId(null);
   };
 
   return (
@@ -327,6 +396,93 @@ const CampaignHub = () => {
 
               {/* Player Tab */}
               <TabsContent value="player" className="space-y-6">
+                {/* My Characters */}
+                {loadingCharacters ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading your characters...
+                  </div>
+                ) : myCharacters.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">My Characters</h3>
+                      <Button
+                        onClick={() => setShowCharacterCreation(true)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Character
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {myCharacters.map((character) => (
+                        <Card key={character.id} className="shadow-sm">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <UserCircle className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">{character.name}</h4>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs">
+                                    Level {character.level} {character.class}
+                                  </Badge>
+                                  {character.campaign_name && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {character.campaign_name}
+                                    </Badge>
+                                  )}
+                                  {!character.campaign_id && (
+                                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                                      Unassigned
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Join a campaign
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 space-y-3">
+                    <p className="text-muted-foreground text-sm">
+                      You don't have any characters yet
+                    </p>
+                    <Button
+                      onClick={() => setShowCharacterCreation(true)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Character
+                    </Button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Or join directly
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Join Campaign */}
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="campaign-code" className="text-base">
@@ -406,11 +562,19 @@ const CampaignHub = () => {
       </div>
 
       {/* Character Creation Dialog */}
+      <CharacterCreationDialog
+        open={showCharacterCreation}
+        campaignId={null}
+        onComplete={handleCharacterCreated}
+      />
+
+      {/* Character Selection Dialog */}
       {joinedCampaignId && (
-        <CharacterCreationDialog
-          open={showCharacterCreation}
+        <CharacterSelectionDialog
+          open={showCharacterSelection}
           campaignId={joinedCampaignId}
-          onComplete={handleCharacterCreated}
+          onComplete={handleCharacterSelected}
+          onCancel={handleCancelSelection}
         />
       )}
     </div>

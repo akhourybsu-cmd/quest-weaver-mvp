@@ -35,7 +35,7 @@ import {
 
 interface CharacterCreationDialogProps {
   open: boolean;
-  campaignId: string;
+  campaignId: string | null;
   onComplete: () => void;
 }
 

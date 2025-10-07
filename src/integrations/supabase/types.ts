@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      aoe_templates: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          encounter_id: string | null
+          id: string
+          label: string | null
+          length: number | null
+          map_id: string
+          opacity: number | null
+          radius: number | null
+          rotation: number | null
+          shape: string
+          width: number | null
+          x: number
+          y: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          id?: string
+          label?: string | null
+          length?: number | null
+          map_id: string
+          opacity?: number | null
+          radius?: number | null
+          rotation?: number | null
+          shape: string
+          width?: number | null
+          x: number
+          y: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          id?: string
+          label?: string | null
+          length?: number | null
+          map_id?: string
+          opacity?: number | null
+          radius?: number | null
+          rotation?: number | null
+          shape?: string
+          width?: number | null
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aoe_templates_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aoe_templates_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           code: string
@@ -301,6 +367,44 @@ export type Database = {
           },
         ]
       }
+      fog_regions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_hidden: boolean | null
+          map_id: string
+          path: Json
+          shape: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          map_id: string
+          path: Json
+          shape: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          map_id?: string
+          path?: Json
+          shape?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fog_regions_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       initiative: {
         Row: {
           character_id: string | null
@@ -336,6 +440,66 @@ export type Database = {
           },
           {
             foreignKeyName: "initiative_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maps: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          encounter_id: string | null
+          grid_enabled: boolean | null
+          grid_size: number | null
+          height: number
+          id: string
+          image_url: string
+          name: string
+          scale_feet_per_square: number | null
+          updated_at: string | null
+          width: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          encounter_id?: string | null
+          grid_enabled?: boolean | null
+          grid_size?: number | null
+          height: number
+          id?: string
+          image_url: string
+          name: string
+          scale_feet_per_square?: number | null
+          updated_at?: string | null
+          width: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          encounter_id?: string | null
+          grid_enabled?: boolean | null
+          grid_size?: number | null
+          height?: number
+          id?: string
+          image_url?: string
+          name?: string
+          scale_feet_per_square?: number | null
+          updated_at?: string | null
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maps_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maps_encounter_id_fkey"
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
@@ -425,6 +589,79 @@ export type Database = {
             columns: ["save_prompt_id"]
             isOneToOne: false
             referencedRelation: "save_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tokens: {
+        Row: {
+          character_id: string | null
+          color: string | null
+          created_at: string | null
+          encounter_id: string | null
+          facing: number | null
+          id: string
+          image_url: string | null
+          is_visible: boolean | null
+          map_id: string
+          name: string
+          size: number | null
+          updated_at: string | null
+          x: number
+          y: number
+        }
+        Insert: {
+          character_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          facing?: number | null
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean | null
+          map_id: string
+          name: string
+          size?: number | null
+          updated_at?: string | null
+          x: number
+          y: number
+        }
+        Update: {
+          character_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          encounter_id?: string | null
+          facing?: number | null
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean | null
+          map_id?: string
+          name?: string
+          size?: number | null
+          updated_at?: string | null
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tokens_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tokens_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tokens_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
             referencedColumns: ["id"]
           },
         ]

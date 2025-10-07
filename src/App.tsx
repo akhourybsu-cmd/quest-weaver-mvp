@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import CampaignHub from "./pages/CampaignHub";
 import SessionDM from "./pages/SessionDM";
 import SessionPlayer from "./pages/SessionPlayer";
+import CombatMap from "./pages/CombatMap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => {
             <Route path="/campaign-hub" element={<CampaignHub />} />
             <Route path="/session/dm" element={<SessionDM />} />
             <Route path="/session/player" element={<SessionPlayer />} />
+            <Route path="/map" element={<CombatMap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

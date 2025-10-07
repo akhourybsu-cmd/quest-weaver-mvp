@@ -6,6 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dices } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email({ message: "Please enter a valid email address" })
+    .max(255, { message: "Email must be less than 255 characters" }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters" })
+    .max(100, { message: "Password must be less than 100 characters" }),
+});
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,30 +32,58 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validation = authSchema.safeParse({ email, password });
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        throw new Error(firstError.message);
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
         });
-        if (error) throw error;
+        
+        if (error) {
+          // Provide more helpful error messages
+          if (error.message.includes("Invalid login credentials")) {
+            throw new Error("Invalid email or password. Please check your credentials or sign up if you don't have an account.");
+          }
+          throw error;
+        }
+        
         toast({
           title: "Welcome back!",
           description: "Successfully signed in.",
         });
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+          },
         });
-        if (error) throw error;
+        
+        if (error) {
+          // Handle specific signup errors
+          if (error.message.includes("User already registered")) {
+            throw new Error("An account with this email already exists. Please sign in instead.");
+          }
+          throw error;
+        }
+        
         toast({
           title: "Account created!",
-          description: "You can now sign in.",
+          description: "You can now sign in with your credentials.",
         });
+        setIsLogin(true); // Switch to login mode
+        setPassword(""); // Clear password
       }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: isLogin ? "Sign in failed" : "Sign up failed",
         description: error.message,
         variant: "destructive",
       });
@@ -85,7 +126,11 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
               />
+              <p className="text-xs text-muted-foreground">
+                Minimum 6 characters
+              </p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}

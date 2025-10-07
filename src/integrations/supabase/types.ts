@@ -110,7 +110,7 @@ export type Database = {
       character_conditions: {
         Row: {
           character_id: string
-          condition: string
+          condition: Database["public"]["Enums"]["condition_type"]
           created_at: string | null
           encounter_id: string
           ends_at_round: number | null
@@ -120,7 +120,7 @@ export type Database = {
         }
         Insert: {
           character_id: string
-          condition: string
+          condition: Database["public"]["Enums"]["condition_type"]
           created_at?: string | null
           encounter_id: string
           ends_at_round?: number | null
@@ -130,7 +130,7 @@ export type Database = {
         }
         Update: {
           character_id?: string
-          condition?: string
+          condition?: Database["public"]["Enums"]["condition_type"]
           created_at?: string | null
           encounter_id?: string
           ends_at_round?: number | null
@@ -1054,6 +1054,27 @@ export type Database = {
     Enums: {
       ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"
       advantage_mode_enum: "normal" | "advantage" | "disadvantage"
+      condition_type:
+        | "blinded"
+        | "charmed"
+        | "deafened"
+        | "frightened"
+        | "grappled"
+        | "incapacitated"
+        | "invisible"
+        | "paralyzed"
+        | "petrified"
+        | "poisoned"
+        | "prone"
+        | "restrained"
+        | "stunned"
+        | "unconscious"
+        | "exhaustion_1"
+        | "exhaustion_2"
+        | "exhaustion_3"
+        | "exhaustion_4"
+        | "exhaustion_5"
+        | "exhaustion_6"
       damage_type:
         | "acid"
         | "bludgeoning"
@@ -1200,6 +1221,28 @@ export const Constants = {
     Enums: {
       ability_score: ["STR", "DEX", "CON", "INT", "WIS", "CHA"],
       advantage_mode_enum: ["normal", "advantage", "disadvantage"],
+      condition_type: [
+        "blinded",
+        "charmed",
+        "deafened",
+        "frightened",
+        "grappled",
+        "incapacitated",
+        "invisible",
+        "paralyzed",
+        "petrified",
+        "poisoned",
+        "prone",
+        "restrained",
+        "stunned",
+        "unconscious",
+        "exhaustion_1",
+        "exhaustion_2",
+        "exhaustion_3",
+        "exhaustion_4",
+        "exhaustion_5",
+        "exhaustion_6",
+      ],
       damage_type: [
         "acid",
         "bludgeoning",

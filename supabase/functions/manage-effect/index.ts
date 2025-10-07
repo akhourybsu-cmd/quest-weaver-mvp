@@ -58,13 +58,29 @@ serve(async (req) => {
     if (action === 'create') {
       // Check concentration conflicts
       if (effectData.requires_concentration && effectData.concentrating_character_id) {
-        // Break existing concentration
-        await supabase
+        // Break existing concentration - delete effects AND conditions
+        const { data: concentrationEffects } = await supabase
           .from('effects')
-          .delete()
+          .select('id')
           .eq('concentrating_character_id', effectData.concentrating_character_id)
           .eq('encounter_id', encounterId)
           .eq('requires_concentration', true);
+
+        if (concentrationEffects && concentrationEffects.length > 0) {
+          const effectIds = concentrationEffects.map(e => e.id);
+          
+          // Delete conditions linked to these effects
+          await supabase
+            .from('character_conditions')
+            .delete()
+            .in('source_effect_id', effectIds);
+          
+          // Delete the effects themselves
+          await supabase
+            .from('effects')
+            .delete()
+            .in('id', effectIds);
+        }
       }
 
       // Insert new effect
@@ -81,6 +97,13 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (action === 'delete') {
+      // Delete linked conditions first
+      await supabase
+        .from('character_conditions')
+        .delete()
+        .eq('source_effect_id', effectId);
+
+      // Delete the effect
       const { error } = await supabase
         .from('effects')
         .delete()

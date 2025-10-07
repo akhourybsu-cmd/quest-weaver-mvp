@@ -113,9 +113,9 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
     const endsAtRound = duration ? currentRound + parseInt(duration) : null;
 
     const { error } = await supabase.from("character_conditions").insert({
-      encounter_id: encounterId,
       character_id: selectedCharacter,
-      condition: selectedCondition,
+      condition: selectedCondition as any,
+      encounter_id: encounterId,
       ends_at_round: endsAtRound,
     });
 

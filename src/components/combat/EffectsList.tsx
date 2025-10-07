@@ -125,7 +125,14 @@ const EffectsList = ({ encounterId }: EffectsListProps) => {
             className="flex items-start justify-between p-3 bg-muted/50 rounded-lg"
           >
             <div className="flex-1">
-              <div className="font-semibold">{effect.name}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-semibold">{effect.name}</div>
+                {effect.end_round && (
+                  <Badge variant="secondary" className="text-xs">
+                    {effect.end_round - currentRound} rounds left
+                  </Badge>
+                )}
+              </div>
               {effect.description && (
                 <div className="text-sm text-muted-foreground mt-1">
                   {effect.description}
@@ -151,6 +158,16 @@ const EffectsList = ({ encounterId }: EffectsListProps) => {
                   </Badge>
                 )}
               </div>
+              {effect.end_round && (
+                <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(0, Math.min(100, ((effect.end_round - currentRound) / (effect.end_round - effect.start_round)) * 100))}%` 
+                    }}
+                  />
+                </div>
+              )}
             </div>
             <Button
               variant="ghost"

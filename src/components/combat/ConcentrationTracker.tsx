@@ -68,6 +68,13 @@ const ConcentrationTracker = ({ encounterId }: ConcentrationTrackerProps) => {
   };
 
   const breakConcentration = async (effectId: string) => {
+    // Delete linked conditions first
+    await supabase
+      .from("character_conditions")
+      .delete()
+      .eq("source_effect_id", effectId);
+
+    // Delete the concentration effect
     const { error } = await supabase
       .from("effects")
       .delete()
@@ -82,6 +89,7 @@ const ConcentrationTracker = ({ encounterId }: ConcentrationTrackerProps) => {
     } else {
       toast({
         title: "Concentration broken",
+        description: "Effect and linked conditions removed",
       });
     }
   };

@@ -9,16 +9,16 @@ import QuestDialog from "./QuestDialog";
 
 interface QuestStep {
   id: string;
-  text: string;
-  completed: boolean;
+  description: string;
+  isCompleted: boolean;
 }
 
 interface Quest {
   id: string;
   title: string;
   description?: string;
-  status: string;
-  giver?: string;
+  isCompleted: boolean;
+  questGiver?: string;
   steps: QuestStep[];
 }
 
@@ -39,13 +39,13 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
           id,
           title,
           description,
-          status,
-          giver,
+          is_completed,
+          quest_giver,
           quest_steps (
             id,
-            text,
-            completed,
-            order_index
+            description,
+            is_completed,
+            step_order
           )
         `)
         .eq("campaign_id", campaignId)
@@ -57,14 +57,14 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
             id: q.id,
             title: q.title,
             description: q.description,
-            status: q.status,
-            giver: q.giver,
+            isCompleted: q.is_completed,
+            questGiver: q.quest_giver,
             steps: (q.quest_steps || [])
-              .sort((a: any, b: any) => a.order_index - b.order_index)
+              .sort((a: any, b: any) => a.step_order - b.step_order)
               .map((s: any) => ({
                 id: s.id,
-                text: s.text,
-                completed: s.completed,
+                description: s.description,
+                isCompleted: s.is_completed,
               })),
           }))
         );
@@ -101,15 +101,15 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
     };
   }, [campaignId]);
 
-  const handleToggleStep = async (stepId: string, completed: boolean) => {
+  const handleToggleStep = async (step: QuestStep) => {
     await supabase
       .from("quest_steps")
-      .update({ completed: !completed })
-      .eq("id", stepId);
+      .update({ is_completed: !step.isCompleted })
+      .eq("id", step.id);
   };
 
-  const activeQuests = quests.filter((q) => q.status === "active");
-  const completedQuests = quests.filter((q) => q.status === "completed");
+  const activeQuests = quests.filter((q) => !q.isCompleted);
+  const completedQuests = quests.filter((q) => q.isCompleted);
 
   return (
     <Card className="shadow-md">
@@ -136,9 +136,9 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
               <div key={quest.id} className="border rounded-lg p-4 space-y-3">
                 <div>
                   <div className="font-semibold">{quest.title}</div>
-                  {quest.giver && (
+                  {quest.questGiver && (
                     <div className="text-sm text-muted-foreground">
-                      Given by: {quest.giver}
+                      Given by: {quest.questGiver}
                     </div>
                   )}
                   {quest.description && (
@@ -153,20 +153,18 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
                     {quest.steps.map((step) => (
                       <div key={step.id} className="flex items-start gap-2">
                         <Checkbox
-                          checked={step.completed}
-                          onCheckedChange={() =>
-                            handleToggleStep(step.id, step.completed)
-                          }
+                          checked={step.isCompleted}
+                          onCheckedChange={() => handleToggleStep(step)}
                           className="mt-1"
                         />
                         <span
                           className={`text-sm ${
-                            step.completed
+                            step.isCompleted
                               ? "line-through text-muted-foreground"
                               : ""
                           }`}
                         >
-                          {step.text}
+                          {step.description}
                         </span>
                       </div>
                     ))}
@@ -190,9 +188,9 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
                 className="border rounded-lg p-4 bg-muted/30 opacity-75"
               >
                 <div className="font-semibold">{quest.title}</div>
-                {quest.giver && (
+                {quest.questGiver && (
                   <div className="text-sm text-muted-foreground">
-                    Given by: {quest.giver}
+                    Given by: {quest.questGiver}
                   </div>
                 )}
               </div>

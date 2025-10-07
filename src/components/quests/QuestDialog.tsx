@@ -57,7 +57,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
         campaign_id: campaignId,
         title,
         description,
-        giver,
+        quest_giver: giver,
       })
       .select()
       .single();
@@ -74,10 +74,10 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
     // Add steps
     const validSteps = steps.filter((s) => s.trim());
     if (validSteps.length > 0) {
-      const stepsData = validSteps.map((text, index) => ({
+      const stepsData = validSteps.map((description, index) => ({
         quest_id: questData.id,
-        text,
-        order_index: index,
+        description,
+        step_order: index,
       }));
 
       await supabase.from("quest_steps").insert(stepsData);

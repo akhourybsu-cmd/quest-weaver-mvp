@@ -1,54 +1,248 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Shield, Sparkles, Dices } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Heart, Shield, Zap, Plus, Minus, Dices } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+interface Character {
+  id: string;
+  name: string;
+  class: string;
+  level: number;
+  current_hp: number;
+  max_hp: number;
+  temp_hp: number;
+  ac: number;
+  speed: number;
+  proficiency_bonus: number;
+  passive_perception: number;
+}
+
+interface Effect {
+  id: string;
+  name: string;
+  description: string | null;
+  end_round: number | null;
+}
 
 const SessionPlayer = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const campaignCode = searchParams.get("campaign");
-  
-  const [character] = useState({
-    name: "Theron Brightblade",
-    class: "Paladin",
-    level: 5,
-    hp: 42,
-    maxHp: 45,
-    tempHp: 0,
-    ac: 18,
-    speed: 30,
-    proficiencyBonus: 3,
-    conditions: [] as string[],
-    spellSlots: {
-      1: { used: 2, max: 4 },
-      2: { used: 0, max: 2 },
-    },
-  });
+  const { toast } = useToast();
 
-  const [isMyTurn] = useState(true);
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [effects, setEffects] = useState<Effect[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hpAdjustment, setHpAdjustment] = useState("");
+  const [tempHpValue, setTempHpValue] = useState("");
 
-  const getHPPercentage = () => (character.hp / character.maxHp) * 100;
+  useEffect(() => {
+    if (!campaignCode) {
+      navigate("/campaign-hub");
+      return;
+    }
+
+    fetchCharacter();
+  }, [campaignCode, navigate]);
+
+  useEffect(() => {
+    if (!character) return;
+
+    fetchEffects();
+
+    // Subscribe to character changes
+    const characterChannel = supabase
+      .channel('character-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+          filter: `id=eq.${character.id}`,
+        },
+        () => fetchCharacter()
+      )
+      .subscribe();
+
+    // Subscribe to effects changes
+    const effectsChannel = supabase
+      .channel('effects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'effects',
+          filter: `character_id=eq.${character.id}`,
+        },
+        () => fetchEffects()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(characterChannel);
+      supabase.removeChannel(effectsChannel);
+    };
+  }, [character?.id]);
+
+  const fetchCharacter = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // First get campaign by code
+    const { data: campaigns } = await supabase
+      .from("campaigns")
+      .select("id")
+      .eq("code", campaignCode);
+
+    if (!campaigns || campaigns.length === 0) {
+      toast({
+        title: "Campaign not found",
+        description: "Invalid campaign code",
+        variant: "destructive",
+      });
+      navigate("/campaign-hub");
+      return;
+    }
+
+    // Get character for this user in this campaign
+    const { data, error } = await supabase
+      .from("characters")
+      .select("*")
+      .eq("campaign_id", campaigns[0].id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      toast({
+        title: "Error loading character",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data) {
+      toast({
+        title: "No character found",
+        description: "Create a character to join this campaign",
+        variant: "destructive",
+      });
+      navigate("/campaign-hub");
+      return;
+    }
+
+    setCharacter(data);
+    setLoading(false);
+  };
+
+  const fetchEffects = async () => {
+    if (!character) return;
+
+    const { data } = await supabase
+      .from("effects")
+      .select("id, name, description, end_round")
+      .eq("character_id", character.id);
+
+    setEffects(data || []);
+  };
+
+  const updateHP = async (amount: number) => {
+    if (!character) return;
+
+    const newHP = Math.max(0, Math.min(character.max_hp, character.current_hp + amount));
+
+    const { error } = await supabase
+      .from("characters")
+      .update({ current_hp: newHP })
+      .eq("id", character.id);
+
+    if (error) {
+      toast({
+        title: "Error updating HP",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+
+    setHpAdjustment("");
+  };
+
+  const updateTempHP = async () => {
+    if (!character || !tempHpValue) return;
+
+    const { error } = await supabase
+      .from("characters")
+      .update({ temp_hp: parseInt(tempHpValue) })
+      .eq("id", character.id);
+
+    if (error) {
+      toast({
+        title: "Error updating temp HP",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+
+    setTempHpValue("");
+  };
+
+  const getHPPercentage = () => {
+    if (!character) return 0;
+    return (character.current_hp / character.max_hp) * 100;
+  };
+
+  const getHPColor = () => {
+    const percentage = getHPPercentage();
+    if (percentage > 50) return "bg-status-buff";
+    if (percentage > 25) return "bg-status-warning";
+    return "bg-status-hp";
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading character...</div>
+      </div>
+    );
+  }
+
+  if (!character) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg mb-4">No character found</p>
+          <Button onClick={() => navigate("/campaign-hub")}>Back to Campaign Hub</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">
-      {/* Turn Banner */}
-      {isMyTurn && (
-        <div className="bg-primary text-primary-foreground sticky top-0 z-40 shadow-lg animate-in slide-in-from-top duration-200">
-          <div className="max-w-2xl mx-auto px-4 py-3 text-center">
-            <p className="text-lg font-semibold">🎲 Your Turn!</p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-30 shadow-sm">
+      <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="text-center">
             <h1 className="text-2xl font-bold">{character.name}</h1>
             <p className="text-sm text-muted-foreground">
-              Level {character.level} {character.class} • Campaign: {campaignCode || "Demo"}
+              Level {character.level} {character.class} • Campaign: {campaignCode}
             </p>
           </div>
         </div>
@@ -57,39 +251,124 @@ const SessionPlayer = () => {
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         {/* HP Card */}
-        <Card className="shadow-lg">
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Heart className="w-6 h-6 text-status-hp" />
-                <span className="text-lg font-semibold">Hit Points</span>
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Heart className="w-5 h-5 text-status-hp" />
+              Hit Points
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-3xl font-bold tabular-nums">
+                  {character.current_hp}
+                </span>
+                <span className="text-xl text-muted-foreground">
+                  / {character.max_hp}
+                </span>
               </div>
-              <span className="text-3xl font-bold tabular-nums">
-                {character.hp}
-                <span className="text-xl text-muted-foreground">/{character.maxHp}</span>
-              </span>
-            </div>
-            
-            <div className="h-4 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-status-hp transition-all duration-300"
-                style={{ width: `${getHPPercentage()}%` }}
-              />
+              <Progress value={getHPPercentage()} className="h-3" />
             </div>
 
-            {character.tempHp > 0 && (
-              <div className="text-sm text-muted-foreground">
-                +{character.tempHp} Temporary HP
+            {character.temp_hp > 0 && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-secondary/10 border-secondary">
+                  +{character.temp_hp} Temporary HP
+                </Badge>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <Button variant="outline" size="sm">
-                - Damage
-              </Button>
-              <Button variant="outline" size="sm" className="bg-status-buff/10">
-                + Healing
-              </Button>
+            {/* HP Adjustment */}
+            <div className="flex gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Minus className="w-4 h-4 mr-1" />
+                    Damage
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Take Damage</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Damage Amount</Label>
+                      <Input
+                        type="number"
+                        value={hpAdjustment}
+                        onChange={(e) => setHpAdjustment(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => updateHP(-parseInt(hpAdjustment || "0"))}
+                      className="w-full"
+                    >
+                      Apply Damage
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Heal
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Heal</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Healing Amount</Label>
+                      <Input
+                        type="number"
+                        value={hpAdjustment}
+                        onChange={(e) => setHpAdjustment(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => updateHP(parseInt(hpAdjustment || "0"))}
+                      className="w-full"
+                    >
+                      Apply Healing
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    Temp HP
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Temporary HP</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Temporary HP</Label>
+                      <Input
+                        type="number"
+                        value={tempHpValue}
+                        onChange={(e) => setTempHpValue(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <Button onClick={updateTempHP} className="w-full">
+                      Set Temp HP
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
@@ -97,91 +376,66 @@ const SessionPlayer = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3 text-center">
-              <Shield className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-              <div className="text-2xl font-bold">{character.ac}</div>
-              <div className="text-xs text-muted-foreground">Armor Class</div>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-center">
+                <Shield className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                <div className="text-2xl font-bold">{character.ac}</div>
+                <div className="text-xs text-muted-foreground">Armor Class</div>
+              </div>
             </CardContent>
           </Card>
           <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3 text-center">
-              <Sparkles className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-              <div className="text-2xl font-bold">+{character.proficiencyBonus}</div>
-              <div className="text-xs text-muted-foreground">Proficiency</div>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-center">
+                <Plus className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                <div className="text-2xl font-bold">+{character.proficiency_bonus}</div>
+                <div className="text-xs text-muted-foreground">Proficiency</div>
+              </div>
             </CardContent>
           </Card>
           <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3 text-center">
-              <Zap className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-              <div className="text-2xl font-bold">{character.speed}</div>
-              <div className="text-xs text-muted-foreground">Speed (ft)</div>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-center">
+                <Zap className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                <div className="text-2xl font-bold">{character.speed}</div>
+                <div className="text-xs text-muted-foreground">Speed (ft)</div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Spell Slots */}
-        <Card className="shadow-md">
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">Spell Slots</span>
-              <Button variant="ghost" size="sm" className="h-8 text-xs">
-                Short Rest
-              </Button>
-            </div>
-            
-            {Object.entries(character.spellSlots).map(([level, slots]) => (
-              <div key={level} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Level {level}</span>
-                  <span className="font-medium tabular-nums">
-                    {slots.max - slots.used} / {slots.max}
-                  </span>
-                </div>
-                <div className="flex gap-1">
-                  {Array.from({ length: slots.max }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-2 flex-1 rounded-full transition-colors ${
-                        i < slots.max - slots.used
-                          ? "bg-secondary"
-                          : "bg-muted"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Conditions */}
-        {character.conditions.length > 0 && (
+        {/* Active Effects */}
+        {effects.length > 0 && (
           <Card className="shadow-md">
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                <span className="font-semibold text-sm">Active Conditions</span>
-                <div className="flex flex-wrap gap-2">
-                  {character.conditions.map((condition) => (
-                    <Badge
-                      key={condition}
-                      variant="outline"
-                      className="bg-status-debuff/10 border-status-debuff text-status-debuff"
-                    >
-                      {condition}
+            <CardHeader>
+              <CardTitle className="text-lg">Active Conditions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {effects.map((effect) => (
+                <div
+                  key={effect.id}
+                  className="p-3 bg-muted/50 rounded-lg"
+                >
+                  <div className="font-semibold">{effect.name}</div>
+                  {effect.description && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {effect.description}
+                    </div>
+                  )}
+                  {effect.end_round && (
+                    <Badge variant="outline" className="mt-2 text-xs">
+                      Ends: Round {effect.end_round}
                     </Badge>
-                  ))}
+                  )}
                 </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
         )}
 
-        {/* Primary Action Button */}
-        <Button
-          size="lg"
-          className="w-full h-16 text-lg font-semibold shadow-lg"
-        >
-          <Dices className="w-6 h-6 mr-3" />
+        {/* Roll Dice Button */}
+        <Button size="lg" className="w-full">
+          <Dices className="w-5 h-5 mr-2" />
           Roll Dice
         </Button>
       </div>
@@ -190,17 +444,5 @@ const SessionPlayer = () => {
     </div>
   );
 };
-
-const Zap = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    strokeWidth="2"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-  </svg>
-);
 
 export default SessionPlayer;

@@ -10,9 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Shield, Eye, Plus, Swords, Map, Users } from "lucide-react";
 import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
-import DamageInput from "@/components/combat/DamageInput";
 import EffectsList from "@/components/combat/EffectsList";
-import SavePromptDialog from "@/components/combat/SavePromptDialog";
+import InitiativeTracker from "@/components/combat/InitiativeTracker";
 
 interface Character {
   id: string;
@@ -343,6 +342,10 @@ const SessionDM = () => {
           <TabsContent value="combat" className="space-y-4">
             {activeEncounter && (
               <>
+                <InitiativeTracker
+                  encounterId={activeEncounter.id}
+                  characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                />
                 <ConcentrationTracker encounterId={activeEncounter.id} />
                 <EffectsList encounterId={activeEncounter.id} />
                 <CombatLog encounterId={activeEncounter.id} />

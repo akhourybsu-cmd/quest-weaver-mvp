@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import PlayerPresence from "@/components/presence/PlayerPresence";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ const SessionDM = () => {
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) {
@@ -50,6 +52,14 @@ const SessionDM = () => {
       return;
     }
 
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+
+    loadUser();
     fetchCampaignData();
     
     // Subscribe to character changes
@@ -226,7 +236,16 @@ const SessionDM = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Player Presence */}
+        {currentUserId && (
+          <PlayerPresence
+            campaignId={campaignId}
+            currentUserId={currentUserId}
+            isDM={true}
+          />
+        )}
+
         <Tabs defaultValue="party" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="party">

@@ -3,6 +3,9 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import PlayerPresence from "@/components/presence/PlayerPresence";
+import DiceRoller from "@/components/dice/DiceRoller";
+import RestManager from "@/components/character/RestManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +33,7 @@ interface Character {
   speed: number;
   proficiency_bonus: number;
   passive_perception: number;
+  con_save: number;
 }
 
 interface Effect {
@@ -50,6 +54,8 @@ const SessionPlayer = () => {
   const [loading, setLoading] = useState(true);
   const [hpAdjustment, setHpAdjustment] = useState("");
   const [tempHpValue, setTempHpValue] = useState("");
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignCode) {
@@ -105,6 +111,8 @@ const SessionPlayer = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    setCurrentUserId(user.id);
+
     // Get campaign by code
     const { data: campaigns, error: campaignError } = await supabase
       .from("campaigns")
@@ -120,6 +128,8 @@ const SessionPlayer = () => {
       navigate("/campaign-hub");
       return;
     }
+
+    setCampaignId(campaigns[0].id);
 
     // Get character for this user in this campaign
     const { data, error } = await supabase
@@ -149,6 +159,31 @@ const SessionPlayer = () => {
     }
 
     setCharacter(data);
+
+    // Create or update player presence
+    const { data: existingPresence } = await supabase
+      .from("player_presence")
+      .select("id")
+      .eq("campaign_id", campaigns[0].id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingPresence) {
+      await supabase
+        .from("player_presence")
+        .update({ is_online: true, last_seen: new Date().toISOString() })
+        .eq("id", existingPresence.id);
+    } else {
+      await supabase
+        .from("player_presence")
+        .insert({
+          campaign_id: campaigns[0].id,
+          user_id: user.id,
+          character_id: data.id,
+          is_online: true,
+        });
+    }
+
     setLoading(false);
   };
 
@@ -250,6 +285,15 @@ const SessionPlayer = () => {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {/* Player Presence */}
+        {campaignId && currentUserId && (
+          <PlayerPresence
+            campaignId={campaignId}
+            currentUserId={currentUserId}
+            isDM={false}
+          />
+        )}
+
         {/* HP Card */}
         <Card className="shadow-md">
           <CardHeader>
@@ -433,11 +477,11 @@ const SessionPlayer = () => {
           </Card>
         )}
 
-        {/* Roll Dice Button */}
-        <Button size="lg" className="w-full">
-          <Dices className="w-5 h-5 mr-2" />
-          Roll Dice
-        </Button>
+        {/* Rest Manager */}
+        <RestManager character={character} />
+
+        {/* Dice Roller */}
+        <DiceRoller />
       </div>
 
       <BottomNav role="player" />

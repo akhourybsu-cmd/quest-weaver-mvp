@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, Plus, X, Heart, Shield } from "lucide-react";
+import { ChevronRight, Plus, X, Heart, Shield, Dices } from "lucide-react";
 import { useEncounter } from "@/hooks/useEncounter";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { calculateModifier } from "@/lib/dnd5e";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -16,6 +19,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   const { initiative, currentRound, addToInitiative, nextTurn, removeFromInitiative } = useEncounter(encounterId);
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [initiativeRoll, setInitiativeRoll] = useState("");
+  const { toast } = useToast();
 
   const handleAddToInitiative = async () => {
     if (!selectedCharacterId || !initiativeRoll) return;
@@ -23,6 +27,34 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     await addToInitiative(selectedCharacterId, parseInt(initiativeRoll));
     setSelectedCharacterId("");
     setInitiativeRoll("");
+  };
+
+  const handleAutoRoll = async () => {
+    const { data: characterData, error } = await supabase
+      .from("characters")
+      .select("id, name, dex_save")
+      .in("id", availableCharacters.map(c => c.id));
+
+    if (error || !characterData) {
+      toast({
+        title: "Error fetching character data",
+        description: error?.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    for (const char of characterData) {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const dexMod = char.dex_save || 0;
+      const total = roll + dexMod;
+      await addToInitiative(char.id, total);
+    }
+
+    toast({
+      title: "Initiative Rolled",
+      description: `Rolled initiative for ${characterData.length} characters`,
+    });
   };
 
   const availableCharacters = characters.filter(
@@ -34,10 +66,18 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Initiative Order - Round {currentRound}</CardTitle>
-          <Button onClick={nextTurn} size="sm" disabled={initiative.length === 0}>
-            <ChevronRight className="w-4 h-4 mr-1" />
-            Next Turn
-          </Button>
+          <div className="flex gap-2">
+            {availableCharacters.length > 0 && (
+              <Button onClick={handleAutoRoll} size="sm" variant="outline">
+                <Dices className="w-4 h-4 mr-1" />
+                Auto-Roll
+              </Button>
+            )}
+            <Button onClick={nextTurn} size="sm" disabled={initiative.length === 0}>
+              <ChevronRight className="w-4 h-4 mr-1" />
+              Next Turn
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

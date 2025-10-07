@@ -13,6 +13,9 @@ import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
 import EffectsList from "@/components/combat/EffectsList";
 import InitiativeTracker from "@/components/combat/InitiativeTracker";
+import SavePromptDialog from "@/components/combat/SavePromptDialog";
+import DamageInput from "@/components/combat/DamageInput";
+import EffectDialog from "@/components/combat/EffectDialog";
 
 interface Character {
   id: string;
@@ -25,6 +28,9 @@ interface Character {
   ac: number;
   passive_perception: number;
   speed: number;
+  resistances: string[];
+  vulnerabilities: string[];
+  immunities: string[];
 }
 
 interface Encounter {
@@ -194,6 +200,115 @@ const SessionDM = () => {
     });
   };
 
+  const applyDamage = async (characterId: string, amount: number, damageType: string) => {
+    const character = characters.find(c => c.id === characterId);
+    if (!character) return;
+
+    let finalDamage = amount;
+
+    // Apply resistances (half damage)
+    if (character.resistances?.includes(damageType)) {
+      finalDamage = Math.floor(amount / 2);
+      toast({
+        title: "Resistance Applied",
+        description: `${character.name} resists ${damageType} damage. ${amount} → ${finalDamage}`,
+      });
+    }
+
+    // Apply vulnerabilities (double damage)
+    if (character.vulnerabilities?.includes(damageType)) {
+      finalDamage = amount * 2;
+      toast({
+        title: "Vulnerability Applied",
+        description: `${character.name} is vulnerable to ${damageType} damage. ${amount} → ${finalDamage}`,
+      });
+    }
+
+    // Apply immunities (zero damage)
+    if (character.immunities?.includes(damageType)) {
+      finalDamage = 0;
+      toast({
+        title: "Immunity Applied",
+        description: `${character.name} is immune to ${damageType} damage!`,
+      });
+    }
+
+    // Calculate new HP (consider temp HP first)
+    let remainingDamage = finalDamage;
+    let newTempHP = character.temp_hp;
+    
+    if (newTempHP > 0) {
+      if (remainingDamage >= newTempHP) {
+        remainingDamage -= newTempHP;
+        newTempHP = 0;
+      } else {
+        newTempHP -= remainingDamage;
+        remainingDamage = 0;
+      }
+    }
+
+    const newHP = Math.max(0, character.current_hp - remainingDamage);
+
+    const { error } = await supabase
+      .from("characters")
+      .update({ 
+        current_hp: newHP,
+        temp_hp: newTempHP
+      })
+      .eq("id", characterId);
+
+    if (error) {
+      toast({
+        title: "Error applying damage",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Log to combat log if in encounter
+    if (activeEncounter) {
+      await supabase.from("combat_log").insert({
+        encounter_id: activeEncounter.id,
+        character_id: characterId,
+        round: activeEncounter.current_round,
+        action_type: "damage",
+        message: `${character.name} took ${finalDamage} ${damageType} damage`,
+        details: { amount: finalDamage, type: damageType, original: amount },
+      });
+    }
+
+    toast({
+      title: "Damage Applied",
+      description: `${character.name} took ${finalDamage} damage`,
+    });
+  };
+
+  const handlePromptSave = async (ability: string, dc: number, description: string) => {
+    if (!activeEncounter) return;
+
+    const { error } = await supabase.from("save_prompts").insert([{
+      encounter_id: activeEncounter.id,
+      ability: ability as any,
+      dc,
+      description,
+    }]);
+
+    if (error) {
+      toast({
+        title: "Error sending save prompt",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Save Prompt Sent",
+      description: `All players must make a ${ability} save (DC ${dc})`,
+    });
+  };
+
   const getHPColor = (current: number, max: number) => {
     const percentage = (current / max) * 100;
     if (percentage > 50) return "bg-status-buff";
@@ -340,15 +455,22 @@ const SessionDM = () => {
                       </div>
 
                       {/* Stats */}
-                      <div className="flex gap-4 text-sm">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Shield className="w-4 h-4" />
-                          <span>AC {character.ac}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-4 text-sm">
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Shield className="w-4 h-4" />
+                            <span>AC {character.ac}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Eye className="w-4 h-4" />
+                            <span>Passive {character.passive_perception}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Eye className="w-4 h-4" />
-                          <span>Passive {character.passive_perception}</span>
-                        </div>
+                        <DamageInput
+                          characterId={character.id}
+                          characterName={character.name}
+                          onApplyDamage={(amount, type) => applyDamage(character.id, amount, type)}
+                        />
                       </div>
                     </div>
                   ))
@@ -361,6 +483,17 @@ const SessionDM = () => {
           <TabsContent value="combat" className="space-y-4">
             {activeEncounter && (
               <>
+                <div className="flex gap-2">
+                  <SavePromptDialog
+                    encounterId={activeEncounter.id}
+                    onPromptSave={handlePromptSave}
+                  />
+                  <EffectDialog
+                    encounterId={activeEncounter.id}
+                    currentRound={activeEncounter.current_round}
+                    characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                  />
+                </div>
                 <InitiativeTracker
                   encounterId={activeEncounter.id}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}

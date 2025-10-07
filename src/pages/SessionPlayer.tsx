@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
 import DiceRoller from "@/components/dice/DiceRoller";
 import RestManager from "@/components/character/RestManager";
+import SavePromptListener from "@/components/combat/SavePromptListener";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,11 @@ interface Character {
   proficiency_bonus: number;
   passive_perception: number;
   con_save: number;
+  str_save: number;
+  dex_save: number;
+  int_save: number;
+  wis_save: number;
+  cha_save: number;
 }
 
 interface Effect {
@@ -447,6 +453,15 @@ const SessionPlayer = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Saving Throw Listener */}
+        {campaignId && (
+          <SavePromptListener
+            characterId={character.id}
+            character={character}
+            campaignId={campaignId}
+          />
+        )}
 
         {/* Active Effects */}
         {effects.length > 0 && (

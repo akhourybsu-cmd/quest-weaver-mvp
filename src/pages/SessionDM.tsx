@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCombatActions } from "@/hooks/useCombatActions";
 import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Shield, Eye, Plus, Swords, Map, Users } from "lucide-react";
 import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
+import ConditionsManager from "@/components/combat/ConditionsManager";
 import EffectsList from "@/components/combat/EffectsList";
 import InitiativeTracker from "@/components/combat/InitiativeTracker";
 import SavePromptDialog from "@/components/combat/SavePromptDialog";
@@ -45,6 +47,7 @@ const SessionDM = () => {
   const navigate = useNavigate();
   const campaignId = searchParams.get("campaign");
   const { toast } = useToast();
+  const { applyDamage: applyDamageAction, applyHealing } = useCombatActions();
 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
@@ -201,125 +204,39 @@ const SessionDM = () => {
   };
 
   const applyDamage = async (characterId: string, amount: number, damageType: string) => {
-    const character = characters.find(c => c.id === characterId);
-    if (!character) return;
+    if (!activeEncounter) return;
 
-    // CORRECT DAMAGE PIPELINE PER D&D 5E:
-    // 1. Check immunity → damage = 0
-    // 2. Apply resistance XOR vulnerability (cancel if both)
-    // 3. Apply to temp HP
-    // 4. Apply to current HP
-    // 5. Check concentration if applicable
-
-    let damage = amount;
-    const steps: string[] = [];
-
-    // Step 1: Immunity check
-    if (character.immunities?.includes(damageType)) {
-      toast({
-        title: "Immune!",
-        description: `${character.name} is immune to ${damageType} damage`,
-      });
-      
-      await supabase.from("combat_log").insert({
-        encounter_id: activeEncounter?.id,
-        character_id: characterId,
-        round: activeEncounter?.current_round || 0,
-        action_type: "damage",
-        message: `${character.name} is immune to ${amount} ${damageType} damage`,
-      });
-      return;
+    try {
+      await applyDamageAction(
+        characterId,
+        amount,
+        damageType,
+        activeEncounter.id,
+        activeEncounter.current_round
+      );
+    } catch (error) {
+      // Error handled in hook
     }
-
-    // Step 2: Resistance XOR Vulnerability
-    const hasResistance = character.resistances?.includes(damageType) || false;
-    const hasVulnerability = character.vulnerabilities?.includes(damageType) || false;
-
-    if (hasResistance && hasVulnerability) {
-      steps.push("Both resistance and vulnerability cancel out");
-    } else if (hasResistance) {
-      damage = Math.floor(damage / 2);
-      steps.push(`Resistant - halved to ${damage}`);
-    } else if (hasVulnerability) {
-      damage = damage * 2;
-      steps.push(`Vulnerable - doubled to ${damage}`);
-    }
-
-    // Step 3: Apply to temp HP first
-    let tempHpLost = 0;
-    let newTempHP = character.temp_hp || 0;
-    let remainingDamage = damage;
-
-    if (newTempHP > 0) {
-      tempHpLost = Math.min(damage, newTempHP);
-      newTempHP = Math.max(0, newTempHP - damage);
-      remainingDamage = Math.max(0, damage - (character.temp_hp || 0));
-      steps.push(`${tempHpLost} absorbed by temp HP`);
-    }
-
-    // Step 4: Apply to current HP
-    const hpLost = Math.min(remainingDamage, character.current_hp);
-    const newHP = Math.max(0, character.current_hp - remainingDamage);
-    
-    if (hpLost > 0) {
-      steps.push(`${hpLost} HP lost`);
-    }
-
-    // Step 5: Check concentration
-    // TODO: Check if character is concentrating and prompt save if needed
-    // DC = max(10, floor(damage / 2))
-
-    const { error } = await supabase
-      .from("characters")
-      .update({ 
-        current_hp: newHP,
-        temp_hp: newTempHP
-      })
-      .eq("id", characterId);
-
-    if (error) {
-      toast({
-        title: "Error applying damage",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Log to combat log if in encounter
-    if (activeEncounter) {
-      await supabase.from("combat_log").insert({
-        encounter_id: activeEncounter.id,
-        character_id: characterId,
-        round: activeEncounter.current_round,
-        action_type: "damage",
-        message: `${character.name} took ${damage} ${damageType} damage (${amount} base)`,
-        details: { 
-          finalDamage: damage, 
-          type: damageType, 
-          baseDamage: amount,
-          tempHpLost,
-          hpLost,
-          steps 
-        },
-      });
-    }
-
-    const summary = steps.length > 0 ? ` (${steps.join(", ")})` : "";
-    toast({
-      title: "Damage Applied",
-      description: `${character.name} took ${damage} ${damageType} damage${summary}`,
-    });
   };
 
-  const handlePromptSave = async (ability: string, dc: number, description: string) => {
+  const handlePromptSave = async (data: {
+    ability: string;
+    dc: number;
+    description: string;
+    targetScope: string;
+    advantageMode: string;
+    halfOnSuccess: boolean;
+  }) => {
     if (!activeEncounter) return;
 
     const { error } = await supabase.from("save_prompts").insert([{
       encounter_id: activeEncounter.id,
-      ability: ability as any,
-      dc,
-      description,
+      ability: data.ability as any,
+      dc: data.dc,
+      description: data.description,
+      target_scope: data.targetScope,
+      advantage_mode: data.advantageMode,
+      half_on_success: data.halfOnSuccess,
     }]);
 
     if (error) {
@@ -333,7 +250,7 @@ const SessionDM = () => {
 
     toast({
       title: "Save Prompt Sent",
-      description: `All players must make a ${ability} save (DC ${dc})`,
+      description: `${data.targetScope === 'party' ? 'Party' : 'All combatants'} must make a ${data.ability} save (DC ${data.dc})`,
     });
   };
 
@@ -527,6 +444,11 @@ const SessionDM = () => {
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}
                 />
                 <ConcentrationTracker encounterId={activeEncounter.id} />
+                <ConditionsManager
+                  encounterId={activeEncounter.id}
+                  currentRound={activeEncounter.current_round}
+                  characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                />
                 <EffectsList encounterId={activeEncounter.id} />
                 <CombatLog encounterId={activeEncounter.id} />
               </>

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -29,23 +30,55 @@ const ABILITIES = [
   { value: "CHA", label: "Charisma" },
 ];
 
+const TARGET_SCOPES = [
+  { value: "party", label: "All Party Members" },
+  { value: "all", label: "All Combatants" },
+  { value: "custom", label: "Custom Selection" },
+];
+
+const ADVANTAGE_MODES = [
+  { value: "normal", label: "Normal" },
+  { value: "advantage", label: "Advantage" },
+  { value: "disadvantage", label: "Disadvantage" },
+];
+
 interface SavePromptDialogProps {
   encounterId: string;
-  onPromptSave: (ability: string, dc: number, description: string) => void;
+  onPromptSave: (data: {
+    ability: string;
+    dc: number;
+    description: string;
+    targetScope: string;
+    advantageMode: string;
+    halfOnSuccess: boolean;
+  }) => void;
 }
 
 const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
   const [ability, setAbility] = useState("DEX");
   const [dc, setDc] = useState("");
   const [description, setDescription] = useState("");
+  const [targetScope, setTargetScope] = useState("party");
+  const [advantageMode, setAdvantageMode] = useState("normal");
+  const [halfOnSuccess, setHalfOnSuccess] = useState(false);
   const [open, setOpen] = useState(false);
 
   const handleSubmit = () => {
     const dcNum = parseInt(dc);
     if (ability && dcNum && description) {
-      onPromptSave(ability, dcNum, description);
+      onPromptSave({
+        ability,
+        dc: dcNum,
+        description,
+        targetScope,
+        advantageMode,
+        halfOnSuccess,
+      });
       setDc("");
       setDescription("");
+      setTargetScope("party");
+      setAdvantageMode("normal");
+      setHalfOnSuccess(false);
       setOpen(false);
     }
   };
@@ -62,10 +95,26 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
         <DialogHeader>
           <DialogTitle>Request Saving Throw</DialogTitle>
           <DialogDescription>
-            All players will be prompted to make a saving throw.
+            Configure and send a saving throw to players.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Target Scope</Label>
+            <Select value={targetScope} onValueChange={setTargetScope}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TARGET_SCOPES.map((scope) => (
+                  <SelectItem key={scope.value} value={scope.value}>
+                    {scope.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="ability">Ability</Label>
             <Select value={ability} onValueChange={setAbility}>
@@ -81,6 +130,7 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="dc">DC (Difficulty Class)</Label>
             <Input
@@ -93,6 +143,32 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
               placeholder="15"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>Roll Mode</Label>
+            <Select value={advantageMode} onValueChange={setAdvantageMode}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ADVANTAGE_MODES.map((mode) => (
+                  <SelectItem key={mode.value} value={mode.value}>
+                    {mode.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="half-damage">Half Damage on Success</Label>
+            <Switch
+              id="half-damage"
+              checked={halfOnSuccess}
+              onCheckedChange={setHalfOnSuccess}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -103,6 +179,7 @@ const SavePromptDialog = ({ onPromptSave }: SavePromptDialogProps) => {
               rows={3}
             />
           </div>
+
           <Button onClick={handleSubmit} className="w-full">
             Send Save Prompt
           </Button>

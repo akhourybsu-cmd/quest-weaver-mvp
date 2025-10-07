@@ -29,6 +29,9 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
 
     try {
@@ -39,7 +42,13 @@ const Auth = () => {
       if (!validation.success) {
         const firstError = validation.error.issues[0];
         console.error("Validation error:", firstError);
-        throw new Error(firstError.message);
+        setLoading(false);
+        toast({
+          title: "Validation error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        return;
       }
 
       console.log("Validation passed, attempting", isLogin ? "sign in" : "sign up");

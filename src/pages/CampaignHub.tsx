@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle } from "lucide-react";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
+import { Badge } from "@/components/ui/badge";
+
+interface Campaign {
+  id: string;
+  name: string;
+  code: string;
+  player_count: number;
+}
 
 const CampaignHub = () => {
   const navigate = useNavigate();
@@ -18,9 +26,68 @@ const CampaignHub = () => {
   const [loading, setLoading] = useState(false);
   const [showCharacterCreation, setShowCharacterCreation] = useState(false);
   const [joinedCampaignId, setJoinedCampaignId] = useState<string | null>(null);
+  const [myCampaigns, setMyCampaigns] = useState<Campaign[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(true);
+
+  useEffect(() => {
+    fetchMyCampaigns();
+  }, []);
+
+  const fetchMyCampaigns = async () => {
+    setLoadingCampaigns(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: campaigns, error } = await supabase
+        .from("campaigns")
+        .select("id, name, code")
+        .eq("dm_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch player count for each campaign
+      const campaignsWithCounts = await Promise.all(
+        (campaigns || []).map(async (campaign) => {
+          const { count } = await supabase
+            .from("characters")
+            .select("*", { count: "exact", head: true })
+            .eq("campaign_id", campaign.id);
+
+          return {
+            ...campaign,
+            player_count: count || 0,
+          };
+        })
+      );
+
+      setMyCampaigns(campaignsWithCounts);
+    } catch (error: any) {
+      toast({
+        title: "Error loading campaigns",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCampaigns(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Code copied!",
+      description: `Campaign code ${code} copied to clipboard`,
+    });
+  };
+
+  const handleContinueCampaign = (campaignId: string) => {
+    navigate(`/session/dm?campaign=${campaignId}`);
   };
 
   const handleCreateCampaign = async () => {
@@ -46,6 +113,7 @@ const CampaignHub = () => {
         title: "Campaign created!",
         description: `Campaign code: ${code}`,
       });
+      fetchMyCampaigns(); // Refresh the list
       navigate(`/session/dm?campaign=${data.id}`);
     } catch (error: any) {
       toast({
@@ -166,6 +234,61 @@ const CampaignHub = () => {
 
               {/* DM Tab */}
               <TabsContent value="dm" className="space-y-6">
+                {/* Existing Campaigns */}
+                {loadingCampaigns ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading your campaigns...
+                  </div>
+                ) : myCampaigns.length > 0 ? (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">Your Campaigns</h3>
+                    <div className="space-y-2">
+                      {myCampaigns.map((campaign) => (
+                        <Card key={campaign.id} className="shadow-sm">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate">{campaign.name}</h4>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <button
+                                    onClick={() => handleCopyCode(campaign.code)}
+                                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <span className="font-mono font-bold">{campaign.code}</span>
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                  <Badge variant="secondary" className="text-xs">
+                                    <Users className="w-3 h-3 mr-1" />
+                                    {campaign.player_count} {campaign.player_count === 1 ? 'player' : 'players'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => handleContinueCampaign(campaign.id)}
+                                size="sm"
+                              >
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                Continue
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Or create new
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Create New Campaign */}
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="campaign-name" className="text-base">

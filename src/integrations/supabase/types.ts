@@ -107,6 +107,61 @@ export type Database = {
         }
         Relationships: []
       }
+      character_conditions: {
+        Row: {
+          character_id: string
+          condition: string
+          created_at: string | null
+          encounter_id: string
+          ends_at_round: number | null
+          id: string
+          source_effect_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          character_id: string
+          condition: string
+          created_at?: string | null
+          encounter_id: string
+          ends_at_round?: number | null
+          id?: string
+          source_effect_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          character_id?: string
+          condition?: string
+          created_at?: string | null
+          encounter_id?: string
+          ends_at_round?: number | null
+          id?: string
+          source_effect_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_conditions_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_conditions_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_conditions_source_effect_id_fkey"
+            columns: ["source_effect_id"]
+            isOneToOne: false
+            referencedRelation: "effects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
           ac: number
@@ -202,6 +257,7 @@ export type Database = {
       combat_log: {
         Row: {
           action_type: string
+          amount: number | null
           character_id: string | null
           created_at: string | null
           details: Json | null
@@ -212,6 +268,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          amount?: number | null
           character_id?: string | null
           created_at?: string | null
           details?: Json | null
@@ -222,6 +279,7 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          amount?: number | null
           character_id?: string | null
           created_at?: string | null
           details?: Json | null
@@ -456,26 +514,32 @@ export type Database = {
         Row: {
           character_id: string | null
           created_at: string | null
+          dex_modifier: number | null
           encounter_id: string | null
           id: string
           initiative_roll: number
           is_current_turn: boolean | null
+          passive_perception: number | null
         }
         Insert: {
           character_id?: string | null
           created_at?: string | null
+          dex_modifier?: number | null
           encounter_id?: string | null
           id?: string
           initiative_roll: number
           is_current_turn?: boolean | null
+          passive_perception?: number | null
         }
         Update: {
           character_id?: string | null
           created_at?: string | null
+          dex_modifier?: number | null
           encounter_id?: string | null
           id?: string
           initiative_roll?: number
           is_current_turn?: boolean | null
+          passive_perception?: number | null
         }
         Relationships: [
           {
@@ -792,30 +856,45 @@ export type Database = {
       save_prompts: {
         Row: {
           ability: Database["public"]["Enums"]["ability_score"]
+          advantage_mode: string | null
           created_at: string | null
           dc: number
           description: string
           encounter_id: string | null
+          expires_at: string | null
+          half_on_success: boolean | null
           id: string
+          status: string
           target_character_ids: string[] | null
+          target_scope: string | null
         }
         Insert: {
           ability: Database["public"]["Enums"]["ability_score"]
+          advantage_mode?: string | null
           created_at?: string | null
           dc: number
           description: string
           encounter_id?: string | null
+          expires_at?: string | null
+          half_on_success?: boolean | null
           id?: string
+          status?: string
           target_character_ids?: string[] | null
+          target_scope?: string | null
         }
         Update: {
           ability?: Database["public"]["Enums"]["ability_score"]
+          advantage_mode?: string | null
           created_at?: string | null
           dc?: number
           description?: string
           encounter_id?: string | null
+          expires_at?: string | null
+          half_on_success?: boolean | null
           id?: string
+          status?: string
           target_character_ids?: string[] | null
+          target_scope?: string | null
         }
         Relationships: [
           {

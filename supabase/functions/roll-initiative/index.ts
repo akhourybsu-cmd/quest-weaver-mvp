@@ -1,0 +1,109 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { encounterId, characterIds } = await req.json();
+
+    // Validate DM authority
+    const { data: encounter } = await supabase
+      .from('encounters')
+      .select(`
+        campaign_id,
+        campaigns!inner(dm_user_id)
+      `)
+      .eq('id', encounterId)
+      .single();
+
+    const dmUserId = encounter?.campaigns?.[0]?.dm_user_id || encounter?.campaigns?.dm_user_id;
+    if (!encounter || dmUserId !== user.id) {
+      return new Response(JSON.stringify({ error: 'Only DM can roll initiative' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch characters
+    const { data: characters, error: charError } = await supabase
+      .from('characters')
+      .select('id, name, initiative_bonus, dex_save, passive_perception')
+      .in('id', characterIds);
+
+    if (charError || !characters) {
+      throw new Error('Characters not found');
+    }
+
+    // Roll initiative for each character
+    const initiativeEntries = characters.map((char) => {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const initiativeBonus = char.initiative_bonus ?? Math.floor((char.dex_save || 0) / 2); // fallback to dex save
+      const total = roll + initiativeBonus;
+
+      return {
+        encounter_id: encounterId,
+        character_id: char.id,
+        initiative_roll: total,
+        dex_modifier: initiativeBonus,
+        passive_perception: char.passive_perception || 10,
+        is_current_turn: false,
+      };
+    });
+
+    // Sort by initiative (desc), then dex mod (desc), then passive perception (desc)
+    initiativeEntries.sort((a, b) => {
+      if (b.initiative_roll !== a.initiative_roll) return b.initiative_roll - a.initiative_roll;
+      if (b.dex_modifier !== a.dex_modifier) return b.dex_modifier - a.dex_modifier;
+      return b.passive_perception - a.passive_perception;
+    });
+
+    // Mark first as current turn
+    if (initiativeEntries.length > 0) {
+      initiativeEntries[0].is_current_turn = true;
+    }
+
+    // Clear existing initiative
+    await supabase.from('initiative').delete().eq('encounter_id', encounterId);
+
+    // Insert new initiative
+    const { error: insertError } = await supabase
+      .from('initiative')
+      .insert(initiativeEntries);
+
+    if (insertError) throw insertError;
+
+    return new Response(
+      JSON.stringify({ success: true, initiative: initiativeEntries }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in roll-initiative:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

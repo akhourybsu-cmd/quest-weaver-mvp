@@ -1,8 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { validateInput, DamageSchema, HealingSchema, InitiativeSchema } from "@/lib/validation";
 
 export const useCombatActions = () => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const applyDamage = async (
     characterId: string,
@@ -11,15 +14,31 @@ export const useCombatActions = () => {
     encounterId: string,
     currentRound: number
   ) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
+      // Validate input
+      const validation = validateInput(DamageSchema, {
+        characterId,
+        amount,
+        damageType,
+        encounterId,
+        currentRound,
+      });
+
+      if (!validation.success) {
+        toast({
+          title: "Invalid input",
+          description: validation.error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('apply-damage', {
-        body: {
-          characterId,
-          amount,
-          damageType,
-          encounterId,
-          currentRound,
-        },
+        body: validation.data,
       });
 
       if (error) throw error;
@@ -38,6 +57,8 @@ export const useCombatActions = () => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,14 +68,29 @@ export const useCombatActions = () => {
     encounterId: string,
     currentRound: number
   ) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
+      const validation = validateInput(HealingSchema, {
+        characterId,
+        amount,
+        encounterId,
+        currentRound,
+      });
+
+      if (!validation.success) {
+        toast({
+          title: "Invalid input",
+          description: validation.error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('apply-healing', {
-        body: {
-          characterId,
-          amount,
-          encounterId,
-          currentRound,
-        },
+        body: validation.data,
       });
 
       if (error) throw error;
@@ -73,16 +109,33 @@ export const useCombatActions = () => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const rollInitiative = async (encounterId: string, characterIds: string[]) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
+      const validation = validateInput(InitiativeSchema, {
+        encounterId,
+        characterIds,
+      });
+
+      if (!validation.success) {
+        toast({
+          title: "Invalid input",
+          description: validation.error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('roll-initiative', {
-        body: {
-          encounterId,
-          characterIds,
-        },
+        body: validation.data,
       });
 
       if (error) throw error;
@@ -101,10 +154,15 @@ export const useCombatActions = () => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const advanceTurn = async (encounterId: string) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
       const { data, error } = await supabase.functions.invoke('advance-turn', {
         body: { encounterId },
@@ -126,6 +184,8 @@ export const useCombatActions = () => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,6 +195,9 @@ export const useCombatActions = () => {
     effectData?: any,
     effectId?: string
   ) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
       const { data, error } = await supabase.functions.invoke('manage-effect', {
         body: {
@@ -160,6 +223,8 @@ export const useCombatActions = () => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -169,5 +234,6 @@ export const useCombatActions = () => {
     rollInitiative,
     advanceTurn,
     manageEffect,
+    isLoading,
   };
 };

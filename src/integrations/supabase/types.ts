@@ -814,6 +814,7 @@ export type Database = {
           senses: Json | null
           size: Database["public"]["Enums"]["monster_size"]
           skills: Json | null
+          slug: string | null
           source: string
           speed: Json
           traits: Json | null
@@ -843,6 +844,7 @@ export type Database = {
           senses?: Json | null
           size: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
+          slug?: string | null
           source?: string
           speed?: Json
           traits?: Json | null
@@ -872,6 +874,7 @@ export type Database = {
           senses?: Json | null
           size?: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
+          slug?: string | null
           source?: string
           speed?: Json
           traits?: Json | null

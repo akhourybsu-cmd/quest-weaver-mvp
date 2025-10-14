@@ -98,8 +98,8 @@ serve(async (req) => {
       return {
         slug: m.slug,
         name: m.name,
-        type: m.type,
-        size: m.size,
+        type: m.type.toLowerCase(),
+        size: m.size.toLowerCase(),
         alignment: m.alignment || null,
         cr: parseFloat(m.challenge_rating) || 0,
         ac,

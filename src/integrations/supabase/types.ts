@@ -390,6 +390,116 @@ export type Database = {
           },
         ]
       }
+      encounter_monsters: {
+        Row: {
+          abilities: Json
+          ac: number
+          actions: Json | null
+          created_at: string | null
+          display_name: string
+          encounter_id: string
+          group_key: string
+          hp_current: number
+          hp_max: number
+          id: string
+          immunities: Json | null
+          initiative: number
+          initiative_bonus: number
+          is_current_turn: boolean | null
+          languages: string | null
+          legendary_actions: Json | null
+          name: string
+          order_tiebreak: number
+          reactions: Json | null
+          resistances: Json | null
+          saves: Json | null
+          senses: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills: Json | null
+          source_monster_id: string
+          source_type: Database["public"]["Enums"]["monster_source_type"]
+          speed: Json
+          traits: Json | null
+          type: string
+          updated_at: string | null
+          vulnerabilities: Json | null
+        }
+        Insert: {
+          abilities: Json
+          ac: number
+          actions?: Json | null
+          created_at?: string | null
+          display_name: string
+          encounter_id: string
+          group_key: string
+          hp_current: number
+          hp_max: number
+          id?: string
+          immunities?: Json | null
+          initiative?: number
+          initiative_bonus?: number
+          is_current_turn?: boolean | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name: string
+          order_tiebreak?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          source_monster_id: string
+          source_type: Database["public"]["Enums"]["monster_source_type"]
+          speed?: Json
+          traits?: Json | null
+          type: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Update: {
+          abilities?: Json
+          ac?: number
+          actions?: Json | null
+          created_at?: string | null
+          display_name?: string
+          encounter_id?: string
+          group_key?: string
+          hp_current?: number
+          hp_max?: number
+          id?: string
+          immunities?: Json | null
+          initiative?: number
+          initiative_bonus?: number
+          is_current_turn?: boolean | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name?: string
+          order_tiebreak?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size?: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          source_monster_id?: string
+          source_type?: Database["public"]["Enums"]["monster_source_type"]
+          speed?: Json
+          traits?: Json | null
+          type?: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_monsters_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encounters: {
         Row: {
           campaign_id: string | null
@@ -681,6 +791,200 @@ export type Database = {
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monster_catalog: {
+        Row: {
+          abilities: Json
+          ac: number
+          actions: Json | null
+          alignment: string | null
+          cr: number | null
+          created_at: string | null
+          hp_avg: number
+          hp_formula: string | null
+          id: string
+          immunities: Json | null
+          lair_actions: Json | null
+          languages: string | null
+          legendary_actions: Json | null
+          name: string
+          proficiency_bonus: number
+          reactions: Json | null
+          resistances: Json | null
+          saves: Json | null
+          senses: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills: Json | null
+          source: string
+          speed: Json
+          traits: Json | null
+          type: string
+          updated_at: string | null
+          vulnerabilities: Json | null
+        }
+        Insert: {
+          abilities?: Json
+          ac: number
+          actions?: Json | null
+          alignment?: string | null
+          cr?: number | null
+          created_at?: string | null
+          hp_avg: number
+          hp_formula?: string | null
+          id?: string
+          immunities?: Json | null
+          lair_actions?: Json | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name: string
+          proficiency_bonus?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          source?: string
+          speed?: Json
+          traits?: Json | null
+          type: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Update: {
+          abilities?: Json
+          ac?: number
+          actions?: Json | null
+          alignment?: string | null
+          cr?: number | null
+          created_at?: string | null
+          hp_avg?: number
+          hp_formula?: string | null
+          id?: string
+          immunities?: Json | null
+          lair_actions?: Json | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name?: string
+          proficiency_bonus?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size?: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          source?: string
+          speed?: Json
+          traits?: Json | null
+          type?: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Relationships: []
+      }
+      monster_homebrew: {
+        Row: {
+          abilities: Json
+          ac: number
+          actions: Json | null
+          alignment: string | null
+          campaign_id: string | null
+          cr: number | null
+          created_at: string | null
+          hp_avg: number
+          hp_formula: string | null
+          id: string
+          immunities: Json | null
+          is_published: boolean | null
+          lair_actions: Json | null
+          languages: string | null
+          legendary_actions: Json | null
+          name: string
+          owner_user_id: string
+          proficiency_bonus: number
+          reactions: Json | null
+          resistances: Json | null
+          saves: Json | null
+          senses: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills: Json | null
+          speed: Json
+          traits: Json | null
+          type: string
+          updated_at: string | null
+          vulnerabilities: Json | null
+        }
+        Insert: {
+          abilities?: Json
+          ac: number
+          actions?: Json | null
+          alignment?: string | null
+          campaign_id?: string | null
+          cr?: number | null
+          created_at?: string | null
+          hp_avg: number
+          hp_formula?: string | null
+          id?: string
+          immunities?: Json | null
+          is_published?: boolean | null
+          lair_actions?: Json | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name: string
+          owner_user_id: string
+          proficiency_bonus?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          speed?: Json
+          traits?: Json | null
+          type: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Update: {
+          abilities?: Json
+          ac?: number
+          actions?: Json | null
+          alignment?: string | null
+          campaign_id?: string | null
+          cr?: number | null
+          created_at?: string | null
+          hp_avg?: number
+          hp_formula?: string | null
+          id?: string
+          immunities?: Json | null
+          is_published?: boolean | null
+          lair_actions?: Json | null
+          languages?: string | null
+          legendary_actions?: Json | null
+          name?: string
+          owner_user_id?: string
+          proficiency_bonus?: number
+          reactions?: Json | null
+          resistances?: Json | null
+          saves?: Json | null
+          senses?: Json | null
+          size?: Database["public"]["Enums"]["monster_size"]
+          skills?: Json | null
+          speed?: Json
+          traits?: Json | null
+          type?: string
+          updated_at?: string | null
+          vulnerabilities?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monster_homebrew_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -1090,6 +1394,14 @@ export type Database = {
         | "slashing"
         | "thunder"
       effect_tick_timing: "start" | "end" | "round"
+      monster_size:
+        | "tiny"
+        | "small"
+        | "medium"
+        | "large"
+        | "huge"
+        | "gargantuan"
+      monster_source_type: "catalog" | "homebrew"
       save_prompt_status: "active" | "resolved" | "expired"
       target_scope_enum: "party" | "all" | "custom"
     }
@@ -1259,6 +1571,8 @@ export const Constants = {
         "thunder",
       ],
       effect_tick_timing: ["start", "end", "round"],
+      monster_size: ["tiny", "small", "medium", "large", "huge", "gargantuan"],
+      monster_source_type: ["catalog", "homebrew"],
       save_prompt_status: ["active", "resolved", "expired"],
       target_scope_enum: ["party", "all", "custom"],
     },

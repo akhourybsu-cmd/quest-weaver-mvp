@@ -19,6 +19,8 @@ import SavePromptDialog from "@/components/combat/SavePromptDialog";
 import SavePromptsList from "@/components/combat/SavePromptsList";
 import DamageInput from "@/components/combat/DamageInput";
 import EffectDialog from "@/components/combat/EffectDialog";
+import MonsterLibraryDialog from "@/components/monsters/MonsterLibraryDialog";
+import MonsterRoster from "@/components/monsters/MonsterRoster";
 
 interface Character {
   id: string;
@@ -330,7 +332,7 @@ const SessionDM = () => {
               <Swords className="w-4 h-4 mr-2" />
               Combat
             </TabsTrigger>
-            <TabsTrigger value="map" onClick={() => navigate(`/map?campaignId=${campaignId}${activeEncounter ? `&encounterId=${activeEncounter.id}` : ''}`)}>
+            <TabsTrigger value="map">
               <Map className="w-4 h-4 mr-2" />
               Map
             </TabsTrigger>
@@ -443,6 +445,10 @@ const SessionDM = () => {
             {activeEncounter && (
               <>
                 <div className="flex gap-2">
+                  <MonsterLibraryDialog 
+                    encounterId={activeEncounter.id}
+                    onMonstersAdded={fetchCampaignData}
+                  />
                   <SavePromptDialog
                     encounterId={activeEncounter.id}
                     onPromptSave={handlePromptSave}
@@ -454,6 +460,10 @@ const SessionDM = () => {
                   />
                 </div>
                 <SavePromptsList encounterId={activeEncounter.id} />
+                <MonsterRoster 
+                  encounterId={activeEncounter.id}
+                  currentRound={activeEncounter.current_round}
+                />
                 <InitiativeTracker
                   encounterId={activeEncounter.id}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}
@@ -468,6 +478,21 @@ const SessionDM = () => {
                 <CombatLog encounterId={activeEncounter.id} />
               </>
             )}
+          </TabsContent>
+
+          {/* Map Tab */}
+          <TabsContent value="map">
+            <Card>
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={() => navigate(`/map?campaignId=${campaignId}${activeEncounter ? `&encounterId=${activeEncounter.id}` : ''}`)}
+                  className="w-full"
+                >
+                  <Map className="w-4 h-4 mr-2" />
+                  Open Battle Map
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

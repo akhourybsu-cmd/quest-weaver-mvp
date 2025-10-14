@@ -94,7 +94,7 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
         // Handle attack roll
         const attack = autoMode 
           ? Math.floor(Math.random() * 20) + 1 + parsedAction.attackBonus
-          : parseInt(attackRoll);
+          : parseInt(attackRoll) + parsedAction.attackBonus;
 
         const hit = attack >= target.ac;
 
@@ -324,10 +324,10 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
                   {!autoMode && parseAction(selectedAction).isAttack && (
                     <div className="space-y-2">
                       <div>
-                        <Label>Attack Roll</Label>
+                        <Label>Attack Roll (d20 only)</Label>
                         <Input
                           type="number"
-                          placeholder="Enter roll result..."
+                          placeholder="Enter d20 result (bonus added automatically)..."
                           value={attackRoll}
                           onChange={(e) => setAttackRoll(e.target.value)}
                         />

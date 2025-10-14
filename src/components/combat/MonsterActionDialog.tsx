@@ -105,30 +105,43 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
 
         if (hit) {
           // Attack hits!
-          if (parsedAction.damageDice) {
-            const damage = autoMode
-              ? rollDice(parsedAction.damageDice)
-              : parseInt(damageRoll);
+          if (parsedAction.damageDice || (!autoMode && damageRoll)) {
+            // Calculate damage based on mode
+            let damage = 0;
+            if (autoMode && parsedAction.damageDice) {
+              damage = rollDice(parsedAction.damageDice);
+            } else if (!autoMode && damageRoll) {
+              damage = parseInt(damageRoll);
+            } else if (!autoMode && !damageRoll) {
+              toast({
+                title: "Missing Damage",
+                description: "Please enter the damage roll amount",
+                variant: "destructive",
+              });
+              return;
+            }
 
-            // Apply damage via edge function
-            const { error } = await supabase.functions.invoke('apply-damage', {
-              body: {
-                characterId: target.id,
-                amount: damage,
-                damageType: parsedAction.damageType,
-                encounterId,
-                currentRound: 1, // You may want to pass current round from props
-              }
-            });
+            if (damage > 0) {
+              // Apply damage via edge function
+              const { error } = await supabase.functions.invoke('apply-damage', {
+                body: {
+                  characterId: target.id,
+                  amount: damage,
+                  damageType: parsedAction.damageType,
+                  encounterId,
+                  currentRound: 1,
+                }
+              });
 
-            if (error) throw error;
+              if (error) throw error;
 
-            toast({
-              title: "Attack Hit!",
-              description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${targetAC})`,
-            });
+              toast({
+                title: "Attack Hit!",
+                description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${targetAC})`,
+              });
+            }
           } else {
-            // Hit but no damage dice found - might be special attack
+            // Hit but no damage dice found and not manual - might be special attack
             toast({
               title: "Attack Hit!",
               description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} (Attack: ${attack} vs AC ${targetAC}). Manually apply damage if needed.`,

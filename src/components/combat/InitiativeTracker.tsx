@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, Plus, X, Heart, Shield, Dices, Swords } from "lucide-react";
+import { ChevronRight, Plus, X, Heart, Shield, Dices, Swords, BookOpen, Zap } from "lucide-react";
 import { useEncounter } from "@/hooks/useEncounter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCombatActions } from "@/hooks/useCombatActions";
+import MonsterDetailDialog from "@/components/monsters/MonsterDetailDialog";
+import MonsterActionDialog from "@/components/combat/MonsterActionDialog";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -28,6 +30,10 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   const [availableCombatants, setAvailableCombatants] = useState<Combatant[]>([]);
   const [selectedCombatants, setSelectedCombatants] = useState<Set<string>>(new Set());
   const [manualRolls, setManualRolls] = useState<Record<string, string>>({});
+  const [selectedMonsterForDetail, setSelectedMonsterForDetail] = useState<any>(null);
+  const [selectedMonsterForAction, setSelectedMonsterForAction] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const { rollInitiative } = useCombatActions();
   const { toast } = useToast();
 
@@ -192,8 +198,62 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     setTimeout(handleRollInitiative, 100);
   };
 
+  const handleViewMonsterDetail = async (combatantId: string, combatantType: string) => {
+    if (combatantType !== 'monster') return;
+
+    const { data: monster } = await supabase
+      .from('encounter_monsters')
+      .select('*')
+      .eq('id', combatantId)
+      .single();
+
+    if (monster) {
+      setSelectedMonsterForDetail(monster);
+      setDetailDialogOpen(true);
+    }
+  };
+
+  const handleOpenMonsterActions = async (combatantId: string, combatantType: string) => {
+    if (combatantType !== 'monster') return;
+
+    const { data: monster } = await supabase
+      .from('encounter_monsters')
+      .select('*')
+      .eq('id', combatantId)
+      .single();
+
+    if (monster) {
+      setSelectedMonsterForAction(monster);
+      setActionDialogOpen(true);
+    }
+  };
+
+  // Get available targets for monster actions
+  const getActionTargets = () => {
+    return initiative
+      .filter(entry => entry.combatant_type === 'character' && entry.combatant_stats)
+      .map(entry => ({
+        id: entry.combatant_id,
+        name: entry.combatant_name || "Unknown",
+        ac: entry.combatant_stats?.ac || 10
+      }));
+  };
+
   return (
-    <Card>
+    <>
+      <MonsterDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        monster={selectedMonsterForDetail}
+      />
+      <MonsterActionDialog
+        open={actionDialogOpen}
+        onOpenChange={setActionDialogOpen}
+        monster={selectedMonsterForAction}
+        encounterId={encounterId}
+        targets={getActionTargets()}
+      />
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Initiative Order - Round {currentRound}</CardTitle>
@@ -281,14 +341,23 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       : "bg-muted/50 border-transparent"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Badge variant="secondary" className="text-lg font-bold w-10 justify-center">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Badge variant="secondary" className="text-lg font-bold w-10 justify-center shrink-0">
                         {entry.initiative_roll}
                       </Badge>
-                      <div className="flex-1">
-                        <div className="font-semibold flex items-center gap-2">
-                          {entry.combatant_name || "Unknown"}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold flex items-center gap-2 flex-wrap">
+                          {entry.combatant_type === 'monster' ? (
+                            <button
+                              onClick={() => handleViewMonsterDetail(entry.combatant_id, entry.combatant_type)}
+                              className="hover:text-primary transition-colors hover:underline text-left"
+                            >
+                              {entry.combatant_name || "Unknown"}
+                            </button>
+                          ) : (
+                            <span>{entry.combatant_name || "Unknown"}</span>
+                          )}
                           <Badge variant="outline" className="text-xs">
                             {entry.combatant_type === 'character' ? 'PC' : 'NPC'}
                           </Badge>
@@ -312,13 +381,35 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFromInitiative(entry.id)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {entry.combatant_type === 'monster' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewMonsterDetail(entry.combatant_id, entry.combatant_type)}
+                            title="View Monster Details"
+                          >
+                            <BookOpen className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenMonsterActions(entry.combatant_id, entry.combatant_type)}
+                            title="Use Monster Actions"
+                          >
+                            <Zap className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFromInitiative(entry.id)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -327,6 +418,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         </ScrollArea>
       </CardContent>
     </Card>
+    </>
   );
 };
 

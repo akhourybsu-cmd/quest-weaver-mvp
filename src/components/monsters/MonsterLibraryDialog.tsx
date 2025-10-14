@@ -20,6 +20,10 @@ interface Monster {
   ac: number;
   hp_avg: number;
   abilities: any;
+  actions?: any[];
+  traits?: any[];
+  reactions?: any[];
+  legendary_actions?: any[];
 }
 
 interface MonsterLibraryDialogProps {
@@ -47,14 +51,14 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
   const fetchMonsters = async () => {
     setLoading(true);
     
-    const { data: catalog } = await supabase
+  const { data: catalog } = await supabase
       .from("monster_catalog")
-      .select("id, name, type, size, cr, ac, hp_avg, abilities")
+      .select("*")
       .order("name");
 
     const { data: homebrew } = await supabase
       .from("monster_homebrew")
-      .select("id, name, type, size, cr, ac, hp_avg, abilities")
+      .select("*")
       .order("name");
 
     setCatalogMonsters((catalog || []) as Monster[]);
@@ -304,6 +308,44 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
                         </div>
                       </div>
                     </div>
+
+                    {/* Actions Preview */}
+                    {selectedMonster.actions && selectedMonster.actions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Actions ({selectedMonster.actions.length})</h4>
+                        <div className="space-y-1 text-xs">
+                          {selectedMonster.actions.slice(0, 3).map((action: any, idx: number) => (
+                            <div key={idx} className="p-2 border rounded">
+                              <span className="font-semibold">{action.name}</span>
+                            </div>
+                          ))}
+                          {selectedMonster.actions.length > 3 && (
+                            <p className="text-muted-foreground text-center pt-1">
+                              +{selectedMonster.actions.length - 3} more actions...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Traits Preview */}
+                    {selectedMonster.traits && selectedMonster.traits.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Special Traits ({selectedMonster.traits.length})</h4>
+                        <div className="space-y-1 text-xs">
+                          {selectedMonster.traits.slice(0, 2).map((trait: any, idx: number) => (
+                            <div key={idx} className="p-2 border rounded">
+                              <span className="font-semibold">{trait.name}</span>
+                            </div>
+                          ))}
+                          {selectedMonster.traits.length > 2 && (
+                            <p className="text-muted-foreground text-center pt-1">
+                              +{selectedMonster.traits.length - 2} more traits...
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
 

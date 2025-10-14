@@ -96,7 +96,11 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
           ? Math.floor(Math.random() * 20) + 1 + parsedAction.attackBonus
           : parseInt(attackRoll) + parsedAction.attackBonus;
 
-        const targetAC = parseInt(String(target.ac).replace(/\D/g, '')) || 0;
+        // Ensure AC is a number - handle string or object cases
+        const targetAC = typeof target.ac === 'number' ? target.ac : parseInt(String(target.ac)) || 10;
+        
+        console.log('Attack comparison:', { attack, targetAC, rawAC: target.ac, hit: attack >= targetAC });
+        
         const hit = attack >= targetAC;
 
         if (hit && parsedAction.damageDice) {

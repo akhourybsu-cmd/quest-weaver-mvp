@@ -120,22 +120,24 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
       }`}
       onClick={() => setSelectedMonster(monster)}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
-          <div>
-            <h4 className="font-semibold">{monster.name}</h4>
-            <p className="text-sm text-muted-foreground capitalize">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold truncate">{monster.name}</h4>
+            <p className="text-xs text-muted-foreground capitalize truncate">
               {monster.size} {monster.type}
             </p>
           </div>
-          {monster.cr !== null && (
-            <Badge variant="outline">CR {monster.cr}</Badge>
-          )}
+          <div className="flex flex-col items-end gap-1 ml-2">
+            {monster.cr !== null && (
+              <Badge variant="outline" className="text-xs">CR {monster.cr}</Badge>
+            )}
+          </div>
         </div>
-        <div className="flex gap-4 text-sm">
-          <span>AC {monster.ac}</span>
-          <span>HP {monster.hp_avg}</span>
-          <span>DEX {calculateModifier(monster.abilities.dex) >= 0 ? '+' : ''}{calculateModifier(monster.abilities.dex)}</span>
+        <div className="flex gap-3 text-xs">
+          <span className="text-muted-foreground">AC {monster.ac}</span>
+          <span className="text-muted-foreground">HP {monster.hp_avg}</span>
+          <span className="text-muted-foreground">Init {calculateModifier(monster.abilities.dex) >= 0 ? '+' : ''}{calculateModifier(monster.abilities.dex)}</span>
         </div>
       </CardContent>
     </Card>
@@ -149,15 +151,15 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
           Add Monsters
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle>Monster Library</DialogTitle>
             <MonsterImportDialog />
           </div>
         </DialogHeader>
 
-        <div className="flex gap-4 h-[600px]">
+        <div className="flex gap-4 flex-1 overflow-hidden px-6 pb-6">
           {/* Monster List */}
           <div className="flex-1 space-y-4">
             <div className="relative">
@@ -217,57 +219,95 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
           </div>
 
           {/* Preview & Add Panel */}
-          <div className="w-80 border-l border-border pl-4 flex flex-col">
+          <div className="w-96 border-l border-border pl-4 flex flex-col overflow-hidden">
             {selectedMonster ? (
               <>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{selectedMonster.name}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {selectedMonster.size} {selectedMonster.type}
-                    </p>
-                  </div>
+                <ScrollArea className="flex-1 pr-3">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold text-xl mb-1">{selectedMonster.name}</h3>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {selectedMonster.size} {selectedMonster.type}
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Armor Class</span>
-                      <span className="font-semibold">{selectedMonster.ac}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Hit Points</span>
-                      <span className="font-semibold">{selectedMonster.hp_avg}</span>
-                    </div>
-                    {selectedMonster.cr !== null && (
+                    <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Challenge</span>
-                        <span className="font-semibold">CR {selectedMonster.cr}</span>
+                        <span className="text-muted-foreground">Armor Class</span>
+                        <span className="font-semibold">{selectedMonster.ac}</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Hit Points</span>
+                        <span className="font-semibold">{selectedMonster.hp_avg}</span>
+                      </div>
+                      {selectedMonster.cr !== null && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Challenge Rating</span>
+                          <span className="font-semibold">CR {selectedMonster.cr}</span>
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                    <div>
-                      <div className="text-muted-foreground">STR</div>
-                      <div className="font-semibold">
-                        {selectedMonster.abilities.str} ({calculateModifier(selectedMonster.abilities.str) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.str)})
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs border rounded-lg p-2">
+                      <div>
+                        <div className="text-muted-foreground font-medium">STR</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.str}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.str) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.str)})
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">DEX</div>
-                      <div className="font-semibold">
-                        {selectedMonster.abilities.dex} ({calculateModifier(selectedMonster.abilities.dex) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.dex)})
+                      <div>
+                        <div className="text-muted-foreground font-medium">DEX</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.dex}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.dex) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.dex)})
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">CON</div>
-                      <div className="font-semibold">
-                        {selectedMonster.abilities.con} ({calculateModifier(selectedMonster.abilities.con) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.con)})
+                      <div>
+                        <div className="text-muted-foreground font-medium">CON</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.con}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.con) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.con)})
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground font-medium">INT</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.int}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.int) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.int)})
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground font-medium">WIS</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.wis}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.wis) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.wis)})
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground font-medium">CHA</div>
+                        <div className="font-bold text-base">
+                          {selectedMonster.abilities.cha}
+                          <div className="text-xs text-muted-foreground">
+                            ({calculateModifier(selectedMonster.abilities.cha) >= 0 ? '+' : ''}{calculateModifier(selectedMonster.abilities.cha)})
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </ScrollArea>
 
-                <div className="space-y-3 pt-4 border-t border-border">
+                <div className="space-y-3 pt-4 mt-4 border-t border-border">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quantity</label>
                     <Input

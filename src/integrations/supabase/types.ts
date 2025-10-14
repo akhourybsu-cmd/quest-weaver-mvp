@@ -623,6 +623,7 @@ export type Database = {
       initiative: {
         Row: {
           character_id: string | null
+          combatant_type: string
           created_at: string | null
           dex_modifier: number | null
           encounter_id: string | null
@@ -633,6 +634,7 @@ export type Database = {
         }
         Insert: {
           character_id?: string | null
+          combatant_type?: string
           created_at?: string | null
           dex_modifier?: number | null
           encounter_id?: string | null
@@ -643,6 +645,7 @@ export type Database = {
         }
         Update: {
           character_id?: string | null
+          combatant_type?: string
           created_at?: string | null
           dex_modifier?: number | null
           encounter_id?: string | null

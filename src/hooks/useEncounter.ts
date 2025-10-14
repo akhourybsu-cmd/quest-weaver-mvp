@@ -5,13 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 interface InitiativeEntry {
   id: string;
   character_id: string;
+  combatant_type: 'character' | 'monster';
   initiative_roll: number;
   is_current_turn: boolean;
-  character?: {
-    name: string;
+  combatant_name?: string;
+  combatant_stats?: {
     ac: number;
-    current_hp: number;
-    max_hp: number;
+    hp_current: number;
+    hp_max: number;
   };
 }
 
@@ -61,17 +62,11 @@ export const useEncounter = (encounterId: string | null) => {
 
     const { data, error } = await supabase
       .from("initiative")
-      .select(`
-        *,
-        characters:character_id (
-          name,
-          ac,
-          current_hp,
-          max_hp
-        )
-      `)
+      .select("*")
       .eq("encounter_id", encounterId)
-      .order("initiative_roll", { ascending: false });
+      .order("initiative_roll", { ascending: false })
+      .order("dex_modifier", { ascending: false })
+      .order("passive_perception", { ascending: false });
 
     if (error) {
       toast({
@@ -82,7 +77,54 @@ export const useEncounter = (encounterId: string | null) => {
       return;
     }
 
-    setInitiative(data || []);
+    // Fetch character and monster data separately
+    const entries: InitiativeEntry[] = await Promise.all(
+      (data || []).map(async (init): Promise<InitiativeEntry> => {
+        if (init.combatant_type === 'character') {
+          const { data: char } = await supabase
+            .from('characters')
+            .select('name, ac, current_hp, max_hp')
+            .eq('id', init.character_id)
+            .single();
+
+          return {
+            id: init.id,
+            character_id: init.character_id,
+            combatant_type: 'character',
+            initiative_roll: init.initiative_roll,
+            is_current_turn: init.is_current_turn,
+            combatant_name: char?.name,
+            combatant_stats: char ? {
+              ac: char.ac,
+              hp_current: char.current_hp,
+              hp_max: char.max_hp
+            } : undefined
+          };
+        } else {
+          const { data: monster } = await supabase
+            .from('encounter_monsters')
+            .select('display_name, ac, hp_current, hp_max')
+            .eq('id', init.character_id)
+            .single();
+
+          return {
+            id: init.id,
+            character_id: init.character_id,
+            combatant_type: 'monster',
+            initiative_roll: init.initiative_roll,
+            is_current_turn: init.is_current_turn,
+            combatant_name: monster?.display_name,
+            combatant_stats: monster ? {
+              ac: monster.ac,
+              hp_current: monster.hp_current,
+              hp_max: monster.hp_max
+            } : undefined
+          };
+        }
+      })
+    );
+
+    setInitiative(entries);
   };
 
   const fetchEncounterData = async () => {

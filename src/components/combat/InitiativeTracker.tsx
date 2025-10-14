@@ -1,91 +1,196 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronRight, Plus, X, Heart, Shield, Dices } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronRight, Plus, X, Heart, Shield, Dices, Swords } from "lucide-react";
 import { useEncounter } from "@/hooks/useEncounter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { calculateModifier } from "@/lib/dnd5e";
+import { useCombatActions } from "@/hooks/useCombatActions";
 
 interface InitiativeTrackerProps {
   encounterId: string;
   characters: Array<{ id: string; name: string }>;
 }
 
+interface Combatant {
+  id: string;
+  name: string;
+  type: 'character' | 'monster';
+  initiativeBonus: number;
+}
+
 const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) => {
-  const { initiative, currentRound, addToInitiative, nextTurn, removeFromInitiative } = useEncounter(encounterId);
-  const [selectedCharacterId, setSelectedCharacterId] = useState("");
-  const [initiativeRoll, setInitiativeRoll] = useState("");
+  const { initiative, currentRound, nextTurn, removeFromInitiative } = useEncounter(encounterId);
+  const [availableCombatants, setAvailableCombatants] = useState<Combatant[]>([]);
+  const [selectedCombatants, setSelectedCombatants] = useState<Set<string>>(new Set());
+  const [manualRolls, setManualRolls] = useState<Record<string, string>>({});
+  const { rollInitiative } = useCombatActions();
   const { toast } = useToast();
 
-  const handleAddToInitiative = async () => {
-    if (!selectedCharacterId || !initiativeRoll) return;
-    
-    const roll = parseInt(initiativeRoll, 10);
-    if (isNaN(roll) || roll < 1 || roll > 50) {
-      toast({
-        title: "Invalid initiative roll",
-        description: "Initiative must be between 1 and 50",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    await addToInitiative(selectedCharacterId, roll);
-    setSelectedCharacterId("");
-    setInitiativeRoll("");
-  };
+  useEffect(() => {
+    fetchAvailableCombatants();
 
-  const handleAutoRoll = async () => {
-    // Fetch character stats to get ability scores, not saves
-    const { data: characterStats } = await supabase
+    const channel = supabase
+      .channel(`combatants:${encounterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'encounter_monsters',
+          filter: `encounter_id=eq.${encounterId}`,
+        },
+        () => fetchAvailableCombatants()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [encounterId, initiative]);
+
+  const fetchAvailableCombatants = async () => {
+    // Get characters
+    const { data: chars } = await supabase
       .from("characters")
-      .select("id, name, class")
-      .in("id", availableCharacters.map(c => c.id));
+      .select("id, name, initiative_bonus")
+      .in("id", characters.map(c => c.id));
 
-    if (!characterStats) {
-      toast({
-        title: "Error fetching character data",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Get monsters
+    const { data: monsters } = await supabase
+      .from("encounter_monsters")
+      .select("id, display_name, initiative_bonus")
+      .eq("encounter_id", encounterId);
 
-    // Need to get full character data including ability scores
-    const { data: fullCharData, error } = await supabase
-      .from("characters")
-      .select("*")
-      .in("id", availableCharacters.map(c => c.id));
+    const combatants: Combatant[] = [];
 
-    if (error || !fullCharData) {
-      toast({
-        title: "Error fetching character data",
-        description: error?.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    for (const char of fullCharData) {
-      const roll = Math.floor(Math.random() * 20) + 1;
-      // Use initiative_bonus field directly
-      const initiativeBonus = char.initiative_bonus ?? 0;
-      const total = roll + initiativeBonus;
-      await addToInitiative(char.id, total);
-    }
-
-    toast({
-      title: "Initiative Rolled",
-      description: `Rolled initiative for ${fullCharData.length} characters`,
+    // Add characters not in initiative
+    chars?.forEach(char => {
+      if (!initiative.some(init => init.character_id === char.id && init.combatant_type === 'character')) {
+        combatants.push({
+          id: char.id,
+          name: char.name,
+          type: 'character',
+          initiativeBonus: char.initiative_bonus || 0
+        });
+      }
     });
+
+    // Add monsters not in initiative
+    monsters?.forEach(monster => {
+      if (!initiative.some(init => init.character_id === monster.id && init.combatant_type === 'monster')) {
+        combatants.push({
+          id: monster.id,
+          name: monster.display_name,
+          type: 'monster',
+          initiativeBonus: monster.initiative_bonus || 0
+        });
+      }
+    });
+
+    setAvailableCombatants(combatants);
   };
 
-  const availableCharacters = characters.filter(
-    char => !initiative.some(init => init.character_id === char.id)
-  );
+  const handleToggleSelect = (combatantId: string) => {
+    const newSelected = new Set(selectedCombatants);
+    if (newSelected.has(combatantId)) {
+      newSelected.delete(combatantId);
+    } else {
+      newSelected.add(combatantId);
+    }
+    setSelectedCombatants(newSelected);
+  };
+
+  const handleManualRollChange = (combatantId: string, value: string) => {
+    setManualRolls(prev => ({ ...prev, [combatantId]: value }));
+  };
+
+  const handleRollInitiative = async () => {
+    const selected = availableCombatants.filter(c => selectedCombatants.has(c.id));
+    if (selected.length === 0) {
+      toast({
+        title: "No combatants selected",
+        description: "Select combatants to roll initiative",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare rolls with manual overrides
+      const rolls = selected.map(combatant => {
+        const manualRoll = manualRolls[combatant.id];
+        let total: number;
+
+        if (manualRoll && manualRoll.trim() !== '') {
+          // Manual roll provided
+          const roll = parseInt(manualRoll, 10);
+          if (isNaN(roll) || roll < 1 || roll > 50) {
+            throw new Error(`Invalid initiative roll for ${combatant.name}`);
+          }
+          total = roll;
+        } else {
+          // Auto-roll
+          const d20 = Math.floor(Math.random() * 20) + 1;
+          total = d20 + combatant.initiativeBonus;
+        }
+
+        return {
+          combatantId: combatant.id,
+          combatantType: combatant.type,
+          initiativeRoll: total
+        };
+      });
+
+      // Call backend to add to initiative
+      for (const roll of rolls) {
+        const { error } = await supabase.from('initiative').insert({
+          encounter_id: encounterId,
+          character_id: roll.combatantId,
+          combatant_type: roll.combatantType,
+          initiative_roll: roll.initiativeRoll,
+          is_current_turn: false
+        });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Initiative Rolled",
+        description: `Added ${rolls.length} combatant${rolls.length !== 1 ? 's' : ''} to initiative`,
+      });
+
+      setSelectedCombatants(new Set());
+      setManualRolls({});
+    } catch (error: any) {
+      toast({
+        title: "Error rolling initiative",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAutoRollAll = async () => {
+    if (availableCombatants.length === 0) {
+      toast({
+        title: "No combatants available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Auto-select all and roll
+    setSelectedCombatants(new Set(availableCombatants.map(c => c.id)));
+    setManualRolls({});
+
+    // Wait a tick for state to update
+    setTimeout(handleRollInitiative, 100);
+  };
 
   return (
     <Card>
@@ -93,12 +198,6 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         <div className="flex items-center justify-between">
           <CardTitle>Initiative Order - Round {currentRound}</CardTitle>
           <div className="flex gap-2">
-            {availableCharacters.length > 0 && (
-              <Button onClick={handleAutoRoll} size="sm" variant="outline">
-                <Dices className="w-4 h-4 mr-1" />
-                Auto-Roll
-              </Button>
-            )}
             <Button onClick={nextTurn} size="sm" disabled={initiative.length === 0}>
               <ChevronRight className="w-4 h-4 mr-1" />
               Next Turn
@@ -108,32 +207,58 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add to Initiative */}
-        {availableCharacters.length > 0 && (
-          <div className="flex gap-2">
-            <select
-              value={selectedCharacterId}
-              onChange={(e) => setSelectedCharacterId(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-            >
-              <option value="">Select character...</option>
-              {availableCharacters.map((char) => (
-                <option key={char.id} value={char.id}>
-                  {char.name}
-                </option>
-              ))}
-            </select>
-            <Input
-              type="number"
-              placeholder="Roll"
-              value={initiativeRoll}
-              onChange={(e) => setInitiativeRoll(e.target.value)}
-              className="w-24"
-              min="1"
-              max="50"
-            />
-            <Button onClick={handleAddToInitiative} size="sm">
-              <Plus className="w-4 h-4" />
-            </Button>
+        {availableCombatants.length > 0 && (
+          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-sm">Add to Initiative</h4>
+              <div className="flex gap-2">
+                <Button onClick={handleAutoRollAll} size="sm" variant="outline">
+                  <Dices className="w-4 h-4 mr-1" />
+                  Auto-Roll All
+                </Button>
+                <Button 
+                  onClick={handleRollInitiative} 
+                  size="sm"
+                  disabled={selectedCombatants.size === 0}
+                >
+                  <Swords className="w-4 h-4 mr-1" />
+                  Roll Selected ({selectedCombatants.size})
+                </Button>
+              </div>
+            </div>
+
+            <ScrollArea className="max-h-[200px]">
+              <div className="space-y-2">
+                {availableCombatants.map(combatant => (
+                  <div key={combatant.id} className="flex items-center gap-2 bg-background p-2 rounded">
+                    <Checkbox
+                      checked={selectedCombatants.has(combatant.id)}
+                      onCheckedChange={() => handleToggleSelect(combatant.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{combatant.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {combatant.type === 'character' ? 'PC' : 'NPC'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          +{combatant.initiativeBonus}
+                        </span>
+                      </div>
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Auto"
+                      value={manualRolls[combatant.id] || ''}
+                      onChange={(e) => handleManualRollChange(combatant.id, e.target.value)}
+                      className="w-20 h-8 text-sm"
+                      min="1"
+                      max="50"
+                    />
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
@@ -142,8 +267,9 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           <div className="space-y-2">
             {initiative.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No combatants yet</p>
-                <p className="text-sm mt-2">Add characters to initiative above</p>
+                <Swords className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No combatants in initiative</p>
+                <p className="text-sm mt-2">Select combatants above to roll initiative</p>
               </div>
             ) : (
               initiative.map((entry) => (
@@ -162,22 +288,25 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       </Badge>
                       <div className="flex-1">
                         <div className="font-semibold flex items-center gap-2">
-                          {entry.character?.name || "Unknown"}
+                          {entry.combatant_name || "Unknown"}
+                          <Badge variant="outline" className="text-xs">
+                            {entry.combatant_type === 'character' ? 'PC' : 'NPC'}
+                          </Badge>
                           {entry.is_current_turn && (
                             <Badge variant="default" className="text-xs">
                               Current Turn
                             </Badge>
                           )}
                         </div>
-                        {entry.character && (
+                        {entry.combatant_stats && (
                           <div className="flex gap-3 text-xs text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Shield className="w-3 h-3" />
-                              AC {entry.character.ac}
+                              AC {entry.combatant_stats.ac}
                             </span>
                             <span className="flex items-center gap-1">
                               <Heart className="w-3 h-3" />
-                              {entry.character.current_hp}/{entry.character.max_hp}
+                              {entry.combatant_stats.hp_current}/{entry.combatant_stats.hp_max}
                             </span>
                           </div>
                         )}

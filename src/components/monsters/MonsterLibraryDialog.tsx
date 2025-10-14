@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Search, BookOpen, Scroll, Loader2 } from "lucide-react";
+import MonsterImportDialog from "./MonsterImportDialog";
 
 interface Monster {
   id: string;
@@ -150,7 +151,10 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Monster Library</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Monster Library</DialogTitle>
+            <MonsterImportDialog />
+          </div>
         </DialogHeader>
 
         <div className="flex gap-4 h-[600px]">

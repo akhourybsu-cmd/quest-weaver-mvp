@@ -103,28 +103,37 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
         
         const hit = attack >= targetAC;
 
-        if (hit && parsedAction.damageDice) {
-          const damage = autoMode
-            ? rollDice(parsedAction.damageDice)
-            : parseInt(damageRoll);
+        if (hit) {
+          // Attack hits!
+          if (parsedAction.damageDice) {
+            const damage = autoMode
+              ? rollDice(parsedAction.damageDice)
+              : parseInt(damageRoll);
 
-          // Apply damage via edge function
-          const { error } = await supabase.functions.invoke('apply-damage', {
-            body: {
-              characterId: target.id,
-              amount: damage,
-              damageType: parsedAction.damageType,
-              encounterId,
-              currentRound: 1, // You may want to pass current round from props
-            }
-          });
+            // Apply damage via edge function
+            const { error } = await supabase.functions.invoke('apply-damage', {
+              body: {
+                characterId: target.id,
+                amount: damage,
+                damageType: parsedAction.damageType,
+                encounterId,
+                currentRound: 1, // You may want to pass current round from props
+              }
+            });
 
-          if (error) throw error;
+            if (error) throw error;
 
-          toast({
-            title: "Attack Hit!",
-            description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${targetAC})`,
-          });
+            toast({
+              title: "Attack Hit!",
+              description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${targetAC})`,
+            });
+          } else {
+            // Hit but no damage dice found - might be special attack
+            toast({
+              title: "Attack Hit!",
+              description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} (Attack: ${attack} vs AC ${targetAC}). Manually apply damage if needed.`,
+            });
+          }
         } else {
           toast({
             title: "Attack Missed",

@@ -96,7 +96,8 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
           ? Math.floor(Math.random() * 20) + 1 + parsedAction.attackBonus
           : parseInt(attackRoll) + parsedAction.attackBonus;
 
-        const hit = attack >= target.ac;
+        const targetAC = parseInt(String(target.ac).replace(/\D/g, '')) || 0;
+        const hit = attack >= targetAC;
 
         if (hit && parsedAction.damageDice) {
           const damage = autoMode
@@ -118,12 +119,12 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
 
           toast({
             title: "Attack Hit!",
-            description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${target.ac})`,
+            description: `${monster.display_name} hit ${target.name} with ${selectedAction.name} for ${damage} ${parsedAction.damageType} damage (Attack: ${attack} vs AC ${targetAC})`,
           });
         } else {
           toast({
             title: "Attack Missed",
-            description: `${monster.display_name}'s ${selectedAction.name} missed ${target.name} (Attack: ${attack} vs AC ${target.ac})`,
+            description: `${monster.display_name}'s ${selectedAction.name} missed ${target.name} (Attack: ${attack} vs AC ${targetAC})`,
           });
         }
       } else if (parsedAction.isSave) {

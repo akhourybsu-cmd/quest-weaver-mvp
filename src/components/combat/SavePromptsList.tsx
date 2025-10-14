@@ -180,6 +180,12 @@ const SavePromptsList = ({ encounterId }: SavePromptsListProps) => {
                         <span>Half on success</span>
                       </>
                     )}
+                    {prompt.expires_at && (
+                      <>
+                        <span>•</span>
+                        <span>Expires: {new Date(prompt.expires_at).toLocaleTimeString()}</span>
+                      </>
+                    )}
                   </div>
 
                   <div className="space-y-2">

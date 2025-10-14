@@ -65,8 +65,8 @@ serve(async (req) => {
       throw new Error('Characters not found');
     }
 
-    // Roll initiative for each character
-    const initiativeEntries = characters.map((char) => {
+    // Roll initiative for each character with stable tie-breaking
+    const initiativeEntries = characters.map((char, index) => {
       const roll = Math.floor(Math.random() * 20) + 1;
       // Use initiative_bonus directly - no fallback to dex_save
       const initiativeBonus = char.initiative_bonus ?? 0;
@@ -79,14 +79,17 @@ serve(async (req) => {
         dex_modifier: initiativeBonus,
         passive_perception: char.passive_perception || 10,
         is_current_turn: false,
+        // Stable tie-breaker: original fetch order as last resort
+        order_tiebreak: index,
       };
     });
 
-    // Sort by initiative (desc), then dex mod (desc), then passive perception (desc)
+    // Sort by initiative (desc), then dex mod (desc), then passive perception (desc), then stable order
     initiativeEntries.sort((a, b) => {
       if (b.initiative_roll !== a.initiative_roll) return b.initiative_roll - a.initiative_roll;
       if (b.dex_modifier !== a.dex_modifier) return b.dex_modifier - a.dex_modifier;
-      return b.passive_perception - a.passive_perception;
+      if (b.passive_perception !== a.passive_perception) return b.passive_perception - a.passive_perception;
+      return a.order_tiebreak - b.order_tiebreak;
     });
 
     // Mark first as current turn

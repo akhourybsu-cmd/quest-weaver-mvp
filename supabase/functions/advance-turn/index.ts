@@ -113,20 +113,20 @@ serve(async (req) => {
         }
       }
 
-      // Remove expired effects
+      // Remove expired effects (exclusive end: effect expires when current_round >= end_round)
       const { error: deleteError } = await supabase
         .from('effects')
         .delete()
         .eq('encounter_id', encounterId)
-        .eq('character_id', currentCharacterId)
+        .not('end_round', 'is', null)
         .lte('end_round', newRound);
 
-      // Remove expired conditions
+      // Remove expired conditions (exclusive end: condition expires when current_round >= ends_at_round)
       await supabase
         .from('character_conditions')
         .delete()
         .eq('encounter_id', encounterId)
-        .eq('character_id', currentCharacterId)
+        .not('ends_at_round', 'is', null)
         .lte('ends_at_round', newRound);
     }
 

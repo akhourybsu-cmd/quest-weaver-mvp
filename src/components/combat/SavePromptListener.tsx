@@ -72,13 +72,12 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
       return;
     }
 
-    // Get save prompts from last 5 minutes
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // Get only active save prompts
     const { data, error } = await supabase
       .from("save_prompts")
       .select("*")
       .eq("encounter_id", encounter.id)
-      .gte("created_at", fiveMinutesAgo)
+      .eq("status", "active")
       .order("created_at", { ascending: false });
 
     if (error) {

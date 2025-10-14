@@ -110,7 +110,7 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
   const addCondition = async () => {
     if (!selectedCharacter || !selectedCondition) return;
 
-    const endsAtRound = duration ? currentRound + parseInt(duration) : null;
+    const endsAtRound = duration ? currentRound + parseInt(duration, 10) : null;
 
     const { error } = await supabase.from("character_conditions").insert({
       character_id: selectedCharacter,
@@ -224,6 +224,8 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="Leave empty for indefinite"
+                  min="1"
+                  max="100"
                 />
               </div>
 

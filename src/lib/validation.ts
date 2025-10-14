@@ -49,6 +49,20 @@ export const EffectSchema = z.object({
   ticksAt: z.enum(["start", "end"]).optional(),
 });
 
+export const SaveResultSchema = z.object({
+  savePromptId: z.string().uuid(),
+  characterId: z.string().uuid(),
+  roll: z.number().int().min(1).max(20),
+  modifier: z.number().int().min(-10).max(20),
+});
+
+export const ConditionSchema = z.object({
+  encounterId: z.string().uuid(),
+  characterId: z.string().uuid(),
+  condition: z.string().min(1),
+  endsAtRound: z.number().int().min(0).nullable(),
+});
+
 // Helper to safely parse and validate
 export function validateInput<T>(
   schema: z.ZodSchema<T>, 

@@ -24,7 +24,17 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   const handleAddToInitiative = async () => {
     if (!selectedCharacterId || !initiativeRoll) return;
     
-    await addToInitiative(selectedCharacterId, parseInt(initiativeRoll));
+    const roll = parseInt(initiativeRoll, 10);
+    if (isNaN(roll) || roll < 1 || roll > 50) {
+      toast({
+        title: "Invalid initiative roll",
+        description: "Initiative must be between 1 and 50",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await addToInitiative(selectedCharacterId, roll);
     setSelectedCharacterId("");
     setInitiativeRoll("");
   };
@@ -118,6 +128,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
               value={initiativeRoll}
               onChange={(e) => setInitiativeRoll(e.target.value)}
               className="w-24"
+              min="1"
+              max="50"
             />
             <Button onClick={handleAddToInitiative} size="sm">
               <Plus className="w-4 h-4" />

@@ -70,7 +70,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
 
     // Add characters not in initiative
     chars?.forEach(char => {
-      if (!initiative.some(init => init.character_id === char.id && init.combatant_type === 'character')) {
+      if (!initiative.some(init => init.combatant_id === char.id && init.combatant_type === 'character')) {
         combatants.push({
           id: char.id,
           name: char.name,
@@ -82,7 +82,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
 
     // Add monsters not in initiative
     monsters?.forEach(monster => {
-      if (!initiative.some(init => init.character_id === monster.id && init.combatant_type === 'monster')) {
+      if (!initiative.some(init => init.combatant_id === monster.id && init.combatant_type === 'monster')) {
         combatants.push({
           id: monster.id,
           name: monster.display_name,
@@ -150,7 +150,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       for (const roll of rolls) {
         const { error } = await supabase.from('initiative').insert({
           encounter_id: encounterId,
-          character_id: roll.combatantId,
+          combatant_id: roll.combatantId,
           combatant_type: roll.combatantType,
           initiative_roll: roll.initiativeRoll,
           is_current_turn: false

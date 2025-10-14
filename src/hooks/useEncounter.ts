@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface InitiativeEntry {
   id: string;
-  character_id: string;
+  combatant_id: string;
   combatant_type: 'character' | 'monster';
   initiative_roll: number;
   is_current_turn: boolean;
@@ -84,12 +84,12 @@ export const useEncounter = (encounterId: string | null) => {
           const { data: char } = await supabase
             .from('characters')
             .select('name, ac, current_hp, max_hp')
-            .eq('id', init.character_id)
+            .eq('id', init.combatant_id)
             .single();
 
           return {
             id: init.id,
-            character_id: init.character_id,
+            combatant_id: init.combatant_id,
             combatant_type: 'character',
             initiative_roll: init.initiative_roll,
             is_current_turn: init.is_current_turn,
@@ -104,12 +104,12 @@ export const useEncounter = (encounterId: string | null) => {
           const { data: monster } = await supabase
             .from('encounter_monsters')
             .select('display_name, ac, hp_current, hp_max')
-            .eq('id', init.character_id)
+            .eq('id', init.combatant_id)
             .single();
 
           return {
             id: init.id,
-            character_id: init.character_id,
+            combatant_id: init.combatant_id,
             combatant_type: 'monster',
             initiative_roll: init.initiative_roll,
             is_current_turn: init.is_current_turn,

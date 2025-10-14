@@ -622,7 +622,7 @@ export type Database = {
       }
       initiative: {
         Row: {
-          character_id: string | null
+          combatant_id: string | null
           combatant_type: string
           created_at: string | null
           dex_modifier: number | null
@@ -633,7 +633,7 @@ export type Database = {
           passive_perception: number | null
         }
         Insert: {
-          character_id?: string | null
+          combatant_id?: string | null
           combatant_type?: string
           created_at?: string | null
           dex_modifier?: number | null
@@ -644,7 +644,7 @@ export type Database = {
           passive_perception?: number | null
         }
         Update: {
-          character_id?: string | null
+          combatant_id?: string | null
           combatant_type?: string
           created_at?: string | null
           dex_modifier?: number | null
@@ -655,13 +655,6 @@ export type Database = {
           passive_perception?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "initiative_character_id_fkey"
-            columns: ["character_id"]
-            isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "initiative_encounter_id_fkey"
             columns: ["encounter_id"]

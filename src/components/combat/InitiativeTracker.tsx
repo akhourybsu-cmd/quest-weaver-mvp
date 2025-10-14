@@ -327,7 +327,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         )}
 
         {/* Initiative List */}
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="max-h-[400px]">
           <div className="space-y-2">
             {initiative.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

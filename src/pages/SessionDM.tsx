@@ -460,13 +460,14 @@ const SessionDM = () => {
                   />
                 </div>
                 <SavePromptsList encounterId={activeEncounter.id} />
-                <MonsterRoster 
-                  encounterId={activeEncounter.id}
-                  currentRound={activeEncounter.current_round}
-                />
                 <InitiativeTracker
                   encounterId={activeEncounter.id}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                />
+                <CombatLog encounterId={activeEncounter.id} />
+                <MonsterRoster 
+                  encounterId={activeEncounter.id}
+                  currentRound={activeEncounter.current_round}
                 />
                 <ConcentrationTracker encounterId={activeEncounter.id} />
                 <ConditionsManager
@@ -475,7 +476,6 @@ const SessionDM = () => {
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}
                 />
                 <EffectsList encounterId={activeEncounter.id} />
-                <CombatLog encounterId={activeEncounter.id} />
               </>
             )}
           </TabsContent>

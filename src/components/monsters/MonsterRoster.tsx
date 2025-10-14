@@ -147,11 +147,11 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Monsters in Combat</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">Monsters in Combat</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px]">
+      <CardContent className="pb-3">
+        <ScrollArea className="max-h-[300px]">
           <div className="space-y-2">
             {Object.entries(groupedMonsters).map(([groupKey, groupMonsters]) => {
               const isExpanded = expandedGroups.has(groupKey);

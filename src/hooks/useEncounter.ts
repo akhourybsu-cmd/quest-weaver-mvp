@@ -201,6 +201,41 @@ export const useEncounter = (encounterId: string | null) => {
     }
   };
 
+  const previousTurn = async () => {
+    if (!encounterId || initiative.length === 0) return;
+
+    const currentIndex = initiative.findIndex(entry => entry.is_current_turn);
+    const prevIndex = currentIndex === 0 ? initiative.length - 1 : currentIndex - 1;
+    const isPreviousRound = currentIndex === 0;
+
+    // Update current turn marker
+    await supabase
+      .from("initiative")
+      .update({ is_current_turn: false })
+      .eq("encounter_id", encounterId);
+
+    await supabase
+      .from("initiative")
+      .update({ is_current_turn: true })
+      .eq("id", initiative[prevIndex].id);
+
+    // Decrement round if needed
+    if (isPreviousRound && currentRound > 1) {
+      const { error } = await supabase
+        .from("encounters")
+        .update({ current_round: currentRound - 1 })
+        .eq("id", encounterId);
+
+      if (error) {
+        toast({
+          title: "Error updating round",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const removeFromInitiative = async (initiativeId: string) => {
     const { error } = await supabase
       .from("initiative")
@@ -221,6 +256,7 @@ export const useEncounter = (encounterId: string | null) => {
     currentRound,
     addToInitiative,
     nextTurn,
+    previousTurn,
     removeFromInitiative,
   };
 };

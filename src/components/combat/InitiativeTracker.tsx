@@ -26,7 +26,7 @@ interface Combatant {
 }
 
 const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) => {
-  const { initiative, currentRound, nextTurn, removeFromInitiative } = useEncounter(encounterId);
+  const { initiative, currentRound, nextTurn, previousTurn, removeFromInitiative } = useEncounter(encounterId);
   const [availableCombatants, setAvailableCombatants] = useState<Combatant[]>([]);
   const [selectedCombatants, setSelectedCombatants] = useState<Set<string>>(new Set());
   const [manualRolls, setManualRolls] = useState<Record<string, string>>({});
@@ -258,6 +258,10 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         <div className="flex items-center justify-between">
           <CardTitle>Initiative Order - Round {currentRound}</CardTitle>
           <div className="flex gap-2">
+            <Button onClick={previousTurn} size="sm" disabled={initiative.length === 0} variant="outline">
+              <ChevronRight className="w-4 h-4 mr-1 rotate-180" />
+              Previous
+            </Button>
             <Button onClick={nextTurn} size="sm" disabled={initiative.length === 0}>
               <ChevronRight className="w-4 h-4 mr-1" />
               Next Turn

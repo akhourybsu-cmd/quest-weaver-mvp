@@ -97,14 +97,14 @@ const ConcentrationTracker = ({ encounterId }: ConcentrationTrackerProps) => {
   if (concentrationEffects.length === 0) return null;
 
   return (
-    <Card className="border-secondary shadow-md">
-      <CardHeader>
+    <Card className="border-secondary">
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Focus className="w-5 h-5" />
           Concentration
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="pb-3 space-y-2">
         {concentrationEffects.map((effect) => (
           <div
             key={effect.id}

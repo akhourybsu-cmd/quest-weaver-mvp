@@ -155,15 +155,15 @@ const SavePromptsList = ({ encounterId }: SavePromptsListProps) => {
 
             return (
               <Card key={prompt.id} className="border-primary/20">
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-base">
+                    <CardTitle className="text-sm font-semibold">
                       {prompt.ability.toUpperCase()} Save (DC {prompt.dc})
                     </CardTitle>
                     {getStatusBadge(prompt.status)}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pb-2 space-y-2">
                   <p className="text-sm text-muted-foreground">{prompt.description}</p>
                   
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

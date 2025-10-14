@@ -74,15 +74,15 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
   };
 
   return (
-    <Card className="shadow-md">
-      <CardHeader>
+    <Card>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <FileText className="w-5 h-5" />
           Combat Log
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[300px] pr-4">
+      <CardContent className="pb-3">
+        <ScrollArea className="max-h-[300px] pr-4">
           <div className="space-y-2">
             {entries.length === 0 ? (
               <div className="text-sm text-muted-foreground text-center py-8">

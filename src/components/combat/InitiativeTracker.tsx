@@ -254,9 +254,9 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         targets={getActionTargets()}
       />
       <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Initiative Order - Round {currentRound}</CardTitle>
+          <CardTitle className="text-lg">Initiative Order - Round {currentRound}</CardTitle>
           <div className="flex gap-2">
             <Button onClick={previousTurn} size="sm" disabled={initiative.length === 0} variant="outline">
               <ChevronRight className="w-4 h-4 mr-1 rotate-180" />
@@ -269,7 +269,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pb-3 space-y-4">
         {/* Add to Initiative */}
         {availableCombatants.length > 0 && (
           <div className="space-y-3 p-4 border rounded-lg bg-muted/30">

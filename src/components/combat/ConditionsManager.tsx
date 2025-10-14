@@ -168,7 +168,7 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <AlertCircle className="w-5 h-5" />
           Conditions
@@ -236,7 +236,7 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-3">
         {conditions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No active conditions

@@ -39,13 +39,13 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
   useEffect(() => {
     fetchActiveSavePrompts();
 
-    // Subscribe to new save prompts
+    // Subscribe to save prompts (INSERT + UPDATE for status changes)
     const channel = supabase
-      .channel('save-prompts-changes')
+      .channel(`save-prompts-listener:${campaignId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'save_prompts',
         },

@@ -32,27 +32,34 @@ const SavePromptsList = ({ encounterId }: SavePromptsListProps) => {
   useEffect(() => {
     fetchPrompts();
 
-    // Subscribe to prompt changes (encounter-scoped)
+    // Subscribe to prompt changes (encounter-scoped channel with INSERT+UPDATE)
     const channel = supabase
-      .channel(`save-prompts:${encounterId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'save_prompts',
-          filter: `encounter_id=eq.${encounterId}`,
-        },
-        () => fetchPrompts()
-      )
+      .channel(`encounter:${encounterId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'save_results',
+          table: 'save_prompts',
+          filter: `encounter_id=eq.${encounterId}`,
         },
-        () => fetchPrompts() // Refetch to get updated counts
+        (payload) => {
+          setPrompts((prev) => [payload.new as SavePrompt, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'save_prompts',
+          filter: `encounter_id=eq.${encounterId}`,
+        },
+        (payload) => {
+          setPrompts((prev) =>
+            prev.map((p) => (p.id === payload.new.id ? (payload.new as SavePrompt) : p))
+          );
+        }
       )
       .subscribe();
 

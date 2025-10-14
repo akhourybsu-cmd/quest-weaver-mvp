@@ -61,10 +61,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
 
     for (const char of fullCharData) {
       const roll = Math.floor(Math.random() * 20) + 1;
-      // Use Dexterity MODIFIER for initiative, not Dex save
-      // We'll need to fetch or calculate this - for now assume it's stored
-      // Initiative bonus should be stored as a field on characters
-      const initiativeBonus = char.dex_save || 0; // Temporary: will be fixed in migration
+      // Use initiative_bonus field directly
+      const initiativeBonus = char.initiative_bonus ?? 0;
       const total = roll + initiativeBonus;
       await addToInitiative(char.id, total);
     }

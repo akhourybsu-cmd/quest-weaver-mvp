@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -68,7 +68,8 @@ serve(async (req) => {
     // Roll initiative for each character
     const initiativeEntries = characters.map((char) => {
       const roll = Math.floor(Math.random() * 20) + 1;
-      const initiativeBonus = char.initiative_bonus ?? Math.floor((char.dex_save || 0) / 2); // fallback to dex save
+      // Use initiative_bonus directly - no fallback to dex_save
+      const initiativeBonus = char.initiative_bonus ?? 0;
       const total = roll + initiativeBonus;
 
       return {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical, Package } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical, Package, Library } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -428,6 +428,12 @@ const CampaignHub = () => {
                                     >
                                       <Package className="w-4 h-4 mr-2" />
                                       Party Inventory
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => navigate(`/lore?campaign=${campaign.id}&dm=true`)}
+                                    >
+                                      <Library className="w-4 h-4 mr-2" />
+                                      Lore
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

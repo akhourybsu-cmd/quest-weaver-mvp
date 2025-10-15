@@ -17,6 +17,7 @@ import WorldMap from "./pages/WorldMap";
 import CampaignTimeline from "./pages/CampaignTimeline";
 import Inventory from "./pages/Inventory";
 import Notes from "./pages/Notes";
+import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => {
             <Route path="/timeline" element={<CampaignTimeline />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/notes" element={<Notes />} />
+            <Route path="/lore" element={<Lore />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

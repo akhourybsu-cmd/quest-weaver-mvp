@@ -1149,6 +1149,143 @@ export type Database = {
           },
         ]
       }
+      lore_backlinks: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          from_id: string
+          from_type: string
+          id: string
+          label: string
+          page_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          from_id: string
+          from_type: string
+          id?: string
+          label: string
+          page_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          from_id?: string
+          from_type?: string
+          id?: string
+          label?: string
+          page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lore_backlinks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lore_backlinks_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lore_links: {
+        Row: {
+          campaign_id: string
+          id: string
+          label: string
+          source_page: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          label: string
+          source_page: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          label?: string
+          source_page?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lore_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lore_links_source_page_fkey"
+            columns: ["source_page"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lore_pages: {
+        Row: {
+          author_id: string | null
+          campaign_id: string
+          content_md: string
+          created_at: string
+          excerpt: string | null
+          id: string
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_id?: string | null
+          campaign_id: string
+          content_md: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string | null
+          campaign_id?: string
+          content_md?: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lore_pages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maps: {
         Row: {
           campaign_id: string

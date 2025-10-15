@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCombatActions } from "@/hooks/useCombatActions";
 import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
+import { TurnIndicator } from "@/components/presence/TurnIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -335,6 +336,11 @@ const SessionDM = () => {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Turn Indicator */}
+        {activeEncounter && campaignId && (
+          <TurnIndicator encounterId={activeEncounter.id} campaignId={campaignId} />
+        )}
+
         {/* Player Presence */}
         {currentUserId && (
           <PlayerPresence

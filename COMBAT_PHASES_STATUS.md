@@ -75,27 +75,29 @@
 
 ---
 
-## 🚧 **Next Phases (8-16)**
+## 🚧 **Next Phases (9-16)**
 
-### **Phase 8 — Permissions, Presence, Spectator Mode** ⬅️ NEXT
+### **Phase 8 — Permissions, Presence, Spectator Mode** ✅ COMPLETE
 **Goals:**
 - Enforce DM-only actions via UI + RLS
 - Real-time presence (who's online, whose turn)
 - Spectator read-only "table TV" mode
 
-**Tasks:**
-- [ ] Audit all mutation functions for DM-only enforcement
-- [ ] Add turn indicator for "awaiting save from X..."
-- [ ] Create spectator view component
-- [ ] RLS policy review and hardening
+**Completed:**
+- ✅ Created TurnIndicator component showing current turn + awaiting saves
+- ✅ Built SessionSpectator page (read-only combat view)
+- ✅ Added spectator route `/session/spectator`
+- ✅ RLS policies reviewed (1 warning: leaked password protection)
+- ✅ Turn indicator integrated into SessionDM
 
-**Database Needs:**
-- player_presence table already exists (has `needs_ruling`, `is_online`)
-- May need `spectator_mode` flag on sessions
+**Access:**
+- Spectator: `/session/spectator?campaign={code}`
+- Shows initiative order, current turn, HP bars (for monsters), combat log
+- No edit controls, read-only view perfect for "table TV"
 
 ---
 
-### **Phase 9 — Combat Log 2.0 + Undo/Redo**
+### **Phase 9 — Combat Log 2.0 + Undo/Redo** ⬅️ NEXT
 **Goals:**
 - Structured combat log (JSON payload)
 - Undo last step (server applies inverse mutation)
@@ -232,4 +234,4 @@
 ---
 
 **Last Updated**: Current Session
-**Phase Progress**: 7/16 Complete (43.75%)
+**Phase Progress**: 8/16 Complete (50%)

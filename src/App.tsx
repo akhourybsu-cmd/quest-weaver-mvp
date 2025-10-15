@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import CampaignHub from "./pages/CampaignHub";
 import SessionDM from "./pages/SessionDM";
 import SessionPlayer from "./pages/SessionPlayer";
+import SessionSpectator from "./pages/SessionSpectator";
 import CombatMap from "./pages/CombatMap";
 import Notes from "./pages/Notes";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const App = () => {
             <Route path="/campaign-hub" element={<CampaignHub />} />
             <Route path="/session/dm" element={<SessionDM />} />
             <Route path="/session/player" element={<SessionPlayer />} />
+            <Route path="/session/spectator" element={<SessionSpectator />} />
             <Route path="/map" element={<CombatMap />} />
             <Route path="/notes" element={<Notes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

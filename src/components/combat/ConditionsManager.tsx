@@ -18,9 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, X, HelpCircle } from "lucide-react";
+import { CONDITION_TOOLTIPS } from "@/lib/conditionTooltips";
 
 const CONDITIONS = [
   { value: "blinded", label: "Blinded", color: "bg-gray-500", pattern: "diagonal-lines" },
@@ -250,9 +257,36 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
                 role="listitem"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Badge className={getConditionColor(condition.condition)} aria-label={`Condition: ${getConditionLabel(condition.condition)}`}>
-                    {getConditionLabel(condition.condition)}
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1">
+                          <Badge className={getConditionColor(condition.condition)} aria-label={`Condition: ${getConditionLabel(condition.condition)}`}>
+                            {getConditionLabel(condition.condition)}
+                          </Badge>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-sm p-4" align="start">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold">{CONDITION_TOOLTIPS[condition.condition]?.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {CONDITION_TOOLTIPS[condition.condition]?.description}
+                          </p>
+                          <ul className="text-xs space-y-1 list-disc list-inside">
+                            {CONDITION_TOOLTIPS[condition.condition]?.effects.map((effect, i) => (
+                              <li key={i}>{effect}</li>
+                            ))}
+                          </ul>
+                          {CONDITION_TOOLTIPS[condition.condition]?.source && (
+                            <p className="text-xs text-muted-foreground pt-2 border-t">
+                              Source: {CONDITION_TOOLTIPS[condition.condition].source}
+                            </p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <span className="text-sm font-medium truncate">{condition.character?.name}</span>
                   {condition.ends_at_round && (
                     <span className="text-xs text-muted-foreground whitespace-nowrap" aria-label={`${condition.ends_at_round - currentRound} rounds remaining`}>

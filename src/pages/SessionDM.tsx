@@ -6,6 +6,7 @@ import { useCombatActions } from "@/hooks/useCombatActions";
 import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
 import { TurnIndicator } from "@/components/presence/TurnIndicator";
+import { DMQuickstart } from "@/components/onboarding/DMQuickstart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -314,7 +315,8 @@ const SessionDM = () => {
                 {activeEncounter ? `Round ${activeEncounter.current_round}` : "No active encounter"}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <DMQuickstart />
               {campaignId && <NeedRulingIndicator campaignId={campaignId} />}
               {activeEncounter && (
                 <EncounterControls
@@ -325,8 +327,8 @@ const SessionDM = () => {
               )}
               {!activeEncounter && (
                 <Button onClick={createEncounter} size="sm">
-                  <Swords className="w-4 h-4 mr-2" />
-                  Start Combat
+                  <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                  <span className="hidden sm:inline">Start Combat</span>
                 </Button>
               )}
             </div>

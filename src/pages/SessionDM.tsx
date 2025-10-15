@@ -8,11 +8,12 @@ import PlayerPresence from "@/components/presence/PlayerPresence";
 import { TurnIndicator } from "@/components/presence/TurnIndicator";
 import { DMQuickstart } from "@/components/onboarding/DMQuickstart";
 import QuestLog from "@/components/quests/QuestLog";
+import NotesBoard from "@/components/notes/NotesBoard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText } from "lucide-react";
+import { Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText, FileText } from "lucide-react";
 import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
 import ConditionsManager from "@/components/combat/ConditionsManager";
@@ -354,7 +355,7 @@ const SessionDM = () => {
         )}
 
         <Tabs defaultValue="party" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="DM Screen Sections">
+          <TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="DM Screen Sections">
             <TabsTrigger value="party" aria-label="Party management">
               <Users className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="hidden sm:inline">Party</span>
@@ -362,6 +363,10 @@ const SessionDM = () => {
             <TabsTrigger value="quests" aria-label="Quest tracking">
               <ScrollText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="hidden sm:inline">Quests</span>
+            </TabsTrigger>
+            <TabsTrigger value="notes" aria-label="Session notes">
+              <FileText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Notes</span>
             </TabsTrigger>
             <TabsTrigger value="combat" disabled={!activeEncounter} aria-label="Combat tracker" aria-disabled={!activeEncounter}>
               <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
@@ -489,6 +494,11 @@ const SessionDM = () => {
           {/* Quests Tab */}
           <TabsContent value="quests" className="space-y-4">
             {campaignId && <QuestLog campaignId={campaignId} isDM={true} />}
+          </TabsContent>
+
+          {/* Notes Tab */}
+          <TabsContent value="notes" className="space-y-4">
+            {campaignId && currentUserId && <NotesBoard campaignId={campaignId} isDM={true} userId={currentUserId} />}
           </TabsContent>
 
           {/* Combat Tab */}

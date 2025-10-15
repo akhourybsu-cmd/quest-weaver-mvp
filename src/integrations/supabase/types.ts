@@ -1066,6 +1066,41 @@ export type Database = {
           },
         ]
       }
+      note_links: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string
+          link_id: string | null
+          link_type: string
+          note_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label: string
+          link_id?: string | null
+          link_type: string
+          note_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string
+          link_id?: string | null
+          link_type?: string
+          note_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_links_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "session_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       npcs: {
         Row: {
           campaign_id: string
@@ -1337,6 +1372,149 @@ export type Database = {
             columns: ["save_prompt_id"]
             isOneToOne: false
             referencedRelation: "save_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_highlights: {
+        Row: {
+          campaign_id: string
+          color: string | null
+          created_at: string | null
+          id: string
+          session_id: string | null
+          text: string
+        }
+        Insert: {
+          campaign_id: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          text: string
+        }
+        Update: {
+          campaign_id?: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_highlights_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_highlights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_notes: {
+        Row: {
+          author_id: string
+          campaign_id: string
+          content: Json | null
+          content_markdown: string | null
+          created_at: string | null
+          id: string
+          is_pinned: boolean | null
+          session_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          author_id: string
+          campaign_id: string
+          content?: Json | null
+          content_markdown?: string | null
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          session_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          author_id?: string
+          campaign_id?: string
+          content?: Json | null
+          content_markdown?: string | null
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          session_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          session_date: string | null
+          session_number: number
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          session_date?: string | null
+          session_number: number
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          session_date?: string | null
+          session_number?: number
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]

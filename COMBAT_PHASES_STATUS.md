@@ -97,25 +97,37 @@
 
 ---
 
-### **Phase 9 — Combat Log 2.0 + Undo/Redo** ⬅️ NEXT
+### **Phase 9 — Combat Log 2.0 + Undo/Redo** ✅ COMPLETE
 **Goals:**
 - Structured combat log (JSON payload)
 - Undo last step (server applies inverse mutation)
 - Export log (markdown/JSON)
 
-**Tasks:**
-- [ ] Enhance combat_log with structured `details` JSONB
-- [ ] Create undo edge function (reverse HP/effect mutations)
-- [ ] Add export button (download MD/JSON report)
-- [ ] Log viewer with expand/collapse for payload
+**Completed:**
+- ✅ Enhanced CombatLog with collapsible JSON details view
+- ✅ Created undo-action edge function (reverses damage/healing)
+- ✅ Added export buttons (Markdown & JSON formats)
+- ✅ Log entries show expandable payload with chevron indicators
+- ✅ Undo button in log header to reverse last action
+
+**Access:**
+- DM view: CombatLog component shows undo/export controls
+- Click chevron on entries with details to expand structured data
+- Export formats: Markdown (human-readable) or JSON (machine-readable)
 
 ---
 
-### **Phase 10 — Reliability & UX Smoothness**
+### **Phase 10 — Reliability & UX Smoothness** ⬅️ NEXT
 **Goals:**
 - Optimistic UI for HP/conditions
 - Debounced Supabase writes
 - Retry with backoff for transient errors
+
+**Tasks:**
+- [ ] Add optimistic UI updates for HP changes
+- [ ] Implement debounced writes for frequent updates
+- [ ] Add retry logic with exponential backoff
+- [ ] Improve error handling and user feedback
 
 ---
 
@@ -234,4 +246,4 @@
 ---
 
 **Last Updated**: Current Session
-**Phase Progress**: 8/16 Complete (50%)
+**Phase Progress**: 9/16 Complete (56%)

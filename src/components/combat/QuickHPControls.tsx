@@ -32,13 +32,20 @@ export function QuickHPControls({
 }: QuickHPControlsProps) {
   const [damageAmount, setDamageAmount] = useState("");
   const [healAmount, setHealAmount] = useState("");
+  const [optimisticHP, setOptimisticHP] = useState<number | null>(null);
   const { applyDamage, applyHealing } = useCombatActions();
   const { toast } = useToast();
   const [damageOpen, setDamageOpen] = useState(false);
   const [healOpen, setHealOpen] = useState(false);
 
+  const displayHP = optimisticHP !== null ? optimisticHP : currentHP;
+
   const handleQuickDamage = async (amount: number) => {
     if (amount <= 0) return;
+
+    // Optimistic update
+    const predictedHP = Math.max(0, currentHP - amount);
+    setOptimisticHP(predictedHP);
 
     try {
       await applyDamage(
@@ -47,11 +54,18 @@ export function QuickHPControls({
         "bludgeoning",
         encounterId,
         currentRound,
-        "Quick Damage"
+        "Quick Damage",
+        undefined,
+        (newHP) => {
+          // Server confirmed - clear optimistic state
+          setOptimisticHP(null);
+        }
       );
       setDamageAmount("");
       setDamageOpen(false);
     } catch (error: any) {
+      // Rollback optimistic update on error
+      setOptimisticHP(null);
       toast({
         title: "Error applying damage",
         description: error.message,
@@ -63,17 +77,28 @@ export function QuickHPControls({
   const handleQuickHeal = async (amount: number) => {
     if (amount <= 0) return;
 
+    // Optimistic update
+    const predictedHP = Math.min(maxHP, currentHP + amount);
+    setOptimisticHP(predictedHP);
+
     try {
       await applyHealing(
         characterId,
         amount,
         encounterId,
         currentRound,
-        "Quick Heal"
+        "Quick Heal",
+        undefined,
+        (newHP) => {
+          // Server confirmed - clear optimistic state
+          setOptimisticHP(null);
+        }
       );
       setHealAmount("");
       setHealOpen(false);
     } catch (error: any) {
+      // Rollback optimistic update on error
+      setOptimisticHP(null);
       toast({
         title: "Error applying healing",
         description: error.message,
@@ -129,9 +154,9 @@ export function QuickHPControls({
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
-              {currentHP - parseInt(damageAmount || "0") < 0
+              {displayHP - parseInt(damageAmount || "0") < 0
                 ? `${characterName} would be at 0 HP`
-                : `${currentHP} → ${Math.max(0, currentHP - parseInt(damageAmount || "0"))} HP`}
+                : `${displayHP} → ${Math.max(0, displayHP - parseInt(damageAmount || "0"))} HP`}
             </div>
           </div>
         </PopoverContent>
@@ -181,9 +206,9 @@ export function QuickHPControls({
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
-              {Math.min(maxHP, currentHP + parseInt(healAmount || "0")) === maxHP
+              {Math.min(maxHP, displayHP + parseInt(healAmount || "0")) === maxHP
                 ? `${characterName} would be at full HP`
-                : `${currentHP} → ${Math.min(maxHP, currentHP + parseInt(healAmount || "0"))}/${maxHP} HP`}
+                : `${displayHP} → ${Math.min(maxHP, displayHP + parseInt(healAmount || "0"))}/${maxHP} HP`}
             </div>
           </div>
         </PopoverContent>

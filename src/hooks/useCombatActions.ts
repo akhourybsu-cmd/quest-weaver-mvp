@@ -1,20 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { validateInput, DamageSchema, HealingSchema, InitiativeSchema } from "@/lib/validation";
+import { withRetry } from "@/lib/retryHelper";
 
 export const useCombatActions = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const applyDamage = async (
+  const applyDamage = useCallback(async (
     characterId: string,
     amount: number,
     damageType: string,
     encounterId: string,
     currentRound: number,
     sourceName?: string,
-    abilityName?: string
+    abilityName?: string,
+    onOptimisticUpdate?: (newHP: number) => void
   ) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -42,11 +44,29 @@ export const useCombatActions = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('apply-damage', {
-        body: validation.data,
-      });
+      // Execute with retry logic
+      const { data, error } = await withRetry(
+        () => supabase.functions.invoke('apply-damage', {
+          body: validation.data,
+        }),
+        {
+          maxRetries: 2,
+          onRetry: (attempt, err) => {
+            console.log(`Retrying damage application (attempt ${attempt}):`, err);
+            toast({
+              title: "Retrying...",
+              description: `Network issue detected, retrying (${attempt}/2)`,
+            });
+          },
+        }
+      );
 
       if (error) throw error;
+
+      // Apply optimistic update if callback provided
+      if (onOptimisticUpdate && data?.newHP !== undefined) {
+        onOptimisticUpdate(data.newHP);
+      }
 
       // Auto-create concentration save prompt if needed
       if (data?.concentrationCheck?.required) {
@@ -84,15 +104,16 @@ export const useCombatActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, toast]);
 
-  const applyHealing = async (
+  const applyHealing = useCallback(async (
     characterId: string,
     amount: number,
     encounterId: string,
     currentRound: number,
     sourceName?: string,
-    abilityName?: string
+    abilityName?: string,
+    onOptimisticUpdate?: (newHP: number) => void
   ) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -118,11 +139,29 @@ export const useCombatActions = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('apply-healing', {
-        body: validation.data,
-      });
+      // Execute with retry logic
+      const { data, error } = await withRetry(
+        () => supabase.functions.invoke('apply-healing', {
+          body: validation.data,
+        }),
+        {
+          maxRetries: 2,
+          onRetry: (attempt, err) => {
+            console.log(`Retrying heal application (attempt ${attempt}):`, err);
+            toast({
+              title: "Retrying...",
+              description: `Network issue detected, retrying (${attempt}/2)`,
+            });
+          },
+        }
+      );
 
       if (error) throw error;
+
+      // Apply optimistic update if callback provided
+      if (onOptimisticUpdate && data?.newHP !== undefined) {
+        onOptimisticUpdate(data.newHP);
+      }
 
       // Clear death saves on healing
       if (data?.newHP > 0) {
@@ -152,7 +191,7 @@ export const useCombatActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, toast]);
 
   const rollInitiative = async (encounterId: string, characterIds: string[]) => {
     if (isLoading) return;
@@ -200,14 +239,22 @@ export const useCombatActions = () => {
     }
   };
 
-  const advanceTurn = async (encounterId: string) => {
+  const advanceTurn = useCallback(async (encounterId: string) => {
     if (isLoading) return;
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('advance-turn', {
-        body: { encounterId },
-      });
+      const { data, error } = await withRetry(
+        () => supabase.functions.invoke('advance-turn', {
+          body: { encounterId },
+        }),
+        {
+          maxRetries: 2,
+          onRetry: (attempt) => {
+            console.log(`Retrying turn advance (attempt ${attempt})`);
+          },
+        }
+      );
 
       if (error) throw error;
 
@@ -228,7 +275,7 @@ export const useCombatActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, toast]);
 
   const manageEffect = async (
     action: 'create' | 'delete',

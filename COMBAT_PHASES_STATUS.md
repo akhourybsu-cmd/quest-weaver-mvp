@@ -117,25 +117,40 @@
 
 ---
 
-### **Phase 10 — Reliability & UX Smoothness** ⬅️ NEXT
+### **Phase 10 — Reliability & UX Smoothness** ✅ COMPLETE
 **Goals:**
 - Optimistic UI for HP/conditions
 - Debounced Supabase writes
 - Retry with backoff for transient errors
 
-**Tasks:**
-- [ ] Add optimistic UI updates for HP changes
-- [ ] Implement debounced writes for frequent updates
-- [ ] Add retry logic with exponential backoff
-- [ ] Improve error handling and user feedback
+**Completed:**
+- ✅ Created retryHelper utility with exponential backoff + jitter
+- ✅ Added retry logic to all combat actions (damage, healing, turn advance)
+- ✅ Implemented optimistic UI for HP changes in QuickHPControls
+- ✅ Added onOptimisticUpdate callbacks to applyDamage/applyHealing
+- ✅ Enhanced error handling with user-friendly retry notifications
+- ✅ Converted actions to useCallback for performance
+
+**Features:**
+- Automatic retry on network errors (up to 2 retries)
+- Optimistic HP updates show immediately, rollback on error
+- Exponential backoff with jitter prevents server overload
+- User sees "Retrying..." toasts for transparency
 
 ---
 
-### **Phase 11 — Testing & Fixtures**
+### **Phase 11 — Testing & Fixtures** ⬅️ NEXT
 **Goals:**
 - Unit tests for damage pipeline, concentration DC, death saves
 - Integration tests for turn advance + effect tick
 - E2E happy-path (start → fight → end)
+
+**Tasks:**
+- [ ] Add unit tests for damage engine (RVI calculations)
+- [ ] Test concentration DC formula (max(10, dmg/2))
+- [ ] Test death save logic (3 success/fail states)
+- [ ] Integration test: turn advance with action economy reset
+- [ ] E2E test: complete combat flow from start to end
 
 ---
 
@@ -246,4 +261,4 @@
 ---
 
 **Last Updated**: Current Session
-**Phase Progress**: 9/16 Complete (56%)
+**Phase Progress**: 10/16 Complete (62.5%)

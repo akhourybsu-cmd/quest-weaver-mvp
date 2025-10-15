@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,15 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const { rollInitiative } = useCombatActions();
   const { toast } = useToast();
+  
+  // Virtualization refs
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: initiative.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,
+    overscan: 3,
+  });
 
   useEffect(() => {
     fetchAvailableCombatants();
@@ -140,19 +150,21 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     setAvailableCombatants(combatants);
   };
 
-  const handleToggleSelect = (combatantId: string) => {
-    const newSelected = new Set(selectedCombatants);
-    if (newSelected.has(combatantId)) {
-      newSelected.delete(combatantId);
-    } else {
-      newSelected.add(combatantId);
-    }
-    setSelectedCombatants(newSelected);
-  };
+  const handleToggleSelect = useCallback((combatantId: string) => {
+    setSelectedCombatants(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(combatantId)) {
+        newSelected.delete(combatantId);
+      } else {
+        newSelected.add(combatantId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const handleManualRollChange = (combatantId: string, value: string) => {
+  const handleManualRollChange = useCallback((combatantId: string, value: string) => {
     setManualRolls(prev => ({ ...prev, [combatantId]: value }));
-  };
+  }, []);
 
   const handleRollInitiative = async () => {
     const selected = availableCombatants.filter(c => selectedCombatants.has(c.id));
@@ -279,8 +291,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     }
   };
 
-  // Get available targets for monster actions
-  const getActionTargets = () => {
+  // Get available targets for monster actions (memoized)
+  const actionTargets = useMemo(() => {
     return initiative
       .filter(entry => entry.combatant_type === 'character' && entry.combatant_stats)
       .map(entry => ({
@@ -288,7 +300,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         name: entry.combatant_name || "Unknown",
         ac: entry.combatant_stats?.ac || 10
       }));
-  };
+  }, [initiative]);
 
   // Start combat (set first combatant as current turn)
   const handleStartCombat = async () => {
@@ -327,7 +339,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         onOpenChange={setActionDialogOpen}
         monster={selectedMonsterForAction}
         encounterId={encounterId}
-        targets={getActionTargets()}
+        targets={actionTargets}
       />
       <Card>
       <CardHeader className="pb-3">
@@ -432,25 +444,42 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           </div>
         )}
 
-        {/* Initiative List */}
-        <ScrollArea className="max-h-[400px]">
-          <div className="space-y-2">
-            {initiative.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Swords className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No combatants in initiative</p>
-                <p className="text-sm mt-2">Select combatants above to roll initiative</p>
-              </div>
-            ) : (
-              initiative.map((entry) => (
-                <div
-                  key={entry.id}
-                  className={`rounded-lg p-3 border-2 transition-all ${
-                    entry.is_current_turn
-                      ? "bg-primary/10 border-primary shadow-lg ring-2 ring-primary/20"
-                      : "bg-muted/50 border-transparent hover:border-muted"
-                  }`}
-                >
+        {/* Initiative List - Virtualized */}
+        {initiative.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Swords className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No combatants in initiative</p>
+            <p className="text-sm mt-2">Select combatants above to roll initiative</p>
+          </div>
+        ) : (
+          <div ref={parentRef} className="max-h-[400px] overflow-auto">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const entry = initiative[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div
+                      className={`rounded-lg p-3 border-2 transition-all mb-2 ${
+                        entry.is_current_turn
+                          ? "bg-primary/10 border-primary shadow-lg ring-2 ring-primary/20"
+                          : "bg-muted/50 border-transparent hover:border-muted"
+                      }`}
+                    >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Badge variant="secondary" className="text-lg font-bold w-10 justify-center shrink-0">
@@ -570,11 +599,12 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </ScrollArea>
+        )}
       </CardContent>
     </Card>
     </>

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FileText, Download, Undo2, ChevronDown, ChevronRight } from "lucide-react";
@@ -26,6 +26,15 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  
+  // Virtualization ref
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60,
+    overscan: 5,
+  });
 
   useEffect(() => {
     fetchLog();
@@ -64,7 +73,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
 
     setEntries((data || []) as LogEntry[]);
   };
-  const toggleExpanded = (id: string) => {
+  const toggleExpanded = useCallback((id: string) => {
     setExpandedEntries(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -74,7 +83,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
       }
       return newSet;
     });
-  };
+  }, []);
 
   const handleUndo = async () => {
     const lastEntry = entries[0];
@@ -163,7 +172,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
     }
   };
 
-  const getActionColor = (type: string) => {
+  const getActionColor = useCallback((type: string) => {
     switch (type) {
       case "damage":
         return "text-status-hp";
@@ -180,7 +189,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
       default:
         return "text-foreground";
     }
-  };
+  }, []);
 
   return (
     <Card>
@@ -222,57 +231,76 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
         </div>
       </CardHeader>
       <CardContent className="pb-3">
-        <ScrollArea className="max-h-[300px] pr-4">
-          <div className="space-y-2">
-            {entries.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-8">
-                No combat actions yet
-              </div>
-            ) : (
-              entries.map((entry) => (
-                <Collapsible
-                  key={entry.id}
-                  open={expandedEntries.has(entry.id)}
-                  onOpenChange={() => entry.details && toggleExpanded(entry.id)}
-                >
-                  <div className="text-sm border-b border-border/50 pb-2 mb-2 last:border-0">
-                    <div className="flex items-start gap-2">
-                      {entry.details && (
-                        <CollapsibleTrigger asChild>
-                          <button className="mt-0.5 hover:text-primary transition-colors">
-                            {expandedEntries.has(entry.id) ? (
-                              <ChevronDown className="w-3 h-3" />
-                            ) : (
-                              <ChevronRight className="w-3 h-3" />
-                            )}
-                          </button>
-                        </CollapsibleTrigger>
-                      )}
-                      <div className="flex-1">
-                        <span className="text-muted-foreground">
-                          [Round {entry.round}]
-                        </span>{" "}
-                        <span className={getActionColor(entry.action_type)}>
-                          {entry.message}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {entry.details && (
-                      <CollapsibleContent className="mt-2 ml-5">
-                        <div className="bg-muted/50 rounded p-2 text-xs font-mono">
-                          <pre className="whitespace-pre-wrap break-words">
-                            {JSON.stringify(entry.details, null, 2)}
-                          </pre>
-                        </div>
-                      </CollapsibleContent>
-                    )}
-                  </div>
-                </Collapsible>
-              ))
-            )}
+        {entries.length === 0 ? (
+          <div className="text-sm text-muted-foreground text-center py-8">
+            No combat actions yet
           </div>
-        </ScrollArea>
+        ) : (
+          <div ref={parentRef} className="max-h-[300px] overflow-auto pr-4">
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const entry = entries[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <Collapsible
+                      open={expandedEntries.has(entry.id)}
+                      onOpenChange={() => entry.details && toggleExpanded(entry.id)}
+                    >
+                      <div className="text-sm border-b border-border/50 pb-2 mb-2">
+                        <div className="flex items-start gap-2">
+                          {entry.details && (
+                            <CollapsibleTrigger asChild>
+                              <button className="mt-0.5 hover:text-primary transition-colors">
+                                {expandedEntries.has(entry.id) ? (
+                                  <ChevronDown className="w-3 h-3" />
+                                ) : (
+                                  <ChevronRight className="w-3 h-3" />
+                                )}
+                              </button>
+                            </CollapsibleTrigger>
+                          )}
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">
+                              [Round {entry.round}]
+                            </span>{" "}
+                            <span className={getActionColor(entry.action_type)}>
+                              {entry.message}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {entry.details && (
+                          <CollapsibleContent className="mt-2 ml-5">
+                            <div className="bg-muted/50 rounded p-2 text-xs font-mono">
+                              <pre className="whitespace-pre-wrap break-words">
+                                {JSON.stringify(entry.details, null, 2)}
+                              </pre>
+                            </div>
+                          </CollapsibleContent>
+                        )}
+                      </div>
+                    </Collapsible>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

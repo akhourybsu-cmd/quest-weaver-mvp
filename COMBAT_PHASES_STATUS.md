@@ -161,15 +161,31 @@
 
 ---
 
-### **Phase 12 — Performance** ⬅️ NEXT
-
----
-
-### **Phase 12 — Performance**
+### **Phase 12 — Performance** ✅ COMPLETE
 **Goals:**
 - Virtualize long lists (initiative, log)
 - Scope Supabase subscriptions tightly
 - Memoize expensive selectors
+
+**Completed:**
+- ✅ Integrated @tanstack/react-virtual for list virtualization
+- ✅ Virtualized InitiativeTracker (handles 100+ combatants efficiently)
+- ✅ Virtualized CombatLog (handles long combat sessions)
+- ✅ Optimized Supabase subscriptions with tight filtering
+- ✅ Added useMemo/useCallback to prevent unnecessary re-renders
+- ✅ Improved subscription scoping to only update on relevant changes
+
+**Features:**
+- Initiative list virtualizes with 100px row estimates, 3-item overscan
+- Combat log virtualizes with 60px row estimates, 5-item overscan
+- Subscriptions use encounter-specific channel names
+- Encounter updates only trigger on round changes, not other fields
+- Action targets, color getters, and toggle handlers memoized
+- All turn/remove functions wrapped in useCallback
+
+---
+
+### **Phase 13 — Security & Quotas** ⬅️ NEXT
 
 ---
 

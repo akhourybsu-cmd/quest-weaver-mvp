@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,15 +29,18 @@ export const useEncounter = (encounterId: string | null) => {
   const [currentRound, setCurrentRound] = useState(1);
   const { toast } = useToast();
 
+  // Memoize channel name to prevent unnecessary re-subscriptions
+  const channelName = useMemo(() => `encounter-${encounterId}`, [encounterId]);
+
   useEffect(() => {
     if (!encounterId) return;
 
     fetchInitiative();
     fetchEncounterData();
 
-    // Subscribe to initiative changes
+    // Tightly scoped subscription - only initiative and encounter for this specific ID
     const channel = supabase
-      .channel('initiative-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -56,14 +59,19 @@ export const useEncounter = (encounterId: string | null) => {
           table: 'encounters',
           filter: `id=eq.${encounterId}`,
         },
-        () => fetchEncounterData()
+        (payload) => {
+          // Only update if current_round changed
+          if (payload.new.current_round !== payload.old.current_round) {
+            fetchEncounterData();
+          }
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [encounterId]);
+  }, [encounterId, channelName]);
 
   const fetchInitiative = async () => {
     if (!encounterId) return;
@@ -186,7 +194,7 @@ export const useEncounter = (encounterId: string | null) => {
     });
   };
 
-  const nextTurn = async () => {
+  const nextTurn = useCallback(async () => {
     if (!encounterId || initiative.length === 0) return;
 
     const currentIndex = initiative.findIndex(entry => entry.is_current_turn);
@@ -239,9 +247,9 @@ export const useEncounter = (encounterId: string | null) => {
         });
       }
     }
-  };
+  }, [encounterId, initiative, currentRound, toast]);
 
-  const previousTurn = async () => {
+  const previousTurn = useCallback(async () => {
     if (!encounterId || initiative.length === 0) return;
 
     const currentIndex = initiative.findIndex(entry => entry.is_current_turn);
@@ -278,9 +286,9 @@ export const useEncounter = (encounterId: string | null) => {
         });
       }
     }
-  };
+  }, [encounterId, initiative, currentRound, toast]);
 
-  const removeFromInitiative = async (initiativeId: string) => {
+  const removeFromInitiative = useCallback(async (initiativeId: string) => {
     const { error } = await supabase
       .from("initiative")
       .delete()
@@ -293,7 +301,7 @@ export const useEncounter = (encounterId: string | null) => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   return {
     initiative,

@@ -255,6 +255,7 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
                             <DamageInput
                               characterId={monster.id}
                               characterName={monster.display_name}
+                              sourceName={monster.display_name}
                               onApplyDamage={(amount, type, source, ability) => 
                                 handleDamage(monster.id, amount, type, source, ability)
                               }

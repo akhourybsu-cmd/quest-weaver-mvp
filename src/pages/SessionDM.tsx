@@ -438,6 +438,7 @@ const SessionDM = () => {
                         <DamageInput
                           characterId={character.id}
                           characterName={character.name}
+                          sourceName="DM"
                           onApplyDamage={(amount, type, source, ability) => 
                             applyDamage(character.id, amount, type, source, ability)
                           }

@@ -41,7 +41,9 @@ const DamageInput = ({ characterName, sourceName, onApplyDamage }: DamageInputPr
   const handleApply = () => {
     const dmg = parseInt(amount);
     if (dmg && dmg > 0) {
-      onApplyDamage(dmg, damageType, sourceName || "DM", abilityName || "Attack");
+      const finalSource = sourceName || "DM";
+      const finalAbility = abilityName.trim() || "Attack";
+      onApplyDamage(dmg, damageType, finalSource, finalAbility);
       setAmount("");
       setAbilityName("");
       setOpen(false);

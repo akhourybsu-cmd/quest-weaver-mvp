@@ -127,8 +127,11 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     }
 
     try {
+      // Check if this is the first initiative roll (no existing combatants)
+      const isFirstRoll = initiative.length === 0;
+
       // Prepare rolls with manual overrides
-      const rolls = selected.map(combatant => {
+      const rolls = selected.map((combatant, index) => {
         const manualRoll = manualRolls[combatant.id];
         let total: number;
 
@@ -148,18 +151,23 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         return {
           combatantId: combatant.id,
           combatantType: combatant.type,
-          initiativeRoll: total
+          initiativeRoll: total,
+          isFirst: isFirstRoll && index === 0
         };
       });
 
+      // Sort by initiative to determine who goes first
+      const sortedRolls = [...rolls].sort((a, b) => b.initiativeRoll - a.initiativeRoll);
+
       // Call backend to add to initiative
-      for (const roll of rolls) {
+      for (let i = 0; i < sortedRolls.length; i++) {
+        const roll = sortedRolls[i];
         const { error } = await supabase.from('initiative').insert({
           encounter_id: encounterId,
           combatant_id: roll.combatantId,
           combatant_type: roll.combatantType,
           initiative_roll: roll.initiativeRoll,
-          is_current_turn: false
+          is_current_turn: isFirstRoll && i === 0
         });
 
         if (error) throw error;

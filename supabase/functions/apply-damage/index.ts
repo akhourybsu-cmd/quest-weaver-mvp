@@ -116,13 +116,17 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Log to combat log
+    // Log to combat log with proper format
+    const damageMessage = hpDamage > 0 
+      ? `${character.name} takes ${hpDamage} ${damageType} damage`
+      : `${character.name} is immune to ${damageType} damage`;
+    
     await supabase.from('combat_log').insert({
       encounter_id: encounterId,
       character_id: characterId,
       round: currentRound,
       action_type: 'damage',
-      message: `${character.name} took ${amount} ${damageType} damage`,
+      message: damageMessage,
       amount: hpDamage,
       details: { steps: damageSteps, type: damageType },
     });

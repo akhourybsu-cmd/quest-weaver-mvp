@@ -81,13 +81,13 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Log to combat log
+    // Log to combat log with proper format
     await supabase.from('combat_log').insert({
       encounter_id: encounterId,
       character_id: characterId,
       round: currentRound,
       action_type: 'healing',
-      message: `${character.name} healed for ${actualHealing} HP`,
+      message: `${character.name} restores ${actualHealing} HP`,
       amount: actualHealing,
     });
 

@@ -170,6 +170,17 @@ export const useEncounter = (encounterId: string | null) => {
     if (!encounterId || initiative.length === 0) return;
 
     const currentIndex = initiative.findIndex(entry => entry.is_current_turn);
+    
+    // If no current turn (combat just starting), set first combatant as current
+    if (currentIndex === -1) {
+      await supabase
+        .from("initiative")
+        .update({ is_current_turn: true })
+        .eq("id", initiative[0].id);
+      
+      return;
+    }
+
     const nextIndex = (currentIndex + 1) % initiative.length;
     const isNewRound = nextIndex === 0;
 
@@ -184,11 +195,12 @@ export const useEncounter = (encounterId: string | null) => {
       .update({ is_current_turn: true })
       .eq("id", initiative[nextIndex].id);
 
-    // Increment round if needed
+    // Increment round and log if needed
     if (isNewRound) {
+      const newRound = currentRound + 1;
       const { error } = await supabase
         .from("encounters")
-        .update({ current_round: currentRound + 1 })
+        .update({ current_round: newRound })
         .eq("id", encounterId);
 
       if (error) {
@@ -196,6 +208,14 @@ export const useEncounter = (encounterId: string | null) => {
           title: "Error updating round",
           description: error.message,
           variant: "destructive",
+        });
+      } else {
+        // Log round transition
+        await supabase.from('combat_log').insert({
+          encounter_id: encounterId,
+          round: newRound,
+          action_type: 'round_start',
+          message: `— Round ${newRound} begins —`,
         });
       }
     }
@@ -205,6 +225,10 @@ export const useEncounter = (encounterId: string | null) => {
     if (!encounterId || initiative.length === 0) return;
 
     const currentIndex = initiative.findIndex(entry => entry.is_current_turn);
+    
+    // If no current turn, do nothing
+    if (currentIndex === -1) return;
+
     const prevIndex = currentIndex === 0 ? initiative.length - 1 : currentIndex - 1;
     const isPreviousRound = currentIndex === 0;
 

@@ -68,6 +68,8 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
         return "text-primary";
       case "effect_expired":
         return "text-muted-foreground";
+      case "round_start":
+        return "text-primary font-semibold";
       default:
         return "text-foreground";
     }

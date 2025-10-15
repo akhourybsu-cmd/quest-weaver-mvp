@@ -90,12 +90,19 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
     }
   };
 
-  const handleDamage = async (monsterId: string, amount: number, damageType: string) => {
+  const handleDamage = async (
+    monsterId: string, 
+    amount: number, 
+    damageType: string, 
+    sourceName?: string, 
+    abilityName?: string
+  ) => {
     // For monsters, we apply damage directly to the encounter_monsters table
     const monster = monsters.find(m => m.id === monsterId);
     if (!monster) return;
 
     const newHp = Math.max(0, monster.hp_current - amount);
+    const actualDamage = monster.hp_current - newHp;
     
     const { error } = await supabase
       .from("encounter_monsters")
@@ -108,12 +115,27 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Damage Applied",
-        description: `${monster.display_name} took ${amount} ${damageType} damage`,
-      });
+      return;
     }
+
+    // Log to combat log with proper format
+    const source = sourceName || "DM";
+    const ability = abilityName || "Attack";
+    const message = `${source} uses ${ability} against ${monster.display_name} for ${actualDamage} ${damageType} damage`;
+
+    await supabase.from('combat_log').insert({
+      encounter_id: encounterId,
+      round: currentRound,
+      action_type: 'damage',
+      message,
+      amount: actualDamage,
+      details: { type: damageType, source, ability, target: monster.display_name },
+    });
+
+    toast({
+      title: "Damage Applied",
+      description: message,
+    });
   };
 
   const toggleGroup = (groupKey: string) => {
@@ -233,7 +255,9 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
                             <DamageInput
                               characterId={monster.id}
                               characterName={monster.display_name}
-                              onApplyDamage={(amount, type) => handleDamage(monster.id, amount, type)}
+                              onApplyDamage={(amount, type, source, ability) => 
+                                handleDamage(monster.id, amount, type, source, ability)
+                              }
                             />
                           </div>
                         </div>

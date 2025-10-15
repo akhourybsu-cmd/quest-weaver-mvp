@@ -28,19 +28,22 @@ const DAMAGE_TYPES = [
 interface DamageInputProps {
   characterId: string;
   characterName: string;
-  onApplyDamage: (amount: number, damageType: string) => void;
+  sourceName?: string;
+  onApplyDamage: (amount: number, damageType: string, sourceName?: string, abilityName?: string) => void;
 }
 
-const DamageInput = ({ characterName, onApplyDamage }: DamageInputProps) => {
+const DamageInput = ({ characterName, sourceName, onApplyDamage }: DamageInputProps) => {
   const [amount, setAmount] = useState("");
   const [damageType, setDamageType] = useState("bludgeoning");
+  const [abilityName, setAbilityName] = useState("");
   const [open, setOpen] = useState(false);
 
   const handleApply = () => {
     const dmg = parseInt(amount);
     if (dmg && dmg > 0) {
-      onApplyDamage(dmg, damageType);
+      onApplyDamage(dmg, damageType, sourceName || "DM", abilityName || "Attack");
       setAmount("");
+      setAbilityName("");
       setOpen(false);
     }
   };
@@ -61,6 +64,16 @@ const DamageInput = ({ characterName, onApplyDamage }: DamageInputProps) => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ability-name">Ability/Move Name</Label>
+            <Input
+              id="ability-name"
+              type="text"
+              value={abilityName}
+              onChange={(e) => setAbilityName(e.target.value)}
+              placeholder="Attack, Fireball, etc."
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="damage-amount">Damage Amount</Label>
             <Input

@@ -26,7 +26,7 @@ serve(async (req) => {
       });
     }
 
-    const { characterId, amount, encounterId, currentRound } = await req.json();
+    const { characterId, amount, encounterId, currentRound, sourceName, abilityName } = await req.json();
 
     // Validate DM authority
     const { data: encounter } = await supabase
@@ -81,14 +81,18 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Log to combat log with proper format
+    // Log to combat log with proper format: (Caster) uses (Spell) on (Target) — restores X HP
+    const source = sourceName || 'Unknown';
+    const ability = abilityName || 'Healing';
+    
     await supabase.from('combat_log').insert({
       encounter_id: encounterId,
       character_id: characterId,
       round: currentRound,
       action_type: 'healing',
-      message: `${character.name} restores ${actualHealing} HP`,
+      message: `${source} uses ${ability} on ${character.name} — restores ${actualHealing} HP`,
       amount: actualHealing,
+      details: { source, ability },
     });
 
     return new Response(

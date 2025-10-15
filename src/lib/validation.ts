@@ -11,6 +11,8 @@ export const DamageSchema = z.object({
   ]),
   encounterId: z.string().uuid(),
   currentRound: z.number().int().min(0),
+  sourceName: z.string().optional(),
+  abilityName: z.string().optional(),
 });
 
 export const HealingSchema = z.object({
@@ -18,6 +20,8 @@ export const HealingSchema = z.object({
   amount: z.number().int().min(0).max(1000),
   encounterId: z.string().uuid(),
   currentRound: z.number().int().min(0),
+  sourceName: z.string().optional(),
+  abilityName: z.string().optional(),
 });
 
 export const InitiativeSchema = z.object({

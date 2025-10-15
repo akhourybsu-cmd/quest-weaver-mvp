@@ -26,7 +26,7 @@ serve(async (req) => {
       });
     }
 
-    const { characterId, amount, damageType, encounterId, currentRound } = await req.json();
+    const { characterId, amount, damageType, encounterId, currentRound, sourceName, abilityName } = await req.json();
 
     // Validate DM authority
     const { data: encounter } = await supabase
@@ -116,10 +116,18 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Log to combat log with proper format
-    const damageMessage = hpDamage > 0 
-      ? `${character.name} takes ${hpDamage} ${damageType} damage`
-      : `${character.name} is immune to ${damageType} damage`;
+    // Log to combat log with proper format: (Attacker) uses (Ability) against (Target) for (X Damage)
+    let damageMessage: string;
+    const source = sourceName || 'Unknown';
+    const ability = abilityName || 'Attack';
+    
+    if (hpDamage > 0) {
+      damageMessage = `${source} uses ${ability} against ${character.name} for ${hpDamage} ${damageType} damage`;
+    } else if (finalDamage === 0 && character.immunities?.includes(damageType)) {
+      damageMessage = `${source} uses ${ability} against ${character.name} — immune to ${damageType} damage`;
+    } else {
+      damageMessage = `${source} uses ${ability} against ${character.name} for ${amount} ${damageType} damage`;
+    }
     
     await supabase.from('combat_log').insert({
       encounter_id: encounterId,
@@ -128,7 +136,7 @@ serve(async (req) => {
       action_type: 'damage',
       message: damageMessage,
       amount: hpDamage,
-      details: { steps: damageSteps, type: damageType },
+      details: { steps: damageSteps, type: damageType, source, ability },
     });
 
     // Check for concentration

@@ -206,7 +206,13 @@ const SessionDM = () => {
     });
   };
 
-  const applyDamage = async (characterId: string, amount: number, damageType: string) => {
+  const applyDamage = async (
+    characterId: string, 
+    amount: number, 
+    damageType: string,
+    sourceName?: string,
+    abilityName?: string
+  ) => {
     if (!activeEncounter) return;
 
     try {
@@ -215,7 +221,9 @@ const SessionDM = () => {
         amount,
         damageType,
         activeEncounter.id,
-        activeEncounter.current_round
+        activeEncounter.current_round,
+        sourceName,
+        abilityName
       );
     } catch (error) {
       // Error handled in hook
@@ -430,7 +438,9 @@ const SessionDM = () => {
                         <DamageInput
                           characterId={character.id}
                           characterName={character.name}
-                          onApplyDamage={(amount, type) => applyDamage(character.id, amount, type)}
+                          onApplyDamage={(amount, type, source, ability) => 
+                            applyDamage(character.id, amount, type, source, ability)
+                          }
                         />
                       </div>
                     </div>

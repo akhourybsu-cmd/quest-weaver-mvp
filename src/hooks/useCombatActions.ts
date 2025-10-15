@@ -12,7 +12,9 @@ export const useCombatActions = () => {
     amount: number,
     damageType: string,
     encounterId: string,
-    currentRound: number
+    currentRound: number,
+    sourceName?: string,
+    abilityName?: string
   ) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -25,6 +27,8 @@ export const useCombatActions = () => {
         damageType,
         encounterId,
         currentRound,
+        sourceName,
+        abilityName,
       });
 
       if (!validation.success) {
@@ -67,7 +71,9 @@ export const useCombatActions = () => {
     characterId: string,
     amount: number,
     encounterId: string,
-    currentRound: number
+    currentRound: number,
+    sourceName?: string,
+    abilityName?: string
   ) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -78,6 +84,8 @@ export const useCombatActions = () => {
         amount,
         encounterId,
         currentRound,
+        sourceName,
+        abilityName,
       });
 
       if (!validation.success) {

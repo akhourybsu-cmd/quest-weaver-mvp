@@ -534,7 +534,7 @@ const SessionDM = () => {
             <Card>
               <CardContent className="pt-6">
                 <Button 
-                  onClick={() => navigate(`/map?campaignId=${campaignId}${activeEncounter ? `&encounterId=${activeEncounter.id}` : ''}`)}
+                  onClick={() => navigate(`/map?campaign=${campaignId}&dm=true${activeEncounter ? `&encounter=${activeEncounter.id}` : ''}`)}
                   className="w-full"
                 >
                   <Map className="w-4 h-4 mr-2" />

@@ -23,6 +23,8 @@ interface Combatant {
   name: string;
   type: 'character' | 'monster';
   initiativeBonus: number;
+  passivePerception: number;
+  dexModifier: number;
 }
 
 const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) => {
@@ -83,16 +85,16 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   }, [initiative, nextTurn, previousTurn]);
 
   const fetchAvailableCombatants = async () => {
-    // Get characters
+    // Get characters with tie-breaking stats
     const { data: chars } = await supabase
       .from("characters")
-      .select("id, name, initiative_bonus")
+      .select("id, name, initiative_bonus, passive_perception")
       .in("id", characters.map(c => c.id));
 
-    // Get monsters
+    // Get monsters with tie-breaking stats
     const { data: monsters } = await supabase
       .from("encounter_monsters")
-      .select("id, display_name, initiative_bonus")
+      .select("id, display_name, initiative_bonus, abilities")
       .eq("encounter_id", encounterId);
 
     const combatants: Combatant[] = [];
@@ -104,7 +106,9 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           id: char.id,
           name: char.name,
           type: 'character',
-          initiativeBonus: char.initiative_bonus || 0
+          initiativeBonus: char.initiative_bonus || 0,
+          passivePerception: char.passive_perception || 10,
+          dexModifier: char.initiative_bonus || 0 // initiative_bonus IS the dex modifier
         });
       }
     });
@@ -112,11 +116,16 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     // Add monsters not in initiative
     monsters?.forEach(monster => {
       if (!initiative.some(init => init.combatant_id === monster.id && init.combatant_type === 'monster')) {
+        const dex = (monster.abilities as any)?.dex || 10;
+        const dexModifier = Math.floor((dex - 10) / 2);
+        
         combatants.push({
           id: monster.id,
           name: monster.display_name,
           type: 'monster',
-          initiativeBonus: monster.initiative_bonus || 0
+          initiativeBonus: monster.initiative_bonus || 0,
+          passivePerception: 10 + dexModifier, // Basic passive perception
+          dexModifier: dexModifier
         });
       }
     });
@@ -175,6 +184,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           combatantId: combatant.id,
           combatantType: combatant.type,
           initiativeRoll: total,
+          dexModifier: combatant.dexModifier,
+          passivePerception: combatant.passivePerception,
           isFirst: isFirstRoll && index === 0
         };
       });
@@ -182,7 +193,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       // Sort by initiative to determine who goes first
       const sortedRolls = [...rolls].sort((a, b) => b.initiativeRoll - a.initiativeRoll);
 
-      // Call backend to add to initiative
+      // Call backend to add to initiative with tie-breaking stats
       for (let i = 0; i < sortedRolls.length; i++) {
         const roll = sortedRolls[i];
         const { error } = await supabase.from('initiative').insert({
@@ -190,6 +201,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
           combatant_id: roll.combatantId,
           combatant_type: roll.combatantType,
           initiative_roll: roll.initiativeRoll,
+          dex_modifier: roll.dexModifier,
+          passive_perception: roll.passivePerception,
           is_current_turn: isFirstRoll && i === 0
         });
 

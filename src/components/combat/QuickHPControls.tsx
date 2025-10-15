@@ -116,8 +116,9 @@ export function QuickHPControls({
             size="sm"
             className="h-7 w-7 p-0 text-destructive hover:text-destructive"
             title="Quick Damage"
+            aria-label={`Apply damage to ${characterName}`}
           >
-            <Minus className="h-4 w-4" />
+            <Minus className="h-4 w-4" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64" align="start">
@@ -169,8 +170,9 @@ export function QuickHPControls({
             size="sm"
             className="h-7 w-7 p-0 text-status-buff hover:text-status-buff"
             title="Quick Heal"
+            aria-label={`Apply healing to ${characterName}`}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64" align="start">

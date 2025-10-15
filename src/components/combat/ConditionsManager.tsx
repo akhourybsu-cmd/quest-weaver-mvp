@@ -23,26 +23,26 @@ import { Input } from "@/components/ui/input";
 import { AlertCircle, X } from "lucide-react";
 
 const CONDITIONS = [
-  { value: "blinded", label: "Blinded", color: "bg-gray-500" },
-  { value: "charmed", label: "Charmed", color: "bg-pink-500" },
-  { value: "deafened", label: "Deafened", color: "bg-gray-400" },
-  { value: "frightened", label: "Frightened", color: "bg-purple-500" },
-  { value: "grappled", label: "Grappled", color: "bg-orange-500" },
-  { value: "incapacitated", label: "Incapacitated", color: "bg-red-600" },
-  { value: "invisible", label: "Invisible", color: "bg-blue-300" },
-  { value: "paralyzed", label: "Paralyzed", color: "bg-red-500" },
-  { value: "petrified", label: "Petrified", color: "bg-gray-600" },
-  { value: "poisoned", label: "Poisoned", color: "bg-green-500" },
-  { value: "prone", label: "Prone", color: "bg-yellow-600" },
-  { value: "restrained", label: "Restrained", color: "bg-orange-600" },
-  { value: "stunned", label: "Stunned", color: "bg-yellow-500" },
-  { value: "unconscious", label: "Unconscious", color: "bg-gray-700" },
-  { value: "exhaustion_1", label: "Exhaustion 1", color: "bg-amber-400" },
-  { value: "exhaustion_2", label: "Exhaustion 2", color: "bg-amber-500" },
-  { value: "exhaustion_3", label: "Exhaustion 3", color: "bg-amber-600" },
-  { value: "exhaustion_4", label: "Exhaustion 4", color: "bg-amber-700" },
-  { value: "exhaustion_5", label: "Exhaustion 5", color: "bg-amber-800" },
-  { value: "exhaustion_6", label: "Exhaustion 6", color: "bg-red-900" },
+  { value: "blinded", label: "Blinded", color: "bg-gray-500", pattern: "diagonal-lines" },
+  { value: "charmed", label: "Charmed", color: "bg-pink-500", pattern: "hearts" },
+  { value: "deafened", label: "Deafened", color: "bg-gray-400", pattern: "waves" },
+  { value: "frightened", label: "Frightened", color: "bg-purple-500", pattern: "exclamation" },
+  { value: "grappled", label: "Grappled", color: "bg-orange-500", pattern: "chain" },
+  { value: "incapacitated", label: "Incapacitated", color: "bg-red-600", pattern: "x-mark" },
+  { value: "invisible", label: "Invisible", color: "bg-blue-300", pattern: "dots" },
+  { value: "paralyzed", label: "Paralyzed", color: "bg-red-500", pattern: "bars" },
+  { value: "petrified", label: "Petrified", color: "bg-gray-600", pattern: "solid" },
+  { value: "poisoned", label: "Poisoned", color: "bg-green-500", pattern: "skull" },
+  { value: "prone", label: "Prone", color: "bg-yellow-600", pattern: "down-arrow" },
+  { value: "restrained", label: "Restrained", color: "bg-orange-600", pattern: "rope" },
+  { value: "stunned", label: "Stunned", color: "bg-yellow-500", pattern: "stars" },
+  { value: "unconscious", label: "Unconscious", color: "bg-gray-700", pattern: "zzz" },
+  { value: "exhaustion_1", label: "Exhaustion 1", color: "bg-amber-400", pattern: "level-1" },
+  { value: "exhaustion_2", label: "Exhaustion 2", color: "bg-amber-500", pattern: "level-2" },
+  { value: "exhaustion_3", label: "Exhaustion 3", color: "bg-amber-600", pattern: "level-3" },
+  { value: "exhaustion_4", label: "Exhaustion 4", color: "bg-amber-700", pattern: "level-4" },
+  { value: "exhaustion_5", label: "Exhaustion 5", color: "bg-amber-800", pattern: "level-5" },
+  { value: "exhaustion_6", label: "Exhaustion 6", color: "bg-red-900", pattern: "level-6" },
 ];
 
 interface Condition {
@@ -247,15 +247,16 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
               <div
                 key={condition.id}
                 className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                role="listitem"
               >
-                <div className="flex items-center gap-2">
-                  <Badge className={getConditionColor(condition.condition)}>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Badge className={getConditionColor(condition.condition)} aria-label={`Condition: ${getConditionLabel(condition.condition)}`}>
                     {getConditionLabel(condition.condition)}
                   </Badge>
-                  <span className="text-sm font-medium">{condition.character?.name}</span>
+                  <span className="text-sm font-medium truncate">{condition.character?.name}</span>
                   {condition.ends_at_round && (
-                    <span className="text-xs text-muted-foreground">
-                      ({condition.ends_at_round - currentRound} rounds left)
+                    <span className="text-xs text-muted-foreground whitespace-nowrap" aria-label={`${condition.ends_at_round - currentRound} rounds remaining`}>
+                      ({condition.ends_at_round - currentRound}r)
                     </span>
                   )}
                 </div>
@@ -263,8 +264,9 @@ const ConditionsManager = ({ encounterId, currentRound, characters }: Conditions
                   variant="ghost"
                   size="sm"
                   onClick={() => removeCondition(condition.id)}
+                  aria-label={`Remove ${getConditionLabel(condition.condition)} from ${condition.character?.name}`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </Button>
               </div>
             ))}

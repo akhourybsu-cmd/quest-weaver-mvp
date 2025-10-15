@@ -290,19 +290,19 @@ const SessionPlayer = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm" role="banner">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">{character.name}</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Level {character.level} {character.class} • Campaign: {campaignCode}
             </p>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4" role="main">
         {/* Player Presence */}
         {campaignId && currentUserId && (
           <PlayerPresence
@@ -332,14 +332,14 @@ const SessionPlayer = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold tabular-nums">
+                <span className="text-2xl sm:text-3xl font-bold tabular-nums" aria-label={`Current hit points: ${character.current_hp}`}>
                   {character.current_hp}
                 </span>
-                <span className="text-xl text-muted-foreground">
+                <span className="text-lg sm:text-xl text-muted-foreground" aria-label={`Maximum hit points: ${character.max_hp}`}>
                   / {character.max_hp}
                 </span>
               </div>
-              <Progress value={getHPPercentage()} className="h-3" />
+              <Progress value={getHPPercentage()} className="h-3" aria-label={`Hit points: ${Math.round(getHPPercentage())}% remaining`} />
             </div>
 
             {character.temp_hp > 0 && (
@@ -354,9 +354,10 @@ const SessionPlayer = () => {
             <div className="flex gap-2">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Minus className="w-4 h-4 mr-1" />
-                    Damage
+                  <Button variant="outline" size="sm" className="flex-1" aria-label="Apply damage to character">
+                    <Minus className="w-4 h-4 mr-1" aria-hidden="true" />
+                    <span className="hidden sm:inline">Damage</span>
+                    <span className="sm:hidden">-HP</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -385,9 +386,10 @@ const SessionPlayer = () => {
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Heal
+                  <Button variant="outline" size="sm" className="flex-1" aria-label="Apply healing to character">
+                    <Plus className="w-4 h-4 mr-1" aria-hidden="true" />
+                    <span className="hidden sm:inline">Heal</span>
+                    <span className="sm:hidden">+HP</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -416,8 +418,9 @@ const SessionPlayer = () => {
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    Temp HP
+                  <Button variant="outline" size="sm" className="flex-1" aria-label="Add temporary hit points">
+                    <span className="hidden sm:inline">Temp HP</span>
+                    <span className="sm:hidden">THP</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -518,7 +521,7 @@ const SessionPlayer = () => {
 
         {/* Dice Roller */}
         <DiceRoller />
-      </div>
+      </main>
 
       <BottomNav role="player" />
     </div>

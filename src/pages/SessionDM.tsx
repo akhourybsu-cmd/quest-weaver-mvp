@@ -305,12 +305,12 @@ const SessionDM = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold">DM Screen</h1>
-              <p className="text-sm text-muted-foreground">
+      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm" role="banner">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">DM Screen</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground" aria-live="polite">
                 {activeEncounter ? `Round ${activeEncounter.current_round}` : "No active encounter"}
               </p>
             </div>
@@ -332,10 +332,10 @@ const SessionDM = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4" role="main">
         {/* Turn Indicator */}
         {activeEncounter && campaignId && (
           <TurnIndicator encounterId={activeEncounter.id} campaignId={campaignId} />
@@ -351,18 +351,18 @@ const SessionDM = () => {
         )}
 
         <Tabs defaultValue="party" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="party">
-              <Users className="w-4 h-4 mr-2" />
-              Party
+          <TabsList className="grid w-full grid-cols-3" role="tablist" aria-label="DM Screen Sections">
+            <TabsTrigger value="party" aria-label="Party management">
+              <Users className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Party</span>
             </TabsTrigger>
-            <TabsTrigger value="combat" disabled={!activeEncounter}>
-              <Swords className="w-4 h-4 mr-2" />
-              Combat
+            <TabsTrigger value="combat" disabled={!activeEncounter} aria-label="Combat tracker" aria-disabled={!activeEncounter}>
+              <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Combat</span>
             </TabsTrigger>
-            <TabsTrigger value="map">
-              <Map className="w-4 h-4 mr-2" />
-              Map
+            <TabsTrigger value="map" aria-label="Battle map">
+              <Map className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Map</span>
             </TabsTrigger>
           </TabsList>
 
@@ -550,8 +550,7 @@ const SessionDM = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-
+      </main>
 
       <BottomNav role="dm" />
     </div>

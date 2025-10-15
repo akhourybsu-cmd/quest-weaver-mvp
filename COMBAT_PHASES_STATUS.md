@@ -249,15 +249,39 @@
 
 ---
 
-### **Phase 15 — Polish & Accessibility** ⬅️ NEXT
-
----
-
-### **Phase 15 — Polish & Accessibility**
+### **Phase 15 — Polish & Accessibility** ✅ COMPLETE
 **Goals:**
 - Mobile-first layout
 - A11y (keyboard nav, aria labels)
 - Color-blind safe indicators
+
+**Completed:**
+- ✅ Implemented responsive mobile-first layouts (SessionDM, SessionPlayer)
+- ✅ Added semantic HTML5 elements (header, main, nav)
+- ✅ Comprehensive ARIA labels for all interactive elements
+- ✅ Keyboard navigation support (Enter key for quick actions)
+- ✅ Screen reader-friendly progress indicators and live regions
+- ✅ Color-blind safe patterns for condition indicators
+- ✅ Mobile-optimized tab navigation with icon-only mode
+- ✅ Responsive text sizing (sm: breakpoints)
+- ✅ Accessible button labels with aria-hidden for decorative icons
+
+**Accessibility Features:**
+- role="banner", role="main" for landmark navigation
+- aria-label for all icon-only buttons
+- aria-live="polite" for dynamic content updates
+- aria-disabled for conditionally disabled controls
+- Proper focus management with autoFocus on inputs
+- High-contrast visual indicators (HP bars, conditions)
+- Pattern-based condition icons (not just color)
+
+---
+
+### **Phase 16 — Documentation & Onboarding** ⬅️ NEXT
+**Goals:**
+- In-app "DM Quickstart" overlay
+- Tooltips for condition icons
+- House rules toggles documentation
 
 ---
 

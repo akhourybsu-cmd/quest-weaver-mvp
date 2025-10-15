@@ -13,6 +13,8 @@ import SessionDM from "./pages/SessionDM";
 import SessionPlayer from "./pages/SessionPlayer";
 import SessionSpectator from "./pages/SessionSpectator";
 import CombatMap from "./pages/CombatMap";
+import WorldMap from "./pages/WorldMap";
+import CampaignTimeline from "./pages/CampaignTimeline";
 import Notes from "./pages/Notes";
 import NotFound from "./pages/NotFound";
 
@@ -62,6 +64,8 @@ const App = () => {
             <Route path="/session/player" element={<SessionPlayer />} />
             <Route path="/session/spectator" element={<SessionSpectator />} />
             <Route path="/map" element={<CombatMap />} />
+            <Route path="/world-map" element={<WorldMap />} />
+            <Route path="/timeline" element={<CampaignTimeline />} />
             <Route path="/notes" element={<Notes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

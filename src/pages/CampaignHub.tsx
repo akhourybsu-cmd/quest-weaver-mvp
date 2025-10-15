@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
@@ -392,6 +398,33 @@ const CampaignHub = () => {
                                   <PlayCircle className="w-4 h-4 mr-2" />
                                   Continue
                                 </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => navigate(`/world-map?campaign=${campaign.id}&dm=true`)}
+                                    >
+                                      <Map className="w-4 h-4 mr-2" />
+                                      World Map
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => navigate(`/timeline?campaign=${campaign.id}&dm=true`)}
+                                    >
+                                      <Clock className="w-4 h-4 mr-2" />
+                                      Timeline
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => navigate(`/notes?campaign=${campaign.id}&dm=true`)}
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      Notes & NPCs
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                                 <Button
                                   onClick={() => setDeletingCampaign(campaign)}
                                   size="sm"

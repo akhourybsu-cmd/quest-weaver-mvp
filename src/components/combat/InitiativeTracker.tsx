@@ -17,6 +17,8 @@ import RVITooltip from "@/components/combat/RVITooltip";
 import { ActionEconomy } from "@/components/combat/ActionEconomy";
 import { ResourceChips } from "@/components/combat/ResourceChips";
 import { InspirationToggle } from "@/components/combat/InspirationToggle";
+import { QuickHPControls } from "@/components/combat/QuickHPControls";
+import { CombatSummary } from "@/components/combat/CombatSummary";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -329,14 +331,19 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       />
       <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <CardTitle className="text-lg">Initiative Order</CardTitle>
             <Badge variant="secondary" className="text-sm">
               Round {currentRound}
             </Badge>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <CombatSummary
+              encounterId={encounterId}
+              encounterName="Current Encounter"
+              totalRounds={currentRound}
+            />
             {!hasActiveTurn && initiative.length > 0 && (
               <Button onClick={handleStartCombat} size="sm" variant="default">
                 <Play className="w-4 h-4 mr-1" />
@@ -440,8 +447,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                   key={entry.id}
                   className={`rounded-lg p-3 border-2 transition-all ${
                     entry.is_current_turn
-                      ? "bg-primary/10 border-primary shadow-md"
-                      : "bg-muted/50 border-transparent"
+                      ? "bg-primary/10 border-primary shadow-lg ring-2 ring-primary/20"
+                      : "bg-muted/50 border-transparent hover:border-muted"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -471,15 +478,26 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                           )}
                         </div>
                         {entry.combatant_stats && (
-                          <div className="flex gap-3 text-xs text-muted-foreground mt-1 items-center">
+                          <div className="flex gap-3 text-xs text-muted-foreground mt-1 items-center flex-wrap">
                             <span className="flex items-center gap-1">
                               <Shield className="w-3 h-3" />
                               AC {entry.combatant_stats.ac}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Heart className="w-3 h-3" />
-                              {entry.combatant_stats.hp_current}/{entry.combatant_stats.hp_max}
+                              <Heart className={`w-3 h-3 ${entry.combatant_stats.hp_current === 0 ? 'text-destructive' : ''}`} />
+                              <span className={entry.combatant_stats.hp_current === 0 ? 'text-destructive font-semibold' : ''}>
+                                {entry.combatant_stats.hp_current}/{entry.combatant_stats.hp_max}
+                              </span>
                             </span>
+                            <QuickHPControls
+                              characterId={entry.combatant_id}
+                              characterName={entry.combatant_name || "Unknown"}
+                              currentHP={entry.combatant_stats.hp_current}
+                              maxHP={entry.combatant_stats.hp_max}
+                              encounterId={encounterId}
+                              currentRound={currentRound}
+                              combatantType={entry.combatant_type}
+                            />
                             {(entry.combatant_stats.resistances?.length > 0 ||
                               entry.combatant_stats.vulnerabilities?.length > 0 ||
                               entry.combatant_stats.immunities?.length > 0) && (

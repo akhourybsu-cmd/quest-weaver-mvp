@@ -5,13 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, Play, SkipBack, SkipForward, X, Heart, Shield, Dices, Swords, BookOpen, Zap } from "lucide-react";
+import { Play, SkipBack, SkipForward, X, Heart, Shield, Dices, Swords, BookOpen, Zap } from "lucide-react";
 import { useEncounter } from "@/hooks/useEncounter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCombatActions } from "@/hooks/useCombatActions";
 import MonsterDetailDialog from "@/components/monsters/MonsterDetailDialog";
 import MonsterActionDialog from "@/components/combat/MonsterActionDialog";
+import QuickConditionsPopover from "@/components/combat/QuickConditionsPopover";
+import RVITooltip from "@/components/combat/RVITooltip";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -466,7 +468,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                           )}
                         </div>
                         {entry.combatant_stats && (
-                          <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                          <div className="flex gap-3 text-xs text-muted-foreground mt-1 items-center">
                             <span className="flex items-center gap-1">
                               <Shield className="w-3 h-3" />
                               AC {entry.combatant_stats.ac}
@@ -475,11 +477,28 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                               <Heart className="w-3 h-3" />
                               {entry.combatant_stats.hp_current}/{entry.combatant_stats.hp_max}
                             </span>
+                            {(entry.combatant_stats.resistances?.length > 0 ||
+                              entry.combatant_stats.vulnerabilities?.length > 0 ||
+                              entry.combatant_stats.immunities?.length > 0) && (
+                              <RVITooltip
+                                resistances={entry.combatant_stats.resistances as any || []}
+                                vulnerabilities={entry.combatant_stats.vulnerabilities as any || []}
+                                immunities={entry.combatant_stats.immunities as any || []}
+                              />
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      {entry.combatant_type === 'character' && (
+                        <QuickConditionsPopover
+                          characterId={entry.combatant_id}
+                          characterName={entry.combatant_name || "Unknown"}
+                          encounterId={encounterId}
+                          currentRound={currentRound}
+                        />
+                      )}
                       {entry.combatant_type === 'monster' && (
                         <>
                           <Button

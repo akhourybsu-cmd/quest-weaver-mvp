@@ -13,6 +13,9 @@ interface InitiativeEntry {
     ac: number;
     hp_current: number;
     hp_max: number;
+    resistances?: string[];
+    vulnerabilities?: string[];
+    immunities?: string[];
   };
 }
 
@@ -84,7 +87,7 @@ export const useEncounter = (encounterId: string | null) => {
         if (init.combatant_type === 'character') {
           const { data: char } = await supabase
             .from('characters')
-            .select('name, ac, current_hp, max_hp')
+            .select('name, ac, current_hp, max_hp, resistances, vulnerabilities, immunities')
             .eq('id', init.combatant_id)
             .single();
 
@@ -98,13 +101,16 @@ export const useEncounter = (encounterId: string | null) => {
             combatant_stats: char ? {
               ac: char.ac,
               hp_current: char.current_hp,
-              hp_max: char.max_hp
+              hp_max: char.max_hp,
+              resistances: char.resistances || [],
+              vulnerabilities: char.vulnerabilities || [],
+              immunities: char.immunities || []
             } : undefined
           };
         } else {
           const { data: monster } = await supabase
             .from('encounter_monsters')
-            .select('display_name, ac, hp_current, hp_max')
+            .select('display_name, ac, hp_current, hp_max, resistances, vulnerabilities, immunities')
             .eq('id', init.combatant_id)
             .single();
 
@@ -118,7 +124,10 @@ export const useEncounter = (encounterId: string | null) => {
             combatant_stats: monster ? {
               ac: monster.ac,
               hp_current: monster.hp_current,
-              hp_max: monster.hp_max
+              hp_max: monster.hp_max,
+              resistances: (monster.resistances as any) || [],
+              vulnerabilities: (monster.vulnerabilities as any) || [],
+              immunities: (monster.immunities as any) || []
             } : undefined
           };
         }

@@ -127,27 +127,22 @@ serve(async (req) => {
     for (let i = 0; i < (monsters?.length || 0); i += batchSize) {
       const batch = monsters!.slice(i, i + batchSize);
       
-      const updates = batch.map(monster => {
+      for (const monster of batch) {
         const spellSaveDCs = extractSpellSaveDCs(monster);
-        processed++;
+        
+        const { error: updateError } = await supabase
+          .from('monster_catalog')
+          .update({ spell_save_dc_summary: spellSaveDCs })
+          .eq('id', monster.id);
 
-        if (spellSaveDCs.length > 0) {
-          updated++;
+        if (updateError) {
+          console.error('Update error for monster:', monster.name, updateError);
+        } else {
+          processed++;
+          if (spellSaveDCs.length > 0) {
+            updated++;
+          }
         }
-
-        return {
-          id: monster.id,
-          spell_save_dc_summary: spellSaveDCs,
-        };
-      });
-
-      const { error: updateError } = await supabase
-        .from('monster_catalog')
-        .upsert(updates);
-
-      if (updateError) {
-        console.error('Batch update error:', updateError);
-        throw updateError;
       }
 
       console.log(`Processed batch ${i / batchSize + 1}, total: ${processed}/${monsters!.length}`);

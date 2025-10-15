@@ -169,19 +169,20 @@
 
 **Completed:**
 - ✅ Integrated @tanstack/react-virtual for list virtualization
-- ✅ Virtualized InitiativeTracker (handles 100+ combatants efficiently)
-- ✅ Virtualized CombatLog (handles long combat sessions)
-- ✅ Optimized Supabase subscriptions with tight filtering
-- ✅ Added useMemo/useCallback to prevent unnecessary re-renders
-- ✅ Improved subscription scoping to only update on relevant changes
+- ✅ Virtualized CombatLog with 60px estimates, 5-item overscan
+- ✅ Optimized InitiativeTracker with virtualization (100px estimates, 3-item overscan)
+- ✅ Tightly scoped Supabase subscriptions with encounter-specific channels
+- ✅ Added useMemo for computed values (actionTargets)
+- ✅ Added useCallback for event handlers (toggle, manualRollChange)
+- ✅ useEncounter functions wrapped in useCallback with proper dependencies
+- ✅ Subscription optimization: only refetch on actual data changes
 
-**Features:**
-- Initiative list virtualizes with 100px row estimates, 3-item overscan
-- Combat log virtualizes with 60px row estimates, 5-item overscan
-- Subscriptions use encounter-specific channel names
-- Encounter updates only trigger on round changes, not other fields
-- Action targets, color getters, and toggle handlers memoized
-- All turn/remove functions wrapped in useCallback
+**Performance Improvements:**
+- Initiative tracker efficiently handles 100+ combatants
+- Combat log handles long combat sessions without lag
+- Reduced unnecessary re-renders via memoization
+- Subscriptions filter by encounter_id to avoid global updates
+- Encounter updates only trigger on round changes
 
 ---
 

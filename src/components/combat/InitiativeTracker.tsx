@@ -599,16 +599,17 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       </Button>
                     </div>
                   </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-    </>
-  );
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+</>
+);
 };
 
 export default InitiativeTracker;

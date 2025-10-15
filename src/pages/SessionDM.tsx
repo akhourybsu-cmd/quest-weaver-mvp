@@ -22,6 +22,8 @@ import EffectDialog from "@/components/combat/EffectDialog";
 import MonsterLibraryDialog from "@/components/monsters/MonsterLibraryDialog";
 import MonsterRoster from "@/components/monsters/MonsterRoster";
 import DeathSaveTracker from "@/components/combat/DeathSaveTracker";
+import { EncounterControls } from "@/components/combat/EncounterControls";
+import { NeedRulingIndicator } from "@/components/combat/NeedRulingIndicator";
 
 interface Character {
   id: string;
@@ -47,6 +49,7 @@ interface Encounter {
   name: string;
   current_round: number;
   is_active: boolean;
+  status: 'preparing' | 'active' | 'paused' | 'ended';
 }
 
 const SessionDM = () => {
@@ -302,23 +305,29 @@ const SessionDM = () => {
       {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">DM Screen</h1>
               <p className="text-sm text-muted-foreground">
                 {activeEncounter ? `Round ${activeEncounter.current_round}` : "No active encounter"}
               </p>
             </div>
-            {activeEncounter ? (
-              <Button onClick={endEncounter} variant="destructive" size="sm">
-                End Combat
-              </Button>
-            ) : (
-              <Button onClick={createEncounter} size="sm">
-                <Swords className="w-4 h-4 mr-2" />
-                Start Combat
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {campaignId && <NeedRulingIndicator campaignId={campaignId} />}
+              {activeEncounter && (
+                <EncounterControls
+                  encounterId={activeEncounter.id}
+                  status={activeEncounter.status}
+                  hasInitiative={true}
+                />
+              )}
+              {!activeEncounter && (
+                <Button onClick={createEncounter} size="sm">
+                  <Swords className="w-4 h-4 mr-2" />
+                  Start Combat
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

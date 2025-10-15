@@ -529,6 +529,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string | null
+          status: Database["public"]["Enums"]["encounter_status"] | null
           updated_at: string | null
         }
         Insert: {
@@ -538,6 +539,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string | null
+          status?: Database["public"]["Enums"]["encounter_status"] | null
           updated_at?: string | null
         }
         Update: {
@@ -547,6 +549,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string | null
+          status?: Database["public"]["Enums"]["encounter_status"] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1417,6 +1420,7 @@ export type Database = {
         | "slashing"
         | "thunder"
       effect_tick_timing: "start" | "end" | "round"
+      encounter_status: "preparing" | "active" | "paused" | "ended"
       monster_size:
         | "tiny"
         | "small"
@@ -1594,6 +1598,7 @@ export const Constants = {
         "thunder",
       ],
       effect_tick_timing: ["start", "end", "round"],
+      encounter_status: ["preparing", "active", "paused", "ended"],
       monster_size: ["tiny", "small", "medium", "large", "huge", "gargantuan"],
       monster_source_type: ["catalog", "homebrew"],
       save_prompt_status: ["active", "resolved", "expired"],

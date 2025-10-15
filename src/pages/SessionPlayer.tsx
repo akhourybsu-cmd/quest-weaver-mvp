@@ -7,6 +7,7 @@ import PlayerPresence from "@/components/presence/PlayerPresence";
 import DiceRoller from "@/components/dice/DiceRoller";
 import RestManager from "@/components/character/RestManager";
 import SavePromptListener from "@/components/combat/SavePromptListener";
+import { PlayerCharacterSheet } from "@/components/combat/PlayerCharacterSheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,7 @@ const SessionPlayer = () => {
   const [tempHpValue, setTempHpValue] = useState("");
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [activeEncounter, setActiveEncounter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignCode) {
@@ -136,6 +138,16 @@ const SessionPlayer = () => {
     }
 
     setCampaignId(campaigns[0].id);
+
+    // Check for active encounter
+    const { data: encounter } = await supabase
+      .from("encounters")
+      .select("id")
+      .eq("campaign_id", campaigns[0].id)
+      .in("status", ["active", "paused"])
+      .maybeSingle();
+
+    setActiveEncounter(encounter?.id || null);
 
     // Get character for this user in this campaign
     const { data, error } = await supabase
@@ -297,6 +309,15 @@ const SessionPlayer = () => {
             campaignId={campaignId}
             currentUserId={currentUserId}
             isDM={false}
+          />
+        )}
+
+        {/* Player Character Sheet - shown when in active encounter */}
+        {activeEncounter && campaignId && (
+          <PlayerCharacterSheet
+            characterId={character.id}
+            campaignId={campaignId}
+            encounterId={activeEncounter}
           />
         )}
 

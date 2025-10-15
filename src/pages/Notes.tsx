@@ -3,7 +3,8 @@ import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import QuestLog from "@/components/quests/QuestLog";
-import NPCDirectory from "@/components/npcs/NPCDirectory";
+import EnhancedNPCDirectory from "@/components/npcs/EnhancedNPCDirectory";
+import FactionDirectory from "@/components/factions/FactionDirectory";
 import LootPool from "@/components/loot/LootPool";
 import HandoutViewer from "@/components/handouts/HandoutViewer";
 import { ArrowLeft } from "lucide-react";
@@ -41,7 +42,8 @@ const Notes = () => {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <QuestLog campaignId={campaignId} isDM={isDM} />
-        <NPCDirectory campaignId={campaignId} isDM={isDM} />
+        <EnhancedNPCDirectory campaignId={campaignId} isDM={isDM} />
+        <FactionDirectory campaignId={campaignId} isDM={isDM} />
         <LootPool campaignId={campaignId} isDM={isDM} />
         <HandoutViewer campaignId={campaignId} isDM={isDM} />
       </div>

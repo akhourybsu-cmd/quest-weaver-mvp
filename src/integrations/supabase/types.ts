@@ -613,6 +613,95 @@ export type Database = {
           },
         ]
       }
+      faction_reputation: {
+        Row: {
+          campaign_id: string
+          faction_id: string
+          id: string
+          last_changed_at: string | null
+          notes: string | null
+          score: number | null
+        }
+        Insert: {
+          campaign_id: string
+          faction_id: string
+          id?: string
+          last_changed_at?: string | null
+          notes?: string | null
+          score?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          faction_id?: string
+          id?: string
+          last_changed_at?: string | null
+          notes?: string | null
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faction_reputation_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faction_reputation_faction_id_fkey"
+            columns: ["faction_id"]
+            isOneToOne: false
+            referencedRelation: "factions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factions: {
+        Row: {
+          banner_url: string | null
+          campaign_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          influence_score: number | null
+          motto: string | null
+          name: string
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          campaign_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          influence_score?: number | null
+          motto?: string | null
+          name: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          campaign_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          influence_score?: number | null
+          motto?: string | null
+          name?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fog_regions: {
         Row: {
           created_at: string | null
@@ -735,6 +824,57 @@ export type Database = {
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          location_type: string | null
+          name: string
+          parent_location_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location_type?: string | null
+          name: string
+          parent_location_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location_type?: string | null
+          name?: string
+          parent_location_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_parent_location_id_fkey"
+            columns: ["parent_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
         ]
@@ -1101,46 +1241,183 @@ export type Database = {
           },
         ]
       }
+      npc_appearances: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          npc_id: string
+          session_id: string | null
+          summary: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          npc_id: string
+          session_id?: string | null
+          summary: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          npc_id?: string
+          session_id?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "npc_appearances_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npc_appearances_npc_id_fkey"
+            columns: ["npc_id"]
+            isOneToOne: false
+            referencedRelation: "npcs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npc_appearances_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      npc_relationships: {
+        Row: {
+          campaign_id: string
+          id: string
+          intensity: number | null
+          notes: string | null
+          relation: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          intensity?: number | null
+          notes?: string | null
+          relation: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          intensity?: number | null
+          notes?: string | null
+          relation?: string
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "npc_relationships_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       npcs: {
         Row: {
           campaign_id: string
           created_at: string | null
           description: string | null
+          faction_id: string | null
+          gm_notes: string | null
           id: string
           location: string | null
+          location_id: string | null
           name: string
           portrait_url: string | null
+          pronouns: string | null
+          public_bio: string | null
           role: string | null
+          role_title: string | null
+          secrets: string | null
+          statblock_ref: string | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
           campaign_id: string
           created_at?: string | null
           description?: string | null
+          faction_id?: string | null
+          gm_notes?: string | null
           id?: string
           location?: string | null
+          location_id?: string | null
           name: string
           portrait_url?: string | null
+          pronouns?: string | null
+          public_bio?: string | null
           role?: string | null
+          role_title?: string | null
+          secrets?: string | null
+          statblock_ref?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
           campaign_id?: string
           created_at?: string | null
           description?: string | null
+          faction_id?: string | null
+          gm_notes?: string | null
           id?: string
           location?: string | null
+          location_id?: string | null
           name?: string
           portrait_url?: string | null
+          pronouns?: string | null
+          public_bio?: string | null
           role?: string | null
+          role_title?: string | null
+          secrets?: string | null
+          statblock_ref?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_npcs_faction"
+            columns: ["faction_id"]
+            isOneToOne: false
+            referencedRelation: "factions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "npcs_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
         ]

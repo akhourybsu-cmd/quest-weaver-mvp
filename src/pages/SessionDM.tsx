@@ -24,6 +24,7 @@ import MonsterRoster from "@/components/monsters/MonsterRoster";
 import DeathSaveTracker from "@/components/combat/DeathSaveTracker";
 import { EncounterControls } from "@/components/combat/EncounterControls";
 import { NeedRulingIndicator } from "@/components/combat/NeedRulingIndicator";
+import { PartyRestManager } from "@/components/combat/PartyRestManager";
 
 interface Character {
   id: string;
@@ -381,6 +382,14 @@ const SessionDM = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Party Rest Manager */}
+            {campaignId && (
+              <PartyRestManager
+                campaignId={campaignId}
+                characters={characters}
+              />
+            )}
 
             <Card className="shadow-md">
               <CardHeader>

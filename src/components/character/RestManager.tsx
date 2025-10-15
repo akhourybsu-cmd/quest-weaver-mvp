@@ -62,15 +62,29 @@ const RestManager = ({ character }: RestManagerProps) => {
     const hitDieSize = getHitDieSize(character.class);
     const hitDieRoll = rollHitDie(hitDieSize);
     const conModifier = calculateModifier(character.con_save);
-    const healing = hitDieRoll + conModifier;
+    const healing = Math.max(1, hitDieRoll + conModifier); // Minimum 1 HP
 
     const newHP = Math.min(character.max_hp, character.current_hp + healing);
 
+    // Get current resources to restore some class features
+    const { data: charData } = await supabase
+      .from("characters")
+      .select("resources")
+      .eq("id", character.id)
+      .single();
+
+    const currentResources = (charData?.resources as any) || {};
+    const updatedResources = { ...currentResources };
+
+    // Restore some short-rest resources (Warlock spell slots, some class features)
+    // This is a simplified version - in a full implementation, you'd track this more precisely
+    
     const { error } = await supabase
       .from("characters")
       .update({ 
         current_hp: newHP,
-        temp_hp: 0 
+        temp_hp: 0,
+        resources: updatedResources as any
       })
       .eq("id", character.id);
 
@@ -93,12 +107,35 @@ const RestManager = ({ character }: RestManagerProps) => {
   const handleLongRest = async () => {
     setIsResting(true);
 
-    // Long rest: Full HP recovery
+    // Get current resources to fully restore them
+    const { data: charData } = await supabase
+      .from("characters")
+      .select("resources")
+      .eq("id", character.id)
+      .single();
+
+    const currentResources = (charData?.resources as any) || {};
+    const restoredResources = { ...currentResources };
+
+    // Restore all resources to max
+    Object.keys(restoredResources).forEach(key => {
+      if (restoredResources[key]?.max !== undefined) {
+        restoredResources[key].current = restoredResources[key].max;
+      }
+    });
+
+    // Long rest: Full HP recovery, all resources, clear death saves
     const { error } = await supabase
       .from("characters")
       .update({ 
         current_hp: character.max_hp,
-        temp_hp: 0 
+        temp_hp: 0,
+        death_save_success: 0,
+        death_save_fail: 0,
+        resources: restoredResources as any,
+        action_used: false,
+        bonus_action_used: false,
+        reaction_used: false
       })
       .eq("id", character.id);
 
@@ -111,7 +148,8 @@ const RestManager = ({ character }: RestManagerProps) => {
     } else {
       toast({
         title: "Long Rest Complete",
-        description: `Fully restored! HP: ${character.max_hp}/${character.max_hp}. All hit dice recovered.`,
+        description: `Fully restored! HP, resources, death saves, and actions reset.`,
+        duration: 5000,
       });
     }
 

@@ -113,21 +113,29 @@ serve(async (req) => {
         }
       }
 
-      // Remove expired effects (exclusive end: effect expires when current_round >= end_round)
-      const { error: deleteError } = await supabase
+      // Remove expired effects (when current round reaches or passes end_round)
+      const { error: deleteEffectsError } = await supabase
         .from('effects')
         .delete()
         .eq('encounter_id', encounterId)
         .not('end_round', 'is', null)
         .lte('end_round', newRound);
 
-      // Remove expired conditions (exclusive end: condition expires when current_round >= ends_at_round)
-      await supabase
+      if (deleteEffectsError) {
+        console.error('Error removing expired effects:', deleteEffectsError);
+      }
+
+      // Remove expired conditions (when current round reaches or passes ends_at_round)
+      const { error: deleteConditionsError } = await supabase
         .from('character_conditions')
         .delete()
         .eq('encounter_id', encounterId)
         .not('ends_at_round', 'is', null)
         .lte('ends_at_round', newRound);
+
+      if (deleteConditionsError) {
+        console.error('Error removing expired conditions:', deleteConditionsError);
+      }
     }
 
     // Process start-of-turn effects for next character

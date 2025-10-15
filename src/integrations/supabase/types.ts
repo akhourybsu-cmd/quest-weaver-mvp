@@ -784,6 +784,127 @@ export type Database = {
           },
         ]
       }
+      holding_events: {
+        Row: {
+          author_id: string | null
+          campaign_id: string
+          event_type: string
+          from_owner_id: string | null
+          from_owner_type: string | null
+          id: string
+          item_id: string
+          occurred_at: string | null
+          payload: Json | null
+          quantity_delta: number | null
+          to_owner_id: string | null
+          to_owner_type: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          campaign_id: string
+          event_type: string
+          from_owner_id?: string | null
+          from_owner_type?: string | null
+          id?: string
+          item_id: string
+          occurred_at?: string | null
+          payload?: Json | null
+          quantity_delta?: number | null
+          to_owner_id?: string | null
+          to_owner_type?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          campaign_id?: string
+          event_type?: string
+          from_owner_id?: string | null
+          from_owner_type?: string | null
+          id?: string
+          item_id?: string
+          occurred_at?: string | null
+          payload?: Json | null
+          quantity_delta?: number | null
+          to_owner_id?: string | null
+          to_owner_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holding_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holdings: {
+        Row: {
+          attuned_to: string | null
+          campaign_id: string
+          id: string
+          is_attuned: boolean | null
+          item_id: string
+          notes: string | null
+          owner_id: string | null
+          owner_type: string | null
+          quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          attuned_to?: string | null
+          campaign_id: string
+          id?: string
+          is_attuned?: boolean | null
+          item_id: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_type?: string | null
+          quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          attuned_to?: string | null
+          campaign_id?: string
+          id?: string
+          is_attuned?: boolean | null
+          item_id?: string
+          notes?: string | null
+          owner_id?: string | null
+          owner_type?: string | null
+          quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_attuned_to_fkey"
+            columns: ["attuned_to"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       initiative: {
         Row: {
           combatant_id: string | null
@@ -824,6 +945,88 @@ export type Database = {
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_links: {
+        Row: {
+          id: string
+          item_id: string
+          label: string | null
+          link_id: string
+          link_type: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          label?: string | null
+          link_id: string
+          link_type: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          label?: string | null
+          link_id?: string
+          link_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_links_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          properties: Json | null
+          rarity: string | null
+          source_ref: string | null
+          tags: string[] | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          properties?: Json | null
+          rarity?: string | null
+          source_ref?: string | null
+          tags?: string[] | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          properties?: Json | null
+          rarity?: string | null
+          source_ref?: string | null
+          tags?: string[] | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]

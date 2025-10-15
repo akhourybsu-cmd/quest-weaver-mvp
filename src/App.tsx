@@ -15,6 +15,7 @@ import SessionSpectator from "./pages/SessionSpectator";
 import CombatMap from "./pages/CombatMap";
 import WorldMap from "./pages/WorldMap";
 import CampaignTimeline from "./pages/CampaignTimeline";
+import Inventory from "./pages/Inventory";
 import Notes from "./pages/Notes";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ const App = () => {
             <Route path="/map" element={<CombatMap />} />
             <Route path="/world-map" element={<WorldMap />} />
             <Route path="/timeline" element={<CampaignTimeline />} />
+            <Route path="/inventory" element={<Inventory />} />
             <Route path="/notes" element={<Notes />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

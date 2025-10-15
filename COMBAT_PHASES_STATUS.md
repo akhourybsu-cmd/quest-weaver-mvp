@@ -217,22 +217,39 @@
 
 ---
 
-### **Phase 14 — Telemetry & Analytics** ⬅️ NEXT
-
----
-
-### **Phase 13 — Security & Quotas**
-**Goals:**
-- Tighten RLS (players only mutate self)
-- Edge function rate limits
-- Idempotency keys for actions
-
----
-
-### **Phase 14 — Telemetry & Analytics**
+### **Phase 14 — Telemetry & Analytics** ✅ COMPLETE
 **Goals:**
 - Event pings (encounter_start, round_start, etc.)
 - Error + latency traces
+
+**Completed:**
+- ✅ Created analytics_events table with RLS policies
+- ✅ Built telemetry utility with event tracking (src/lib/telemetry.ts)
+- ✅ Integrated telemetry into combat actions (damage, healing, turn advance)
+- ✅ Added latency measurement for performance monitoring
+- ✅ Automatic error tracking for failed combat actions
+- ✅ Event tracking for encounter lifecycle (start, end)
+- ✅ Indexed queries for efficient analytics retrieval
+
+**Event Types Tracked:**
+- encounter_start, encounter_end
+- round_start, turn_advance
+- damage_applied, healing_applied
+- effect_created, effect_expired
+- condition_applied
+- save_prompt_created, save_result_submitted
+- combat_action_error (with latency + error message)
+
+**Features:**
+- Silent failure to avoid disrupting user experience
+- Performance.now() for accurate latency measurement
+- Automatic error wrapping with context
+- DM-only analytics viewing via RLS
+- Indexed for fast queries by campaign, encounter, type, or user
+
+---
+
+### **Phase 15 — Polish & Accessibility** ⬅️ NEXT
 
 ---
 

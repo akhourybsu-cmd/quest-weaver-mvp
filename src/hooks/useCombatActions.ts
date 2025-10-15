@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
 import { validateInput, DamageSchema, HealingSchema, InitiativeSchema } from "@/lib/validation";
 import { withRetry } from "@/lib/retryHelper";
+import { trackCombatAction } from "@/lib/telemetry";
 
 // Generate idempotency key for combat actions
 function generateIdempotencyKey(action: string, targetId: string): string {
@@ -49,23 +50,30 @@ export const useCombatActions = () => {
         return;
       }
 
-      // Execute with retry logic and idempotency
-      const { data, error } = await withRetry(
-        () => supabase.functions.invoke('apply-damage', {
-          body: validation.data,
-          headers: {
-            'Idempotency-Key': generateIdempotencyKey('damage', characterId),
-          },
-        }),
+      // Execute with retry logic, idempotency, and telemetry
+      const { data, error } = await trackCombatAction(
+        "damage_applied",
+        () => withRetry(
+          () => supabase.functions.invoke('apply-damage', {
+            body: validation.data,
+            headers: {
+              'Idempotency-Key': generateIdempotencyKey('damage', characterId),
+            },
+          }),
+          {
+            maxRetries: 2,
+            onRetry: (attempt, err) => {
+              console.log(`Retrying damage application (attempt ${attempt}):`, err);
+              toast({
+                title: "Retrying...",
+                description: `Network issue detected, retrying (${attempt}/2)`,
+              });
+            },
+          }
+        ),
         {
-          maxRetries: 2,
-          onRetry: (attempt, err) => {
-            console.log(`Retrying damage application (attempt ${attempt}):`, err);
-            toast({
-              title: "Retrying...",
-              description: `Network issue detected, retrying (${attempt}/2)`,
-            });
-          },
+          encounterId,
+          eventData: { characterId, amount, damageType, sourceName, abilityName },
         }
       );
 
@@ -147,23 +155,30 @@ export const useCombatActions = () => {
         return;
       }
 
-      // Execute with retry logic and idempotency
-      const { data, error } = await withRetry(
-        () => supabase.functions.invoke('apply-healing', {
-          body: validation.data,
-          headers: {
-            'Idempotency-Key': generateIdempotencyKey('healing', characterId),
-          },
-        }),
+      // Execute with retry logic, idempotency, and telemetry
+      const { data, error } = await trackCombatAction(
+        "healing_applied",
+        () => withRetry(
+          () => supabase.functions.invoke('apply-healing', {
+            body: validation.data,
+            headers: {
+              'Idempotency-Key': generateIdempotencyKey('healing', characterId),
+            },
+          }),
+          {
+            maxRetries: 2,
+            onRetry: (attempt, err) => {
+              console.log(`Retrying heal application (attempt ${attempt}):`, err);
+              toast({
+                title: "Retrying...",
+                description: `Network issue detected, retrying (${attempt}/2)`,
+              });
+            },
+          }
+        ),
         {
-          maxRetries: 2,
-          onRetry: (attempt, err) => {
-            console.log(`Retrying heal application (attempt ${attempt}):`, err);
-            toast({
-              title: "Retrying...",
-              description: `Network issue detected, retrying (${attempt}/2)`,
-            });
-          },
+          encounterId,
+          eventData: { characterId, amount, sourceName, abilityName },
         }
       );
 
@@ -255,19 +270,32 @@ export const useCombatActions = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await withRetry(
-        () => supabase.functions.invoke('advance-turn', {
-          body: { encounterId },
-        }),
-        {
-          maxRetries: 2,
-          onRetry: (attempt) => {
-            console.log(`Retrying turn advance (attempt ${attempt})`);
-          },
-        }
+      const { data, error } = await trackCombatAction(
+        "turn_advance",
+        () => withRetry(
+          () => supabase.functions.invoke('advance-turn', {
+            body: { encounterId },
+          }),
+          {
+            maxRetries: 2,
+            onRetry: (attempt) => {
+              console.log(`Retrying turn advance (attempt ${attempt})`);
+            },
+          }
+        ),
+        { encounterId, eventData: {} }
       );
 
       if (error) throw error;
+
+      // Track new round if applicable
+      if (data.isNewRound) {
+        await supabase.from("analytics_events").insert({
+          encounter_id: encounterId,
+          event_type: "round_start",
+          event_data: { round: data.newRound },
+        });
+      }
 
       toast({
         title: data.isNewRound ? `Round ${data.newRound}` : "Turn advanced",

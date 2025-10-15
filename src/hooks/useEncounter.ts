@@ -66,7 +66,8 @@ export const useEncounter = (encounterId: string | null) => {
       .eq("encounter_id", encounterId)
       .order("initiative_roll", { ascending: false })
       .order("dex_modifier", { ascending: false })
-      .order("passive_perception", { ascending: false });
+      .order("passive_perception", { ascending: false })
+      .order("created_at", { ascending: true }); // Final stable tiebreaker
 
     if (error) {
       toast({

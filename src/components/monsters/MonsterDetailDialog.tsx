@@ -17,6 +17,14 @@ const MonsterDetailDialog = ({ open, onOpenChange, monster }: MonsterDetailDialo
     return mod >= 0 ? `+${mod}` : `${mod}`;
   };
 
+  // Helper function to safely convert JSONB arrays to string
+  const formatDamageTypes = (types: any): string => {
+    if (!types) return '';
+    if (Array.isArray(types)) return types.join(', ');
+    if (typeof types === 'object') return Object.values(types).join(', ');
+    return String(types);
+  };
+
   const renderAbilityScores = () => (
     <div className="grid grid-cols-6 gap-2 text-center text-sm">
       {['str', 'dex', 'con', 'int', 'wis', 'cha'].map((ability) => (
@@ -206,26 +214,28 @@ const MonsterDetailDialog = ({ open, onOpenChange, monster }: MonsterDetailDialo
             </div>
 
             {/* Resistances, Immunities, Vulnerabilities */}
-            {(monster.resistances?.length > 0 || monster.immunities?.length > 0 || monster.vulnerabilities?.length > 0) && (
+            {((monster.resistances && formatDamageTypes(monster.resistances)) || 
+              (monster.immunities && formatDamageTypes(monster.immunities)) || 
+              (monster.vulnerabilities && formatDamageTypes(monster.vulnerabilities))) && (
               <>
                 <Separator />
                 <div className="space-y-2 text-sm">
-                  {monster.resistances?.length > 0 && (
+                  {monster.resistances && formatDamageTypes(monster.resistances) && (
                     <div>
                       <span className="font-semibold">Damage Resistances: </span>
-                      <span className="text-muted-foreground">{monster.resistances.join(', ')}</span>
+                      <span className="text-muted-foreground">{formatDamageTypes(monster.resistances)}</span>
                     </div>
                   )}
-                  {monster.immunities?.length > 0 && (
+                  {monster.immunities && formatDamageTypes(monster.immunities) && (
                     <div>
                       <span className="font-semibold">Damage Immunities: </span>
-                      <span className="text-muted-foreground">{monster.immunities.join(', ')}</span>
+                      <span className="text-muted-foreground">{formatDamageTypes(monster.immunities)}</span>
                     </div>
                   )}
-                  {monster.vulnerabilities?.length > 0 && (
+                  {monster.vulnerabilities && formatDamageTypes(monster.vulnerabilities) && (
                     <div>
                       <span className="font-semibold">Damage Vulnerabilities: </span>
-                      <span className="text-muted-foreground">{monster.vulnerabilities.join(', ')}</span>
+                      <span className="text-muted-foreground">{formatDamageTypes(monster.vulnerabilities)}</span>
                     </div>
                   )}
                 </div>

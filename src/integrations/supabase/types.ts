@@ -171,10 +171,13 @@ export type Database = {
           con_save: number | null
           created_at: string | null
           current_hp: number
+          death_save_fail: number | null
+          death_save_success: number | null
           dex_save: number | null
           id: string
           immunities: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus: number
+          inspiration: boolean | null
           int_save: number | null
           level: number
           max_hp: number
@@ -198,10 +201,13 @@ export type Database = {
           con_save?: number | null
           created_at?: string | null
           current_hp: number
+          death_save_fail?: number | null
+          death_save_success?: number | null
           dex_save?: number | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
+          inspiration?: boolean | null
           int_save?: number | null
           level?: number
           max_hp: number
@@ -225,10 +231,13 @@ export type Database = {
           con_save?: number | null
           created_at?: string | null
           current_hp?: number
+          death_save_fail?: number | null
+          death_save_success?: number | null
           dex_save?: number | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
+          inspiration?: boolean | null
           int_save?: number | null
           level?: number
           max_hp?: number

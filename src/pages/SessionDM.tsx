@@ -21,6 +21,7 @@ import DamageInput from "@/components/combat/DamageInput";
 import EffectDialog from "@/components/combat/EffectDialog";
 import MonsterLibraryDialog from "@/components/monsters/MonsterLibraryDialog";
 import MonsterRoster from "@/components/monsters/MonsterRoster";
+import DeathSaveTracker from "@/components/combat/DeathSaveTracker";
 
 interface Character {
   id: string;
@@ -36,6 +37,9 @@ interface Character {
   resistances: string[];
   vulnerabilities: string[];
   immunities: string[];
+  death_save_success: number;
+  death_save_fail: number;
+  inspiration: boolean;
 }
 
 interface Encounter {
@@ -471,6 +475,22 @@ const SessionDM = () => {
                   />
                 </div>
                 <SavePromptsList encounterId={activeEncounter.id} />
+                
+                {/* Death Save Trackers for characters at 0 HP */}
+                {characters
+                  .filter(c => c.current_hp === 0)
+                  .map(c => (
+                    <DeathSaveTracker
+                      key={c.id}
+                      characterId={c.id}
+                      characterName={c.name}
+                      successes={c.death_save_success}
+                      failures={c.death_save_fail}
+                      currentHp={c.current_hp}
+                      encounterId={activeEncounter.id}
+                    />
+                  ))}
+                
                 <InitiativeTracker
                   encounterId={activeEncounter.id}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}

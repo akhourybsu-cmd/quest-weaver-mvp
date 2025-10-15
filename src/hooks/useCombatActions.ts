@@ -48,6 +48,25 @@ export const useCombatActions = () => {
 
       if (error) throw error;
 
+      // Auto-create concentration save prompt if needed
+      if (data?.concentrationCheck?.required) {
+        const dc = data.concentrationCheck.dc;
+        const effects = data.concentrationCheck.effects;
+        const effectNames = effects.map((e: any) => e.name).join(", ");
+        
+        await supabase.from("save_prompts").insert({
+          encounter_id: encounterId,
+          ability: "CON",
+          dc: dc,
+          description: `Concentration check (${effectNames}) — DC ${dc}`,
+          target_scope: "custom",
+          target_character_ids: [characterId],
+          advantage_mode: "normal",
+          half_on_success: false,
+          expected_responses: 1,
+        });
+      }
+
       toast({
         title: "Damage applied",
         description: data.damageSteps?.join(" → "),
@@ -104,6 +123,17 @@ export const useCombatActions = () => {
       });
 
       if (error) throw error;
+
+      // Clear death saves on healing
+      if (data?.newHP > 0) {
+        await supabase
+          .from("characters")
+          .update({ 
+            death_save_success: 0,
+            death_save_fail: 0
+          })
+          .eq("id", characterId);
+      }
 
       toast({
         title: "Healing applied",

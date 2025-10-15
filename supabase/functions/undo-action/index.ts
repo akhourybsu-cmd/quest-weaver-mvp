@@ -17,7 +17,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
@@ -31,26 +38,26 @@ serve(async (req) => {
     const { encounterId, logEntryId } = await req.json();
 
     // Validate DM authority
-    const { data: encounter } = await supabaseClient
+    const { data: encounter, error: encounterError } = await supabaseClient
       .from('encounters')
       .select('campaign_id')
       .eq('id', encounterId)
       .single();
 
-    if (!encounter) {
+    if (encounterError || !encounter) {
       return new Response(JSON.stringify({ error: 'Encounter not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: campaign } = await supabaseClient
+    const { data: campaign, error: campaignError } = await supabaseClient
       .from('campaigns')
       .select('dm_user_id')
       .eq('id', encounter.campaign_id)
       .single();
 
-    if (!campaign || campaign.dm_user_id !== user.id) {
+    if (campaignError || !campaign || campaign.dm_user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Only DM can undo actions' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,84 +78,50 @@ serve(async (req) => {
       });
     }
 
-    console.log('Undoing action:', logEntry.action_type, logEntry);
+    console.log('Undoing action:', logEntry.action_type);
 
     // Reverse the action based on type
-    switch (logEntry.action_type) {
-      case 'damage': {
-        if (!logEntry.character_id || !logEntry.amount) {
-          return new Response(JSON.stringify({ error: 'Invalid damage entry' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
+    if (logEntry.action_type === 'damage' && logEntry.character_id && logEntry.amount) {
+      // Restore HP
+      const { data: character } = await supabaseClient
+        .from('characters')
+        .select('current_hp, max_hp')
+        .eq('id', logEntry.character_id)
+        .single();
 
-        // Restore HP
-        const { data: character } = await supabaseClient
+      if (character) {
+        const restoredHP = Math.min(character.max_hp, character.current_hp + logEntry.amount);
+        await supabaseClient
           .from('characters')
-          .select('current_hp, max_hp')
-          .eq('id', logEntry.character_id)
-          .single();
-
-        if (character) {
-          const restoredHP = Math.min(character.max_hp, character.current_hp + logEntry.amount);
-          await supabaseClient
-            .from('characters')
-            .update({ current_hp: restoredHP })
-            .eq('id', logEntry.character_id);
-        }
-        break;
+          .update({ current_hp: restoredHP })
+          .eq('id', logEntry.character_id);
       }
+    } else if (logEntry.action_type === 'healing' && logEntry.character_id && logEntry.amount) {
+      // Remove HP
+      const { data: character } = await supabaseClient
+        .from('characters')
+        .select('current_hp')
+        .eq('id', logEntry.character_id)
+        .single();
 
-      case 'healing': {
-        if (!logEntry.character_id || !logEntry.amount) {
-          return new Response(JSON.stringify({ error: 'Invalid healing entry' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        // Remove HP
-        const { data: character } = await supabaseClient
+      if (character) {
+        const reducedHP = Math.max(0, character.current_hp - logEntry.amount);
+        await supabaseClient
           .from('characters')
-          .select('current_hp')
-          .eq('id', logEntry.character_id)
-          .single();
-
-        if (character) {
-          const reducedHP = Math.max(0, character.current_hp - logEntry.amount);
-          await supabaseClient
-            .from('characters')
-            .update({ current_hp: reducedHP })
-            .eq('id', logEntry.character_id);
-        }
-        break;
+          .update({ current_hp: reducedHP })
+          .eq('id', logEntry.character_id);
       }
-
-      case 'effect_applied': {
-        // Remove the most recent effect for this character
-        if (logEntry.details?.effectId) {
-          await supabaseClient
-            .from('effects')
-            .delete()
-            .eq('id', logEntry.details.effectId);
-        }
-        break;
-      }
-
-      case 'effect_expired': {
-        // Cannot reliably undo effect expiry - would need to restore the effect
-        return new Response(JSON.stringify({ error: 'Cannot undo effect expiry' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      default:
-        return new Response(JSON.stringify({ error: 'Cannot undo this action type' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    } else if (logEntry.action_type === 'effect_applied' && logEntry.details?.effectId) {
+      // Remove the effect
+      await supabaseClient
+        .from('effects')
+        .delete()
+        .eq('id', logEntry.details.effectId);
+    } else {
+      return new Response(JSON.stringify({ error: 'Cannot undo this action type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Delete the log entry

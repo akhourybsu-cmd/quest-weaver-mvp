@@ -62,7 +62,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
       return;
     }
 
-    setEntries(data || []);
+    setEntries((data || []) as LogEntry[]);
   };
   const toggleExpanded = (id: string) => {
     setExpandedEntries(prev => {

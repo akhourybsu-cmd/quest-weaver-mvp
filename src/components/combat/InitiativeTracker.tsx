@@ -14,6 +14,9 @@ import MonsterDetailDialog from "@/components/monsters/MonsterDetailDialog";
 import MonsterActionDialog from "@/components/combat/MonsterActionDialog";
 import QuickConditionsPopover from "@/components/combat/QuickConditionsPopover";
 import RVITooltip from "@/components/combat/RVITooltip";
+import { ActionEconomy } from "@/components/combat/ActionEconomy";
+import { ResourceChips } from "@/components/combat/ResourceChips";
+import { InspirationToggle } from "@/components/combat/InspirationToggle";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -486,6 +489,27 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                                 immunities={entry.combatant_stats.immunities as any || []}
                               />
                             )}
+                          </div>
+                        )}
+                        {entry.combatant_type === 'character' && entry.combatant_stats && (
+                          <div className="flex gap-2 mt-2 items-center flex-wrap">
+                            <ActionEconomy
+                              characterId={entry.combatant_id}
+                              actionUsed={entry.combatant_stats.action_used || false}
+                              bonusActionUsed={entry.combatant_stats.bonus_action_used || false}
+                              reactionUsed={entry.combatant_stats.reaction_used || false}
+                              isDM={true}
+                            />
+                            <ResourceChips
+                              characterId={entry.combatant_id}
+                              resources={entry.combatant_stats.resources as any || {}}
+                              isDM={true}
+                            />
+                            <InspirationToggle
+                              characterId={entry.combatant_id}
+                              hasInspiration={entry.combatant_stats.inspiration || false}
+                              isDM={true}
+                            />
                           </div>
                         )}
                       </div>

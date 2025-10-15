@@ -165,6 +165,8 @@ export type Database = {
       characters: {
         Row: {
           ac: number
+          action_used: boolean | null
+          bonus_action_used: boolean | null
           campaign_id: string | null
           cha_save: number | null
           class: string
@@ -184,7 +186,9 @@ export type Database = {
           name: string
           passive_perception: number | null
           proficiency_bonus: number
+          reaction_used: boolean | null
           resistances: Database["public"]["Enums"]["damage_type"][] | null
+          resources: Json | null
           speed: number | null
           str_save: number | null
           temp_hp: number | null
@@ -195,6 +199,8 @@ export type Database = {
         }
         Insert: {
           ac: number
+          action_used?: boolean | null
+          bonus_action_used?: boolean | null
           campaign_id?: string | null
           cha_save?: number | null
           class: string
@@ -214,7 +220,9 @@ export type Database = {
           name: string
           passive_perception?: number | null
           proficiency_bonus: number
+          reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
+          resources?: Json | null
           speed?: number | null
           str_save?: number | null
           temp_hp?: number | null
@@ -225,6 +233,8 @@ export type Database = {
         }
         Update: {
           ac?: number
+          action_used?: boolean | null
+          bonus_action_used?: boolean | null
           campaign_id?: string | null
           cha_save?: number | null
           class?: string
@@ -244,7 +254,9 @@ export type Database = {
           name?: string
           passive_perception?: number | null
           proficiency_bonus?: number
+          reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
+          resources?: Json | null
           speed?: number | null
           str_save?: number | null
           temp_hp?: number | null

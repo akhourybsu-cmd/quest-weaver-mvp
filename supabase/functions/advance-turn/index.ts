@@ -131,13 +131,26 @@ serve(async (req) => {
     }
 
     // Process start-of-turn effects for next character
-    const nextCharacterId = initiative[nextIndex].character_id;
+    const nextCombatantId = initiative[nextIndex].combatant_id;
+    const nextCombatantType = initiative[nextIndex].combatant_type;
+    
+    // Reset action economy for the next character (only if it's a character, not monster)
+    if (nextCombatantType === 'character') {
+      await supabase
+        .from('characters')
+        .update({
+          action_used: false,
+          bonus_action_used: false,
+          reaction_used: false,
+        })
+        .eq('id', nextCombatantId);
+    }
     
     const { data: startEffects } = await supabase
       .from('effects')
       .select('*')
       .eq('encounter_id', encounterId)
-      .eq('character_id', nextCharacterId)
+      .eq('character_id', nextCombatantId)
       .eq('ticks_at', 'start')
       .not('damage_per_tick', 'is', null);
 
@@ -152,7 +165,7 @@ serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              characterId: nextCharacterId,
+              characterId: nextCombatantId,
               amount: effect.damage_per_tick,
               damageType: effect.damage_type_per_tick,
               encounterId,

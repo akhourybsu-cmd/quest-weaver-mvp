@@ -16,6 +16,11 @@ interface InitiativeEntry {
     resistances?: string[];
     vulnerabilities?: string[];
     immunities?: string[];
+    action_used?: boolean;
+    bonus_action_used?: boolean;
+    reaction_used?: boolean;
+    resources?: any;
+    inspiration?: boolean;
   };
 }
 
@@ -87,7 +92,7 @@ export const useEncounter = (encounterId: string | null) => {
         if (init.combatant_type === 'character') {
           const { data: char } = await supabase
             .from('characters')
-            .select('name, ac, current_hp, max_hp, resistances, vulnerabilities, immunities')
+            .select('name, ac, current_hp, max_hp, resistances, vulnerabilities, immunities, action_used, bonus_action_used, reaction_used, resources, inspiration')
             .eq('id', init.combatant_id)
             .single();
 
@@ -104,7 +109,12 @@ export const useEncounter = (encounterId: string | null) => {
               hp_max: char.max_hp,
               resistances: char.resistances || [],
               vulnerabilities: char.vulnerabilities || [],
-              immunities: char.immunities || []
+              immunities: char.immunities || [],
+              action_used: char.action_used || false,
+              bonus_action_used: char.bonus_action_used || false,
+              reaction_used: char.reaction_used || false,
+              resources: char.resources || {},
+              inspiration: char.inspiration || false
             } : undefined
           };
         } else {

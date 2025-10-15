@@ -32,6 +32,7 @@ interface TokenManagerProps {
   campaignId: string;
   encounterId?: string;
   gridSize: number;
+  gridSnapEnabled?: boolean;
 }
 
 const TOKEN_COLORS = [
@@ -51,7 +52,7 @@ const TOKEN_SIZES = [
   { value: 4, label: "Gargantuan (4x4)" },
 ];
 
-const TokenManager = ({ mapId, campaignId, encounterId, gridSize }: TokenManagerProps) => {
+const TokenManager = ({ mapId, campaignId, encounterId, gridSize, gridSnapEnabled = true }: TokenManagerProps) => {
   const [open, setOpen] = useState(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [name, setName] = useState("");
@@ -87,8 +88,14 @@ const TokenManager = ({ mapId, campaignId, encounterId, gridSize }: TokenManager
     const tokenName = name || characters.find((c) => c.id === selectedCharacterId)?.name || "Token";
 
     // Place token in center of map
-    const x = 300;
-    const y = 200;
+    let x = 300;
+    let y = 200;
+    
+    // Apply grid snapping if enabled
+    if (gridSnapEnabled) {
+      x = Math.round(x / gridSize) * gridSize;
+      y = Math.round(y / gridSize) * gridSize;
+    }
 
     const { error } = await supabase.from("tokens").insert({
       map_id: mapId,

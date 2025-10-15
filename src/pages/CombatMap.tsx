@@ -9,6 +9,11 @@ import MapUpload from "@/components/maps/MapUpload";
 import TokenManager from "@/components/maps/TokenManager";
 import FogOfWarTools from "@/components/maps/FogOfWarTools";
 import AoETools from "@/components/maps/AoETools";
+import { MeasurementTool } from "@/components/maps/MeasurementTool";
+import { GridSnapToggle } from "@/components/maps/GridSnapToggle";
+import { RangeIndicator } from "@/components/maps/RangeIndicator";
+import { TerrainMarker } from "@/components/maps/TerrainMarker";
+import { AdvancedFogTools } from "@/components/maps/AdvancedFogTools";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +25,7 @@ interface Map {
   height: number;
   gridEnabled: boolean;
   gridSize: number;
+  scaleFeetsPerSquare: number;
 }
 
 const CombatMap = () => {
@@ -32,6 +38,14 @@ const CombatMap = () => {
   const [maps, setMaps] = useState<Map[]>([]);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   const [fogTool, setFogTool] = useState<"reveal" | "hide" | null>(null);
+  
+  // Phase 7 tool states
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [gridSnapEnabled, setGridSnapEnabled] = useState(true);
+  const [measurementActive, setMeasurementActive] = useState(false);
+  const [rangeActive, setRangeActive] = useState(false);
+  const [terrainActive, setTerrainActive] = useState(false);
+  const [advancedFogActive, setAdvancedFogActive] = useState(false);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -58,6 +72,7 @@ const CombatMap = () => {
             height: m.height,
             gridEnabled: m.grid_enabled,
             gridSize: m.grid_size,
+            scaleFeetsPerSquare: m.scale_feet_per_square || 5,
           }))
         );
 
@@ -111,7 +126,7 @@ const CombatMap = () => {
         ) : (
           <div className="grid lg:grid-cols-4 gap-6">
             {/* Main Map */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 relative">
               <MapViewer
                 mapId={selectedMap.id}
                 imageUrl={selectedMap.imageUrl}
@@ -122,6 +137,78 @@ const CombatMap = () => {
                 isDM={isDM}
                 encounterId={encounterId || undefined}
               />
+              
+              {/* Phase 7 Tool Overlays */}
+              {isDM && (
+                <>
+                  <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    <MeasurementTool
+                      gridSize={selectedMap.gridSize}
+                      scaleFeetsPerSquare={selectedMap.scaleFeetsPerSquare}
+                      isActive={measurementActive}
+                      onToggle={() => {
+                        const newActive = !measurementActive;
+                        setMeasurementActive(newActive);
+                        if (newActive) {
+                          setRangeActive(false);
+                          setTerrainActive(false);
+                          setAdvancedFogActive(false);
+                        }
+                      }}
+                    />
+                    <RangeIndicator
+                      gridSize={selectedMap.gridSize}
+                      scaleFeetsPerSquare={selectedMap.scaleFeetsPerSquare}
+                      isActive={rangeActive}
+                      onToggle={() => {
+                        const newActive = !rangeActive;
+                        setRangeActive(newActive);
+                        if (newActive) {
+                          setMeasurementActive(false);
+                          setTerrainActive(false);
+                          setAdvancedFogActive(false);
+                        }
+                      }}
+                    />
+                    <TerrainMarker
+                      isActive={terrainActive}
+                      onToggle={() => {
+                        const newActive = !terrainActive;
+                        setTerrainActive(newActive);
+                        if (newActive) {
+                          setMeasurementActive(false);
+                          setRangeActive(false);
+                          setAdvancedFogActive(false);
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="absolute top-4 right-4">
+                    <GridSnapToggle
+                      enabled={gridSnapEnabled}
+                      onToggle={setGridSnapEnabled}
+                    />
+                  </div>
+                  
+                  <div className="absolute bottom-4 left-4">
+                    <AdvancedFogTools
+                      onRevealArea={() => {}}
+                      onHideArea={() => {}}
+                      isActive={advancedFogActive}
+                      onToggle={() => {
+                        const newActive = !advancedFogActive;
+                        setAdvancedFogActive(newActive);
+                        if (newActive) {
+                          setMeasurementActive(false);
+                          setRangeActive(false);
+                          setTerrainActive(false);
+                        }
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Sidebar Tools */}
@@ -133,6 +220,7 @@ const CombatMap = () => {
                     campaignId={campaignId}
                     encounterId={encounterId || undefined}
                     gridSize={selectedMap.gridSize}
+                    gridSnapEnabled={gridSnapEnabled}
                   />
                 )}
                 <FogOfWarTools

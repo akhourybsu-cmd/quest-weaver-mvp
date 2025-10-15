@@ -6,6 +6,7 @@ import { Heart, Shield, Zap, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import { ResourceTracker } from "./ResourceTracker";
 
 interface Condition {
   id: string;
@@ -182,7 +183,7 @@ export function PlayerCharacterSheet({
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="border-primary/20">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -292,6 +293,14 @@ export function PlayerCharacterSheet({
           )}
         </CardContent>
       </Card>
+
+      {/* Resource Tracker */}
+      <ResourceTracker
+        characterId={character.id}
+        characterName={character.name}
+        resources={character.resources as any || {}}
+        canEdit={true}
+      />
     </div>
   );
 }

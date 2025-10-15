@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2 } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles } from "lucide-react";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
 import { Badge } from "@/components/ui/badge";
+import RestManager from "@/components/character/RestManager";
+import { ResourceSetupDialog } from "@/components/combat/ResourceSetupDialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +56,7 @@ const CampaignHub = () => {
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
   const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
+  const [expandedCharacters, setExpandedCharacters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchMyCampaigns();
@@ -120,7 +124,7 @@ const CampaignHub = () => {
 
       const { data: characters, error } = await supabase
         .from("characters")
-        .select("id, name, class, level, campaign_id")
+        .select("id, name, class, level, campaign_id, current_hp, max_hp, resources")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -472,36 +476,68 @@ const CampaignHub = () => {
                         New Character
                       </Button>
                     </div>
-                    <div className="space-y-2">
-                      {myCharacters.map((character) => (
+                     <div className="space-y-2">
+                      {myCharacters.map((character) => {
+                        const isExpanded = expandedCharacters.has(character.id);
+                        return (
                         <Card key={character.id} className="shadow-sm">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <UserCircle className="w-5 h-5 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">{character.name}</h4>
-                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                  <Badge variant="secondary" className="text-xs">
-                                    Level {character.level} {character.class}
-                                  </Badge>
-                                  {character.campaign_name && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {character.campaign_name}
-                                    </Badge>
-                                  )}
-                                  {!character.campaign_id && (
-                                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                                      Unassigned
-                                    </Badge>
-                                  )}
+                          <Collapsible
+                            open={isExpanded}
+                            onOpenChange={(open) => {
+                              const newExpanded = new Set(expandedCharacters);
+                              if (open) {
+                                newExpanded.add(character.id);
+                              } else {
+                                newExpanded.delete(character.id);
+                              }
+                              setExpandedCharacters(newExpanded);
+                            }}
+                          >
+                            <CollapsibleTrigger asChild>
+                              <CardContent className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <UserCircle className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold truncate">{character.name}</h4>
+                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                      <Badge variant="secondary" className="text-xs">
+                                        Level {character.level} {character.class}
+                                      </Badge>
+                                      {character.campaign_name && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {character.campaign_name}
+                                        </Badge>
+                                      )}
+                                      {!character.campaign_id && (
+                                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                                          Unassigned
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button variant="ghost" size="sm">
+                                    <Sparkles className="w-4 h-4" />
+                                  </Button>
                                 </div>
-                              </div>
-                            </div>
-                          </CardContent>
+                              </CardContent>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <CardContent className="pt-0 pb-4 space-y-3 border-t">
+                                <div className="flex gap-2 pt-3">
+                                  <ResourceSetupDialog
+                                    characterId={character.id}
+                                    characterName={character.name}
+                                    currentResources={(character as any).resources || {}}
+                                    onUpdate={fetchMyCharacters}
+                                  />
+                                </div>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Collapsible>
                         </Card>
-                      ))}
+                      )})}
                     </div>
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">

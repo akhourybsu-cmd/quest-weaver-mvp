@@ -235,6 +235,24 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
                       </p>
                     </div>
 
+                    {/* Spell Save DC Summary */}
+                    {(selectedMonster as any).spell_save_dc_summary && (selectedMonster as any).spell_save_dc_summary.length > 0 && (
+                      <div className="bg-primary/10 rounded-lg p-2 border border-primary/20">
+                        <p className="text-xs font-semibold text-primary">
+                          Spell Save DC{(selectedMonster as any).spell_save_dc_summary.length > 1 ? 's' : ''}:{' '}
+                          {(selectedMonster as any).spell_save_dc_summary.map((dc: any, idx: number) => (
+                            <span key={idx}>
+                              {idx > 0 && ', '}
+                              <span className="font-bold">{dc.dc}</span>
+                              {dc.ability && dc.ability !== 'Unknown' && (
+                                <span className="text-muted-foreground text-xs"> ({dc.ability})</span>
+                              )}
+                            </span>
+                          ))}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Armor Class</span>

@@ -102,6 +102,25 @@ const MonsterDetailDialog = ({ open, onOpenChange, monster }: MonsterDetailDialo
 
         <ScrollArea className="h-[calc(90vh-8rem)] pr-4">
           <div className="space-y-4">
+            {/* Spell Save DC Summary */}
+            {monster.spell_save_dc_summary && monster.spell_save_dc_summary.length > 0 && (
+              <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                <p className="text-sm font-semibold text-primary mb-1">
+                  Spell Save DC{monster.spell_save_dc_summary.length > 1 ? 's' : ''}:
+                </p>
+                <div className="space-y-1">
+                  {monster.spell_save_dc_summary.map((dc: any, idx: number) => (
+                    <p key={idx} className="text-sm">
+                      <span className="font-bold">{dc.dc}</span>
+                      {dc.ability && dc.ability !== 'Unknown' && (
+                        <span className="text-muted-foreground"> ({dc.ability}{dc.source && dc.source !== 'Unknown' ? `, ${dc.source}` : ''})</span>
+                      )}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Basic Stats */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-1">

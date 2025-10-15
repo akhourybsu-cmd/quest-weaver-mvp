@@ -817,6 +817,7 @@ export type Database = {
           slug: string | null
           source: string
           speed: Json
+          spell_save_dc_summary: Json | null
           traits: Json | null
           type: string
           updated_at: string | null
@@ -847,6 +848,7 @@ export type Database = {
           slug?: string | null
           source?: string
           speed?: Json
+          spell_save_dc_summary?: Json | null
           traits?: Json | null
           type: string
           updated_at?: string | null
@@ -877,6 +879,7 @@ export type Database = {
           slug?: string | null
           source?: string
           speed?: Json
+          spell_save_dc_summary?: Json | null
           traits?: Json | null
           type?: string
           updated_at?: string | null

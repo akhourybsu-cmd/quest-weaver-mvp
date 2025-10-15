@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Loader2, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SpellSaveDCExtractor } from "./SpellSaveDCExtractor";
 
 const MonsterImportDialog = () => {
   const [open, setOpen] = useState(false);
@@ -202,6 +203,8 @@ const MonsterImportDialog = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <SpellSaveDCExtractor />
       </DialogContent>
     </Dialog>
   );

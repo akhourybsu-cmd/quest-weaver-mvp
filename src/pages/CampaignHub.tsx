@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2 } from "lucide-react";
 import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
+import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -664,6 +665,9 @@ const CampaignHub = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dev Tools - Only show in development */}
+      {import.meta.env.DEV && <SeedCombatButton />}
     </div>
   );
 };

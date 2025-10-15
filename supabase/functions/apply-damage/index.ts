@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rateLimiter.ts";
+import { checkIdempotency, storeIdempotent } from "../_shared/idempotency.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, idempotency-key',
 };
 
 serve(async (req) => {
@@ -23,6 +25,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Rate limiting
+    const rateLimit = checkRateLimit(user.id, RATE_LIMITS.combat);
+    if (rateLimit.limited) {
+      console.log(`[Rate Limit] User ${user.id} exceeded combat action limit`);
+      return rateLimitResponse(rateLimit.resetAt, corsHeaders);
+    }
+
+    // Check idempotency
+    const idempotencyKey = req.headers.get('Idempotency-Key');
+    const cachedResponse = checkIdempotency(idempotencyKey);
+    if (cachedResponse) {
+      console.log(`[Idempotency] Returning cached response for key ${idempotencyKey}`);
+      return new Response(JSON.stringify(cachedResponse), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Idempotent-Replay': 'true' },
       });
     }
 
@@ -150,26 +169,36 @@ serve(async (req) => {
 
       const concentrationDC = Math.max(10, Math.floor(hpDamage / 2));
 
+      const responseData = {
+        success: true,
+        newHP,
+        newTempHP,
+        damageSteps,
+        concentrationCheck: concentrationEffects && concentrationEffects.length > 0
+          ? { required: true, dc: concentrationDC, effects: concentrationEffects }
+          : { required: false },
+      };
+
+      // Store for idempotency
+      storeIdempotent(idempotencyKey, responseData);
+
       return new Response(
-        JSON.stringify({
-          success: true,
-          newHP,
-          newTempHP,
-          damageSteps,
-          concentrationCheck: concentrationEffects && concentrationEffects.length > 0
-            ? { required: true, dc: concentrationDC, effects: concentrationEffects }
-            : { required: false },
-        }),
+        JSON.stringify(responseData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const responseData = { success: true, newHP, newTempHP, damageSteps };
+    
+    // Store for idempotency
+    storeIdempotent(idempotencyKey, responseData);
+
     return new Response(
-      JSON.stringify({ success: true, newHP, newTempHP, damageSteps }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in apply-damage:', error);
+    console.error('[apply-damage] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),

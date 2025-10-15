@@ -4,6 +4,11 @@ import { useState, useCallback } from "react";
 import { validateInput, DamageSchema, HealingSchema, InitiativeSchema } from "@/lib/validation";
 import { withRetry } from "@/lib/retryHelper";
 
+// Generate idempotency key for combat actions
+function generateIdempotencyKey(action: string, targetId: string): string {
+  return `${action}:${targetId}:${Date.now()}`;
+}
+
 export const useCombatActions = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -44,10 +49,13 @@ export const useCombatActions = () => {
         return;
       }
 
-      // Execute with retry logic
+      // Execute with retry logic and idempotency
       const { data, error } = await withRetry(
         () => supabase.functions.invoke('apply-damage', {
           body: validation.data,
+          headers: {
+            'Idempotency-Key': generateIdempotencyKey('damage', characterId),
+          },
         }),
         {
           maxRetries: 2,
@@ -139,10 +147,13 @@ export const useCombatActions = () => {
         return;
       }
 
-      // Execute with retry logic
+      // Execute with retry logic and idempotency
       const { data, error } = await withRetry(
         () => supabase.functions.invoke('apply-healing', {
           body: validation.data,
+          headers: {
+            'Idempotency-Key': generateIdempotencyKey('healing', characterId),
+          },
         }),
         {
           maxRetries: 2,

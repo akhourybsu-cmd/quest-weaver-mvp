@@ -186,7 +186,38 @@
 
 ---
 
-### **Phase 13 — Security & Quotas** ⬅️ NEXT
+### **Phase 13 — Security & Quotas** ✅ COMPLETE
+**Goals:**
+- Tighten RLS (players only mutate self)
+- Edge function rate limits
+- Idempotency keys for actions
+
+**Completed:**
+- ✅ Created shared rate limiter module for edge functions
+- ✅ Implemented idempotency key system for combat actions
+- ✅ Added rate limiting to apply-damage function (100 req/min)
+- ✅ Idempotency prevents duplicate damage/healing on retry
+- ✅ Client-side idempotency key generation
+- ✅ Cached responses for duplicate requests
+- ✅ Automatic cleanup of old entries
+
+**Security Features:**
+- Combat actions: 100 requests/minute per user
+- Standard operations: 60 requests/minute
+- Expensive operations: 20 requests/minute
+- 24-hour idempotency window
+- Automatic rate limit headers (Retry-After)
+- DM authorization already enforced (existing)
+- RLS policies prevent player self-mutation (existing)
+
+**Security Scan Results:**
+- ✅ RLS policies properly configured
+- ℹ️ monster_catalog intentionally public (SRD content)
+- ⚠️ Leaked password protection disabled (non-critical for dev)
+
+---
+
+### **Phase 14 — Telemetry & Analytics** ⬅️ NEXT
 
 ---
 

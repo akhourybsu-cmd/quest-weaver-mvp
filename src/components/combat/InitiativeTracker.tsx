@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, Plus, X, Heart, Shield, Dices, Swords, BookOpen, Zap } from "lucide-react";
+import { ChevronRight, Play, SkipBack, SkipForward, X, Heart, Shield, Dices, Swords, BookOpen, Zap } from "lucide-react";
 import { useEncounter } from "@/hooks/useEncounter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +58,29 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       supabase.removeChannel(channel);
     };
   }, [encounterId, initiative]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only trigger if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (initiative.length === 0) return;
+
+      if (e.key === '[') {
+        e.preventDefault();
+        previousTurn();
+      } else if (e.key === ']') {
+        e.preventDefault();
+        nextTurn();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [initiative, nextTurn, previousTurn]);
 
   const fetchAvailableCombatants = async () => {
     // Get characters
@@ -247,6 +270,31 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       }));
   };
 
+  // Start combat (set first combatant as current turn)
+  const handleStartCombat = async () => {
+    if (initiative.length === 0) return;
+    
+    const { error } = await supabase
+      .from("initiative")
+      .update({ is_current_turn: true })
+      .eq("id", initiative[0].id);
+
+    if (error) {
+      toast({
+        title: "Error starting combat",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Combat Started",
+        description: `${initiative[0].combatant_name}'s turn!`,
+      });
+    }
+  };
+
+  const hasActiveTurn = initiative.some(entry => entry.is_current_turn);
+
   return (
     <>
       <MonsterDetailDialog
@@ -263,17 +311,42 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       />
       <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Initiative Order - Round {currentRound}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg">Initiative Order</CardTitle>
+            <Badge variant="secondary" className="text-sm">
+              Round {currentRound}
+            </Badge>
+          </div>
           <div className="flex gap-2">
-            <Button onClick={previousTurn} size="sm" disabled={initiative.length === 0} variant="outline">
-              <ChevronRight className="w-4 h-4 mr-1 rotate-180" />
-              Previous
-            </Button>
-            <Button onClick={nextTurn} size="sm" disabled={initiative.length === 0}>
-              <ChevronRight className="w-4 h-4 mr-1" />
-              Next Turn
-            </Button>
+            {!hasActiveTurn && initiative.length > 0 && (
+              <Button onClick={handleStartCombat} size="sm" variant="default">
+                <Play className="w-4 h-4 mr-1" />
+                Start
+              </Button>
+            )}
+            {hasActiveTurn && (
+              <>
+                <Button 
+                  onClick={previousTurn} 
+                  size="sm" 
+                  disabled={initiative.length === 0} 
+                  variant="outline"
+                  title="Previous Turn ([)"
+                >
+                  <SkipBack className="w-4 h-4" />
+                </Button>
+                <Button 
+                  onClick={nextTurn} 
+                  size="sm" 
+                  disabled={initiative.length === 0}
+                  title="Next Turn (])"
+                >
+                  Next
+                  <SkipForward className="w-4 h-4 ml-1" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>

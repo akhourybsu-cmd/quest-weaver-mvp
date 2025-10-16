@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Save, Pin, X, Check, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import NoteLinkSelector from "./NoteLinkSelector";
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -22,6 +23,13 @@ function debounce<T extends (...args: any[]) => any>(
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
+}
+
+interface NoteLink {
+  id?: string;
+  link_type: string;
+  link_id: string | null;
+  label: string;
 }
 
 interface Note {
@@ -50,6 +58,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [isPinned, setIsPinned] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [links, setLinks] = useState<NoteLink[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
@@ -63,15 +72,33 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setVisibility(note.visibility);
       setIsPinned(note.is_pinned);
       setTags(note.tags || []);
+      loadLinks(note.id);
     } else {
       setTitle("");
       setContent("");
       setVisibility(isDM ? "DM_ONLY" : "PRIVATE");
       setIsPinned(false);
       setTags([]);
+      setLinks([]);
     }
     setLastSaved(null);
   }, [note, open, isDM]);
+
+  const loadLinks = async (noteId: string) => {
+    const { data } = await supabase
+      .from("note_links")
+      .select("*")
+      .eq("note_id", noteId);
+
+    if (data) {
+      setLinks(data.map(l => ({
+        id: l.id,
+        link_type: l.link_type,
+        link_id: l.link_id,
+        label: l.label,
+      })));
+    }
+  };
 
   // Save function
   const performSave = async () => {
@@ -86,6 +113,8 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
 
     setIsSaving(true);
     try {
+      let noteId = note?.id;
+
       if (note) {
         // Update existing note
         const { error } = await supabase
@@ -103,7 +132,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         if (error) throw error;
       } else {
         // Create new note
-        const { error } = await supabase.from("session_notes").insert({
+        const { data, error } = await supabase.from("session_notes").insert({
           campaign_id: campaignId,
           author_id: userId,
           title,
@@ -111,9 +140,28 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           visibility,
           is_pinned: isPinned,
           tags,
-        });
+        }).select().single();
 
         if (error) throw error;
+        noteId = data.id;
+      }
+
+      // Save links
+      if (noteId) {
+        // Delete existing links
+        await supabase.from("note_links").delete().eq("note_id", noteId);
+
+        // Insert new links
+        if (links.length > 0) {
+          await supabase.from("note_links").insert(
+            links.map(link => ({
+              note_id: noteId,
+              link_type: link.link_type,
+              link_id: link.link_id,
+              label: link.label,
+            }))
+          );
+        }
       }
 
       setLastSaved(new Date());
@@ -264,13 +312,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           </div>
 
           <div>
-            <Label htmlFor="tags">Tags</Label>
+            <Label htmlFor="tags">Custom Tags</Label>
             <Input
               id="tags"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleAddTag}
-              placeholder="Type and press Enter to add tags..."
+              placeholder="Type and press Enter to add custom tags..."
             />
             <div className="flex flex-wrap gap-1 mt-2">
               {tags.map((tag) => (
@@ -285,6 +333,15 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                 </Badge>
               ))}
             </div>
+          </div>
+
+          <div>
+            <Label>Linked Entities</Label>
+            <NoteLinkSelector
+              campaignId={campaignId}
+              links={links}
+              onChange={setLinks}
+            />
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t">

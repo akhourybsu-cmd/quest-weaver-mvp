@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rateLimiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -19,6 +20,7 @@ serve(async (req) => {
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -26,6 +28,11 @@ serve(async (req) => {
       });
     }
 
+    // Rate limiting
+    const rateLimit = checkRateLimit(user.id, RATE_LIMITS.combat);
+    if (rateLimit.limited) {
+      return rateLimitResponse(rateLimit.resetAt, corsHeaders);
+    }
     const { encounterId } = await req.json();
 
     // Validate DM authority

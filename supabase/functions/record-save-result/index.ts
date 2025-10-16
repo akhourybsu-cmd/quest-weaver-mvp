@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rateLimiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -25,6 +26,12 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Rate limiting
+    const rateLimit = checkRateLimit(user.id, RATE_LIMITS.standard);
+    if (rateLimit.limited) {
+      return rateLimitResponse(rateLimit.resetAt, corsHeaders);
     }
 
     const {

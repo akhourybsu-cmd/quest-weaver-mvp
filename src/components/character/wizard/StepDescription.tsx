@@ -72,7 +72,7 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
                 id="height"
                 value={data.height || ""}
                 onChange={(e) => updateData({ height: e.target.value })}
-                placeholder="e.g., 5'10\""
+                placeholder="e.g., 6 feet"
               />
             </div>
 

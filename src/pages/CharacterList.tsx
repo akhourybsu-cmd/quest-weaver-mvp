@@ -14,6 +14,7 @@ const CharacterList = () => {
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
   const [isPlayer, setIsPlayer] = useState(false);
 
   useEffect(() => {
@@ -121,6 +122,10 @@ const CharacterList = () => {
                 key={character.id}
                 character={character}
                 campaignId={campaignId!}
+                onResumeCreation={(id) => {
+                  setEditCharacterId(id);
+                  setShowWizard(true);
+                }}
               />
             ))}
           </div>
@@ -130,8 +135,10 @@ const CharacterList = () => {
       <CharacterWizard
         open={showWizard}
         campaignId={campaignId || null}
+        editCharacterId={editCharacterId}
         onComplete={() => {
           setShowWizard(false);
+          setEditCharacterId(null);
           loadCharacters();
         }}
       />

@@ -46,6 +46,7 @@ interface Character {
   level: number;
   campaign_id: string | null;
   campaign_name?: string;
+  creation_status?: 'draft' | 'complete';
 }
 
 const CampaignHub = () => {
@@ -63,6 +64,7 @@ const CampaignHub = () => {
   const [loadingCharacters, setLoadingCharacters] = useState(true);
   const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
   const [expandedCharacters, setExpandedCharacters] = useState<Set<string>>(new Set());
+  const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMyCampaigns();
@@ -130,7 +132,7 @@ const CampaignHub = () => {
 
       const { data: characters, error } = await supabase
         .from("characters")
-        .select("id, name, class, level, campaign_id, current_hp, max_hp, resources")
+        .select("id, name, class, level, campaign_id, current_hp, max_hp, resources, creation_status")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -155,7 +157,10 @@ const CampaignHub = () => {
         })
       );
 
-      setMyCharacters(charactersWithCampaigns);
+      setMyCharacters(charactersWithCampaigns.map(char => ({
+        ...char,
+        creation_status: (char.creation_status as 'draft' | 'complete') || 'complete'
+      })));
     } catch (error: any) {
       toast({
         title: "Error loading characters",
@@ -288,6 +293,7 @@ const CampaignHub = () => {
 
   const handleCharacterCreated = async () => {
     setShowCharacterCreation(false);
+    setEditCharacterId(null);
     await fetchMyCharacters();
   };
 
@@ -544,8 +550,15 @@ const CampaignHub = () => {
                                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                     <UserCircle className="w-5 h-5 text-primary" />
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold truncate">{character.name}</h4>
+                                   <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-semibold truncate">{character.name}</h4>
+                                      {character.creation_status === 'draft' && (
+                                        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                                          Incomplete
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                       <Badge variant="secondary" className="text-xs">
                                         Level {character.level} {character.class}
@@ -571,12 +584,25 @@ const CampaignHub = () => {
                             <CollapsibleContent>
                               <CardContent className="pt-0 pb-4 space-y-3 border-t">
                                 <div className="flex gap-2 pt-3">
-                                  <ResourceSetupDialog
-                                    characterId={character.id}
-                                    characterName={character.name}
-                                    currentResources={(character as any).resources || {}}
-                                    onUpdate={fetchMyCharacters}
-                                  />
+                                  {character.creation_status === 'draft' ? (
+                                    <Button 
+                                      variant="outline" 
+                                      className="flex-1"
+                                      onClick={() => {
+                                        setEditCharacterId(character.id);
+                                        setShowCharacterCreation(true);
+                                      }}
+                                    >
+                                      Continue Creation
+                                    </Button>
+                                  ) : (
+                                    <ResourceSetupDialog
+                                      characterId={character.id}
+                                      characterName={character.name}
+                                      currentResources={(character as any).resources || {}}
+                                      onUpdate={fetchMyCharacters}
+                                    />
+                                  )}
                                 </div>
                               </CardContent>
                             </CollapsibleContent>
@@ -704,6 +730,7 @@ const CampaignHub = () => {
       <CharacterWizard
         open={showCharacterCreation}
         campaignId={null}
+        editCharacterId={editCharacterId}
         onComplete={handleCharacterCreated}
       />
 

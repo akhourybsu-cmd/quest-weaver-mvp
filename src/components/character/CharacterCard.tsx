@@ -19,14 +19,26 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 interface CharacterCardProps {
-  character: any;
+  character: {
+    id: string;
+    name: string;
+    class: string;
+    level: number;
+    max_hp: number;
+    current_hp: number;
+    ac: number;
+    temp_hp?: number;
+    creation_status?: 'draft' | 'complete';
+  };
   campaignId: string;
+  onResumeCreation?: (characterId: string) => void;
 }
 
-const CharacterCard = ({ character, campaignId }: CharacterCardProps) => {
+const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCardProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isIncomplete = character.creation_status === 'draft';
   const hpPercent = (character.current_hp / character.max_hp) * 100;
 
   const handleDelete = async () => {
@@ -52,11 +64,18 @@ const CharacterCard = ({ character, campaignId }: CharacterCardProps) => {
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/campaign/${campaignId}/character/${character.id}`)}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-xl">{character.name}</CardTitle>
+    <Card className={`overflow-hidden transition-all hover:shadow-lg ${isIncomplete ? 'border-yellow-500/50' : ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-lg truncate">{character.name}</h3>
+              {isIncomplete && (
+                <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                  Incomplete
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               Level {character.level} {character.class}
             </p>
@@ -95,16 +114,29 @@ const CharacterCard = ({ character, campaignId }: CharacterCardProps) => {
         )}
 
         <div className="flex gap-2">
-          <Button 
-            className="flex-1" 
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/campaign/${campaignId}/character/${character.id}`);
-            }}
-          >
-            View Character Sheet
-          </Button>
+          {isIncomplete ? (
+            <Button 
+              className="flex-1" 
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onResumeCreation?.(character.id);
+              }}
+            >
+              Continue Creation
+            </Button>
+          ) : (
+            <Button 
+              className="flex-1" 
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/campaign/${campaignId}/character/${character.id}`);
+              }}
+            >
+              View Character Sheet
+            </Button>
+          )}
           <Button
             variant="destructive"
             size="icon"

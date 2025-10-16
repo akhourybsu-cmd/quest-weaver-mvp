@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Save, Pin, X, Check } from "lucide-react";
+import { Save, Pin, X, Check, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -52,6 +53,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -164,6 +166,33 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     onOpenChange(false);
   };
 
+  const handleDelete = async () => {
+    if (!note) return;
+
+    try {
+      const { error } = await supabase
+        .from("session_notes")
+        .delete()
+        .eq("id", note.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Note deleted",
+        description: "Your note has been deleted successfully",
+      });
+      
+      onSaved();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error deleting note",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -269,6 +298,16 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               )}
             </div>
             <div className="flex gap-2">
+              {note && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="mr-auto"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              )}
               <Button variant="outline" onClick={performSave} disabled={isSaving || !title.trim()}>
                 <Save className="w-4 h-4 mr-2" />
                 Save
@@ -278,6 +317,23 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{note?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

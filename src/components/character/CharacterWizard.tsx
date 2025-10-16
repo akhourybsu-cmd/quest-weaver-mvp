@@ -298,8 +298,21 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
+  const handleCancel = () => {
+    if (currentStep > 0 && wizardData.name) {
+      // Has progress, confirm before closing
+      if (confirm("You have unsaved progress. Do you want to save your draft before closing?")) {
+        handleSaveAndExit();
+      } else {
+        onComplete();
+      }
+    } else {
+      onComplete();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
         <div className="flex h-full">
           {/* Main wizard content */}

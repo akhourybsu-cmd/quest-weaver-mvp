@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import CharacterCreationDialog from "@/components/character/CharacterCreationDialog";
+import CharacterWizard from "@/components/character/CharacterWizard";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
 import { Badge } from "@/components/ui/badge";
@@ -700,8 +700,8 @@ const CampaignHub = () => {
         </div>
       </div>
 
-      {/* Character Creation Dialog */}
-      <CharacterCreationDialog
+      {/* Character Creation Wizard */}
+      <CharacterWizard
         open={showCharacterCreation}
         campaignId={null}
         onComplete={handleCharacterCreated}

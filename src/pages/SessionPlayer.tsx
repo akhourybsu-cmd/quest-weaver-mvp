@@ -11,13 +11,16 @@ import { PlayerCharacterSheet } from "@/components/combat/PlayerCharacterSheet";
 import { PlayerInitiativeDisplay } from "@/components/player/PlayerInitiativeDisplay";
 import { PlayerCombatActions } from "@/components/player/PlayerCombatActions";
 import { PlayerMapViewer } from "@/components/player/PlayerMapViewer";
+import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
+import { PlayerInventory } from "@/components/player/PlayerInventory";
+import { PlayerEffects } from "@/components/player/PlayerEffects";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Shield, Zap, Plus, Minus, Dices } from "lucide-react";
+import { Heart, Shield, Zap, Plus, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -48,13 +51,6 @@ interface Character {
   cha_save: number;
 }
 
-interface Effect {
-  id: string;
-  name: string;
-  description: string | null;
-  end_round: number | null;
-}
-
 const SessionPlayer = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -62,7 +58,6 @@ const SessionPlayer = () => {
   const { toast } = useToast();
 
   const [character, setCharacter] = useState<Character | null>(null);
-  const [effects, setEffects] = useState<Effect[]>([]);
   const [loading, setLoading] = useState(true);
   const [hpAdjustment, setHpAdjustment] = useState("");
   const [tempHpValue, setTempHpValue] = useState("");
@@ -85,8 +80,6 @@ const SessionPlayer = () => {
   useEffect(() => {
     if (!character) return;
 
-    fetchEffects();
-
     // Subscribe to character changes
     const characterChannel = supabase
       .channel('character-changes')
@@ -102,24 +95,8 @@ const SessionPlayer = () => {
       )
       .subscribe();
 
-    // Subscribe to effects changes
-    const effectsChannel = supabase
-      .channel('effects-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'effects',
-          filter: `character_id=eq.${character.id}`,
-        },
-        () => fetchEffects()
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(characterChannel);
-      supabase.removeChannel(effectsChannel);
     };
   }, [character?.id]);
 
@@ -234,17 +211,6 @@ const SessionPlayer = () => {
     setLoading(false);
   };
 
-  const fetchEffects = async () => {
-    if (!character) return;
-
-    const { data } = await supabase
-      .from("effects")
-      .select("id, name, description, end_round")
-      .eq("character_id", character.id);
-
-    setEffects(data || []);
-  };
-
   const updateHP = async (amount: number) => {
     if (!character) return;
 
@@ -290,13 +256,6 @@ const SessionPlayer = () => {
     return (character.current_hp / character.max_hp) * 100;
   };
 
-  const getHPColor = () => {
-    const percentage = getHPPercentage();
-    if (percentage > 50) return "bg-status-buff";
-    if (percentage > 25) return "bg-status-warning";
-    return "bg-status-hp";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -319,7 +278,7 @@ const SessionPlayer = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm" role="banner">
+      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="text-center">
             <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
@@ -331,7 +290,7 @@ const SessionPlayer = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4" role="main">
+      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* Character Selection Dialog */}
         {showCharacterSelection && campaignId && (
           <CharacterSelectionDialog
@@ -355,21 +314,13 @@ const SessionPlayer = () => {
         )}
 
         {/* Combat UI - shown when in active encounter */}
-        {activeEncounter && character && (
-          <Tabs defaultValue="character" className="w-full">
+        {activeEncounter && campaignId && (
+          <Tabs defaultValue="combat" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="character">Character</TabsTrigger>
               <TabsTrigger value="combat">Combat</TabsTrigger>
+              <TabsTrigger value="character">Character</TabsTrigger>
               {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
             </TabsList>
-
-            <TabsContent value="character" className="space-y-4 mt-4">
-              <PlayerCharacterSheet
-                characterId={character.id}
-                campaignId={campaignId}
-                encounterId={activeEncounter}
-              />
-            </TabsContent>
 
             <TabsContent value="combat" className="space-y-4 mt-4">
               <PlayerCombatActions
@@ -381,6 +332,24 @@ const SessionPlayer = () => {
               <PlayerInitiativeDisplay
                 encounterId={activeEncounter}
                 characterId={character.id}
+              />
+
+              <PlayerEffects
+                characterId={character.id}
+                encounterId={activeEncounter}
+              />
+            </TabsContent>
+
+            <TabsContent value="character" className="space-y-4 mt-4">
+              <PlayerCharacterSheet
+                characterId={character.id}
+                campaignId={campaignId}
+                encounterId={activeEncounter}
+              />
+
+              <PlayerInventory
+                characterId={character.id}
+                campaignId={campaignId}
               />
             </TabsContent>
 
@@ -395,162 +364,173 @@ const SessionPlayer = () => {
           </Tabs>
         )}
 
-        {/* HP Card */}
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Heart className="w-5 h-5 text-status-hp" />
-              Hit Points
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-2xl sm:text-3xl font-bold tabular-nums" aria-label={`Current hit points: ${character.current_hp}`}>
-                  {character.current_hp}
-                </span>
-                <span className="text-lg sm:text-xl text-muted-foreground" aria-label={`Maximum hit points: ${character.max_hp}`}>
-                  / {character.max_hp}
-                </span>
-              </div>
-              <Progress value={getHPPercentage()} className="h-3" aria-label={`Hit points: ${Math.round(getHPPercentage())}% remaining`} />
+        {/* Out of Combat View */}
+        {!activeEncounter && campaignId && (
+          <div className="space-y-4">
+            {/* HP Card */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-status-hp" />
+                  Hit Points
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl sm:text-3xl font-bold tabular-nums">
+                      {character.current_hp}
+                    </span>
+                    <span className="text-lg sm:text-xl text-muted-foreground">
+                      / {character.max_hp}
+                    </span>
+                  </div>
+                  <Progress value={getHPPercentage()} className="h-3" />
+                </div>
+
+                {character.temp_hp > 0 && (
+                  <Badge variant="outline" className="bg-secondary/10 border-secondary">
+                    +{character.temp_hp} Temporary HP
+                  </Badge>
+                )}
+
+                <div className="flex gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Minus className="w-4 h-4 mr-1" />
+                        <span className="hidden sm:inline">Damage</span>
+                        <span className="sm:hidden">-HP</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Take Damage</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Damage Amount</Label>
+                          <Input
+                            type="number"
+                            value={hpAdjustment}
+                            onChange={(e) => setHpAdjustment(e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                        <Button
+                          onClick={() => updateHP(-parseInt(hpAdjustment || "0"))}
+                          className="w-full"
+                        >
+                          Apply Damage
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Plus className="w-4 h-4 mr-1" />
+                        <span className="hidden sm:inline">Heal</span>
+                        <span className="sm:hidden">+HP</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Heal</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Healing Amount</Label>
+                          <Input
+                            type="number"
+                            value={hpAdjustment}
+                            onChange={(e) => setHpAdjustment(e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                        <Button
+                          onClick={() => updateHP(parseInt(hpAdjustment || "0"))}
+                          className="w-full"
+                        >
+                          Apply Healing
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <span className="hidden sm:inline">Temp HP</span>
+                        <span className="sm:hidden">THP</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Temporary HP</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Temporary HP</Label>
+                          <Input
+                            type="number"
+                            value={tempHpValue}
+                            onChange={(e) => setTempHpValue(e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                        <Button onClick={updateTempHP} className="w-full">
+                          Set Temp HP
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="shadow-md">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-center">
+                    <Shield className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-2xl font-bold">{character.ac}</div>
+                    <div className="text-xs text-muted-foreground">AC</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-md">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-center">
+                    <Plus className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-2xl font-bold">+{character.proficiency_bonus}</div>
+                    <div className="text-xs text-muted-foreground">Proficiency</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-md">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-center">
+                    <Zap className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-2xl font-bold">{character.speed}</div>
+                    <div className="text-xs text-muted-foreground">Speed</div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {character.temp_hp > 0 && (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-secondary/10 border-secondary">
-                  +{character.temp_hp} Temporary HP
-                </Badge>
-              </div>
-            )}
-
-            {/* HP Adjustment */}
-            <div className="flex gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1" aria-label="Apply damage to character">
-                    <Minus className="w-4 h-4 mr-1" aria-hidden="true" />
-                    <span className="hidden sm:inline">Damage</span>
-                    <span className="sm:hidden">-HP</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Take Damage</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Damage Amount</Label>
-                      <Input
-                        type="number"
-                        value={hpAdjustment}
-                        onChange={(e) => setHpAdjustment(e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => updateHP(-parseInt(hpAdjustment || "0"))}
-                      className="w-full"
-                    >
-                      Apply Damage
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1" aria-label="Apply healing to character">
-                    <Plus className="w-4 h-4 mr-1" aria-hidden="true" />
-                    <span className="hidden sm:inline">Heal</span>
-                    <span className="sm:hidden">+HP</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Heal</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Healing Amount</Label>
-                      <Input
-                        type="number"
-                        value={hpAdjustment}
-                        onChange={(e) => setHpAdjustment(e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <Button
-                      onClick={() => updateHP(parseInt(hpAdjustment || "0"))}
-                      className="w-full"
-                    >
-                      Apply Healing
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1" aria-label="Add temporary hit points">
-                    <span className="hidden sm:inline">Temp HP</span>
-                    <span className="sm:hidden">THP</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Temporary HP</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Temporary HP</Label>
-                      <Input
-                        type="number"
-                        value={tempHpValue}
-                        onChange={(e) => setTempHpValue(e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <Button onClick={updateTempHP} className="w-full">
-                      Set Temp HP
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3">
-              <div className="text-center">
-                <Shield className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                <div className="text-2xl font-bold">{character.ac}</div>
-                <div className="text-xs text-muted-foreground">Armor Class</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3">
-              <div className="text-center">
-                <Plus className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                <div className="text-2xl font-bold">+{character.proficiency_bonus}</div>
-                <div className="text-xs text-muted-foreground">Proficiency</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="pt-4 pb-3">
-              <div className="text-center">
-                <Zap className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                <div className="text-2xl font-bold">{character.speed}</div>
-                <div className="text-xs text-muted-foreground">Speed (ft)</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <PlayerEffects characterId={character.id} encounterId={null} />
+            
+            <PlayerQuestTracker campaignId={campaignId} />
+            
+            <PlayerInventory
+              characterId={character.id}
+              campaignId={campaignId}
+            />
+          </div>
+        )}
 
         {/* Saving Throw Listener */}
         {campaignId && (
@@ -561,40 +541,11 @@ const SessionPlayer = () => {
           />
         )}
 
-        {/* Active Effects */}
-        {effects.length > 0 && (
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="text-lg">Active Conditions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {effects.map((effect) => (
-                <div
-                  key={effect.id}
-                  className="p-3 bg-muted/50 rounded-lg"
-                >
-                  <div className="font-semibold">{effect.name}</div>
-                  {effect.description && (
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {effect.description}
-                    </div>
-                  )}
-                  {effect.end_round && (
-                    <Badge variant="outline" className="mt-2 text-xs">
-                      Ends: Round {effect.end_round}
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Rest Manager */}
-        <RestManager character={character} />
-
-        {/* Dice Roller */}
-        <DiceRoller />
+        {/* Rest & Dice Tools */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <RestManager character={character} />
+          <DiceRoller />
+        </div>
       </main>
 
       <BottomNav role="player" />

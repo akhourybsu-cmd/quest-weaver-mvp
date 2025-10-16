@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { seedDevelopmentCombat, cleanupSeedData } from "@/data/seedCombatData";
 import { Sprout, Trash2 } from "lucide-react";
@@ -24,6 +25,12 @@ export const SeedCombatButton = () => {
   const [isSeeding, setIsSeeding] = useState(false);
   const [lastSeedId, setLastSeedId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isAdmin } = useIsAdmin();
+
+  // Only render for admins
+  if (!isAdmin) {
+    return null;
+  }
 
   const handleSeed = async () => {
     setIsSeeding(true);

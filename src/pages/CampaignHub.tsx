@@ -18,6 +18,7 @@ import CharacterWizard from "@/components/character/CharacterWizard";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
 import { SRDImportButton } from "@/components/admin/SRDImportButton";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Badge } from "@/components/ui/badge";
 import RestManager from "@/components/character/RestManager";
 import { ResourceSetupDialog } from "@/components/combat/ResourceSetupDialog";
@@ -53,6 +54,7 @@ interface Character {
 const CampaignHub = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useIsAdmin();
   const [campaignCode, setCampaignCode] = useState("");
   const [campaignName, setCampaignName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -842,8 +844,8 @@ const CampaignHub = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dev Tools - Only show in development */}
-      {import.meta.env.DEV && (
+      {/* Admin Tools - Only show for admin users */}
+      {isAdmin && (
         <div className="space-y-4">
           <SeedCombatButton />
           <SRDImportButton />

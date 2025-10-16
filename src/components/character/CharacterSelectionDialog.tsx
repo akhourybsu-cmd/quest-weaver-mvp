@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Sword, Plus, Shield } from "lucide-react";
-import CharacterCreationDialog from "./CharacterCreationDialog";
+import CharacterWizard from "./CharacterWizard";
 
 interface Character {
   id: string;
@@ -106,7 +106,7 @@ const CharacterSelectionDialog = ({
 
   if (showCreation) {
     return (
-      <CharacterCreationDialog
+      <CharacterWizard
         open={true}
         campaignId={null}
         onComplete={handleCharacterCreated}

@@ -15,6 +15,8 @@ import SessionPlayer from "./pages/SessionPlayer";
 import SessionSpectator from "./pages/SessionSpectator";
 import CombatMap from "./pages/CombatMap";
 import WorldMap from "./pages/WorldMap";
+import CharacterSheetPage from "./pages/CharacterSheetPage";
+import CharacterList from "./pages/CharacterList";
 import CampaignTimeline from "./pages/CampaignTimeline";
 import Inventory from "./pages/Inventory";
 import Notes from "./pages/Notes";
@@ -75,6 +77,8 @@ const App = () => {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/lore" element={<Lore />} />
+              <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
+              <Route path="/campaign/:campaignId/character/:characterId" element={<CharacterSheetPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

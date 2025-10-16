@@ -61,7 +61,8 @@ const StepBasics = ({ data, updateData }: StepBasicsProps) => {
   };
 
   // Determine if subclass choice is available at current level
-  const canChooseSubclass = selectedClass && data.level >= (selectedClass.unlock_level || 3);
+  // Note: unlock_level is on the SUBCLASS, not the class. Default to 3 if not found.
+  const canChooseSubclass = selectedClass && subclasses.length > 0 && data.level >= 3;
 
   return (
     <div className="space-y-6">

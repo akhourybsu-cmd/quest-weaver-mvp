@@ -3246,6 +3246,10 @@ export type Database = {
         }
         Returns: string[]
       }
+      create_character_full: {
+        Args: { payload: Json }
+        Returns: string
+      }
       get_user_campaign_role: {
         Args: { _campaign_id: string }
         Returns: {

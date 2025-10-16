@@ -56,7 +56,7 @@ serve(async (req) => {
     console.log('Fetching SRD monsters from Open5e API...');
     
     let allMonsters: Open5eMonster[] = [];
-    let nextUrl = 'https://api.open5e.com/v1/monsters/?format=json&limit=100&document__slug=wotc-srd';
+    let nextUrl = 'https://api.open5e.com/v1/monsters/?format=json&limit=100&document__slug=5esrd';
     
     // Fetch all pages
     while (nextUrl) {

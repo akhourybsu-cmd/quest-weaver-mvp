@@ -3,13 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Heart, Shield, User, MoreVertical, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Heart, Shield, User, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,28 +61,7 @@ const CharacterCard = ({ character, campaignId }: CharacterCardProps) => {
               Level {character.level} {character.class}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <User className="h-8 w-8 text-muted-foreground" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDeleteDialog(true);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Character
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <User className="h-8 w-8 text-muted-foreground" />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -121,16 +94,28 @@ const CharacterCard = ({ character, campaignId }: CharacterCardProps) => {
           </div>
         )}
 
-        <Button 
-          className="w-full" 
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/campaign/${campaignId}/character/${character.id}`);
-          }}
-        >
-          View Character Sheet
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            className="flex-1" 
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/campaign/${campaignId}/character/${character.id}`);
+            }}
+          >
+            View Character Sheet
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteDialog(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

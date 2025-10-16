@@ -9,11 +9,15 @@ import { TurnIndicator } from "@/components/presence/TurnIndicator";
 import { DMQuickstart } from "@/components/onboarding/DMQuickstart";
 import QuestLog from "@/components/quests/QuestLog";
 import NotesBoard from "@/components/notes/NotesBoard";
+import EnhancedNPCDirectory from "@/components/npcs/EnhancedNPCDirectory";
+import FactionDirectory from "@/components/factions/FactionDirectory";
+import LootPool from "@/components/loot/LootPool";
+import HandoutViewer from "@/components/handouts/HandoutViewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText, FileText } from "lucide-react";
+import { Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText, FileText, Book, Package, Flag, UserCircle, FileImage } from "lucide-react";
 import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
 import ConditionsManager from "@/components/combat/ConditionsManager";
@@ -355,7 +359,7 @@ const SessionDM = () => {
         )}
 
         <Tabs defaultValue="party" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="DM Screen Sections">
+          <TabsList className="grid w-full grid-cols-5 sm:grid-cols-10" role="tablist" aria-label="DM Screen Sections">
             <TabsTrigger value="party" aria-label="Party management">
               <Users className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="hidden sm:inline">Party</span>
@@ -367,6 +371,26 @@ const SessionDM = () => {
             <TabsTrigger value="notes" aria-label="Session notes">
               <FileText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
               <span className="hidden sm:inline">Notes</span>
+            </TabsTrigger>
+            <TabsTrigger value="npcs" aria-label="NPCs">
+              <UserCircle className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">NPCs</span>
+            </TabsTrigger>
+            <TabsTrigger value="lore" aria-label="Lore">
+              <Book className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Lore</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" aria-label="Inventory">
+              <Package className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Items</span>
+            </TabsTrigger>
+            <TabsTrigger value="factions" aria-label="Factions">
+              <Flag className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Factions</span>
+            </TabsTrigger>
+            <TabsTrigger value="handouts" aria-label="Handouts">
+              <FileImage className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">Handouts</span>
             </TabsTrigger>
             <TabsTrigger value="combat" disabled={!activeEncounter} aria-label="Combat tracker" aria-disabled={!activeEncounter}>
               <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
@@ -499,6 +523,51 @@ const SessionDM = () => {
           {/* Notes Tab */}
           <TabsContent value="notes" className="space-y-4">
             {campaignId && currentUserId && <NotesBoard campaignId={campaignId} isDM={true} userId={currentUserId} />}
+          </TabsContent>
+
+          {/* NPCs Tab */}
+          <TabsContent value="npcs" className="space-y-4">
+            {campaignId && <EnhancedNPCDirectory campaignId={campaignId} isDM={true} />}
+          </TabsContent>
+
+          {/* Lore Tab */}
+          <TabsContent value="lore" className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={() => navigate(`/lore?campaign=${campaignId}&dm=true`)}
+                  className="w-full"
+                >
+                  <Book className="w-4 h-4 mr-2" />
+                  Open Lore & Worldbuilding
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Inventory Tab */}
+          <TabsContent value="inventory" className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={() => navigate(`/inventory?campaign=${campaignId}&dm=true`)}
+                  className="w-full"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Open Party Inventory
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Factions Tab */}
+          <TabsContent value="factions" className="space-y-4">
+            {campaignId && <FactionDirectory campaignId={campaignId} isDM={true} />}
+          </TabsContent>
+
+          {/* Handouts Tab */}
+          <TabsContent value="handouts" className="space-y-4">
+            {campaignId && <HandoutViewer campaignId={campaignId} isDM={true} />}
           </TabsContent>
 
           {/* Combat Tab */}

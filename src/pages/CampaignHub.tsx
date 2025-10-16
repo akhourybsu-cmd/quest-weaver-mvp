@@ -65,6 +65,7 @@ const CampaignHub = () => {
   const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
   const [expandedCharacters, setExpandedCharacters] = useState<Set<string>>(new Set());
   const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
+  const [deletingCharacter, setDeletingCharacter] = useState<Character | null>(null);
 
   useEffect(() => {
     fetchMyCampaigns();
@@ -206,6 +207,33 @@ const CampaignHub = () => {
     } catch (error: any) {
       toast({
         title: "Error deleting campaign",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCharacter = async () => {
+    if (!deletingCharacter) return;
+
+    try {
+      const { error } = await supabase
+        .from("characters")
+        .delete()
+        .eq("id", deletingCharacter.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Character deleted",
+        description: `${deletingCharacter.name} has been permanently removed`,
+      });
+
+      setDeletingCharacter(null);
+      await fetchMyCharacters();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting character",
         description: error.message,
         variant: "destructive",
       });
@@ -575,9 +603,27 @@ const CampaignHub = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <Button variant="ghost" size="sm">
-                                    <Sparkles className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button variant="ghost" size="sm">
+                                      <Sparkles className="w-4 h-4" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          className="text-destructive"
+                                          onClick={() => setDeletingCharacter(character)}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete Character
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 </div>
                               </CardContent>
                             </CollapsibleTrigger>
@@ -769,6 +815,27 @@ const CampaignHub = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete Campaign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Character Confirmation */}
+      <AlertDialog open={!!deletingCharacter} onOpenChange={(open) => !open && setDeletingCharacter(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deletingCharacter?.name}</strong> and remove them from all campaigns. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCharacter}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Character
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -361,12 +361,12 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
-        <div className="flex h-full">
+      <DialogContent className="max-w-7xl h-[95vh] p-0 flex flex-col">
+        <div className="flex flex-1 min-h-0">
           {/* Main wizard content */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             {/* Header */}
-            <div className="p-6 border-b">
+            <div className="p-6 border-b flex-shrink-0">
               <h2 className="text-2xl font-bold mb-2">
                 Character Creation Wizard
               </h2>
@@ -382,17 +382,17 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               <Progress value={progress} className="mt-3" />
             </div>
 
-            {/* Step content */}
-            <div className="flex-1 p-6 min-h-0 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
-                <div className="max-w-4xl">
+            {/* Step content - Scrollable */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="p-6">
+                <div className="max-w-4xl mx-auto">
                   {renderStep()}
                 </div>
               </div>
             </div>
 
             {/* Navigation */}
-            <div className="p-6 border-t flex justify-between">
+            <div className="p-6 border-t flex justify-between flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={handleBack}
@@ -412,7 +412,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           </div>
 
           {/* Live summary sidebar */}
-          <div className="w-80 border-l bg-muted/30">
+          <div className="w-80 border-l bg-muted/30 flex-shrink-0">
             <LiveSummaryPanel data={wizardData} />
           </div>
         </div>

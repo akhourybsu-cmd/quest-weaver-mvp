@@ -51,6 +51,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [tags, setTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,64 +71,80 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setLastSaved(null);
   }, [note, open, isDM]);
 
-  // Autosave with debounce
-  const saveNote = useCallback(
-    debounce(async (data: { title: string; content: string; visibility: string; isPinned: boolean; tags: string[] }) => {
-      if (!data.title.trim()) return;
+  // Save function
+  const performSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please add a title to your note",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      setIsSaving(true);
-      try {
-        if (note) {
-          // Update existing note
-          const { error } = await supabase
-            .from("session_notes")
-            .update({
-              title: data.title,
-              content_markdown: data.content,
-              visibility: data.visibility,
-              is_pinned: data.isPinned,
-              tags: data.tags,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", note.id);
+    setIsSaving(true);
+    try {
+      if (note) {
+        // Update existing note
+        const { error } = await supabase
+          .from("session_notes")
+          .update({
+            title,
+            content_markdown: content,
+            visibility,
+            is_pinned: isPinned,
+            tags,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", note.id);
 
-          if (error) throw error;
-        } else {
-          // Create new note
-          const { error } = await supabase.from("session_notes").insert({
-            campaign_id: campaignId,
-            author_id: userId,
-            title: data.title,
-            content_markdown: data.content,
-            visibility: data.visibility,
-            is_pinned: data.isPinned,
-            tags: data.tags,
-          });
-
-          if (error) throw error;
-        }
-
-        setLastSaved(new Date());
-        onSaved();
-      } catch (error: any) {
-        toast({
-          title: "Error saving note",
-          description: error.message,
-          variant: "destructive",
+        if (error) throw error;
+      } else {
+        // Create new note
+        const { error } = await supabase.from("session_notes").insert({
+          campaign_id: campaignId,
+          author_id: userId,
+          title,
+          content_markdown: content,
+          visibility,
+          is_pinned: isPinned,
+          tags,
         });
-      } finally {
-        setIsSaving(false);
+
+        if (error) throw error;
       }
+
+      setLastSaved(new Date());
+      onSaved();
+      toast({
+        title: "Note saved",
+        description: "Your note has been saved successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error saving note",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Autosave with debounce (only when enabled)
+  const debouncedSave = useCallback(
+    debounce(async () => {
+      await performSave();
     }, 1500),
-    [note, campaignId, userId, onSaved, toast]
+    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved]
   );
 
-  // Trigger autosave on content change
+  // Trigger autosave on content change (only when enabled)
   useEffect(() => {
-    if (open && title.trim()) {
-      saveNote({ title, content, visibility, isPinned, tags });
+    if (open && autoSaveEnabled && title.trim()) {
+      debouncedSave();
     }
-  }, [title, content, visibility, isPinned, tags, open]);
+  }, [title, content, visibility, isPinned, tags, open, autoSaveEnabled, debouncedSave]);
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -180,16 +197,29 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               </Select>
             </div>
 
-            <div className="flex items-center gap-2 pt-6">
-              <Switch
-                id="pinned"
-                checked={isPinned}
-                onCheckedChange={setIsPinned}
-              />
-              <Label htmlFor="pinned" className="flex items-center gap-1">
-                <Pin className="w-4 h-4" />
-                Pin Note
-              </Label>
+            <div className="flex items-center gap-4 pt-6">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="pinned"
+                  checked={isPinned}
+                  onCheckedChange={setIsPinned}
+                />
+                <Label htmlFor="pinned" className="flex items-center gap-1">
+                  <Pin className="w-4 h-4" />
+                  Pin
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="autosave"
+                  checked={autoSaveEnabled}
+                  onCheckedChange={setAutoSaveEnabled}
+                />
+                <Label htmlFor="autosave" className="flex items-center gap-1">
+                  Auto-save
+                </Label>
+              </div>
             </div>
           </div>
 
@@ -238,7 +268,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                 </span>
               )}
             </div>
-            <Button onClick={handleClose}>Close</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={performSave} disabled={isSaving || !title.trim()}>
+                <Save className="w-4 h-4 mr-2" />
+                Save
+              </Button>
+              <Button onClick={handleClose}>Close</Button>
+            </div>
           </div>
         </div>
       </DialogContent>

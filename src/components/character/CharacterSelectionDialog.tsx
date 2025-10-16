@@ -108,7 +108,7 @@ const CharacterSelectionDialog = ({
     return (
       <CharacterWizard
         open={true}
-        campaignId={null}
+        campaignId={campaignId}
         onComplete={handleCharacterCreated}
       />
     );

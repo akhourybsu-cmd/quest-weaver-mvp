@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical, Package, Library } from "lucide-react";
+import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical, Package, Library, Database } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
 import CharacterWizard from "@/components/character/CharacterWizard";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
+import { SRDImportButton } from "@/components/admin/SRDImportButton";
 import { Badge } from "@/components/ui/badge";
 import RestManager from "@/components/character/RestManager";
 import { ResourceSetupDialog } from "@/components/combat/ResourceSetupDialog";
@@ -842,7 +843,12 @@ const CampaignHub = () => {
       </AlertDialog>
 
       {/* Dev Tools - Only show in development */}
-      {import.meta.env.DEV && <SeedCombatButton />}
+      {import.meta.env.DEV && (
+        <div className="space-y-4">
+          <SeedCombatButton />
+          <SRDImportButton />
+        </div>
+      )}
     </div>
   );
 };

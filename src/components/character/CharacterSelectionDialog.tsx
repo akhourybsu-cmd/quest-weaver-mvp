@@ -20,6 +20,7 @@ interface Character {
   class: string;
   level: number;
   campaign_id: string | null;
+  creation_status: 'draft' | 'complete';
 }
 
 interface CharacterSelectionDialogProps {
@@ -40,6 +41,7 @@ const CharacterSelectionDialog = ({
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [showCreation, setShowCreation] = useState(false);
+  const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -55,13 +57,16 @@ const CharacterSelectionDialog = ({
 
       const { data, error } = await supabase
         .from("characters")
-        .select("id, name, class, level, campaign_id")
+        .select("id, name, class, level, campaign_id, creation_status")
         .eq("user_id", user.id)
         .is("campaign_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCharacters(data || []);
+      setCharacters((data || []).map(char => ({
+        ...char,
+        creation_status: (char.creation_status as 'draft' | 'complete') || 'complete'
+      })));
     } catch (error: any) {
       toast({
         title: "Error loading characters",
@@ -73,13 +78,23 @@ const CharacterSelectionDialog = ({
     }
   };
 
-  const handleSelectCharacter = async (characterId: string) => {
+  const handleSelectCharacter = async (character: Character) => {
+    // Check if character creation is incomplete
+    if (character.creation_status === 'draft') {
+      toast({
+        title: "Character Incomplete",
+        description: "Please finish creating this character before joining a campaign",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setAssigning(true);
     try {
       const { error } = await supabase
         .from("characters")
         .update({ campaign_id: campaignId })
-        .eq("id", characterId);
+        .eq("id", character.id);
 
       if (error) throw error;
 
@@ -101,7 +116,13 @@ const CharacterSelectionDialog = ({
 
   const handleCharacterCreated = async () => {
     setShowCreation(false);
+    setEditCharacterId(null);
     await fetchCharacters();
+  };
+
+  const handleResumeCreation = (characterId: string) => {
+    setEditCharacterId(characterId);
+    setShowCreation(true);
   };
 
   if (showCreation) {
@@ -110,6 +131,7 @@ const CharacterSelectionDialog = ({
         open={true}
         campaignId={campaignId}
         onComplete={handleCharacterCreated}
+        editCharacterId={editCharacterId}
       />
     );
   }
@@ -132,7 +154,7 @@ const CharacterSelectionDialog = ({
           <div className="space-y-4">
             <div className="grid gap-3">
               {characters.map((character) => (
-                <Card key={character.id} className="cursor-pointer hover:border-primary transition-colors">
+                <Card key={character.id} className={`transition-colors ${character.creation_status === 'draft' ? 'border-yellow-500/50' : 'hover:border-primary cursor-pointer'}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -140,7 +162,14 @@ const CharacterSelectionDialog = ({
                           <Sword className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold truncate">{character.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold truncate">{character.name}</h4>
+                            {character.creation_status === 'draft' && (
+                              <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                                Incomplete
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <Badge variant="secondary" className="text-xs">
                               <Shield className="w-3 h-3 mr-1" />
@@ -149,13 +178,23 @@ const CharacterSelectionDialog = ({
                           </div>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => handleSelectCharacter(character.id)}
-                        disabled={assigning}
-                        size="sm"
-                      >
-                        {assigning ? "Assigning..." : "Select"}
-                      </Button>
+                      {character.creation_status === 'draft' ? (
+                        <Button
+                          onClick={() => handleResumeCreation(character.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Continue
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleSelectCharacter(character)}
+                          disabled={assigning}
+                          size="sm"
+                        >
+                          {assigning ? "Assigning..." : "Select"}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

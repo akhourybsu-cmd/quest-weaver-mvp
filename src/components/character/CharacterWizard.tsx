@@ -156,8 +156,46 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   }, [wizardData, draftId]);
 
   const saveDraft = async () => {
-    // Save current progress
-    // TODO: Implement draft saving
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (draftId) {
+        // Update existing draft
+        await supabase
+          .from("characters")
+          .update({ 
+            name: wizardData.name,
+            class: wizardData.className,
+            creation_status: 'draft'
+          })
+          .eq("id", draftId);
+      } else if (wizardData.name && wizardData.classId) {
+        // Create new draft
+        const { data, error } = await supabase
+          .from("characters")
+          .insert({
+            user_id: user.id,
+            campaign_id: campaignId,
+            name: wizardData.name,
+            class: wizardData.className,
+            level: wizardData.level,
+            creation_status: 'draft',
+            max_hp: 10,
+            current_hp: 10,
+            ac: 10,
+            proficiency_bonus: 2,
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          setDraftId(data.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
   };
 
   const updateWizardData = (updates: Partial<WizardData>) => {
@@ -238,6 +276,16 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Mark character as complete
+      if (draftId) {
+        const { error } = await supabase
+          .from("characters")
+          .update({ creation_status: 'complete' })
+          .eq("id", draftId);
+
+        if (error) throw error;
+      }
 
       // TODO: Implement full character creation with all normalized tables
       // This will write to:
@@ -335,8 +383,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             </div>
 
             {/* Step content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {renderStep()}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              <div className="max-w-4xl">
+                {renderStep()}
+              </div>
             </div>
 
             {/* Navigation */}

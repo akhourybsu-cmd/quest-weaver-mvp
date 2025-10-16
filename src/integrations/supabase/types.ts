@@ -611,6 +611,7 @@ export type Database = {
           class: string
           con_save: number | null
           created_at: string | null
+          creation_status: string | null
           current_hp: number
           death_save_fail: number | null
           death_save_success: number | null
@@ -666,6 +667,7 @@ export type Database = {
           class: string
           con_save?: number | null
           created_at?: string | null
+          creation_status?: string | null
           current_hp: number
           death_save_fail?: number | null
           death_save_success?: number | null
@@ -721,6 +723,7 @@ export type Database = {
           class?: string
           con_save?: number | null
           created_at?: string | null
+          creation_status?: string | null
           current_hp?: number
           death_save_fail?: number | null
           death_save_success?: number | null

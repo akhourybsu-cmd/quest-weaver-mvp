@@ -3246,6 +3246,13 @@ export type Database = {
         }
         Returns: string[]
       }
+      get_user_campaign_role: {
+        Args: { _campaign_id: string }
+        Returns: {
+          has_access: boolean
+          is_dm: boolean
+        }[]
+      }
       is_campaign_member: {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean

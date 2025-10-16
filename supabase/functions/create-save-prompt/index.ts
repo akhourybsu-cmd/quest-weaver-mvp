@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rateLimiter.ts';
+import { SavePromptSchema, validateRequest } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -34,6 +35,12 @@ serve(async (req) => {
       return rateLimitResponse(rateLimit.resetAt, corsHeaders);
     }
 
+    const body = await req.json();
+    const validation = validateRequest(SavePromptSchema, body, corsHeaders);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       encounterId,
       ability,
@@ -44,7 +51,7 @@ serve(async (req) => {
       advantageMode,
       halfOnSuccess,
       expiresAt
-    } = await req.json()
+    } = validation.data;
 
     // Verify user is DM for this encounter's campaign
     const { data: encounter } = await supabaseClient

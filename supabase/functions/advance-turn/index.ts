@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rateLimiter.ts';
+import { AdvanceTurnSchema, validateRequest } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -33,7 +34,13 @@ serve(async (req) => {
     if (rateLimit.limited) {
       return rateLimitResponse(rateLimit.resetAt, corsHeaders);
     }
-    const { encounterId } = await req.json();
+    const body = await req.json();
+    const validation = validateRequest(AdvanceTurnSchema, body, corsHeaders);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { encounterId } = validation.data;
 
     // Validate DM authority
     const { data: encounter } = await supabase

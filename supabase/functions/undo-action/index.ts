@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { UndoActionSchema, validateRequest } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +36,13 @@ serve(async (req) => {
       });
     }
 
-    const { encounterId, logEntryId } = await req.json();
+    const body = await req.json();
+    const validation = validateRequest(UndoActionSchema, body, corsHeaders);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { encounterId, logEntryId } = validation.data;
 
     // Validate DM authority
     const { data: encounter, error: encounterError } = await supabaseClient

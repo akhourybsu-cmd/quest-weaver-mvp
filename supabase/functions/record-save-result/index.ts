@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '../_shared/rateLimiter.ts';
+import { SaveResultSchema, validateRequest } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
@@ -34,12 +35,18 @@ serve(async (req) => {
       return rateLimitResponse(rateLimit.resetAt, corsHeaders);
     }
 
+    const body = await req.json();
+    const validation = validateRequest(SaveResultSchema, body, corsHeaders);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const {
       savePromptId,
       characterId,
       roll,
       modifier
-    } = await req.json()
+    } = validation.data;
 
     // Verify user owns this character OR is DM
     const { data: character } = await supabaseClient

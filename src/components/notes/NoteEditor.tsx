@@ -63,6 +63,11 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const [mentionOptions, setMentionOptions] = useState<Array<{ id: string; name: string; type: string }>>([]);
+  const [cursorPosition, setCursorPosition] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -98,6 +103,60 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         label: l.label,
       })));
     }
+  };
+
+  const loadMentionOptions = async (search: string) => {
+    const options: Array<{ id: string; name: string; type: string }> = [];
+
+    // Fetch NPCs
+    const { data: npcs } = await supabase
+      .from("npcs")
+      .select("id, name")
+      .eq("campaign_id", campaignId)
+      .ilike("name", `%${search}%`)
+      .limit(10);
+    
+    if (npcs) {
+      options.push(...npcs.map(npc => ({ id: npc.id, name: npc.name, type: "npc" })));
+    }
+
+    // Fetch Characters
+    const { data: characters } = await supabase
+      .from("characters")
+      .select("id, name")
+      .eq("campaign_id", campaignId)
+      .ilike("name", `%${search}%`)
+      .limit(10);
+    
+    if (characters) {
+      options.push(...characters.map(char => ({ id: char.id, name: char.name, type: "character" })));
+    }
+
+    // Fetch Locations
+    const { data: locations } = await supabase
+      .from("locations")
+      .select("id, name")
+      .eq("campaign_id", campaignId)
+      .ilike("name", `%${search}%`)
+      .limit(10);
+    
+    if (locations) {
+      options.push(...locations.map(loc => ({ id: loc.id, name: loc.name, type: "location" })));
+    }
+
+    // Fetch Quests
+    const { data: quests } = await supabase
+      .from("quests")
+      .select("id, title")
+      .eq("campaign_id", campaignId)
+      .ilike("title", `%${search}%`)
+      .limit(10);
+    
+    if (quests) {
+      options.push(...quests.map(quest => ({ id: quest.id, name: quest.title, type: "quest" })));
+    }
+
+    setMentionOptions(options);
   };
 
   // Save function
@@ -210,6 +269,59 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setTags(tags.filter((t) => t !== tag));
   };
 
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    const newCursorPosition = e.target.selectionStart;
+    setContent(newContent);
+    setCursorPosition(newCursorPosition);
+
+    // Check for @ mention
+    const textBeforeCursor = newContent.substring(0, newCursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      // Check if there's no space after @ (still typing the mention)
+      if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
+        setMentionSearch(textAfterAt);
+        setShowMentions(true);
+        loadMentionOptions(textAfterAt);
+        
+        // Position the mention dropdown
+        const textarea = e.target;
+        const { top, left } = textarea.getBoundingClientRect();
+        setMentionPosition({ top: top - 200, left: left + 10 });
+        return;
+      }
+    }
+    
+    setShowMentions(false);
+  };
+
+  const handleMentionSelect = (option: { id: string; name: string; type: string }) => {
+    // Find the @ position
+    const textBeforeCursor = content.substring(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+    
+    // Replace @mention with the name
+    const beforeMention = content.substring(0, lastAtIndex);
+    const afterCursor = content.substring(cursorPosition);
+    const newContent = beforeMention + `@${option.name}` + afterCursor;
+    
+    setContent(newContent);
+    setShowMentions(false);
+    
+    // Add to links if not already there
+    const linkExists = links.some(link => link.link_id === option.id && link.link_type === option.type);
+    if (!linkExists) {
+      setLinks([...links, {
+        link_type: option.type,
+        link_id: option.id,
+        label: option.name,
+      }]);
+    }
+  };
+
   const handleClose = () => {
     onOpenChange(false);
   };
@@ -300,15 +412,35 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <Label htmlFor="content">Content</Label>
             <Textarea
               id="content"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your note here... Use @NPC, #Location, !Quest for tags"
+              onChange={handleContentChange}
+              placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
               className="min-h-[300px] font-mono"
             />
+            
+            {showMentions && mentionOptions.length > 0 && (
+              <div 
+                className="absolute z-50 w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+                style={{ top: mentionPosition.top, left: mentionPosition.left }}
+              >
+                {mentionOptions.map((option) => (
+                  <button
+                    key={`${option.type}-${option.id}`}
+                    onClick={() => handleMentionSelect(option)}
+                    className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2"
+                  >
+                    <Badge variant="outline" className="text-xs">
+                      {option.type}
+                    </Badge>
+                    <span>{option.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

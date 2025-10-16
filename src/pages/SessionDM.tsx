@@ -359,48 +359,55 @@ const SessionDM = () => {
         )}
 
         <Tabs defaultValue="party" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 sm:grid-cols-10" role="tablist" aria-label="DM Screen Sections">
-            <TabsTrigger value="party" aria-label="Party management">
-              <Users className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Party</span>
-            </TabsTrigger>
-            <TabsTrigger value="quests" aria-label="Quest tracking">
-              <ScrollText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Quests</span>
-            </TabsTrigger>
-            <TabsTrigger value="notes" aria-label="Session notes">
-              <FileText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Notes</span>
-            </TabsTrigger>
-            <TabsTrigger value="npcs" aria-label="NPCs">
-              <UserCircle className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">NPCs</span>
-            </TabsTrigger>
-            <TabsTrigger value="lore" aria-label="Lore">
-              <Book className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Lore</span>
-            </TabsTrigger>
-            <TabsTrigger value="inventory" aria-label="Inventory">
-              <Package className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Items</span>
-            </TabsTrigger>
-            <TabsTrigger value="factions" aria-label="Factions">
-              <Flag className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Factions</span>
-            </TabsTrigger>
-            <TabsTrigger value="handouts" aria-label="Handouts">
-              <FileImage className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Handouts</span>
-            </TabsTrigger>
-            <TabsTrigger value="combat" disabled={!activeEncounter} aria-label="Combat tracker" aria-disabled={!activeEncounter}>
-              <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Combat</span>
-            </TabsTrigger>
-            <TabsTrigger value="map" aria-label="Battle map">
-              <Map className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">Map</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="space-y-2">
+            {/* Top Row - Most Important */}
+            <TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="DM Screen Primary Sections">
+              <TabsTrigger value="combat" disabled={!activeEncounter} aria-label="Combat tracker" aria-disabled={!activeEncounter}>
+                <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Combat</span>
+              </TabsTrigger>
+              <TabsTrigger value="map" aria-label="Battle map">
+                <Map className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Map</span>
+              </TabsTrigger>
+              <TabsTrigger value="party" aria-label="Party management">
+                <Users className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Party</span>
+              </TabsTrigger>
+              <TabsTrigger value="quests" aria-label="Quest tracking">
+                <ScrollText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Quests</span>
+              </TabsTrigger>
+              <TabsTrigger value="notes" aria-label="Session notes">
+                <FileText className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Notes</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Bottom Row - Additional Tools */}
+            <TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="DM Screen Additional Sections">
+              <TabsTrigger value="npcs" aria-label="NPCs">
+                <UserCircle className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">NPCs</span>
+              </TabsTrigger>
+              <TabsTrigger value="lore" aria-label="Lore">
+                <Book className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Lore</span>
+              </TabsTrigger>
+              <TabsTrigger value="inventory" aria-label="Inventory">
+                <Package className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Items</span>
+              </TabsTrigger>
+              <TabsTrigger value="factions" aria-label="Factions">
+                <Flag className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Factions</span>
+              </TabsTrigger>
+              <TabsTrigger value="handouts" aria-label="Handouts">
+                <FileImage className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <span className="hidden sm:inline">Handouts</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Party Overview Tab */}
           <TabsContent value="party" className="space-y-4">

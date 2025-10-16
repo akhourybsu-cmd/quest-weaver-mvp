@@ -190,6 +190,97 @@ export type Database = {
         }
         Relationships: []
       }
+      character_abilities: {
+        Row: {
+          cha: number
+          character_id: string
+          con: number
+          created_at: string | null
+          dex: number
+          id: string
+          int: number
+          method: string
+          str: number
+          wis: number
+        }
+        Insert: {
+          cha?: number
+          character_id: string
+          con?: number
+          created_at?: string | null
+          dex?: number
+          id?: string
+          int?: number
+          method?: string
+          str?: number
+          wis?: number
+        }
+        Update: {
+          cha?: number
+          character_id?: string
+          con?: number
+          created_at?: string | null
+          dex?: number
+          id?: string
+          int?: number
+          method?: string
+          str?: number
+          wis?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_abilities_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: true
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_attacks: {
+        Row: {
+          ability: string
+          attack_bonus: number
+          character_id: string
+          created_at: string | null
+          damage: string
+          damage_type: string | null
+          id: string
+          name: string
+          properties: string[] | null
+        }
+        Insert: {
+          ability: string
+          attack_bonus: number
+          character_id: string
+          created_at?: string | null
+          damage: string
+          damage_type?: string | null
+          id?: string
+          name: string
+          properties?: string[] | null
+        }
+        Update: {
+          ability?: string
+          attack_bonus?: number
+          character_id?: string
+          created_at?: string | null
+          damage?: string
+          damage_type?: string | null
+          id?: string
+          name?: string
+          properties?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_attacks_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_conditions: {
         Row: {
           character_id: string
@@ -245,10 +336,275 @@ export type Database = {
           },
         ]
       }
+      character_equipment: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          data: Json | null
+          equipped: boolean | null
+          id: string
+          item_ref: string
+          qty: number | null
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          data?: Json | null
+          equipped?: boolean | null
+          id?: string
+          item_ref: string
+          qty?: number | null
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          data?: Json | null
+          equipped?: boolean | null
+          id?: string
+          item_ref?: string
+          qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_equipment_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_features: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          data: Json | null
+          description: string | null
+          id: string
+          level: number
+          name: string
+          source: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          level: number
+          name: string
+          source: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          level?: number
+          name?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_features_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_languages: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_languages_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_proficiencies: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_proficiencies_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_saves: {
+        Row: {
+          cha: boolean | null
+          character_id: string
+          con: boolean | null
+          dex: boolean | null
+          id: string
+          int: boolean | null
+          str: boolean | null
+          wis: boolean | null
+        }
+        Insert: {
+          cha?: boolean | null
+          character_id: string
+          con?: boolean | null
+          dex?: boolean | null
+          id?: string
+          int?: boolean | null
+          str?: boolean | null
+          wis?: boolean | null
+        }
+        Update: {
+          cha?: boolean | null
+          character_id?: string
+          con?: boolean | null
+          dex?: boolean | null
+          id?: string
+          int?: boolean | null
+          str?: boolean | null
+          wis?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_saves_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: true
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_skills: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          expertise: boolean | null
+          id: string
+          proficient: boolean | null
+          skill: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          expertise?: boolean | null
+          id?: string
+          proficient?: boolean | null
+          skill: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          expertise?: boolean | null
+          id?: string
+          proficient?: boolean | null
+          skill?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_skills_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_spells: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          id: string
+          known: boolean | null
+          prepared: boolean | null
+          source: string | null
+          spell_id: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          id?: string
+          known?: boolean | null
+          prepared?: boolean | null
+          source?: string | null
+          spell_id: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          id?: string
+          known?: boolean | null
+          prepared?: boolean | null
+          source?: string | null
+          spell_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_spells_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_spells_spell_id_fkey"
+            columns: ["spell_id"]
+            isOneToOne: false
+            referencedRelation: "srd_spells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
           ac: number
           action_used: boolean | null
+          age: string | null
+          alignment: string | null
+          ancestry_id: string | null
+          background_id: string | null
           bonus_action_used: boolean | null
           campaign_id: string | null
           cha_save: number | null
@@ -259,6 +615,12 @@ export type Database = {
           death_save_fail: number | null
           death_save_success: number | null
           dex_save: number | null
+          eyes: string | null
+          hair: string | null
+          height: string | null
+          hit_dice_current: number | null
+          hit_dice_total: number | null
+          hit_die: string | null
           id: string
           immunities: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus: number
@@ -267,22 +629,37 @@ export type Database = {
           level: number
           max_hp: number
           name: string
+          notes: string | null
           passive_perception: number | null
+          portrait_url: string | null
           proficiency_bonus: number
           reaction_used: boolean | null
           resistances: Database["public"]["Enums"]["damage_type"][] | null
           resources: Json | null
+          size: string | null
+          skin: string | null
           speed: number | null
+          spell_ability: string | null
+          spell_attack_mod: number | null
+          spell_save_dc: number | null
+          status: string | null
           str_save: number | null
+          subancestry_id: string | null
+          subclass_id: string | null
           temp_hp: number | null
           updated_at: string | null
           user_id: string
           vulnerabilities: Database["public"]["Enums"]["damage_type"][] | null
+          weight: string | null
           wis_save: number | null
         }
         Insert: {
           ac: number
           action_used?: boolean | null
+          age?: string | null
+          alignment?: string | null
+          ancestry_id?: string | null
+          background_id?: string | null
           bonus_action_used?: boolean | null
           campaign_id?: string | null
           cha_save?: number | null
@@ -293,6 +670,12 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          eyes?: string | null
+          hair?: string | null
+          height?: string | null
+          hit_dice_current?: number | null
+          hit_dice_total?: number | null
+          hit_die?: string | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
@@ -301,22 +684,37 @@ export type Database = {
           level?: number
           max_hp: number
           name: string
+          notes?: string | null
           passive_perception?: number | null
+          portrait_url?: string | null
           proficiency_bonus: number
           reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
           resources?: Json | null
+          size?: string | null
+          skin?: string | null
           speed?: number | null
+          spell_ability?: string | null
+          spell_attack_mod?: number | null
+          spell_save_dc?: number | null
+          status?: string | null
           str_save?: number | null
+          subancestry_id?: string | null
+          subclass_id?: string | null
           temp_hp?: number | null
           updated_at?: string | null
           user_id: string
           vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
+          weight?: string | null
           wis_save?: number | null
         }
         Update: {
           ac?: number
           action_used?: boolean | null
+          age?: string | null
+          alignment?: string | null
+          ancestry_id?: string | null
+          background_id?: string | null
           bonus_action_used?: boolean | null
           campaign_id?: string | null
           cha_save?: number | null
@@ -327,6 +725,12 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          eyes?: string | null
+          hair?: string | null
+          height?: string | null
+          hit_dice_current?: number | null
+          hit_dice_total?: number | null
+          hit_die?: string | null
           id?: string
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
@@ -335,25 +739,64 @@ export type Database = {
           level?: number
           max_hp?: number
           name?: string
+          notes?: string | null
           passive_perception?: number | null
+          portrait_url?: string | null
           proficiency_bonus?: number
           reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
           resources?: Json | null
+          size?: string | null
+          skin?: string | null
           speed?: number | null
+          spell_ability?: string | null
+          spell_attack_mod?: number | null
+          spell_save_dc?: number | null
+          status?: string | null
           str_save?: number | null
+          subancestry_id?: string | null
+          subclass_id?: string | null
           temp_hp?: number | null
           updated_at?: string | null
           user_id?: string
           vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
+          weight?: string | null
           wis_save?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "characters_ancestry_id_fkey"
+            columns: ["ancestry_id"]
+            isOneToOne: false
+            referencedRelation: "srd_ancestries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_background_id_fkey"
+            columns: ["background_id"]
+            isOneToOne: false
+            referencedRelation: "srd_backgrounds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "characters_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_subancestry_id_fkey"
+            columns: ["subancestry_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subancestries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_subclass_id_fkey"
+            columns: ["subclass_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subclasses"
             referencedColumns: ["id"]
           },
         ]
@@ -2215,6 +2658,496 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      srd_ancestries: {
+        Row: {
+          ability_bonuses: Json
+          created_at: string | null
+          id: string
+          languages: Json
+          name: string
+          options: Json
+          proficiencies: Json
+          size: string
+          speed: number
+          traits: Json
+        }
+        Insert: {
+          ability_bonuses?: Json
+          created_at?: string | null
+          id?: string
+          languages?: Json
+          name: string
+          options?: Json
+          proficiencies?: Json
+          size: string
+          speed?: number
+          traits?: Json
+        }
+        Update: {
+          ability_bonuses?: Json
+          created_at?: string | null
+          id?: string
+          languages?: Json
+          name?: string
+          options?: Json
+          proficiencies?: Json
+          size?: string
+          speed?: number
+          traits?: Json
+        }
+        Relationships: []
+      }
+      srd_armor: {
+        Row: {
+          base_ac: number
+          category: string
+          cost_gp: number | null
+          created_at: string | null
+          dex_cap: number | null
+          id: string
+          name: string
+          stealth_disadv: boolean | null
+          strength_min: number | null
+          weight: number | null
+        }
+        Insert: {
+          base_ac: number
+          category: string
+          cost_gp?: number | null
+          created_at?: string | null
+          dex_cap?: number | null
+          id?: string
+          name: string
+          stealth_disadv?: boolean | null
+          strength_min?: number | null
+          weight?: number | null
+        }
+        Update: {
+          base_ac?: number
+          category?: string
+          cost_gp?: number | null
+          created_at?: string | null
+          dex_cap?: number | null
+          id?: string
+          name?: string
+          stealth_disadv?: boolean | null
+          strength_min?: number | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      srd_backgrounds: {
+        Row: {
+          created_at: string | null
+          equipment: Json
+          feature: string | null
+          id: string
+          languages: Json
+          name: string
+          skill_proficiencies: Json
+          tool_proficiencies: Json
+        }
+        Insert: {
+          created_at?: string | null
+          equipment?: Json
+          feature?: string | null
+          id?: string
+          languages?: Json
+          name: string
+          skill_proficiencies?: Json
+          tool_proficiencies?: Json
+        }
+        Update: {
+          created_at?: string | null
+          equipment?: Json
+          feature?: string | null
+          id?: string
+          languages?: Json
+          name?: string
+          skill_proficiencies?: Json
+          tool_proficiencies?: Json
+        }
+        Relationships: []
+      }
+      srd_class_features: {
+        Row: {
+          choices: Json | null
+          class_id: string
+          created_at: string | null
+          description: string
+          id: string
+          level: number
+          name: string
+        }
+        Insert: {
+          choices?: Json | null
+          class_id: string
+          created_at?: string | null
+          description: string
+          id?: string
+          level: number
+          name: string
+        }
+        Update: {
+          choices?: Json | null
+          class_id?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          level?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srd_class_features_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      srd_classes: {
+        Row: {
+          created_at: string | null
+          hit_die: number
+          id: string
+          name: string
+          proficiencies: Json
+          saving_throws: string[]
+          spellcasting_ability: string | null
+          spellcasting_progression: string | null
+          starting_equipment: Json
+        }
+        Insert: {
+          created_at?: string | null
+          hit_die: number
+          id?: string
+          name: string
+          proficiencies?: Json
+          saving_throws?: string[]
+          spellcasting_ability?: string | null
+          spellcasting_progression?: string | null
+          starting_equipment?: Json
+        }
+        Update: {
+          created_at?: string | null
+          hit_die?: number
+          id?: string
+          name?: string
+          proficiencies?: Json
+          saving_throws?: string[]
+          spellcasting_ability?: string | null
+          spellcasting_progression?: string | null
+          starting_equipment?: Json
+        }
+        Relationships: []
+      }
+      srd_equipment: {
+        Row: {
+          cost_gp: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          properties: Json | null
+          type: string
+          weight: number | null
+        }
+        Insert: {
+          cost_gp?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          properties?: Json | null
+          type: string
+          weight?: number | null
+        }
+        Update: {
+          cost_gp?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          properties?: Json | null
+          type?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      srd_languages: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          script: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          script?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          script?: string | null
+        }
+        Relationships: []
+      }
+      srd_spell_slots: {
+        Row: {
+          class_id: string
+          level: number
+          slot_array: number[]
+        }
+        Insert: {
+          class_id: string
+          level: number
+          slot_array?: number[]
+        }
+        Update: {
+          class_id?: string
+          level?: number
+          slot_array?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srd_spell_slots_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      srd_spells: {
+        Row: {
+          casting_time: string
+          classes: string[]
+          components: string[]
+          concentration: boolean | null
+          created_at: string | null
+          description: string
+          duration: string
+          higher_levels: string | null
+          id: string
+          level: number
+          material: string | null
+          name: string
+          range: string
+          ritual: boolean | null
+          school: string
+        }
+        Insert: {
+          casting_time: string
+          classes?: string[]
+          components?: string[]
+          concentration?: boolean | null
+          created_at?: string | null
+          description: string
+          duration: string
+          higher_levels?: string | null
+          id?: string
+          level: number
+          material?: string | null
+          name: string
+          range: string
+          ritual?: boolean | null
+          school: string
+        }
+        Update: {
+          casting_time?: string
+          classes?: string[]
+          components?: string[]
+          concentration?: boolean | null
+          created_at?: string | null
+          description?: string
+          duration?: string
+          higher_levels?: string | null
+          id?: string
+          level?: number
+          material?: string | null
+          name?: string
+          range?: string
+          ritual?: boolean | null
+          school?: string
+        }
+        Relationships: []
+      }
+      srd_subancestries: {
+        Row: {
+          ability_bonuses: Json
+          ancestry_id: string
+          created_at: string | null
+          id: string
+          name: string
+          options: Json
+          traits: Json
+        }
+        Insert: {
+          ability_bonuses?: Json
+          ancestry_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          options?: Json
+          traits?: Json
+        }
+        Update: {
+          ability_bonuses?: Json
+          ancestry_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          options?: Json
+          traits?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srd_subancestries_ancestry_id_fkey"
+            columns: ["ancestry_id"]
+            isOneToOne: false
+            referencedRelation: "srd_ancestries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      srd_subclass_features: {
+        Row: {
+          choices: Json | null
+          created_at: string | null
+          description: string
+          id: string
+          level: number
+          name: string
+          subclass_id: string
+        }
+        Insert: {
+          choices?: Json | null
+          created_at?: string | null
+          description: string
+          id?: string
+          level: number
+          name: string
+          subclass_id: string
+        }
+        Update: {
+          choices?: Json | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          level?: number
+          name?: string
+          subclass_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srd_subclass_features_subclass_id_fkey"
+            columns: ["subclass_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subclasses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      srd_subclasses: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          unlock_level: number
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          unlock_level?: number
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          unlock_level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srd_subclasses_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      srd_tools: {
+        Row: {
+          category: string
+          cost_gp: number | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          cost_gp?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          cost_gp?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      srd_weapons: {
+        Row: {
+          category: string
+          cost_gp: number | null
+          created_at: string | null
+          damage: string
+          damage_type: string
+          id: string
+          name: string
+          properties: string[] | null
+          weight: number | null
+        }
+        Insert: {
+          category: string
+          cost_gp?: number | null
+          created_at?: string | null
+          damage: string
+          damage_type: string
+          id?: string
+          name: string
+          properties?: string[] | null
+          weight?: number | null
+        }
+        Update: {
+          category?: string
+          cost_gp?: number | null
+          created_at?: string | null
+          damage?: string
+          damage_type?: string
+          id?: string
+          name?: string
+          properties?: string[] | null
+          weight?: number | null
+        }
+        Relationships: []
       }
       tokens: {
         Row: {

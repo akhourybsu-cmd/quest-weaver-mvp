@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
+import { CampaignProvider } from "@/contexts/CampaignContext";
 import Auth from "./components/Auth";
 import Index from "./pages/Index";
 import CampaignHub from "./pages/CampaignHub";
@@ -19,6 +20,7 @@ import Inventory from "./pages/Inventory";
 import Notes from "./pages/Notes";
 import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
+import { PlayerHome } from "./components/permissions/PlayerHome";
 
 const queryClient = new QueryClient();
 
@@ -59,21 +61,24 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/campaign-hub" element={<CampaignHub />} />
-            <Route path="/session/dm" element={<SessionDM />} />
-            <Route path="/session/player" element={<SessionPlayer />} />
-            <Route path="/session/spectator" element={<SessionSpectator />} />
-            <Route path="/map" element={<CombatMap />} />
-            <Route path="/world-map" element={<WorldMap />} />
-            <Route path="/timeline" element={<CampaignTimeline />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/lore" element={<Lore />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <CampaignProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/campaign-hub" element={<CampaignHub />} />
+              <Route path="/session/dm" element={<SessionDM />} />
+              <Route path="/session/player" element={<SessionPlayer />} />
+              <Route path="/session/spectator" element={<SessionSpectator />} />
+              <Route path="/player-home" element={<PlayerHome />} />
+              <Route path="/map" element={<CombatMap />} />
+              <Route path="/world-map" element={<WorldMap />} />
+              <Route path="/timeline" element={<CampaignTimeline />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/notes" element={<Notes />} />
+              <Route path="/lore" element={<Lore />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </CampaignProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

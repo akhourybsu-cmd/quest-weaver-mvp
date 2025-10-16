@@ -131,6 +131,38 @@ export type Database = {
           },
         ]
       }
+      campaign_members: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           code: string
@@ -2214,6 +2246,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auth_role_in_campaign: {
+        Args: { camp_id: string }
+        Returns: string
+      }
+      character_owned_by_user: {
+        Args: { char_id: string }
+        Returns: boolean
+      }
       compute_save_prompt_targets: {
         Args: {
           _encounter_id: string

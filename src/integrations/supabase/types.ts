@@ -510,6 +510,7 @@ export type Database = {
           initiative: number
           initiative_bonus: number
           is_current_turn: boolean | null
+          is_visible_to_players: boolean | null
           languages: string | null
           legendary_actions: Json | null
           name: string
@@ -543,6 +544,7 @@ export type Database = {
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
+          is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null
           name: string
@@ -576,6 +578,7 @@ export type Database = {
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
+          is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null
           name?: string
@@ -1838,6 +1841,51 @@ export type Database = {
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_turn_signals: {
+        Row: {
+          acknowledged_by_dm: boolean | null
+          character_id: string
+          created_at: string
+          encounter_id: string
+          id: string
+          message: string | null
+          signal_type: string
+        }
+        Insert: {
+          acknowledged_by_dm?: boolean | null
+          character_id: string
+          created_at?: string
+          encounter_id: string
+          id?: string
+          message?: string | null
+          signal_type: string
+        }
+        Update: {
+          acknowledged_by_dm?: boolean | null
+          character_id?: string
+          created_at?: string
+          encounter_id?: string
+          id?: string
+          message?: string | null
+          signal_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_turn_signals_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_turn_signals_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
             referencedColumns: ["id"]
           },
         ]

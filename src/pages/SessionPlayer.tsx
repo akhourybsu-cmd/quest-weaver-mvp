@@ -8,10 +8,15 @@ import DiceRoller from "@/components/dice/DiceRoller";
 import RestManager from "@/components/character/RestManager";
 import SavePromptListener from "@/components/combat/SavePromptListener";
 import { PlayerCharacterSheet } from "@/components/combat/PlayerCharacterSheet";
+import { PlayerInitiativeDisplay } from "@/components/player/PlayerInitiativeDisplay";
+import { PlayerCombatActions } from "@/components/player/PlayerCombatActions";
+import { PlayerMapViewer } from "@/components/player/PlayerMapViewer";
+import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Shield, Zap, Plus, Minus, Dices } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +69,9 @@ const SessionPlayer = () => {
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeEncounter, setActiveEncounter] = useState<string | null>(null);
+  const [mapId, setMapId] = useState<string | null>(null);
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [isMyTurn, setIsMyTurn] = useState(false);
 
   useEffect(() => {
     if (!campaignCode) {
@@ -149,6 +157,17 @@ const SessionPlayer = () => {
 
     setActiveEncounter(encounter?.id || null);
 
+    // Fetch map for encounter if exists
+    if (encounter?.id) {
+      const { data: mapData } = await supabase
+        .from("maps")
+        .select("id")
+        .eq("encounter_id", encounter.id)
+        .maybeSingle();
+      
+      setMapId(mapData?.id || null);
+    }
+
     // Get character for this user in this campaign
     const { data, error } = await supabase
       .from("characters")
@@ -167,16 +186,26 @@ const SessionPlayer = () => {
     }
 
     if (!data) {
-      toast({
-        title: "No character found",
-        description: "Please create a character first",
-        variant: "destructive",
-      });
-      navigate("/campaign-hub");
+      // No character found - show selection dialog
+      setShowCharacterSelection(true);
+      setLoading(false);
       return;
     }
 
     setCharacter(data);
+
+    // Check if it's my turn
+    if (encounter?.id) {
+      const { data: initData } = await supabase
+        .from("initiative")
+        .select("is_current_turn")
+        .eq("encounter_id", encounter.id)
+        .eq("combatant_id", data.id)
+        .eq("combatant_type", "character")
+        .maybeSingle();
+      
+      setIsMyTurn(initData?.is_current_turn || false);
+    }
 
     // Create or update player presence
     const { data: existingPresence } = await supabase
@@ -303,6 +332,19 @@ const SessionPlayer = () => {
 
       {/* Content */}
       <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4" role="main">
+        {/* Character Selection Dialog */}
+        {showCharacterSelection && campaignId && (
+          <CharacterSelectionDialog
+            open={showCharacterSelection}
+            campaignId={campaignId}
+            onComplete={() => {
+              setShowCharacterSelection(false);
+              fetchCharacter();
+            }}
+            onCancel={() => navigate("/campaign-hub")}
+          />
+        )}
+
         {/* Player Presence */}
         {campaignId && currentUserId && (
           <PlayerPresence
@@ -312,13 +354,45 @@ const SessionPlayer = () => {
           />
         )}
 
-        {/* Player Character Sheet - shown when in active encounter */}
-        {activeEncounter && campaignId && (
-          <PlayerCharacterSheet
-            characterId={character.id}
-            campaignId={campaignId}
-            encounterId={activeEncounter}
-          />
+        {/* Combat UI - shown when in active encounter */}
+        {activeEncounter && character && (
+          <Tabs defaultValue="character" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="character">Character</TabsTrigger>
+              <TabsTrigger value="combat">Combat</TabsTrigger>
+              {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
+            </TabsList>
+
+            <TabsContent value="character" className="space-y-4 mt-4">
+              <PlayerCharacterSheet
+                characterId={character.id}
+                campaignId={campaignId}
+                encounterId={activeEncounter}
+              />
+            </TabsContent>
+
+            <TabsContent value="combat" className="space-y-4 mt-4">
+              <PlayerCombatActions
+                characterId={character.id}
+                encounterId={activeEncounter}
+                isMyTurn={isMyTurn}
+              />
+              
+              <PlayerInitiativeDisplay
+                encounterId={activeEncounter}
+                characterId={character.id}
+              />
+            </TabsContent>
+
+            {mapId && (
+              <TabsContent value="map" className="mt-4">
+                <PlayerMapViewer
+                  mapId={mapId}
+                  characterId={character.id}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
         )}
 
         {/* HP Card */}

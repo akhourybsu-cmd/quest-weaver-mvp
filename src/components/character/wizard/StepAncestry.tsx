@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAtom, useSetAtom } from "jotai";
@@ -23,6 +23,7 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
   const [ancestries, setAncestries] = useState<SrdAncestry[]>([]);
   const [subAncestries, setSubAncestries] = useState<SrdSubAncestry[]>([]);
   const [selectedAncestry, setSelectedAncestry] = useState<SrdAncestry | null>(null);
+  const [selectedSubancestry, setSelectedSubancestry] = useState<SrdSubAncestry | null>(null);
 
   useEffect(() => {
     SRD.ancestries().then(setAncestries);
@@ -37,6 +38,15 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
       }
     }
   }, [draft.ancestryId, ancestries]);
+
+  useEffect(() => {
+    if (draft.subAncestryId && subAncestries.length > 0) {
+      const subancestry = subAncestries.find(sa => sa.id === draft.subAncestryId);
+      if (subancestry) {
+        setSelectedSubancestry(subancestry);
+      }
+    }
+  }, [draft.subAncestryId, subAncestries]);
 
   const handleAncestryChange = async (ancestryId: string) => {
     const ancestry = ancestries.find(a => a.id === ancestryId);
@@ -53,12 +63,13 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
     setSubAncestries(subs);
   };
 
-  const handleSubAncestryChange = (subAncestryId: string) => {
-    const subAncestry = subAncestries.find(sa => sa.id === subAncestryId);
+  const handleSubAncestryChange = (subancestryId: string) => {
+    const subAncestry = subAncestries.find(sa => sa.id === subancestryId);
     if (!subAncestry) return;
 
-    setSubAncestry(subAncestryId);
-    updateData({ subAncestryId });
+    setSubAncestry(subancestryId);
+    setSelectedSubancestry(subAncestry);
+    updateData({ subancestryId });
 
     const grants = grantsFromSubAncestry(subAncestry);
     applyGrants(grants);
@@ -98,7 +109,7 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
               onValueChange={handleSubAncestryChange}
             >
               <SelectTrigger id="subancestry">
-                <SelectValue placeholder="Select subancestry (optional)" />
+                <SelectValue placeholder="Select heritage (optional)" />
               </SelectTrigger>
               <SelectContent>
                 {subAncestries.map((sub) => (

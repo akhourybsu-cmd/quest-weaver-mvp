@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useAtom, useSetAtom } from "jotai";
+import { draftAtom, setBackgroundAtom, applyGrantsAtom, setNeedsAtom } from "@/state/characterWizard";
+import { SRD, type SrdBackground } from "@/lib/srd/SRDClient";
+import { grantsFromBackground, needsFromBackground } from "@/lib/rules/5eRules";
 import type { WizardData } from "../CharacterWizard";
 
 interface StepBackgroundProps {
@@ -12,30 +15,48 @@ interface StepBackgroundProps {
 }
 
 const StepBackground = ({ data, updateData }: StepBackgroundProps) => {
-  const [backgrounds, setBackgrounds] = useState<any[]>([]);
-  const [selectedBackground, setSelectedBackground] = useState<any>(null);
+  const [draft] = useAtom(draftAtom);
+  const setBackground = useSetAtom(setBackgroundAtom);
+  const applyGrants = useSetAtom(applyGrantsAtom);
+  const setNeeds = useSetAtom(setNeedsAtom);
+
+  const [backgrounds, setBackgrounds] = useState<SrdBackground[]>([]);
+  const [selectedBackground, setSelectedBackground] = useState<SrdBackground | null>(null);
 
   useEffect(() => {
-    loadBackgrounds();
+    SRD.backgrounds().then(setBackgrounds);
   }, []);
 
   useEffect(() => {
-    if (data.backgroundId) {
-      const background = backgrounds.find(b => b.id === data.backgroundId);
-      setSelectedBackground(background);
+    if (draft.backgroundId && backgrounds.length > 0) {
+      const bg = backgrounds.find(b => b.id === draft.backgroundId);
+      if (bg) {
+        setSelectedBackground(bg);
+      }
     }
-  }, [data.backgroundId, backgrounds]);
+  }, [draft.backgroundId, backgrounds]);
 
-  const loadBackgrounds = async () => {
-    const { data: backgroundData, error } = await supabase
-      .from("srd_backgrounds")
-      .select("*")
-      .order("name");
-      
-    if (!error && backgroundData) {
-      setBackgrounds(backgroundData);
-    }
+  const handleBackgroundChange = (backgroundId: string) => {
+    const bg = backgrounds.find(b => b.id === backgroundId);
+    if (!bg) return;
+
+    setBackground(backgroundId);
+    setSelectedBackground(bg);
+    updateData({ backgroundId });
+
+    // Auto-grant from background
+    const grants = grantsFromBackground(bg);
+    applyGrants(grants);
+
+    // Set needs for choices
+    const needs = needsFromBackground(bg);
+    setNeeds(needs);
   };
+
+  const skills = Array.from(draft.grants.skillProficiencies);
+  const tools = Array.from(draft.grants.toolProficiencies);
+  const languages = Array.from(draft.grants.languages);
+  const features = draft.grants.features.filter(f => f.source === "background");
 
   return (
     <div className="space-y-6">
@@ -50,8 +71,8 @@ const StepBackground = ({ data, updateData }: StepBackgroundProps) => {
         <div className="space-y-2">
           <Label htmlFor="background">Background *</Label>
           <Select 
-            value={data.backgroundId} 
-            onValueChange={(value) => updateData({ backgroundId: value })}
+            value={draft.backgroundId} 
+            onValueChange={handleBackgroundChange}
           >
             <SelectTrigger id="background">
               <SelectValue placeholder="Select background" />
@@ -72,65 +93,83 @@ const StepBackground = ({ data, updateData }: StepBackgroundProps) => {
           <CardHeader>
             <CardTitle>{selectedBackground.name}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {Array.isArray(selectedBackground.skill_proficiencies) && selectedBackground.skill_proficiencies.length > 0 && (
+          <CardContent className="space-y-3">
+            {skills.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Skill Proficiencies</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedBackground.skill_proficiencies.map((skill: any, idx: number) => (
-                    <Badge key={idx} variant="secondary">
-                      {typeof skill === 'string' ? skill : skill.name}
+                <span className="text-sm text-muted-foreground">Skill Proficiencies:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {skills.map(skill => (
+                    <Badge key={skill} variant="secondary">
+                      {skill}
                     </Badge>
                   ))}
                 </div>
               </div>
             )}
 
-            {Array.isArray(selectedBackground.tool_proficiencies) && selectedBackground.tool_proficiencies.length > 0 && (
+            {tools.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Tool Proficiencies</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedBackground.tool_proficiencies.map((tool: any, idx: number) => (
-                    <Badge key={idx} variant="outline">
-                      {typeof tool === 'string' ? tool : tool.name}
+                <span className="text-sm text-muted-foreground">Tool Proficiencies:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {tools.map(tool => (
+                    <Badge key={tool} variant="secondary">
+                      {tool}
                     </Badge>
                   ))}
                 </div>
               </div>
             )}
 
-            {Array.isArray(selectedBackground.languages) && selectedBackground.languages.length > 0 && (
+            {languages.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Languages</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedBackground.languages.map((lang: any, idx: number) => (
-                    <Badge key={idx} variant="outline">
-                      {typeof lang === 'string' ? lang : lang.name}
+                <span className="text-sm text-muted-foreground">Languages:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {languages.map(lang => (
+                    <Badge key={lang} variant="outline">
+                      {lang}
                     </Badge>
                   ))}
                 </div>
               </div>
             )}
 
-            {selectedBackground.feature && (
+            {features.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Feature</h4>
-                <p className="text-sm text-muted-foreground">
-                  {selectedBackground.feature}
-                </p>
+                <span className="text-sm text-muted-foreground">Feature:</span>
+                <div className="space-y-2 mt-2">
+                  {features.map((feature, idx) => (
+                    <div key={idx} className="text-sm">
+                      <div className="font-medium">{feature.name}</div>
+                      {feature.description && (
+                        <div className="text-muted-foreground mt-1">{feature.description}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {Array.isArray(selectedBackground.equipment) && selectedBackground.equipment.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">Starting Equipment</h4>
-                <ul className="text-sm list-disc list-inside space-y-1">
-                  {selectedBackground.equipment.map((item: any, idx: number) => (
-                    <li key={idx}>
-                      {typeof item === 'string' ? item : item.name}
-                    </li>
-                  ))}
-                </ul>
+            {draft.needs.skill && (
+              <div className="pt-2 border-t">
+                <span className="text-sm text-muted-foreground">
+                  You will choose {draft.needs.skill.required} additional skill{draft.needs.skill.required > 1 ? 's' : ''} in the next step.
+                </span>
+              </div>
+            )}
+
+            {draft.needs.tool && (
+              <div className="pt-2 border-t">
+                <span className="text-sm text-muted-foreground">
+                  You will choose {draft.needs.tool.required} tool proficienc{draft.needs.tool.required > 1 ? 'ies' : 'y'} in the next step.
+                </span>
+              </div>
+            )}
+
+            {draft.needs.language && (
+              <div className="pt-2 border-t">
+                <span className="text-sm text-muted-foreground">
+                  You will choose {draft.needs.language.required} additional language{draft.needs.language.required > 1 ? 's' : ''} in the next step.
+                </span>
               </div>
             )}
           </CardContent>

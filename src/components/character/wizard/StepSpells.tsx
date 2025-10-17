@@ -52,8 +52,14 @@ const StepSpells = () => {
         }
 
         if (cls) {
+          console.log("Loading spells for class:", cls.name);
           const spells = await SRD.spellsByClass(cls.name);
+          console.log("Loaded spells:", spells.length, spells.slice(0, 3));
           setAllSpells(spells);
+          
+          if (spells.length === 0) {
+            console.warn("No spells found for class:", cls.name);
+          }
         }
       } catch (error) {
         console.error("Failed to load spell data:", error);
@@ -442,10 +448,10 @@ function SpellRow({
     >
       <Checkbox checked={selected} disabled={disabled} />
       <div className="flex-1">
-        <p className="font-medium">{spell.name}</p>
+        <p className="font-medium">{spell.name || "(Unnamed spell)"}</p>
         <div className="flex flex-wrap gap-2 mt-1">
           <Badge variant="outline" className="text-xs">
-            {typeof spell.school === 'string' ? spell.school : spell.school.name}
+            {typeof spell.school === 'string' ? spell.school : (spell.school?.name || "Unknown")}
           </Badge>
           {spell.ritual && (
             <Badge variant="secondary" className="text-xs">
@@ -463,6 +469,11 @@ function SpellRow({
             </Badge>
           )}
         </div>
+        {!spell.name && (
+          <p className="text-xs text-destructive mt-1">
+            ID: {spell.id}
+          </p>
+        )}
       </div>
     </div>
   );

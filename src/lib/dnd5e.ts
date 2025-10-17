@@ -89,6 +89,30 @@ export const isValidAbilityScore = (score: number): boolean => {
 };
 
 /**
+ * All D&D 5E skills
+ */
+export const ALL_SKILLS = [
+  "Acrobatics",
+  "Animal Handling",
+  "Arcana",
+  "Athletics",
+  "Deception",
+  "History",
+  "Insight",
+  "Intimidation",
+  "Investigation",
+  "Medicine",
+  "Nature",
+  "Perception",
+  "Performance",
+  "Persuasion",
+  "Religion",
+  "Sleight of Hand",
+  "Stealth",
+  "Survival",
+] as const;
+
+/**
  * Standard array for point buy: [15, 14, 13, 12, 10, 8]
  */
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];

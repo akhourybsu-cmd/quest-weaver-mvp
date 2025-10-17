@@ -4,7 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useAtom, useSetAtom } from "jotai";
 import { draftAtom, toggleSkillAtom, toggleToolAtom, toggleLanguageAtom } from "@/state/characterWizard";
-import { computeLegalSkillPool, remaining } from "@/lib/rules/5eRules";
+import { remaining } from "@/lib/rules/5eRules";
+import { ALL_SKILLS } from "@/lib/dnd5e";
 
 const StepProficiencies = () => {
   const [draft] = useAtom(draftAtom);
@@ -14,11 +15,16 @@ const StepProficiencies = () => {
 
   // Compute legal options and remaining counts
   const classSkillNeeds = draft.needs.skill;
-  const legalSkills = classSkillNeeds 
-    ? computeLegalSkillPool(classSkillNeeds.from, draft.grants.skillProficiencies)
+  const grantedSkills = Array.from(draft.grants.skillProficiencies);
+  const selectedSkills = draft.choices.skills;
+  
+  // Filter legal choices (can't select already granted skills)
+  const legalSkillChoices = classSkillNeeds 
+    ? classSkillNeeds.from.filter(skill => !grantedSkills.includes(skill))
     : [];
+  
   const remainingSkills = classSkillNeeds 
-    ? remaining(classSkillNeeds.required, draft.choices.skills)
+    ? remaining(classSkillNeeds.required, selectedSkills)
     : 0;
 
   const toolNeeds = draft.needs.tool;
@@ -33,7 +39,6 @@ const StepProficiencies = () => {
     ? remaining(languageNeeds.required, draft.choices.languages)
     : 0;
 
-  const grantedSkills = Array.from(draft.grants.skillProficiencies);
   const grantedTools = Array.from(draft.grants.toolProficiencies);
   const grantedLanguages = Array.from(draft.grants.languages);
 
@@ -46,68 +51,65 @@ const StepProficiencies = () => {
         </p>
       </div>
 
-      {/* Granted Skills */}
-      {grantedSkills.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <h4 className="font-medium mb-2">
-              Granted Skill Proficiencies
-              <Badge variant="secondary" className="ml-2">{grantedSkills.length}</Badge>
-            </h4>
-            <p className="text-xs text-muted-foreground mb-3">
-              These skills are automatically granted by your selections
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {grantedSkills.map(skill => (
-                <Badge key={skill} variant="outline">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Choose Skills */}
-      {classSkillNeeds && legalSkills.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium">Choose Skill Proficiencies</h4>
-              <Badge variant={remainingSkills === 0 ? "default" : "destructive"}>
-                {remainingSkills} remaining
+      {/* All Skills with Granted + Choose */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium">Skill Proficiencies</h4>
+            <div className="flex gap-2">
+              <Badge variant="secondary">
+                {grantedSkills.length} granted
               </Badge>
+              {classSkillNeeds && (
+                <Badge variant={remainingSkills === 0 ? "default" : "destructive"}>
+                  {remainingSkills} remaining
+                </Badge>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Select {classSkillNeeds.required} skill{classSkillNeeds.required > 1 ? 's' : ''} from the available options
-            </p>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {legalSkills.map((skill) => {
-                const isSelected = draft.choices.skills.includes(skill);
-                const canToggle = isSelected || remainingSkills > 0;
-                
-                return (
-                  <div key={skill} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`skill-${skill}`}
-                      checked={isSelected}
-                      onCheckedChange={() => canToggle && toggleSkill(skill)}
-                      disabled={!canToggle}
-                    />
-                    <Label
-                      htmlFor={`skill-${skill}`}
-                      className={`text-sm cursor-pointer ${!canToggle ? 'opacity-50' : ''}`}
-                    >
-                      {skill}
-                    </Label>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            {classSkillNeeds 
+              ? `Select ${classSkillNeeds.required} additional skill${classSkillNeeds.required > 1 ? 's' : ''} from the highlighted options. Granted skills are pre-selected.`
+              : "All skills listed below. Your granted proficiencies are pre-selected."}
+          </p>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {ALL_SKILLS.map((skill) => {
+              const isGranted = grantedSkills.includes(skill);
+              const isSelected = selectedSkills.includes(skill);
+              const isLegalChoice = legalSkillChoices.includes(skill);
+              
+              // Can only toggle if it's a legal choice and either already selected or we have room
+              const canToggle = isLegalChoice && (isSelected || remainingSkills > 0);
+              
+              return (
+                <div 
+                  key={skill} 
+                  className={`flex items-center space-x-2 p-2 rounded ${isLegalChoice ? 'bg-primary/5' : ''}`}
+                >
+                  <Checkbox
+                    id={`skill-${skill}`}
+                    checked={isGranted || isSelected}
+                    onCheckedChange={() => canToggle && toggleSkill(skill)}
+                    disabled={isGranted || !canToggle}
+                  />
+                  <Label
+                    htmlFor={`skill-${skill}`}
+                    className={`text-sm cursor-pointer ${isGranted ? 'font-medium' : ''} ${!canToggle && !isGranted ? 'opacity-50' : ''}`}
+                  >
+                    {skill}
+                    {isGranted && (
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        Granted
+                      </Badge>
+                    )}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Granted Tools */}
       {grantedTools.length > 0 && (

@@ -384,10 +384,10 @@ async function importArmor(supabase: any): Promise<ImportResult> {
         category: armor.category || 'light',
         base_ac: armor.ac_base || 10,
         dex_cap: armor.ac_cap_dexmod !== undefined ? armor.ac_cap_dexmod : null,
-        strength_required: armor.strength_score_required || null,
-        stealth_disadvantage: armor.grants_stealth_disadvantage || false,
-        cost_gp: 0, // V2 API doesn't include cost
-        weight_lb: 0 // V2 API doesn't include weight
+        strength_min: armor.strength_score_required || null,
+        stealth_disadv: armor.grants_stealth_disadvantage || false,
+        cost_gp: 0,
+        weight: 0
       };
 
       const { error } = await supabase
@@ -436,8 +436,8 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
         damage: weapon.damage_dice || '1d4',
         damage_type: damageType,
         properties: properties,
-        cost_gp: 0, // V2 API doesn't include cost
-        weight_lb: 0 // V2 API doesn't include weight
+        cost_gp: 0,
+        weight: 0
       };
 
       const { error } = await supabase

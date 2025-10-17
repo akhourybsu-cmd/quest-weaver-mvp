@@ -61,10 +61,6 @@ serve(async (req) => {
     console.log("Importing spells...");
     results.push(await importSpells(supabase));
 
-    // Import Spell to Class mappings
-    console.log("Importing spell lists...");
-    results.push(await importSpellList(supabase));
-
     // Import Feats
     console.log("Importing feats...");
     results.push(await importFeats(supabase));
@@ -77,17 +73,9 @@ serve(async (req) => {
     console.log("Importing magic items...");
     results.push(await importMagicItems(supabase));
 
-    // Import Planes
-    console.log("Importing planes...");
-    results.push(await importPlanes(supabase));
-
-    // Import Sections
-    console.log("Importing sections...");
-    results.push(await importSections(supabase));
-
-    // Import Monsters
-    console.log("Importing monsters...");
-    results.push(await importMonsters(supabase));
+    console.log("Import completed successfully!");
+    console.log(`Total imported: ${results.reduce((sum, r) => sum + r.imported, 0)}`);
+    console.log(`Total errors: ${results.reduce((sum, r) => sum + r.errors.length, 0)}`);
 
     return new Response(
       JSON.stringify({ 

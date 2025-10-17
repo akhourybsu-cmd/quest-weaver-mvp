@@ -1,46 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateModifier } from "@/lib/dnd5e";
 import { STANDARD_ARRAY, validatePointBuy } from "@/lib/characterRules";
-import type { WizardData } from "../CharacterWizard";
-
-interface StepAbilitiesProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
+import { useAtom } from "jotai";
+import { draftAtom, setAbilityScoresAtom } from "@/state/characterWizard";
 
 const ABILITIES = [
-  { key: "str", label: "Strength" },
-  { key: "dex", label: "Dexterity" },
-  { key: "con", label: "Constitution" },
-  { key: "int", label: "Intelligence" },
-  { key: "wis", label: "Wisdom" },
-  { key: "cha", label: "Charisma" },
+  { key: "STR", label: "Strength" },
+  { key: "DEX", label: "Dexterity" },
+  { key: "CON", label: "Constitution" },
+  { key: "INT", label: "Intelligence" },
+  { key: "WIS", label: "Wisdom" },
+  { key: "CHA", label: "Charisma" },
 ] as const;
 
-const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
-  const [method, setMethod] = useState<"standard-array" | "point-buy" | "rolled">(data.abilityMethod);
-  const [standardArrayAssignments, setStandardArrayAssignments] = useState<number[]>(Object.values(data.abilityScores));
-  
-  const handleMethodChange = (newMethod: "standard-array" | "point-buy" | "rolled") => {
-    setMethod(newMethod);
-    updateData({ abilityMethod: newMethod });
-  };
+const StepAbilities = () => {
+  const [draft] = useAtom(draftAtom);
+  const [, setAbilityScores] = useAtom(setAbilityScoresAtom);
+  const [method, setMethod] = useState<"standard-array" | "point-buy" | "rolled">("standard-array");
 
-  const updateScore = (ability: keyof typeof data.abilityScores, value: number) => {
-    updateData({
-      abilityScores: {
-        ...data.abilityScores,
-        [ability]: Math.max(1, Math.min(20, value))
-      }
+  const updateScore = (ability: keyof typeof draft.abilityScores, value: number) => {
+    setAbilityScores({
+      ...draft.abilityScores,
+      [ability]: Math.max(1, Math.min(20, value))
     });
   };
 
-  const pointBuyValidation = validatePointBuy(Object.values(data.abilityScores));
+  const pointBuyValidation = validatePointBuy(Object.values(draft.abilityScores));
 
   return (
     <div className="space-y-6">
@@ -51,7 +40,7 @@ const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
         </p>
       </div>
 
-      <Tabs value={method} onValueChange={handleMethodChange as any}>
+      <Tabs value={method} onValueChange={setMethod as any}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="standard-array">Standard Array</TabsTrigger>
           <TabsTrigger value="point-buy">Point Buy</TabsTrigger>
@@ -72,7 +61,7 @@ const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
                       type="number"
                       min="8"
                       max="15"
-                      value={data.abilityScores[ability.key]}
+                      value={draft.abilityScores[ability.key]}
                       onChange={(e) => updateScore(ability.key, parseInt(e.target.value) || 10)}
                     />
                   </div>
@@ -99,7 +88,7 @@ const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {ABILITIES.map((ability) => {
-                  const score = data.abilityScores[ability.key];
+                  const score = draft.abilityScores[ability.key];
                   const modifier = calculateModifier(score);
                   return (
                     <div key={ability.key} className="space-y-2">
@@ -133,7 +122,7 @@ const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {ABILITIES.map((ability) => {
-                  const score = data.abilityScores[ability.key];
+                  const score = draft.abilityScores[ability.key];
                   const modifier = calculateModifier(score);
                   return (
                     <div key={ability.key} className="space-y-2">
@@ -165,7 +154,7 @@ const StepAbilities = ({ data, updateData }: StepAbilitiesProps) => {
           <h4 className="font-medium mb-3">Your Modifiers</h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             {ABILITIES.map((ability) => {
-              const score = data.abilityScores[ability.key];
+              const score = draft.abilityScores[ability.key];
               const modifier = calculateModifier(score);
               return (
                 <div key={ability.key} className="flex justify-between">

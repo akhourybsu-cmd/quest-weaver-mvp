@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { useAtom } from "jotai";
+import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 
 // Wizard steps
 import StepBasics from "./wizard/StepBasics";
@@ -103,22 +105,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const [draftId, setDraftId] = useState<string | null>(editCharacterId || null);
   const [loading, setLoading] = useState(false);
   
-  const [wizardData, setWizardData] = useState<WizardData>({
-    name: "",
-    level: 1,
-    classId: "",
-    className: "",
-    abilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
-    abilityMethod: "standard-array",
-    ancestryId: "",
-    backgroundId: "",
-    skills: [],
-    tools: [],
-    languages: [],
-    equipment: [],
-    spells: [],
-    features: [],
-  });
+  const [draft, setDraft] = useAtom(draftAtom);
+  const [, resetDraft] = useAtom(resetDraftAtom);
+
+  // Reset draft when dialog opens
+  useEffect(() => {
+    if (open && !editCharacterId) {
+      resetDraft();
+    }
+  }, [open, editCharacterId]);
 
   // Load existing character data if editing
   useEffect(() => {
@@ -150,10 +145,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   // Auto-save draft on data change
   useEffect(() => {
-    if (draftId && wizardData.name) {
+    if (draftId && draft.name) {
       saveDraft();
     }
-  }, [wizardData, draftId]);
+  }, [draft, draftId]);
 
   const saveDraft = async () => {
     try {
@@ -165,21 +160,21 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         await supabase
           .from("characters")
           .update({ 
-            name: wizardData.name,
-            class: wizardData.className,
+            name: draft.name,
+            class: draft.className || "",
             creation_status: 'draft'
           })
           .eq("id", draftId);
-      } else if (wizardData.name && wizardData.classId) {
+      } else if (draft.name && draft.classId) {
         // Create new draft
         const { data, error } = await supabase
           .from("characters")
           .insert({
             user_id: user.id,
             campaign_id: campaignId,
-            name: wizardData.name,
-            class: wizardData.className,
-            level: wizardData.level,
+            name: draft.name,
+            class: draft.className || "",
+            level: draft.level,
             creation_status: 'draft',
             max_hp: 10,
             current_hp: 10,
@@ -198,24 +193,28 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     }
   };
 
-  const updateWizardData = (updates: Partial<WizardData>) => {
-    setWizardData(prev => ({ ...prev, ...updates }));
-  };
-
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0: // Basics
-        return !!(wizardData.name && wizardData.classId);
+        return !!(draft.name && draft.classId);
       case 1: // Ancestry
-        return !!wizardData.ancestryId;
+        return !!draft.ancestryId;
       case 2: // Abilities
         return true; // Always valid
       case 3: // Background
-        return !!wizardData.backgroundId;
+        return !!draft.backgroundId;
       case 4: // Proficiencies
-        return true; // Skills can be empty
+        // Check if all required choices are met
+        const skillsNeeded = draft.needs.skill?.required ?? 0;
+        const toolsNeeded = draft.needs.tool?.required ?? 0;
+        const langsNeeded = draft.needs.language?.required ?? 0;
+        return (
+          draft.choices.skills.length >= skillsNeeded &&
+          draft.choices.tools.length >= toolsNeeded &&
+          draft.choices.languages.length >= langsNeeded
+        );
       case 5: // Equipment
-        return wizardData.equipment.length > 0;
+        return !!draft.choices.equipmentBundleId;
       case 6: // Spells
         return true; // May not be a caster
       case 7: // Features
@@ -259,7 +258,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const isSpellcaster = (): boolean => {
     // TODO: Check if class has spellcasting
     const casters = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
-    return casters.includes(wizardData.className);
+    return casters.includes(draft.className || "");
   };
 
   const handleSaveAndExit = async () => {
@@ -302,7 +301,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       toast({
         title: "Character Created!",
-        description: `${wizardData.name} is ready for adventure.`,
+        description: `${draft.name} is ready for adventure.`,
       });
       onComplete();
     } catch (error) {
@@ -320,25 +319,25 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <StepBasics data={wizardData} updateData={updateWizardData} />;
+        return <StepBasics />;
       case 1:
-        return <StepAncestry data={wizardData} updateData={updateWizardData} />;
+        return <StepAncestry />;
       case 2:
-        return <StepAbilities data={wizardData} updateData={updateWizardData} />;
+        return <StepAbilities />;
       case 3:
-        return <StepBackground data={wizardData} updateData={updateWizardData} />;
+        return <StepBackground />;
       case 4:
-        return <StepProficiencies data={wizardData} updateData={updateWizardData} />;
+        return <StepProficiencies />;
       case 5:
-        return <StepEquipment data={wizardData} updateData={updateWizardData} />;
+        return <StepEquipment />;
       case 6:
-        return <StepSpells data={wizardData} updateData={updateWizardData} />;
+        return <StepSpells />;
       case 7:
-        return <StepFeatures data={wizardData} updateData={updateWizardData} />;
+        return <StepFeatures />;
       case 8:
-        return <StepDescription data={wizardData} updateData={updateWizardData} />;
+        return <StepDescription />;
       case 9:
-        return <StepReview data={wizardData} onFinalize={handleFinalizeCharacter} loading={loading} />;
+        return <StepReview onFinalize={handleFinalizeCharacter} loading={loading} />;
       default:
         return null;
     }
@@ -347,7 +346,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const handleCancel = () => {
-    if (currentStep > 0 && wizardData.name) {
+    if (currentStep > 0 && draft.name) {
       // Has progress, confirm before closing
       if (confirm("You have unsaved progress. Do you want to save your draft before closing?")) {
         handleSaveAndExit();
@@ -413,7 +412,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
           {/* Live summary sidebar */}
           <div className="w-80 border-l bg-muted/30 flex-shrink-0">
-            <LiveSummaryPanel data={wizardData} />
+            <LiveSummaryPanel />
           </div>
         </div>
       </DialogContent>

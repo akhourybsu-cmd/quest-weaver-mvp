@@ -3,12 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { WizardData } from "../CharacterWizard";
-
-interface StepDescriptionProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
+import { useAtom } from "jotai";
+import { draftAtom } from "@/state/characterWizard";
 
 const ALIGNMENTS = [
   "Lawful Good",
@@ -22,7 +18,13 @@ const ALIGNMENTS = [
   "Chaotic Evil",
 ];
 
-const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
+const StepDescription = () => {
+  const [draft, setDraft] = useAtom(draftAtom);
+
+  const updateField = (field: string, value: string) => {
+    setDraft({ ...draft, [field]: value });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -38,8 +40,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <div className="space-y-2">
               <Label htmlFor="alignment">Alignment</Label>
               <Select 
-                value={data.alignment || ""} 
-                onValueChange={(value) => updateData({ alignment: value })}
+                value={draft.alignment || ""} 
+                onValueChange={(value) => updateField("alignment", value)}
               >
                 <SelectTrigger id="alignment">
                   <SelectValue placeholder="Select alignment" />
@@ -58,8 +60,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="age">Age</Label>
               <Input
                 id="age"
-                value={data.age || ""}
-                onChange={(e) => updateData({ age: e.target.value })}
+                value={draft.age || ""}
+                onChange={(e) => updateField("age", e.target.value)}
                 placeholder="e.g., 25 years"
               />
             </div>
@@ -70,8 +72,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="height">Height</Label>
               <Input
                 id="height"
-                value={data.height || ""}
-                onChange={(e) => updateData({ height: e.target.value })}
+                value={draft.height || ""}
+                onChange={(e) => updateField("height", e.target.value)}
                 placeholder="e.g., 6 feet"
               />
             </div>
@@ -80,8 +82,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="weight">Weight</Label>
               <Input
                 id="weight"
-                value={data.weight || ""}
-                onChange={(e) => updateData({ weight: e.target.value })}
+                value={draft.weight || ""}
+                onChange={(e) => updateField("weight", e.target.value)}
                 placeholder="e.g., 180 lbs"
               />
             </div>
@@ -92,8 +94,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="eyes">Eyes</Label>
               <Input
                 id="eyes"
-                value={data.eyes || ""}
-                onChange={(e) => updateData({ eyes: e.target.value })}
+                value={draft.eyes || ""}
+                onChange={(e) => updateField("eyes", e.target.value)}
                 placeholder="Color"
               />
             </div>
@@ -102,8 +104,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="skin">Skin</Label>
               <Input
                 id="skin"
-                value={data.skin || ""}
-                onChange={(e) => updateData({ skin: e.target.value })}
+                value={draft.skin || ""}
+                onChange={(e) => updateField("skin", e.target.value)}
                 placeholder="Tone"
               />
             </div>
@@ -112,8 +114,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
               <Label htmlFor="hair">Hair</Label>
               <Input
                 id="hair"
-                value={data.hair || ""}
-                onChange={(e) => updateData({ hair: e.target.value })}
+                value={draft.hair || ""}
+                onChange={(e) => updateField("hair", e.target.value)}
                 placeholder="Color/Style"
               />
             </div>
@@ -127,8 +129,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <Label htmlFor="personality">Personality Traits</Label>
             <Textarea
               id="personality"
-              value={data.personality || ""}
-              onChange={(e) => updateData({ personality: e.target.value })}
+              value={draft.personality || ""}
+              onChange={(e) => updateField("personality", e.target.value)}
               placeholder="How does your character behave?"
               rows={3}
             />
@@ -138,8 +140,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <Label htmlFor="ideals">Ideals</Label>
             <Textarea
               id="ideals"
-              value={data.ideals || ""}
-              onChange={(e) => updateData({ ideals: e.target.value })}
+              value={draft.ideals || ""}
+              onChange={(e) => updateField("ideals", e.target.value)}
               placeholder="What does your character believe in?"
               rows={2}
             />
@@ -149,8 +151,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <Label htmlFor="bonds">Bonds</Label>
             <Textarea
               id="bonds"
-              value={data.bonds || ""}
-              onChange={(e) => updateData({ bonds: e.target.value })}
+              value={draft.bonds || ""}
+              onChange={(e) => updateField("bonds", e.target.value)}
               placeholder="What ties bind your character?"
               rows={2}
             />
@@ -160,8 +162,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <Label htmlFor="flaws">Flaws</Label>
             <Textarea
               id="flaws"
-              value={data.flaws || ""}
-              onChange={(e) => updateData({ flaws: e.target.value })}
+              value={draft.flaws || ""}
+              onChange={(e) => updateField("flaws", e.target.value)}
               placeholder="What are your character's weaknesses?"
               rows={2}
             />
@@ -171,8 +173,8 @@ const StepDescription = ({ data, updateData }: StepDescriptionProps) => {
             <Label htmlFor="notes">Additional Notes</Label>
             <Textarea
               id="notes"
-              value={data.notes || ""}
-              onChange={(e) => updateData({ notes: e.target.value })}
+              value={draft.notes || ""}
+              onChange={(e) => updateField("notes", e.target.value)}
               placeholder="Backstory, connections, or other details"
               rows={4}
             />

@@ -16,14 +16,8 @@ import {
 } from "@/state/characterWizard";
 import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";
 import { grantsFromClass, needsFromClass, grantsFromSubclass } from "@/lib/rules/5eRules";
-import type { WizardData } from "../CharacterWizard";
 
-interface StepBasicsProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
-
-const StepBasics = ({ data, updateData }: StepBasicsProps) => {
+const StepBasics = () => {
   const [draft] = useAtom(draftAtom);
   const setName = useSetAtom(setNameAtom);
   const setLevel = useSetAtom(setLevelAtom);

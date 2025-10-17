@@ -5,6 +5,7 @@ import { emptyGrants, mergeGrants } from "@/lib/rules/5eRules";
 export type WizardDraft = {
   // Core identity
   name: string;
+  className?: string;
   level: number;
   classId?: string;
   subclassId?: string;

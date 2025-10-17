@@ -1,15 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { WizardData } from "../CharacterWizard";
+import { useAtom } from "jotai";
+import { draftAtom } from "@/state/characterWizard";
 
-interface StepFeaturesProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
+const StepFeatures = () => {
+  const [draft] = useAtom(draftAtom);
 
-const StepFeatures = ({ data, updateData }: StepFeaturesProps) => {
   // TODO: Load class features based on level and allow choices
-  // For now, just show a placeholder
+  // For now, just show granted features
 
   return (
     <div className="space-y-6">
@@ -26,14 +24,16 @@ const StepFeatures = ({ data, updateData }: StepFeaturesProps) => {
             Class features will be automatically granted based on your level. Features with choices will be presented here.
           </p>
           <div className="space-y-3">
-            {data.features && data.features.length > 0 ? (
-              data.features.map((feature, idx) => (
+            {draft.grants.features && draft.grants.features.length > 0 ? (
+              draft.grants.features.map((feature, idx) => (
                 <div key={idx} className="border-l-2 border-primary pl-3 py-2">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium">{feature.name}</span>
-                    <Badge variant="outline" className="text-xs">
-                      Lvl {feature.level}
-                    </Badge>
+                    {feature.level && (
+                      <Badge variant="outline" className="text-xs">
+                        Lvl {feature.level}
+                      </Badge>
+                    )}
                     <Badge variant="secondary" className="text-xs">
                       {feature.source}
                     </Badge>

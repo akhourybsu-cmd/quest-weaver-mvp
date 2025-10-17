@@ -3,21 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateMaxHP, calculateAC } from "@/lib/characterRules";
-import type { WizardData } from "../CharacterWizard";
+import { useAtom } from "jotai";
+import { draftAtom } from "@/state/characterWizard";
 
-interface LiveSummaryPanelProps {
-  data: WizardData;
-}
-
-const LiveSummaryPanel = ({ data }: LiveSummaryPanelProps) => {
-  const profBonus = calculateProficiencyBonus(data.level);
-  const conMod = calculateModifier(data.abilityScores.con);
+const LiveSummaryPanel = () => {
+  const [draft] = useAtom(draftAtom);
+  const profBonus = calculateProficiencyBonus(draft.level);
+  const conMod = calculateModifier(draft.abilityScores.CON);
   
   // Estimate HP (will need class hit die)
-  const estimatedHP = calculateMaxHP(data.level, 8, data.abilityScores.con); // Default d8
+  const estimatedHP = calculateMaxHP(draft.level, 8, draft.abilityScores.CON); // Default d8
   
   // Calculate AC (unarmored)
-  const baseAC = calculateAC(data.abilityScores.dex);
+  const baseAC = calculateAC(draft.abilityScores.DEX);
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-4">
@@ -35,15 +33,15 @@ const LiveSummaryPanel = ({ data }: LiveSummaryPanelProps) => {
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Name</span>
-            <span className="font-medium">{data.name || "—"}</span>
+            <span className="font-medium">{draft.name || "—"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Level</span>
-            <span className="font-medium">{data.level}</span>
+            <span className="font-medium">{draft.level}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Class</span>
-            <span className="font-medium">{data.className || "—"}</span>
+            <span className="font-medium">{draft.className || "—"}</span>
           </div>
         </CardContent>
       </Card>
@@ -53,7 +51,7 @@ const LiveSummaryPanel = ({ data }: LiveSummaryPanelProps) => {
           <CardTitle className="text-sm">Ability Modifiers</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-xs">
-          {Object.entries(data.abilityScores).map(([ability, score]) => {
+          {Object.entries(draft.abilityScores).map(([ability, score]) => {
             const modifier = calculateModifier(score);
             return (
               <div key={ability} className="flex justify-between">
@@ -87,28 +85,28 @@ const LiveSummaryPanel = ({ data }: LiveSummaryPanelProps) => {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Initiative</span>
             <span className="font-bold">
-              {calculateModifier(data.abilityScores.dex) >= 0 ? '+' : ''}
-              {calculateModifier(data.abilityScores.dex)}
+              {calculateModifier(draft.abilityScores.DEX) >= 0 ? '+' : ''}
+              {calculateModifier(draft.abilityScores.DEX)}
             </span>
           </div>
         </CardContent>
       </Card>
 
-      {data.skills && data.skills.length > 0 && (
+      {draft.choices.skills && draft.choices.skills.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Skills</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-1">
-              {data.skills.slice(0, 8).map((skill, idx) => (
+              {draft.choices.skills.slice(0, 8).map((skill, idx) => (
                 <Badge key={idx} variant="secondary" className="text-xs">
                   {skill}
                 </Badge>
               ))}
-              {data.skills.length > 8 && (
+              {draft.choices.skills.length > 8 && (
                 <Badge variant="outline" className="text-xs">
-                  +{data.skills.length - 8} more
+                  +{draft.choices.skills.length - 8} more
                 </Badge>
               )}
             </div>
@@ -116,13 +114,13 @@ const LiveSummaryPanel = ({ data }: LiveSummaryPanelProps) => {
         </Card>
       )}
 
-      {data.spells && data.spells.length > 0 && (
+      {draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Spells</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm">{data.spells.length} prepared</p>
+            <p className="text-sm">{draft.choices.spellsKnown.length} known</p>
           </CardContent>
         </Card>
       )}

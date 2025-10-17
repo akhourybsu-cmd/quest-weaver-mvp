@@ -7,14 +7,8 @@ import { useAtom, useSetAtom } from "jotai";
 import { draftAtom, setAncestryAtom, setSubAncestryAtom, applyGrantsAtom } from "@/state/characterWizard";
 import { SRD, type SrdAncestry, type SrdSubAncestry } from "@/lib/srd/SRDClient";
 import { grantsFromAncestry, grantsFromSubAncestry } from "@/lib/rules/5eRules";
-import type { WizardData } from "../CharacterWizard";
 
-interface StepAncestryProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
-
-const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
+const StepAncestry = () => {
   const [draft] = useAtom(draftAtom);
   const setAncestry = useSetAtom(setAncestryAtom);
   const setSubAncestry = useSetAtom(setSubAncestryAtom);

@@ -4,16 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
-import type { WizardData } from "../CharacterWizard";
+import { useAtom } from "jotai";
+import { draftAtom } from "@/state/characterWizard";
 
 interface StepReviewProps {
-  data: WizardData;
   onFinalize: () => void;
   loading: boolean;
 }
 
-const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
-  const profBonus = calculateProficiencyBonus(data.level);
+const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
+  const [draft] = useAtom(draftAtom);
+  const profBonus = calculateProficiencyBonus(draft.level);
 
   return (
     <div className="space-y-6">
@@ -26,10 +27,10 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{data.name || "Unnamed Character"}</CardTitle>
+          <CardTitle className="text-2xl">{draft.name || "Unnamed Character"}</CardTitle>
           <CardDescription>
-            Level {data.level} {data.className}
-            {data.subclassId && " • Subclass selected"}
+            Level {draft.level} {draft.className}
+            {draft.subclassId && " • Subclass selected"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -37,7 +38,7 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
           <div>
             <h4 className="font-medium mb-3">Ability Scores</h4>
             <div className="grid grid-cols-3 gap-3">
-              {Object.entries(data.abilityScores).map(([ability, score]) => {
+              {Object.entries(draft.abilityScores).map(([ability, score]) => {
                 const modifier = calculateModifier(score);
                 return (
                   <div key={ability} className="flex justify-between items-center p-2 rounded bg-muted/50">
@@ -52,10 +53,6 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Method: {data.abilityMethod === "standard-array" ? "Standard Array" : 
-                      data.abilityMethod === "point-buy" ? "Point Buy" : "Manual Entry"}
-            </p>
           </div>
 
           <Separator />
@@ -71,8 +68,8 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
               <div className="flex justify-between p-2 rounded bg-muted/50">
                 <span className="text-muted-foreground">Initiative</span>
                 <span className="font-bold">
-                  {calculateModifier(data.abilityScores.dex) >= 0 ? '+' : ''}
-                  {calculateModifier(data.abilityScores.dex)}
+                  {calculateModifier(draft.abilityScores.DEX) >= 0 ? '+' : ''}
+                  {calculateModifier(draft.abilityScores.DEX)}
                 </span>
               </div>
             </div>
@@ -86,9 +83,9 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
             <div className="space-y-2">
               <div>
                 <span className="text-sm text-muted-foreground">Skills: </span>
-                {data.skills && data.skills.length > 0 ? (
+                {draft.choices.skills && draft.choices.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {data.skills.map((skill, idx) => (
+                    {draft.choices.skills.map((skill, idx) => (
                       <Badge key={idx} variant="secondary" className="text-xs">
                         {skill}
                       </Badge>
@@ -99,11 +96,11 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
                 )}
               </div>
               
-              {data.languages && data.languages.length > 0 && (
+              {draft.choices.languages && draft.choices.languages.length > 0 && (
                 <div>
                   <span className="text-sm text-muted-foreground">Languages: </span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {data.languages.map((lang, idx) => (
+                    {draft.choices.languages.map((lang, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {lang}
                       </Badge>
@@ -119,26 +116,19 @@ const StepReview = ({ data, onFinalize, loading }: StepReviewProps) => {
           {/* Equipment */}
           <div>
             <h4 className="font-medium mb-3">Equipment</h4>
-            {data.equipment && data.equipment.length > 0 ? (
-              <div className="space-y-1 text-sm">
-                {data.equipment.slice(0, 5).map((item, idx) => (
-                  <div key={idx}>• {item.item_ref} ×{item.qty}</div>
-                ))}
-                {data.equipment.length > 5 && (
-                  <div className="text-muted-foreground">+ {data.equipment.length - 5} more items</div>
-                )}
-              </div>
+            {draft.choices.equipmentBundleId ? (
+              <p className="text-sm">Equipment bundle selected: {draft.choices.equipmentBundleId}</p>
             ) : (
               <p className="text-sm text-muted-foreground">No equipment selected</p>
             )}
           </div>
 
-          {data.spells && data.spells.length > 0 && (
+          {draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0 && (
             <>
               <Separator />
               <div>
                 <h4 className="font-medium mb-3">Spells</h4>
-                <p className="text-sm">{data.spells.length} spell(s) prepared</p>
+                <p className="text-sm">{draft.choices.spellsKnown.length} spell(s) known</p>
               </div>
             </>
           )}

@@ -1,12 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { WizardData } from "../CharacterWizard";
+import { useAtom } from "jotai";
+import { draftAtom } from "@/state/characterWizard";
 
-interface StepSpellsProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
+const StepSpells = () => {
+  const [draft] = useAtom(draftAtom);
 
-const StepSpells = ({ data, updateData }: StepSpellsProps) => {
   // TODO: Implement spell selection based on class and level
   // For now, just show a placeholder
 
@@ -25,9 +23,9 @@ const StepSpells = ({ data, updateData }: StepSpellsProps) => {
             Spell selection will be implemented based on your class spellcasting progression. This step will be expanded with SRD spell data.
           </p>
           <div className="mt-4">
-            {data.spells && data.spells.length > 0 ? (
+            {draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0 ? (
               <p className="text-sm">
-                {data.spells.length} spell(s) selected
+                {draft.choices.spellsKnown.length} spell(s) selected
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">No spells selected yet</p>

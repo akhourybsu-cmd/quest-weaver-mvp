@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useAtom, useSetAtom } from "jotai";
+import { draftAtom, setAncestryAtom, setSubAncestryAtom, applyGrantsAtom } from "@/state/characterWizard";
+import { SRD, type SrdAncestry, type SrdSubAncestry } from "@/lib/srd/SRDClient";
+import { grantsFromAncestry, grantsFromSubAncestry } from "@/lib/rules/5eRules";
 import type { WizardData } from "../CharacterWizard";
 
 interface StepAncestryProps {
@@ -12,58 +15,53 @@ interface StepAncestryProps {
 }
 
 const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
-  const [ancestries, setAncestries] = useState<any[]>([]);
-  const [subancestries, setSubancestries] = useState<any[]>([]);
-  const [selectedAncestry, setSelectedAncestry] = useState<any>(null);
-  const [selectedSubancestry, setSelectedSubancestry] = useState<any>(null);
+  const [draft] = useAtom(draftAtom);
+  const setAncestry = useSetAtom(setAncestryAtom);
+  const setSubAncestry = useSetAtom(setSubAncestryAtom);
+  const applyGrants = useSetAtom(applyGrantsAtom);
+
+  const [ancestries, setAncestries] = useState<SrdAncestry[]>([]);
+  const [subAncestries, setSubAncestries] = useState<SrdSubAncestry[]>([]);
+  const [selectedAncestry, setSelectedAncestry] = useState<SrdAncestry | null>(null);
 
   useEffect(() => {
-    loadAncestries();
+    SRD.ancestries().then(setAncestries);
   }, []);
 
   useEffect(() => {
-    if (data.ancestryId) {
-      loadSubancestries(data.ancestryId);
-      const ancestry = ancestries.find(a => a.id === data.ancestryId);
-      setSelectedAncestry(ancestry);
+    if (draft.ancestryId && ancestries.length > 0) {
+      const ancestry = ancestries.find(a => a.id === draft.ancestryId);
+      if (ancestry) {
+        setSelectedAncestry(ancestry);
+        SRD.subAncestries(ancestry.id).then(setSubAncestries);
+      }
     }
-  }, [data.ancestryId, ancestries]);
+  }, [draft.ancestryId, ancestries]);
 
-  useEffect(() => {
-    if (data.subancestryId) {
-      const subancestry = subancestries.find(s => s.id === data.subancestryId);
-      setSelectedSubancestry(subancestry);
-    }
-  }, [data.subancestryId, subancestries]);
+  const handleAncestryChange = async (ancestryId: string) => {
+    const ancestry = ancestries.find(a => a.id === ancestryId);
+    if (!ancestry) return;
 
-  const loadAncestries = async () => {
-    const { data: ancestryData, error } = await supabase
-      .from("srd_ancestries")
-      .select("*")
-      .order("name");
-      
-    if (!error && ancestryData) {
-      setAncestries(ancestryData);
-    }
+    setAncestry(ancestryId);
+    setSelectedAncestry(ancestry);
+    updateData({ ancestryId, subancestryId: undefined });
+
+    const grants = grantsFromAncestry(ancestry);
+    applyGrants(grants);
+
+    const subs = await SRD.subAncestries(ancestryId);
+    setSubAncestries(subs);
   };
 
-  const loadSubancestries = async (ancestryId: string) => {
-    const { data: subancestryData, error } = await supabase
-      .from("srd_subancestries")
-      .select("*")
-      .eq("ancestry_id", ancestryId)
-      .order("name");
-      
-    if (!error && subancestryData) {
-      setSubancestries(subancestryData);
-    }
-  };
+  const handleSubAncestryChange = (subAncestryId: string) => {
+    const subAncestry = subAncestries.find(sa => sa.id === subAncestryId);
+    if (!subAncestry) return;
 
-  const handleAncestryChange = (ancestryId: string) => {
-    updateData({ 
-      ancestryId,
-      subancestryId: undefined // Reset subancestry when ancestry changes
-    });
+    setSubAncestry(subAncestryId);
+    updateData({ subAncestryId });
+
+    const grants = grantsFromSubAncestry(subAncestry);
+    applyGrants(grants);
   };
 
   return (
@@ -78,7 +76,7 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
       <div className="space-y-4 max-w-md">
         <div className="space-y-2">
           <Label htmlFor="ancestry">Ancestry *</Label>
-          <Select value={data.ancestryId} onValueChange={handleAncestryChange}>
+          <Select value={draft.ancestryId} onValueChange={handleAncestryChange}>
             <SelectTrigger id="ancestry">
               <SelectValue placeholder="Select ancestry" />
             </SelectTrigger>
@@ -92,18 +90,18 @@ const StepAncestry = ({ data, updateData }: StepAncestryProps) => {
           </Select>
         </div>
 
-        {subancestries.length > 0 && (
+        {subAncestries.length > 0 && (
           <div className="space-y-2">
-            <Label htmlFor="subancestry">Subancestry</Label>
+            <Label htmlFor="subancestry">Heritage</Label>
             <Select 
-              value={data.subancestryId || ""} 
-              onValueChange={(value) => updateData({ subancestryId: value })}
+              value={draft.subAncestryId || ""} 
+              onValueChange={handleSubAncestryChange}
             >
               <SelectTrigger id="subancestry">
                 <SelectValue placeholder="Select subancestry (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {subancestries.map((sub) => (
+                {subAncestries.map((sub) => (
                   <SelectItem key={sub.id} value={sub.id}>
                     {sub.name}
                   </SelectItem>

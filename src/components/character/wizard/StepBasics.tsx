@@ -1,9 +1,21 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useAtom, useSetAtom } from "jotai";
+import { 
+  draftAtom, 
+  setNameAtom, 
+  setLevelAtom, 
+  setClassAtom, 
+  setSubclassAtom,
+  applyGrantsAtom,
+  setNeedsAtom
+} from "@/state/characterWizard";
+import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";
+import { grantsFromClass, needsFromClass, grantsFromSubclass } from "@/lib/rules/5eRules";
 import type { WizardData } from "../CharacterWizard";
 
 interface StepBasicsProps {
@@ -12,57 +24,75 @@ interface StepBasicsProps {
 }
 
 const StepBasics = ({ data, updateData }: StepBasicsProps) => {
-  const [classes, setClasses] = useState<any[]>([]);
-  const [subclasses, setSubclasses] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [draft] = useAtom(draftAtom);
+  const setName = useSetAtom(setNameAtom);
+  const setLevel = useSetAtom(setLevelAtom);
+  const setClass = useSetAtom(setClassAtom);
+  const setSubclass = useSetAtom(setSubclassAtom);
+  const applyGrants = useSetAtom(applyGrantsAtom);
+  const setNeeds = useSetAtom(setNeedsAtom);
+
+  const [classes, setClasses] = useState<SrdClass[]>([]);
+  const [subclasses, setSubclasses] = useState<SrdSubclass[]>([]);
+  const [selectedClass, setSelectedClass] = useState<SrdClass | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadClasses();
+    SRD.classes().then(data => {
+      setClasses(data);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
-    if (data.classId) {
-      loadSubclasses(data.classId);
-      const cls = classes.find(c => c.id === data.classId);
-      setSelectedClass(cls);
+    if (draft.classId && classes.length > 0) {
+      const cls = classes.find(c => c.id === draft.classId);
+      if (cls) {
+        setSelectedClass(cls);
+        SRD.subclasses(cls.id).then(setSubclasses);
+      }
     }
-  }, [data.classId, classes]);
+  }, [draft.classId, classes]);
 
-  const loadClasses = async () => {
-    const { data: classData, error } = await supabase
-      .from("srd_classes")
-      .select("*")
-      .order("name");
-      
-    if (!error && classData) {
-      setClasses(classData);
-    }
-  };
-
-  const loadSubclasses = async (classId: string) => {
-    const { data: subclassData, error } = await supabase
-      .from("srd_subclasses")
-      .select("*")
-      .eq("class_id", classId)
-      .order("name");
-      
-    if (!error && subclassData) {
-      setSubclasses(subclassData);
-    }
-  };
-
-  const handleClassChange = (classId: string) => {
+  const handleClassChange = async (classId: string) => {
     const cls = classes.find(c => c.id === classId);
-    updateData({ 
-      classId, 
-      className: cls?.name || "",
-      subclassId: undefined // Reset subclass when class changes
-    });
+    if (!cls) return;
+
+    setClass(classId);
+    setSelectedClass(cls);
+    updateData({ classId, className: cls.name });
+
+    // Auto-grant from class
+    const grants = grantsFromClass(cls);
+    applyGrants(grants);
+
+    // Set needs
+    const needs = needsFromClass(cls);
+    setNeeds(needs);
+
+    // Load subclasses
+    const subs = await SRD.subclasses(classId);
+    setSubclasses(subs);
   };
 
-  // Determine if subclass choice is available at current level
-  // Note: unlock_level is on the SUBCLASS, not the class. Default to 3 if not found.
-  const canChooseSubclass = selectedClass && subclasses.length > 0 && data.level >= 3;
+  const handleSubclassChange = (subclassId: string) => {
+    const subclass = subclasses.find(s => s.id === subclassId);
+    if (!subclass) return;
+
+    setSubclass(subclassId);
+    updateData({ subclassId });
+
+    // Auto-grant subclass features up to current level
+    const grants = grantsFromSubclass(subclass, draft.level);
+    applyGrants(grants);
+  };
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">Loading classes...</div>;
+  }
+
+  const minLevelForSubclass = 3;
+  const canChooseSubclass = draft.level >= minLevelForSubclass && subclasses.length > 0;
 
   return (
     <div className="space-y-6">
@@ -78,64 +108,70 @@ const StepBasics = ({ data, updateData }: StepBasicsProps) => {
           <Label htmlFor="name">Character Name *</Label>
           <Input
             id="name"
-            value={data.name}
-            onChange={(e) => updateData({ name: e.target.value })}
+            value={draft.name}
+            onChange={(e) => { setName(e.target.value); updateData({ name: e.target.value }); }}
             placeholder="Enter character name"
-            className="max-w-md"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 max-w-md">
-          <div className="space-y-2">
-            <Label htmlFor="level">Level *</Label>
-            <Input
-              id="level"
-              type="number"
-              min="1"
-              max="20"
-              value={data.level}
-              onChange={(e) => updateData({ level: parseInt(e.target.value) || 1 })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="class">Class *</Label>
-            <Select value={data.classId} onValueChange={handleClassChange}>
-              <SelectTrigger id="class">
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name} (d{cls.hit_die})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="level">Level *</Label>
+          <Input
+            id="level"
+            type="number"
+            min={1}
+            max={20}
+            value={draft.level}
+            onChange={(e) => { 
+              const level = parseInt(e.target.value) || 1;
+              setLevel(level); 
+              updateData({ level });
+            }}
+          />
         </div>
 
-        {canChooseSubclass && subclasses.length > 0 && (
-          <div className="space-y-2 max-w-md">
-            <Label htmlFor="subclass">Subclass</Label>
+        <div className="space-y-2">
+          <Label htmlFor="class">Class *</Label>
+          <Select value={draft.classId} onValueChange={handleClassChange}>
+            <SelectTrigger id="class">
+              <SelectValue placeholder="Select a class" />
+            </SelectTrigger>
+            <SelectContent>
+              {classes.map((cls) => (
+                <SelectItem key={cls.id} value={cls.id}>
+                  {cls.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedClass && subclasses.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="subclass">
+              Subclass
+              {!canChooseSubclass && (
+                <Badge variant="outline" className="ml-2">
+                  Unlocks at level {minLevelForSubclass}
+                </Badge>
+              )}
+            </Label>
             <Select 
-              value={data.subclassId || ""} 
-              onValueChange={(value) => updateData({ subclassId: value })}
+              value={draft.subclassId} 
+              onValueChange={handleSubclassChange}
+              disabled={!canChooseSubclass}
             >
               <SelectTrigger id="subclass">
-                <SelectValue placeholder="Select subclass (optional)" />
+                <SelectValue placeholder="Select a subclass (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {subclasses.map((sub) => (
-                  <SelectItem key={sub.id} value={sub.id}>
-                    {sub.name}
+                {subclasses.map((subclass) => (
+                  <SelectItem key={subclass.id} value={subclass.id}>
+                    {subclass.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Available at level {selectedClass?.unlock_level || 3}
-            </p>
           </div>
         )}
       </div>
@@ -143,20 +179,56 @@ const StepBasics = ({ data, updateData }: StepBasicsProps) => {
       {selectedClass && (
         <Card>
           <CardHeader>
-            <CardTitle>{selectedClass.name}</CardTitle>
-            <CardDescription>
-              Hit Die: d{selectedClass.hit_die}
-            </CardDescription>
+            <CardTitle className="text-base">{selectedClass.name} Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div>
-              <span className="font-medium">Saving Throws:</span>{" "}
-              {selectedClass.saving_throws?.map((s: string) => s.toUpperCase()).join(", ")}
-            </div>
-            {selectedClass.spellcasting_ability && (
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Spellcasting Ability:</span>{" "}
-                {selectedClass.spellcasting_ability.toUpperCase()}
+                <span className="text-muted-foreground">Hit Die:</span>
+                <span className="ml-2 font-medium">d{selectedClass.hit_die}</span>
+              </div>
+              {selectedClass.spellcasting_ability && (
+                <div>
+                  <span className="text-muted-foreground">Spellcasting:</span>
+                  <span className="ml-2 font-medium">{selectedClass.spellcasting_ability}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <span className="text-sm text-muted-foreground">Saving Throws:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {Array.from(draft.grants.savingThrows).map(save => (
+                  <Badge key={save} variant="secondary">
+                    {save}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {draft.grants.armorProficiencies.size > 0 && (
+              <div>
+                <span className="text-sm text-muted-foreground">Armor:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {Array.from(draft.grants.armorProficiencies).map(armor => (
+                    <Badge key={armor} variant="outline">
+                      {armor}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {draft.grants.weaponProficiencies.size > 0 && (
+              <div>
+                <span className="text-sm text-muted-foreground">Weapons:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {Array.from(draft.grants.weaponProficiencies).map(weapon => (
+                    <Badge key={weapon} variant="outline">
+                      {weapon}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>

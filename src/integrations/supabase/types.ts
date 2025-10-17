@@ -2847,6 +2847,63 @@ export type Database = {
         }
         Relationships: []
       }
+      srd_conditions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      srd_documents: {
+        Row: {
+          author: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          slug: string
+          title: string
+          version: string | null
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          slug: string
+          title: string
+          version?: string | null
+        }
+        Update: {
+          author?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          slug?: string
+          title?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       srd_equipment: {
         Row: {
           cost_gp: number | null
@@ -2880,6 +2937,36 @@ export type Database = {
         }
         Relationships: []
       }
+      srd_feats: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document: string | null
+          id: string
+          name: string
+          prerequisite: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name: string
+          prerequisite?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name?: string
+          prerequisite?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
       srd_languages: {
         Row: {
           created_at: string | null
@@ -2898,6 +2985,120 @@ export type Database = {
           id?: string
           name?: string
           script?: string | null
+        }
+        Relationships: []
+      }
+      srd_magic_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document: string | null
+          id: string
+          name: string
+          rarity: string | null
+          requires_attunement: boolean | null
+          slug: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name: string
+          rarity?: string | null
+          requires_attunement?: boolean | null
+          slug: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name?: string
+          rarity?: string | null
+          requires_attunement?: boolean | null
+          slug?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
+      srd_planes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      srd_sections: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          document: string | null
+          id: string
+          name: string
+          parent: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name: string
+          parent?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          document?: string | null
+          id?: string
+          name?: string
+          parent?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      srd_spell_classes: {
+        Row: {
+          class_slug: string
+          id: string
+          level: number
+          spell_slug: string
+        }
+        Insert: {
+          class_slug: string
+          id?: string
+          level: number
+          spell_slug: string
+        }
+        Update: {
+          class_slug?: string
+          id?: string
+          level?: number
+          spell_slug?: string
         }
         Relationships: []
       }

@@ -58,10 +58,11 @@ export const SRDImportButton = () => {
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Import SRD Content</CardTitle>
+        <CardTitle>Complete SRD Data Import</CardTitle>
         <CardDescription>
-          One-time import of D&D 5E SRD content from Open5e. This includes classes, ancestries, 
-          backgrounds, spells, equipment, and more. Data will be available to all users.
+          One-time import of ALL D&D 5E SRD content from Open5e including classes, ancestries, 
+          backgrounds, spells, weapons, armor, magic items, feats, conditions, planes, lore sections, 
+          and monsters. Data will be permanently stored and available to all users.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -133,8 +134,9 @@ export const SRDImportButton = () => {
         )}
 
         <p className="text-xs text-muted-foreground">
-          Note: This import typically takes 30-60 seconds to complete. You only need to run this once.
-          The data will be shared across all users of the application.
+          Note: This comprehensive import may take 1-2 minutes to complete as it fetches data from multiple 
+          Open5e endpoints. You only need to run this once. All data will be permanently stored in the 
+          database and available to all authenticated users.
         </p>
       </CardContent>
     </Card>

@@ -29,40 +29,65 @@ serve(async (req) => {
 
     const results: ImportResult[] = [];
 
+    // Import Documents (metadata)
+    console.log("Importing documents...");
+    results.push(await importDocuments(supabase));
+
     // Import Languages
     console.log("Importing languages...");
-    const langResult = await importLanguages(supabase);
-    results.push(langResult);
+    results.push(await importLanguages(supabase));
 
     // Import Classes
     console.log("Importing classes...");
-    const classResult = await importClasses(supabase);
-    results.push(classResult);
+    results.push(await importClasses(supabase));
 
     // Import Ancestries (Races)
     console.log("Importing ancestries...");
-    const ancestryResult = await importAncestries(supabase);
-    results.push(ancestryResult);
+    results.push(await importAncestries(supabase));
 
     // Import Backgrounds
     console.log("Importing backgrounds...");
-    const bgResult = await importBackgrounds(supabase);
-    results.push(bgResult);
+    results.push(await importBackgrounds(supabase));
 
     // Import Armor
     console.log("Importing armor...");
-    const armorResult = await importArmor(supabase);
-    results.push(armorResult);
+    results.push(await importArmor(supabase));
 
     // Import Weapons
     console.log("Importing weapons...");
-    const weaponResult = await importWeapons(supabase);
-    results.push(weaponResult);
+    results.push(await importWeapons(supabase));
 
     // Import Spells
     console.log("Importing spells...");
-    const spellResult = await importSpells(supabase);
-    results.push(spellResult);
+    results.push(await importSpells(supabase));
+
+    // Import Spell to Class mappings
+    console.log("Importing spell lists...");
+    results.push(await importSpellList(supabase));
+
+    // Import Feats
+    console.log("Importing feats...");
+    results.push(await importFeats(supabase));
+
+    // Import Conditions
+    console.log("Importing conditions...");
+    results.push(await importConditions(supabase));
+
+    // Import Magic Items
+    console.log("Importing magic items...");
+    results.push(await importMagicItems(supabase));
+
+    // Import Planes
+    console.log("Importing planes...");
+    results.push(await importPlanes(supabase));
+
+    // Import Sections
+    console.log("Importing sections...");
+    results.push(await importSections(supabase));
+
+    // Import Monsters
+    console.log("Importing monsters...");
+    results.push(await importMonsters(supabase));
 
     return new Response(
       JSON.stringify({ 
@@ -102,6 +127,36 @@ async function fetchAllPages(url: string): Promise<any[]> {
   }
 
   return results;
+}
+
+// Import documents metadata
+async function importDocuments(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Documents', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const documents = await fetchAllPages(`${OPEN5E_BASE}/v2/documents/?format=json`);
+    
+    for (const doc of documents) {
+      const { error } = await supabase.from('srd_documents').upsert({
+        slug: doc.slug,
+        title: doc.title,
+        description: doc.desc || null,
+        author: doc.author || null,
+        version: doc.version || null,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${doc.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
 }
 
 async function importLanguages(supabase: any): Promise<ImportResult> {
@@ -398,5 +453,246 @@ async function importSpells(supabase: any): Promise<ImportResult> {
     result.errors.push(`Spells import failed: ${errorMessage}`);
   }
 
+  return result;
+}
+
+// Import spell-to-class mappings
+async function importSpellList(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Spell Classes', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const spellLists = await fetchAllPages(`${OPEN5E_BASE}/v1/spelllist/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const list of spellLists) {
+      for (const spell of list.spells || []) {
+        const { error } = await supabase.from('srd_spell_classes').upsert({
+          spell_slug: spell.slug,
+          class_slug: list.class_slug,
+          level: spell.level || 0,
+        }, { onConflict: 'spell_slug,class_slug' });
+        
+        if (error) {
+          result.errors.push(`${spell.slug}-${list.class_slug}: ${error.message}`);
+        } else {
+          result.imported++;
+        }
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import feats
+async function importFeats(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Feats', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const feats = await fetchAllPages(`${OPEN5E_BASE}/v2/feats/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const feat of feats) {
+      const { error } = await supabase.from('srd_feats').upsert({
+        slug: feat.slug,
+        name: feat.name,
+        prerequisite: feat.prerequisite || null,
+        description: feat.desc || null,
+        document: feat.document || SRD_SLUG,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${feat.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import conditions
+async function importConditions(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Conditions', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const conditions = await fetchAllPages(`${OPEN5E_BASE}/v2/conditions/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const condition of conditions) {
+      const { error } = await supabase.from('srd_conditions').upsert({
+        slug: condition.slug,
+        name: condition.name,
+        description: condition.desc || null,
+        document: condition.document || SRD_SLUG,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${condition.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import magic items
+async function importMagicItems(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Magic Items', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const items = await fetchAllPages(`${OPEN5E_BASE}/v1/magicitems/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const item of items) {
+      const { error } = await supabase.from('srd_magic_items').upsert({
+        slug: item.slug,
+        name: item.name,
+        type: item.type || null,
+        rarity: item.rarity || null,
+        requires_attunement: item.requires_attunement || false,
+        description: item.desc || null,
+        document: item.document || SRD_SLUG,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${item.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import planes
+async function importPlanes(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Planes', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const planes = await fetchAllPages(`${OPEN5E_BASE}/v1/planes/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const plane of planes) {
+      const { error } = await supabase.from('srd_planes').upsert({
+        slug: plane.slug,
+        name: plane.name,
+        description: plane.desc || null,
+        document: plane.document || SRD_SLUG,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${plane.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import sections (lore/content)
+async function importSections(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Sections', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const sections = await fetchAllPages(`${OPEN5E_BASE}/v1/sections/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const section of sections) {
+      const { error } = await supabase.from('srd_sections').upsert({
+        slug: section.slug,
+        name: section.name,
+        parent: section.parent || null,
+        description: section.desc || null,
+        document: section.document || SRD_SLUG,
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${section.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import monsters
+async function importMonsters(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Monsters', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_SLUG}&format=json`);
+    
+    for (const monster of monsters) {
+      const { error } = await supabase.from('monster_catalog').upsert({
+        slug: monster.slug,
+        name: monster.name,
+        size: monster.size?.toLowerCase() || 'medium',
+        type: monster.type || 'beast',
+        alignment: monster.alignment || null,
+        ac: monster.armor_class || 10,
+        hp: monster.hit_points || 1,
+        hit_dice: monster.hit_dice || '1d8',
+        speed: monster.speed || {},
+        str: monster.strength || 10,
+        dex: monster.dexterity || 10,
+        con: monster.constitution || 10,
+        int: monster.intelligence || 10,
+        wis: monster.wisdom || 10,
+        cha: monster.charisma || 10,
+        saves: monster.strength_save ? {
+          str: monster.strength_save,
+          dex: monster.dexterity_save,
+          con: monster.constitution_save,
+          int: monster.intelligence_save,
+          wis: monster.wisdom_save,
+          cha: monster.charisma_save,
+        } : {},
+        skills: monster.skills || {},
+        damage_vulnerabilities: monster.damage_vulnerabilities || null,
+        damage_resistances: monster.damage_resistances || null,
+        damage_immunities: monster.damage_immunities || null,
+        condition_immunities: monster.condition_immunities || null,
+        senses: monster.senses || null,
+        languages: monster.languages || null,
+        cr: monster.challenge_rating || '0',
+        traits: monster.special_abilities || [],
+        actions: monster.actions || [],
+        reactions: monster.reactions || [],
+        legendary_actions: monster.legendary_actions || [],
+        source_type: 'srd',
+      }, { onConflict: 'slug' });
+      
+      if (error) {
+        result.errors.push(`${monster.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
   return result;
 }

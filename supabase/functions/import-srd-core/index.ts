@@ -172,7 +172,7 @@ async function importDocuments(supabase: any): Promise<ImportResult> {
     for (const doc of documents) {
       const { error } = await supabase.from('srd_documents').upsert({
         slug: doc.slug,
-        title: doc.title,
+        title: doc.title || doc.name || doc.slug || 'Untitled',
         description: doc.desc || null,
         author: doc.author || null,
         version: doc.version || null,
@@ -387,9 +387,14 @@ async function importArmor(supabase: any): Promise<ImportResult> {
     const armors = await fetchAllPages(`${OPEN5E_BASE}/v2/armor/?document__slug=${SRD_SLUG}&limit=100`);
 
     for (const armor of armors) {
+      // Capitalize category to match constraint: 'Light', 'Medium', 'Heavy', 'Shield'
+      const category = armor.category ? 
+        armor.category.charAt(0).toUpperCase() + armor.category.slice(1).toLowerCase() : 
+        'Light';
+      
       const armorData = {
         name: armor.name,
-        category: armor.category || 'light',
+        category: category,
         base_ac: armor.ac_base || 10,
         dex_cap: armor.ac_cap_dexmod !== undefined ? armor.ac_cap_dexmod : null,
         strength_min: armor.strength_score_required || null,

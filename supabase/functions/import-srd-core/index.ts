@@ -417,18 +417,26 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
     console.log(`Fetched ${weapons.length} weapons`);
 
     for (const weapon of weapons) {
-      // Determine category from is_simple flag
-      const category = weapon.is_simple ? 'Simple' : 'Martial';
+      // Extract property names from array of objects
+      const properties = Array.isArray(weapon.properties)
+        ? weapon.properties.map((p: any) => p.property?.name || p).filter(Boolean)
+        : [];
+      
+      // Determine if weapon is ranged based on properties or range
+      const isRanged = properties.some((prop: string) => 
+        prop.toLowerCase().includes('ammunition') || 
+        prop.toLowerCase().includes('thrown')
+      ) || (weapon.range && weapon.range > 0);
+      
+      // Build category: "Simple Melee", "Simple Ranged", "Martial Melee", "Martial Ranged"
+      const baseCategory = weapon.is_simple ? 'Simple' : 'Martial';
+      const rangeType = isRanged ? 'Ranged' : 'Melee';
+      const category = `${baseCategory} ${rangeType}`;
       
       // Extract damage type name from object
       const damageType = typeof weapon.damage_type === 'object' 
         ? weapon.damage_type?.name?.toLowerCase() || 'bludgeoning'
         : weapon.damage_type || 'bludgeoning';
-      
-      // Extract property names from array of objects
-      const properties = Array.isArray(weapon.properties)
-        ? weapon.properties.map((p: any) => p.property?.name || p).filter(Boolean)
-        : [];
 
       const weaponData = {
         name: weapon.name,

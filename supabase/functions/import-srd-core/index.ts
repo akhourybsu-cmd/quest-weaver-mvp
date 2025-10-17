@@ -111,6 +111,12 @@ serve(async (req) => {
             results.push(await importMagicItems(supabase));
           }
 
+          // Import Equipment (adventuring gear)
+          if (shouldImport('equipment')) {
+            console.log("Importing equipment...");
+            results.push(await importEquipment(supabase));
+          }
+
           console.log("Import completed successfully!");
           console.log(`Total imported: ${results.reduce((sum, r) => sum + r.imported, 0)}`);
           console.log(`Total errors: ${results.reduce((sum, r) => sum + r.errors.length, 0)}`);
@@ -244,7 +250,7 @@ async function importClasses(supabase: any): Promise<ImportResult> {
             from: cls.prof_skills?.match(/from (.+)/)?.[ 1]?.split(',').map((s: string) => s.trim()) || []
           }
         },
-        starting_equipment: cls.equipment || {},
+        starting_equipment: cls.equipment ? (typeof cls.equipment === 'string' ? [cls.equipment] : cls.equipment) : [],
         spellcasting_progression: cls.spellcasting_ability ? 'full' : null,
         spellcasting_ability: cls.spellcasting_ability?.toLowerCase() || null,
       };
@@ -298,8 +304,10 @@ async function importAncestries(supabase: any): Promise<ImportResult> {
           ability: asi.attributes[0],
           bonus: asi.value
         })) || [],
-        languages: race.languages?.split(',').map((l: string) => l.trim()) || [],
-        traits: race.traits || ''
+        languages: race.languages ? race.languages.split(',').map((l: string) => l.trim()) : [],
+        traits: race.traits ? (typeof race.traits === 'string' ? [{ name: 'Racial Traits', description: race.traits }] : race.traits) : [],
+        proficiencies: [],
+        options: {}
       };
 
       const { data: inserted, error } = await supabase
@@ -622,6 +630,54 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
       
       if (error) {
         result.errors.push(`${item.slug}: ${error.message}`);
+      } else {
+        result.imported++;
+      }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    result.errors.push(errorMessage);
+  }
+  
+  return result;
+}
+
+// Import equipment (adventuring gear)
+async function importEquipment(supabase: any): Promise<ImportResult> {
+  const result: ImportResult = { entity: 'Equipment', imported: 0, skipped: 0, errors: [] };
+  
+  try {
+    const equipment = await fetchAllPages(`${OPEN5E_BASE}/v2/equipment/?document__slug=${SRD_SLUG}&limit=100`);
+    
+    for (const item of equipment) {
+      // Filter out weapons and armor as they're in separate tables
+      if (item.category?.toLowerCase().includes('weapon') || 
+          item.category?.toLowerCase().includes('armor')) {
+        result.skipped++;
+        continue;
+      }
+
+      // Extract properties like quantity, uses, etc.
+      const properties: any = {};
+      if (item.quantity) properties.quantity = item.quantity;
+      if (item.weight) properties.weight = item.weight;
+      if (item.cost) properties.cost = item.cost;
+      
+      const equipmentData = {
+        name: item.name,
+        type: item.category || 'Gear',
+        properties: properties,
+        weight: item.weight || 0,
+        cost_gp: item.cost ? parseFloat(item.cost.quantity) || 0 : 0,
+        description: item.desc || null
+      };
+
+      const { error } = await supabase
+        .from('srd_equipment')
+        .upsert(equipmentData, { onConflict: 'name' });
+
+      if (error) {
+        result.errors.push(`Equipment ${item.name}: ${error.message}`);
       } else {
         result.imported++;
       }

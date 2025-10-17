@@ -37,10 +37,9 @@ export const SRDImportButton = () => {
         throw new Error(data.error);
       }
 
-      setResults(data.results);
       toast({
-        title: "SRD Import Complete",
-        description: `Successfully imported ${data.summary.totalImported} items across ${data.results.length} categories.`,
+        title: "SRD Import Started",
+        description: data.message || "Import is running in the background. This may take several minutes.",
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -92,45 +91,14 @@ export const SRDImportButton = () => {
           </Alert>
         )}
 
-        {results && (
-          <div className="space-y-2">
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                Import completed successfully! All SRD content is now available.
-              </AlertDescription>
-            </Alert>
-
-            <div className="border rounded-lg p-4 space-y-2">
-              <h4 className="font-semibold text-sm">Import Results:</h4>
-              {results.map((result) => (
-                <div key={result.entity} className="flex justify-between text-sm">
-                  <span className="capitalize">{result.entity}:</span>
-                  <span className="text-muted-foreground">
-                    {result.imported} imported, {result.skipped} skipped
-                    {result.errors.length > 0 && (
-                      <span className="text-destructive ml-2">
-                        ({result.errors.length} errors)
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {results.some(r => r.errors.length > 0) && (
-              <details className="border rounded-lg p-4">
-                <summary className="font-semibold text-sm cursor-pointer">
-                  View Errors
-                </summary>
-                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {results.flatMap(r => r.errors).map((err, idx) => (
-                    <div key={idx}>{err}</div>
-                  ))}
-                </div>
-              </details>
-            )}
-          </div>
+        {!importing && !error && (
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              Import started successfully! The process is running in the background and may take several minutes. 
+              You can check the backend logs to monitor progress.
+            </AlertDescription>
+          </Alert>
         )}
 
         <p className="text-xs text-muted-foreground">

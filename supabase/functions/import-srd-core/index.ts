@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
+// Declare EdgeRuntime for background tasks
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -22,75 +27,82 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    console.log("Starting SRD import in background...");
+    
+    // Run import as background task to avoid timeout
+    EdgeRuntime.waitUntil(
+      (async () => {
+        try {
+          const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          );
+
+          const results: ImportResult[] = [];
+
+          // Import Documents (metadata)
+          console.log("Importing documents...");
+          results.push(await importDocuments(supabase));
+
+          // Import Languages
+          console.log("Importing languages...");
+          results.push(await importLanguages(supabase));
+
+          // Import Classes
+          console.log("Importing classes...");
+          results.push(await importClasses(supabase));
+
+          // Import Ancestries (Races)
+          console.log("Importing ancestries...");
+          results.push(await importAncestries(supabase));
+
+          // Import Backgrounds
+          console.log("Importing backgrounds...");
+          results.push(await importBackgrounds(supabase));
+
+          // Import Armor
+          console.log("Importing armor...");
+          results.push(await importArmor(supabase));
+
+          // Import Weapons
+          console.log("Importing weapons...");
+          results.push(await importWeapons(supabase));
+
+          // Import Spells
+          console.log("Importing spells...");
+          results.push(await importSpells(supabase));
+
+          // Import Feats
+          console.log("Importing feats...");
+          results.push(await importFeats(supabase));
+
+          // Import Conditions
+          console.log("Importing conditions...");
+          results.push(await importConditions(supabase));
+
+          // Import Magic Items
+          console.log("Importing magic items...");
+          results.push(await importMagicItems(supabase));
+
+          console.log("Import completed successfully!");
+          console.log(`Total imported: ${results.reduce((sum, r) => sum + r.imported, 0)}`);
+          console.log(`Total errors: ${results.reduce((sum, r) => sum + r.errors.length, 0)}`);
+        } catch (error) {
+          console.error('Background import error:', error);
+        }
+      })()
     );
 
-    const results: ImportResult[] = [];
-
-    // Import Documents (metadata)
-    console.log("Importing documents...");
-    results.push(await importDocuments(supabase));
-
-    // Import Languages
-    console.log("Importing languages...");
-    results.push(await importLanguages(supabase));
-
-    // Import Classes
-    console.log("Importing classes...");
-    results.push(await importClasses(supabase));
-
-    // Import Ancestries (Races)
-    console.log("Importing ancestries...");
-    results.push(await importAncestries(supabase));
-
-    // Import Backgrounds
-    console.log("Importing backgrounds...");
-    results.push(await importBackgrounds(supabase));
-
-    // Import Armor
-    console.log("Importing armor...");
-    results.push(await importArmor(supabase));
-
-    // Import Weapons
-    console.log("Importing weapons...");
-    results.push(await importWeapons(supabase));
-
-    // Import Spells
-    console.log("Importing spells...");
-    results.push(await importSpells(supabase));
-
-    // Import Feats
-    console.log("Importing feats...");
-    results.push(await importFeats(supabase));
-
-    // Import Conditions
-    console.log("Importing conditions...");
-    results.push(await importConditions(supabase));
-
-    // Import Magic Items
-    console.log("Importing magic items...");
-    results.push(await importMagicItems(supabase));
-
-    console.log("Import completed successfully!");
-    console.log(`Total imported: ${results.reduce((sum, r) => sum + r.imported, 0)}`);
-    console.log(`Total errors: ${results.reduce((sum, r) => sum + r.errors.length, 0)}`);
-
+    // Return immediate response
     return new Response(
       JSON.stringify({ 
         success: true,
-        results,
-        summary: {
-          totalImported: results.reduce((sum, r) => sum + r.imported, 0),
-          totalSkipped: results.reduce((sum, r) => sum + r.skipped, 0),
-          totalErrors: results.reduce((sum, r) => sum + r.errors.length, 0),
-        }
+        message: 'SRD import started in background. This may take several minutes. Check the logs for progress.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error importing SRD data:', error);
+    console.error('Error starting SRD import:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),

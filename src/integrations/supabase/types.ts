@@ -2854,7 +2854,7 @@ export type Database = {
           document: string | null
           id: string
           name: string
-          slug: string
+          slug: string | null
         }
         Insert: {
           created_at?: string | null
@@ -2862,7 +2862,7 @@ export type Database = {
           document?: string | null
           id?: string
           name: string
-          slug: string
+          slug?: string | null
         }
         Update: {
           created_at?: string | null
@@ -2870,7 +2870,7 @@ export type Database = {
           document?: string | null
           id?: string
           name?: string
-          slug?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -2880,7 +2880,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
-          slug: string
+          slug: string | null
           title: string
           version: string | null
         }
@@ -2889,7 +2889,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          slug: string
+          slug?: string | null
           title: string
           version?: string | null
         }
@@ -2898,7 +2898,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          slug?: string
+          slug?: string | null
           title?: string
           version?: string | null
         }
@@ -2945,7 +2945,7 @@ export type Database = {
           id: string
           name: string
           prerequisite: string | null
-          slug: string
+          slug: string | null
         }
         Insert: {
           created_at?: string | null
@@ -2954,7 +2954,7 @@ export type Database = {
           id?: string
           name: string
           prerequisite?: string | null
-          slug: string
+          slug?: string | null
         }
         Update: {
           created_at?: string | null
@@ -2963,7 +2963,7 @@ export type Database = {
           id?: string
           name?: string
           prerequisite?: string | null
-          slug?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -2997,7 +2997,7 @@ export type Database = {
           name: string
           rarity: string | null
           requires_attunement: boolean | null
-          slug: string
+          slug: string | null
           type: string | null
         }
         Insert: {
@@ -3008,7 +3008,7 @@ export type Database = {
           name: string
           rarity?: string | null
           requires_attunement?: boolean | null
-          slug: string
+          slug?: string | null
           type?: string | null
         }
         Update: {
@@ -3019,7 +3019,7 @@ export type Database = {
           name?: string
           rarity?: string | null
           requires_attunement?: boolean | null
-          slug?: string
+          slug?: string | null
           type?: string | null
         }
         Relationships: []
@@ -3031,7 +3031,7 @@ export type Database = {
           document: string | null
           id: string
           name: string
-          slug: string
+          slug: string | null
         }
         Insert: {
           created_at?: string | null
@@ -3039,7 +3039,7 @@ export type Database = {
           document?: string | null
           id?: string
           name: string
-          slug: string
+          slug?: string | null
         }
         Update: {
           created_at?: string | null
@@ -3047,7 +3047,7 @@ export type Database = {
           document?: string | null
           id?: string
           name?: string
-          slug?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -3059,7 +3059,7 @@ export type Database = {
           id: string
           name: string
           parent: string | null
-          slug: string
+          slug: string | null
         }
         Insert: {
           created_at?: string | null
@@ -3068,7 +3068,7 @@ export type Database = {
           id?: string
           name: string
           parent?: string | null
-          slug: string
+          slug?: string | null
         }
         Update: {
           created_at?: string | null
@@ -3077,7 +3077,7 @@ export type Database = {
           id?: string
           name?: string
           parent?: string | null
-          slug?: string
+          slug?: string | null
         }
         Relationships: []
       }

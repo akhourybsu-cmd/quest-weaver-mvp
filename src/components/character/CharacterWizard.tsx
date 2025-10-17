@@ -123,24 +123,143 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   }, [editCharacterId, open]);
 
   const loadExistingCharacter = async (id: string) => {
-    // TODO: Load from all normalized tables
-    const { data: character, error } = await supabase
-      .from("characters")
-      .select("*")
-      .eq("id", id)
-      .single();
+    setLoading(true);
+    try {
+      // Load main character data
+      const { data: character, error: charError } = await supabase
+        .from("characters")
+        .select("*")
+        .eq("id", id)
+        .single();
+        
+      if (charError) throw charError;
+      if (!character) return;
+
+      // Load abilities
+      const { data: abilities } = await supabase
+        .from("character_abilities")
+        .select("*")
+        .eq("character_id", id)
+        .single();
+
+      // Load proficiencies
+      const { data: proficiencies } = await supabase
+        .from("character_proficiencies")
+        .select("*")
+        .eq("character_id", id);
+
+      // Load languages
+      const { data: languages } = await supabase
+        .from("character_languages")
+        .select("*")
+        .eq("character_id", id);
+
+      // Load equipment
+      const { data: equipment } = await supabase
+        .from("character_equipment")
+        .select("*")
+        .eq("character_id", id);
+
+      // Load spells
+      const { data: spells } = await supabase
+        .from("character_spells")
+        .select("*")
+        .eq("character_id", id);
+
+      // Load features
+      const { data: features } = await supabase
+        .from("character_features")
+        .select("*")
+        .eq("character_id", id);
+
+      // Load skills
+      const { data: skills } = await supabase
+        .from("character_skills")
+        .select("*")
+        .eq("character_id", id);
+
+      // Reconstruct draft from database data
+      setDraft({
+        name: character.name,
+        level: character.level,
+        classId: character.class || "",
+        className: character.class,
+        subclassId: character.subclass_id || undefined,
+        ancestryId: character.ancestry_id || "",
+        subAncestryId: character.subancestry_id || undefined,
+        backgroundId: character.background_id || "",
+        alignment: character.alignment || undefined,
+        age: character.age || undefined,
+        height: character.height || undefined,
+        weight: character.weight || undefined,
+        eyes: character.eyes || undefined,
+        skin: character.skin || undefined,
+        hair: character.hair || undefined,
+        personality: undefined,
+        ideals: undefined,
+        bonds: undefined,
+        flaws: undefined,
+        notes: character.notes || undefined,
+        abilityScores: abilities ? {
+          STR: abilities.str,
+          DEX: abilities.dex,
+          CON: abilities.con,
+          INT: abilities.int,
+          WIS: abilities.wis,
+          CHA: abilities.cha,
+        } : { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+        abilityMethod: abilities?.method || "standard-array",
+        grants: {
+          savingThrows: new Set(),
+          skillProficiencies: new Set(
+            proficiencies?.filter(p => p.type === 'skill').map(p => p.name) || []
+          ),
+          toolProficiencies: new Set(
+            proficiencies?.filter(p => p.type === 'tool').map(p => p.name) || []
+          ),
+          armorProficiencies: new Set(
+            proficiencies?.filter(p => p.type === 'armor').map(p => p.name) || []
+          ),
+          weaponProficiencies: new Set(
+            proficiencies?.filter(p => p.type === 'weapon').map(p => p.name) || []
+          ),
+          languages: new Set(languages?.map(l => l.name) || []),
+          features: features?.map(f => ({
+            source: f.source,
+            name: f.name,
+            level: f.level,
+            description: f.description || "",
+          })) || [],
+          traits: [],
+          abilityBonuses: {},
+        },
+        needs: {
+          skill: undefined,
+          tool: undefined,
+          language: undefined,
+        },
+        choices: {
+          skills: skills?.filter(s => s.proficient).map(s => s.skill) || [],
+          tools: [],
+          languages: [],
+          equipmentBundleId: undefined,
+          spellsKnown: spells?.filter(s => s.known).map(s => s.spell_id) || [],
+          spellsPrepared: spells?.filter(s => s.prepared).map(s => s.spell_id) || [],
+          featureChoices: {},
+        },
+      });
       
-    if (error) {
+      setDraftId(id);
+    } catch (error: any) {
+      console.error("Error loading character:", error);
       toast({
         title: "Error loading character",
         description: error.message,
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-    
-    // Map database data to wizard format
-    // TODO: Load from normalized tables
   };
 
   // Auto-save draft on data change

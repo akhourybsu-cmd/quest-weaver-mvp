@@ -7,14 +7,8 @@ import { useAtom, useSetAtom } from "jotai";
 import { draftAtom, setBackgroundAtom, applyGrantsAtom, setNeedsAtom } from "@/state/characterWizard";
 import { SRD, type SrdBackground } from "@/lib/srd/SRDClient";
 import { grantsFromBackground, needsFromBackground } from "@/lib/rules/5eRules";
-import type { WizardData } from "../CharacterWizard";
 
-interface StepBackgroundProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
-
-const StepBackground = ({ data, updateData }: StepBackgroundProps) => {
+const StepBackground = () => {
   const [draft] = useAtom(draftAtom);
   const setBackground = useSetAtom(setBackgroundAtom);
   const applyGrants = useSetAtom(applyGrantsAtom);
@@ -42,7 +36,6 @@ const StepBackground = ({ data, updateData }: StepBackgroundProps) => {
 
     setBackground(backgroundId);
     setSelectedBackground(bg);
-    updateData({ backgroundId });
 
     // Auto-grant from background
     const grants = grantsFromBackground(bg);

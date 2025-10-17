@@ -54,7 +54,6 @@ const StepBasics = () => {
 
     setClass(classId);
     setSelectedClass(cls);
-    updateData({ classId, className: cls.name });
 
     // Auto-grant from class
     const grants = grantsFromClass(cls);
@@ -74,7 +73,6 @@ const StepBasics = () => {
     if (!subclass) return;
 
     setSubclass(subclassId);
-    updateData({ subclassId });
 
     // Auto-grant subclass features up to current level
     const grants = grantsFromSubclass(subclass, draft.level);
@@ -103,7 +101,7 @@ const StepBasics = () => {
           <Input
             id="name"
             value={draft.name}
-            onChange={(e) => { setName(e.target.value); updateData({ name: e.target.value }); }}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Enter character name"
           />
         </div>
@@ -118,8 +116,7 @@ const StepBasics = () => {
             value={draft.level}
             onChange={(e) => { 
               const level = parseInt(e.target.value) || 1;
-              setLevel(level); 
-              updateData({ level });
+              setLevel(level);
             }}
           />
         </div>

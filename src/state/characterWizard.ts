@@ -24,6 +24,20 @@ export type WizardDraft = {
   };
   abilityMethod: string;
   
+  // Description fields
+  alignment?: string;
+  age?: string;
+  height?: string;
+  weight?: string;
+  eyes?: string;
+  skin?: string;
+  hair?: string;
+  personality?: string;
+  ideals?: string;
+  bonds?: string;
+  flaws?: string;
+  notes?: string;
+  
   // Player choices
   choices: {
     skills: string[];

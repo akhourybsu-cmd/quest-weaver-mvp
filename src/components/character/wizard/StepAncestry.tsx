@@ -48,7 +48,6 @@ const StepAncestry = () => {
 
     setAncestry(ancestryId);
     setSelectedAncestry(ancestry);
-    updateData({ ancestryId, subancestryId: undefined });
 
     const grants = grantsFromAncestry(ancestry);
     applyGrants(grants);
@@ -63,7 +62,6 @@ const StepAncestry = () => {
 
     setSubAncestry(subancestryId);
     setSelectedSubancestry(subAncestry);
-    updateData({ subancestryId });
 
     const grants = grantsFromSubAncestry(subAncestry);
     applyGrants(grants);

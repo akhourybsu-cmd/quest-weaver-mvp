@@ -5,14 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAtom, useSetAtom } from "jotai";
 import { draftAtom, toggleSkillAtom, toggleToolAtom, toggleLanguageAtom } from "@/state/characterWizard";
 import { computeLegalSkillPool, remaining } from "@/lib/rules/5eRules";
-import type { WizardData } from "../CharacterWizard";
 
-interface StepProficienciesProps {
-  data: WizardData;
-  updateData: (updates: Partial<WizardData>) => void;
-}
-
-const StepProficiencies = ({ data, updateData }: StepProficienciesProps) => {
+const StepProficiencies = () => {
   const [draft] = useAtom(draftAtom);
   const toggleSkill = useSetAtom(toggleSkillAtom);
   const toggleTool = useSetAtom(toggleToolAtom);

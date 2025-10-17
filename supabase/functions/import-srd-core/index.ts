@@ -27,7 +27,10 @@ serve(async (req) => {
   }
 
   try {
+    const { categories = [] } = await req.json().catch(() => ({ categories: [] }));
+    
     console.log("Starting SRD import in background...");
+    console.log("Selected categories:", categories.length > 0 ? categories : "ALL");
     
     // Run import as background task to avoid timeout
     EdgeRuntime.waitUntil(
@@ -39,50 +42,74 @@ serve(async (req) => {
           );
 
           const results: ImportResult[] = [];
+          const shouldImport = (category: string) => 
+            categories.length === 0 || categories.includes(category);
 
           // Import Documents (metadata)
-          console.log("Importing documents...");
-          results.push(await importDocuments(supabase));
+          if (shouldImport('documents')) {
+            console.log("Importing documents...");
+            results.push(await importDocuments(supabase));
+          }
 
           // Import Languages
-          console.log("Importing languages...");
-          results.push(await importLanguages(supabase));
+          if (shouldImport('languages')) {
+            console.log("Importing languages...");
+            results.push(await importLanguages(supabase));
+          }
 
           // Import Classes
-          console.log("Importing classes...");
-          results.push(await importClasses(supabase));
+          if (shouldImport('classes')) {
+            console.log("Importing classes...");
+            results.push(await importClasses(supabase));
+          }
 
           // Import Ancestries (Races)
-          console.log("Importing ancestries...");
-          results.push(await importAncestries(supabase));
+          if (shouldImport('ancestries')) {
+            console.log("Importing ancestries...");
+            results.push(await importAncestries(supabase));
+          }
 
           // Import Backgrounds
-          console.log("Importing backgrounds...");
-          results.push(await importBackgrounds(supabase));
+          if (shouldImport('backgrounds')) {
+            console.log("Importing backgrounds...");
+            results.push(await importBackgrounds(supabase));
+          }
 
           // Import Armor
-          console.log("Importing armor...");
-          results.push(await importArmor(supabase));
+          if (shouldImport('armor')) {
+            console.log("Importing armor...");
+            results.push(await importArmor(supabase));
+          }
 
           // Import Weapons
-          console.log("Importing weapons...");
-          results.push(await importWeapons(supabase));
+          if (shouldImport('weapons')) {
+            console.log("Importing weapons...");
+            results.push(await importWeapons(supabase));
+          }
 
           // Import Spells
-          console.log("Importing spells...");
-          results.push(await importSpells(supabase));
+          if (shouldImport('spells')) {
+            console.log("Importing spells...");
+            results.push(await importSpells(supabase));
+          }
 
           // Import Feats
-          console.log("Importing feats...");
-          results.push(await importFeats(supabase));
+          if (shouldImport('feats')) {
+            console.log("Importing feats...");
+            results.push(await importFeats(supabase));
+          }
 
           // Import Conditions
-          console.log("Importing conditions...");
-          results.push(await importConditions(supabase));
+          if (shouldImport('conditions')) {
+            console.log("Importing conditions...");
+            results.push(await importConditions(supabase));
+          }
 
           // Import Magic Items
-          console.log("Importing magic items...");
-          results.push(await importMagicItems(supabase));
+          if (shouldImport('magic_items')) {
+            console.log("Importing magic items...");
+            results.push(await importMagicItems(supabase));
+          }
 
           console.log("Import completed successfully!");
           console.log(`Total imported: ${results.reduce((sum, r) => sum + r.imported, 0)}`);
@@ -97,7 +124,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'SRD import started in background. This may take several minutes. Check the logs for progress.',
+        message: `SRD import started in background${categories.length > 0 ? ` for ${categories.length} categories` : ''}. Check the logs for progress.`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

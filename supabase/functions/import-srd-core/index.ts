@@ -381,13 +381,13 @@ async function importArmor(supabase: any): Promise<ImportResult> {
     for (const armor of armors) {
       const armorData = {
         name: armor.name,
-        category: armor.armor_category || 'Light',
+        category: armor.category || 'light',
         base_ac: armor.ac_base || 10,
-        dex_cap: armor.ac_add_dex_mod_max || null,
-        strength_required: armor.strength_required || null,
-        stealth_disadvantage: armor.stealth_disadvantage || false,
-        cost_gp: armor.cost ? parseFloat(armor.cost.replace(/[^\d.]/g, '')) : 0,
-        weight_lb: armor.weight || 0
+        dex_cap: armor.ac_cap_dexmod !== undefined ? armor.ac_cap_dexmod : null,
+        strength_required: armor.strength_score_required || null,
+        stealth_disadvantage: armor.grants_stealth_disadvantage || false,
+        cost_gp: 0, // V2 API doesn't include cost
+        weight_lb: 0 // V2 API doesn't include weight
       };
 
       const { error } = await supabase
@@ -415,14 +415,27 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
     const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__slug=${SRD_SLUG}&limit=100`);
 
     for (const weapon of weapons) {
+      // Determine category from is_simple flag
+      const category = weapon.is_simple ? 'Simple' : 'Martial';
+      
+      // Extract damage type name from object
+      const damageType = typeof weapon.damage_type === 'object' 
+        ? weapon.damage_type?.name?.toLowerCase() || 'bludgeoning'
+        : weapon.damage_type || 'bludgeoning';
+      
+      // Extract property names from array of objects
+      const properties = Array.isArray(weapon.properties)
+        ? weapon.properties.map((p: any) => p.property?.name || p).filter(Boolean)
+        : [];
+
       const weaponData = {
         name: weapon.name,
-        category: weapon.weapon_category || 'Simple Melee',
+        category: category,
         damage: weapon.damage_dice || '1d4',
-        damage_type: weapon.damage_type || 'bludgeoning',
-        properties: weapon.properties || [],
-        cost_gp: weapon.cost ? parseFloat(weapon.cost.replace(/[^\d.]/g, '')) : 0,
-        weight_lb: weapon.weight || 0
+        damage_type: damageType,
+        properties: properties,
+        cost_gp: 0, // V2 API doesn't include cost
+        weight_lb: 0 // V2 API doesn't include weight
       };
 
       const { error } = await supabase

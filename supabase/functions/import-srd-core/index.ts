@@ -412,7 +412,9 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'weapons', imported: 0, skipped: 0, errors: [] };
   
   try {
+    console.log("Fetching weapons from Open5e...");
     const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__slug=${SRD_SLUG}&limit=100`);
+    console.log(`Fetched ${weapons.length} weapons`);
 
     for (const weapon of weapons) {
       // Determine category from is_simple flag
@@ -443,13 +445,20 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
         .upsert(weaponData, { onConflict: 'name' });
 
       if (error) {
+        console.error(`Failed to insert weapon ${weapon.name}:`, error.message);
         result.errors.push(`Weapon ${weapon.name}: ${error.message}`);
       } else {
         result.imported++;
       }
     }
+    
+    console.log(`Weapons import complete: ${result.imported} imported, ${result.errors.length} errors`);
+    if (result.errors.length > 0) {
+      console.error("First 5 errors:", result.errors.slice(0, 5));
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Weapons import failed:`, errorMessage);
     result.errors.push(`Weapons import failed: ${errorMessage}`);
   }
 

@@ -198,22 +198,20 @@ export function getClassSpellAccess(
     usesFocus: null,
   };
 
-  // Ritual casting
-  if (["Cleric", "Druid", "Wizard"].includes(className)) {
+  // Ritual casting (SRD 5.1): Bard, Cleric, Druid, Wizard can cast rituals
+  if (["Bard", "Cleric", "Druid", "Wizard"].includes(className)) {
     result.hasRitualCasting = true;
-  }
-  // Bard gets ritual casting at level 2 in some editions, simplify for now
-  if (className === "Bard") {
-    result.hasRitualCasting = false;
   }
 
   // Focus type
   if (["Bard", "Sorcerer", "Warlock", "Wizard"].includes(className)) {
     result.usesFocus = "arcane";
-  } else if (className === "Cleric") {
+  } else if (className === "Cleric" || className === "Paladin") {
     result.usesFocus = "holy";
   } else if (className === "Druid") {
     result.usesFocus = "druidic";
+  } else if (className === "Ranger") {
+    result.usesFocus = null; // Ranger typically uses a component pouch; no special focus in SRD
   }
 
   // Subclass expansions and auto-prepared
@@ -294,8 +292,16 @@ export function getCantripScalingBreakpoint(characterLevel: number): string {
   return "1st level (1 die)";
 }
 
+/**
+ * Heuristic: does a spell likely require *costly* material components (not covered by a focus/pouch)?
+ * - Looks for "<number> gp" pattern or common costly indicators in the material text.
+ */
 export function spellHasCostlyComponents(spell: SrdSpell): boolean {
-  // Check description for material component costs
-  const desc = spell.description || "";
-  return /\d+\s*(gp|gold|worth)/i.test(desc);
+  const mat = ((spell as any).material || spell.description || "").toLowerCase();
+  if (!mat) return false;
+  if (/\b\d+\s*gp\b/.test(mat)) return true;
+  if (/\bdia(?:mond|monds)\b/.test(mat)) return true;
+  if (/\bpearl\b/.test(mat)) return true;
+  if (/\bincense\b/.test(mat) && /\bworth\b/.test(mat)) return true;
+  return false;
 }

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,10 +12,40 @@ interface InspirationToggleProps {
 
 export function InspirationToggle({
   characterId,
-  hasInspiration,
+  hasInspiration: initialHasInspiration,
   isDM,
 }: InspirationToggleProps) {
   const { toast } = useToast();
+  const [hasInspiration, setHasInspiration] = useState(initialHasInspiration);
+
+  // Real-time sync for inspiration changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`inspiration:${characterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+          filter: `id=eq.${characterId}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new.inspiration === 'boolean') {
+            setHasInspiration(payload.new.inspiration);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [characterId]);
+
+  useEffect(() => {
+    setHasInspiration(initialHasInspiration);
+  }, [initialHasInspiration]);
 
   const toggleInspiration = async () => {
     if (!isDM) return;

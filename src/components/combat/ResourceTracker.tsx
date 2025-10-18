@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,11 +32,41 @@ interface ResourceTrackerProps {
 export function ResourceTracker({ 
   characterId, 
   characterName,
-  resources,
+  resources: initialResources,
   canEdit 
 }: ResourceTrackerProps) {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [resources, setResources] = useState(initialResources);
+
+  // Real-time sync for resource changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`resources:${characterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+          filter: `id=eq.${characterId}`,
+        },
+        (payload) => {
+          if (payload.new && payload.new.resources) {
+            setResources(payload.new.resources);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [characterId]);
+
+  useEffect(() => {
+    setResources(initialResources);
+  }, [initialResources]);
 
   const spellSlots = resources.spellSlots || [];
   const classResources = resources.classResources || [];

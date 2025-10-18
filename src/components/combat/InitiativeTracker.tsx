@@ -78,6 +78,29 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
     };
   }, [encounterId, initiative]);
 
+  // Real-time sync for character action economy and resources
+  useEffect(() => {
+    const channel = supabase
+      .channel(`character-updates:${encounterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+        },
+        () => {
+          // Trigger re-fetch of initiative to get updated character stats
+          fetchAvailableCombatants();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [encounterId]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {

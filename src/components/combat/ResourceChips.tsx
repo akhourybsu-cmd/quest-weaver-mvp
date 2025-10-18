@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -23,10 +23,44 @@ interface ResourceChipsProps {
   isDM: boolean;
 }
 
-export function ResourceChips({ characterId, resources, isDM }: ResourceChipsProps) {
+export function ResourceChips({ characterId, resources: initialResources, isDM }: ResourceChipsProps) {
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
-  const [editResources, setEditResources] = useState<Record<string, Resource>>(resources || {});
+  const [resources, setResources] = useState<Record<string, Resource>>(initialResources || {});
+  const [editResources, setEditResources] = useState<Record<string, Resource>>(initialResources || {});
+
+  // Real-time sync for resource changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`resource-chips:${characterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+          filter: `id=eq.${characterId}`,
+        },
+        (payload) => {
+          if (payload.new && payload.new.resources) {
+            setResources(payload.new.resources);
+            if (!editOpen) {
+              setEditResources(payload.new.resources);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [characterId, editOpen]);
+
+  useEffect(() => {
+    setResources(initialResources || {});
+    setEditResources(initialResources || {});
+  }, [initialResources]);
 
   const updateResource = async (resourceKey: string, current: number) => {
     const updated = {

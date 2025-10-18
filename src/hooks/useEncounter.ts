@@ -39,7 +39,7 @@ export const useEncounter = (encounterId: string | null) => {
     fetchInitiative();
     fetchEncounterData();
 
-    // Tightly scoped subscription - only initiative and encounter for this specific ID
+    // Tightly scoped subscription - initiative, encounter, characters, and monsters for this ID
     const channel = supabase
       .channel(channelName)
       .on(
@@ -65,6 +65,31 @@ export const useEncounter = (encounterId: string | null) => {
           if (payload.new.current_round !== payload.old.current_round) {
             fetchEncounterData();
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'characters',
+        },
+        () => {
+          // Re-fetch initiative to get updated character stats (HP, action economy, resources, etc.)
+          fetchInitiative();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'encounter_monsters',
+          filter: `encounter_id=eq.${encounterId}`,
+        },
+        () => {
+          // Re-fetch initiative to get updated monster stats (HP, etc.)
+          fetchInitiative();
         }
       )
       .subscribe();

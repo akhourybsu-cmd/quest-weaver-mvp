@@ -956,6 +956,7 @@ export type Database = {
           initiative: number
           initiative_bonus: number
           is_current_turn: boolean | null
+          is_hp_visible_to_players: boolean | null
           is_visible_to_players: boolean | null
           languages: string | null
           legendary_actions: Json | null
@@ -990,6 +991,7 @@ export type Database = {
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
+          is_hp_visible_to_players?: boolean | null
           is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null
@@ -1024,6 +1026,7 @@ export type Database = {
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
+          is_hp_visible_to_players?: boolean | null
           is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null

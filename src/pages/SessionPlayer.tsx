@@ -314,20 +314,21 @@ const SessionPlayer = () => {
 
         {/* Combat UI - shown when in active encounter */}
         {activeEncounter && campaignId && (
-          <div className="grid lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
-            {/* Left Panel: Character Sheet */}
+          <div className="grid lg:grid-cols-[1fr_1fr] gap-4 max-w-7xl mx-auto">
+            {/* Left Panel: Character Sheet (Desktop Only) */}
             <div className="hidden lg:block">
               <PlayerCharacterSheet characterId={character.id} />
             </div>
 
             {/* Right Panel: Tabbed Content */}
-            <Tabs defaultValue="combat" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="combat">Combat</TabsTrigger>
-                <TabsTrigger value="character" className="lg:hidden">Character</TabsTrigger>
-                <TabsTrigger value="inventory">Inventory</TabsTrigger>
-                {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
-              </TabsList>
+            <div className="w-full">
+              <Tabs defaultValue="combat" className="w-full">
+                <TabsList className={`grid w-full ${mapId ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                  <TabsTrigger value="combat">Combat</TabsTrigger>
+                  <TabsTrigger value="character" className="lg:hidden">Character</TabsTrigger>
+                  <TabsTrigger value="inventory">Inventory</TabsTrigger>
+                  {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
+                </TabsList>
 
               <TabsContent value="combat" className="mt-4">
                 <PlayerCombatView
@@ -361,7 +362,8 @@ const SessionPlayer = () => {
                   />
                 </TabsContent>
               )}
-            </Tabs>
+              </Tabs>
+            </div>
           </div>
         )}
 

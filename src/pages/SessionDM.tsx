@@ -178,6 +178,7 @@ const SessionDM = () => {
         name: `Encounter ${new Date().toLocaleDateString()}`,
         current_round: 1,
         is_active: true,
+        status: 'preparing',
       })
       .select()
       .single();

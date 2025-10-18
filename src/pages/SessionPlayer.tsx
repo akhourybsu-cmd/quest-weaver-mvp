@@ -169,6 +169,10 @@ const SessionPlayer = () => {
     }
 
     setCharacter(data);
+    
+    console.log('SessionPlayer - Character loaded:', data.name);
+    console.log('SessionPlayer - Active encounter:', encounter?.id);
+    console.log('SessionPlayer - Campaign ID:', campaigns[0].id);
 
     // Check if it's my turn
     if (encounter?.id) {
@@ -274,6 +278,10 @@ const SessionPlayer = () => {
     );
   }
 
+  console.log('SessionPlayer - Rendering with activeEncounter:', activeEncounter);
+  console.log('SessionPlayer - campaignId:', campaignId);
+  console.log('SessionPlayer - mapId:', mapId);
+
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
@@ -284,6 +292,9 @@ const SessionPlayer = () => {
             <p className="text-xs sm:text-sm text-muted-foreground">
               Level {character.level} {character.class} • Campaign: {campaignCode}
             </p>
+            {activeEncounter && (
+              <p className="text-xs text-primary font-semibold">⚔️ In Combat</p>
+            )}
           </div>
         </div>
       </header>

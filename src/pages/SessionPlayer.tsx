@@ -7,9 +7,8 @@ import PlayerPresence from "@/components/presence/PlayerPresence";
 import DiceRoller from "@/components/dice/DiceRoller";
 import RestManager from "@/components/character/RestManager";
 import SavePromptListener from "@/components/combat/SavePromptListener";
-import { PlayerCharacterSheet } from "@/components/combat/PlayerCharacterSheet";
-import { PlayerInitiativeDisplay } from "@/components/player/PlayerInitiativeDisplay";
-import { PlayerCombatActions } from "@/components/player/PlayerCombatActions";
+import { PlayerCharacterSheet } from "@/components/player/PlayerCharacterSheet";
+import { PlayerCombatView } from "@/components/player/PlayerCombatView";
 import { PlayerMapViewer } from "@/components/player/PlayerMapViewer";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerInventory } from "@/components/player/PlayerInventory";
@@ -279,7 +278,7 @@ const SessionPlayer = () => {
     <div className="min-h-screen pb-20">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <div className="w-full px-3 sm:px-4 py-3 sm:py-4">
           <div className="text-center">
             <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -290,7 +289,7 @@ const SessionPlayer = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+      <main className="w-full px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* Character Selection Dialog */}
         {showCharacterSelection && campaignId && (
           <CharacterSelectionDialog
@@ -315,53 +314,55 @@ const SessionPlayer = () => {
 
         {/* Combat UI - shown when in active encounter */}
         {activeEncounter && campaignId && (
-          <Tabs defaultValue="combat" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="combat">Combat</TabsTrigger>
-              <TabsTrigger value="character">Character</TabsTrigger>
-              {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
-            </TabsList>
+          <div className="grid lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+            {/* Left Panel: Character Sheet */}
+            <div className="hidden lg:block">
+              <PlayerCharacterSheet characterId={character.id} />
+            </div>
 
-            <TabsContent value="combat" className="space-y-4 mt-4">
-              <PlayerCombatActions
-                characterId={character.id}
-                encounterId={activeEncounter}
-                isMyTurn={isMyTurn}
-              />
-              
-              <PlayerInitiativeDisplay
-                encounterId={activeEncounter}
-                characterId={character.id}
-              />
+            {/* Right Panel: Tabbed Content */}
+            <Tabs defaultValue="combat" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="combat">Combat</TabsTrigger>
+                <TabsTrigger value="character" className="lg:hidden">Character</TabsTrigger>
+                <TabsTrigger value="inventory">Inventory</TabsTrigger>
+                {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
+              </TabsList>
 
-              <PlayerEffects
-                characterId={character.id}
-                encounterId={activeEncounter}
-              />
-            </TabsContent>
-
-            <TabsContent value="character" className="space-y-4 mt-4">
-              <PlayerCharacterSheet
-                characterId={character.id}
-                campaignId={campaignId}
-                encounterId={activeEncounter}
-              />
-
-              <PlayerInventory
-                characterId={character.id}
-                campaignId={campaignId}
-              />
-            </TabsContent>
-
-            {mapId && (
-              <TabsContent value="map" className="mt-4">
-                <PlayerMapViewer
-                  mapId={mapId}
+              <TabsContent value="combat" className="mt-4">
+                <PlayerCombatView
                   characterId={character.id}
+                  characterName={character.name}
+                  encounterId={activeEncounter}
+                  isMyTurn={isMyTurn}
                 />
               </TabsContent>
-            )}
-          </Tabs>
+
+              <TabsContent value="character" className="mt-4 lg:hidden">
+                <PlayerCharacterSheet characterId={character.id} />
+              </TabsContent>
+
+              <TabsContent value="inventory" className="mt-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <PlayerInventory
+                      characterId={character.id}
+                      campaignId={campaignId}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {mapId && (
+                <TabsContent value="map" className="mt-4">
+                  <PlayerMapViewer
+                    mapId={mapId}
+                    characterId={character.id}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
+          </div>
         )}
 
         {/* Out of Combat View */}

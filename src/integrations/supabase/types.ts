@@ -813,6 +813,7 @@ export type Database = {
           details: Json | null
           encounter_id: string | null
           id: string
+          is_visible_to_players: boolean | null
           message: string
           round: number
         }
@@ -824,6 +825,7 @@ export type Database = {
           details?: Json | null
           encounter_id?: string | null
           id?: string
+          is_visible_to_players?: boolean | null
           message: string
           round: number
         }
@@ -835,6 +837,7 @@ export type Database = {
           details?: Json | null
           encounter_id?: string | null
           id?: string
+          is_visible_to_players?: boolean | null
           message?: string
           round?: number
         }

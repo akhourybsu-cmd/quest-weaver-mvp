@@ -167,9 +167,13 @@ const SessionDM = () => {
 
         <DMScreenGrid campaignId={campaignId!} encounterId={activeEncounter?.id} />
 
-        <MonsterLibraryDialog />
-        <SavePromptDialog onSubmit={handlePromptSave} />
-        <EffectDialog />
+        {activeEncounter && (
+          <>
+            <MonsterLibraryDialog encounterId={activeEncounter.id} onMonstersAdded={fetchActiveEncounter} />
+            <SavePromptDialog encounterId={activeEncounter.id} onPromptSave={handlePromptSave} />
+            <EffectDialog encounterId={activeEncounter.id} currentRound={activeEncounter.current_round} characters={[]} />
+          </>
+        )}
       </main>
 
       <BottomNav role="dm" />

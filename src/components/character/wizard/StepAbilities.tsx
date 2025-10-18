@@ -53,7 +53,7 @@ const StepAbilities = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Assign these values to your abilities: {STANDARD_ARRAY.join(", ")}
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {ABILITIES.map((ability) => (
                   <div key={ability.key} className="space-y-2">
                     <Label>{ability.label}</Label>
@@ -86,7 +86,7 @@ const StepAbilities = () => {
                   )}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {ABILITIES.map((ability) => {
                   const score = draft.abilityScores[ability.key];
                   const modifier = calculateModifier(score);
@@ -120,7 +120,7 @@ const StepAbilities = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Enter your rolled ability scores (usually 4d6 drop lowest). Valid range: 1-20.
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {ABILITIES.map((ability) => {
                   const score = draft.abilityScores[ability.key];
                   const modifier = calculateModifier(score);
@@ -152,7 +152,7 @@ const StepAbilities = () => {
       <Card className="bg-muted/50">
         <CardContent className="pt-6">
           <h4 className="font-medium mb-3">Your Modifiers</h4>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
             {ABILITIES.map((ability) => {
               const score = draft.abilityScores[ability.key];
               const modifier = calculateModifier(score);

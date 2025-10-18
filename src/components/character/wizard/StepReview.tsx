@@ -37,15 +37,15 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
           {/* Ability Scores */}
           <div>
             <h4 className="font-medium mb-3">Ability Scores</h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               {Object.entries(draft.abilityScores).map(([ability, score]) => {
                 const modifier = calculateModifier(score);
                 return (
                   <div key={ability} className="flex justify-between items-center p-2 rounded bg-muted/50">
-                    <span className="text-sm font-medium uppercase">{ability}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">{score}</span>
-                      <span className="text-sm text-muted-foreground">
+                    <span className="text-xs sm:text-sm font-medium uppercase">{ability}</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <span className="font-bold text-sm sm:text-base">{score}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                         ({modifier >= 0 ? '+' : ''}{modifier})
                       </span>
                     </div>
@@ -60,13 +60,13 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
           {/* Key Stats */}
           <div>
             <h4 className="font-medium mb-3">Key Statistics</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
               <div className="flex justify-between p-2 rounded bg-muted/50">
-                <span className="text-muted-foreground">Proficiency Bonus</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">Proficiency Bonus</span>
                 <span className="font-bold">+{profBonus}</span>
               </div>
               <div className="flex justify-between p-2 rounded bg-muted/50">
-                <span className="text-muted-foreground">Initiative</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">Initiative</span>
                 <span className="font-bold">
                   {calculateModifier(draft.abilityScores.DEX) >= 0 ? '+' : ''}
                   {calculateModifier(draft.abilityScores.DEX)}
@@ -146,7 +146,7 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
               <p className="text-sm text-muted-foreground mb-4">
                 This will create your character with all the selected options. You can still edit it later.
               </p>
-              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full">
+              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full text-sm sm:text-base">
                 {loading ? "Creating Character..." : "Finalize Character"}
               </Button>
             </div>

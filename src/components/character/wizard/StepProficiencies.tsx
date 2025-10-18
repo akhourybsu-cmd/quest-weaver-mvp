@@ -73,7 +73,7 @@ const StepProficiencies = () => {
               : "All skills listed below. Your granted proficiencies are pre-selected."}
           </p>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             {ALL_SKILLS.map((skill) => {
               const isGranted = grantedSkills.includes(skill);
               const isSelected = selectedSkills.includes(skill);
@@ -147,7 +147,7 @@ const StepProficiencies = () => {
               Select {toolNeeds.required} tool proficienc{toolNeeds.required > 1 ? 'ies' : 'y'} from the available options
             </p>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               {legalTools.map((tool) => {
                 const isSelected = draft.choices.tools.includes(tool);
                 const canToggle = isSelected || remainingTools > 0;
@@ -210,7 +210,7 @@ const StepProficiencies = () => {
               Select {languageNeeds.required} additional language{languageNeeds.required > 1 ? 's' : ''} from the available options
             </p>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               {legalLanguages.map((language) => {
                 const isSelected = draft.choices.languages.includes(language);
                 const canToggle = isSelected || remainingLanguages > 0;

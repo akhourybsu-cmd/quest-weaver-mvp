@@ -60,7 +60,6 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-force-graph-2d": "^1.29.0",
-    "react-grid-layout": "^1.5.2",
     "react-hook-form": "^7.61.1",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
@@ -72,8 +71,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "vitest": "^3.2.4",
-    "zod": "^4.1.12",
-    "zustand": "^5.0.8"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

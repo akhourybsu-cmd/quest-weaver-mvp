@@ -4,15 +4,14 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { useDmLayout, BP, COLS, type PanelId, type PanelDefinition } from "@/stores/dmLayoutStore";
 import { PanelPicker } from "./PanelPicker";
-import { PartyOverviewPanel, InitiativePanel, CombatLogPanel, MonsterRosterPanel, GenericPanel } from "./panels";
+import { PartyOverviewPanel, InitiativePanel, CombatLogPanel, MonsterRosterPanel, GenericPanel, PanelFrame } from "./panels";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
-import ConditionsManager from "@/components/combat/ConditionsManager";
 import EffectsList from "@/components/combat/EffectsList";
 import SavePromptsList from "@/components/combat/SavePromptsList";
 import QuestLog from "@/components/quests/QuestLog";
 import NotesBoard from "@/components/notes/NotesBoard";
 import EnhancedNPCDirectory from "@/components/npcs/EnhancedNPCDirectory";
-
+import LoreEditor from "@/components/lore/LoreEditor";
 import LootPool from "@/components/loot/LootPool";
 import FactionDirectory from "@/components/factions/FactionDirectory";
 import HandoutViewer from "@/components/handouts/HandoutViewer";
@@ -24,9 +23,14 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 interface DMScreenGridProps {
   campaignId: string;
   encounterId?: string;
+  tabContext?: "combat" | "notes" | "lore" | "npcs" | "quests";
 }
 
-export const DMScreenGrid: React.FC<DMScreenGridProps> = ({ campaignId, encounterId }) => {
+export const DMScreenGrid: React.FC<DMScreenGridProps> = ({ 
+  campaignId, 
+  encounterId,
+  tabContext = "combat"
+}) => {
   const enabledPanels = useDmLayout((s) => s.enabledPanels);
   const layouts = useDmLayout((s) => s.layouts);
   const setLayouts = useDmLayout((s) => s.setLayouts);
@@ -39,181 +43,213 @@ export const DMScreenGrid: React.FC<DMScreenGridProps> = ({ campaignId, encounte
     const registry: Record<PanelId, PanelDefinition> = {
       "party-overview": {
         id: "party-overview",
-        title: "Party",
+        title: "Party Overview",
         minW: 3,
-        minH: 6,
-        defaultSize: { w: 4, h: 8 },
-        Render: ({ campaignId }) => <PartyOverviewPanel campaignId={campaignId} />,
+        minH: 3,
+        defaultSize: { w: 4, h: 4 },
+        Render: PartyOverviewPanel,
       },
       "initiative-tracker": {
         id: "initiative-tracker",
-        title: "Initiative",
+        title: "Initiative Tracker",
         minW: 3,
-        minH: 6,
-        defaultSize: { w: 4, h: 10 },
+        minH: 4,
+        defaultSize: { w: 4, h: 6 },
         requiresEncounter: true,
-        Render: ({ campaignId, encounterId }) => <InitiativePanel campaignId={campaignId} encounterId={encounterId} />,
+        Render: InitiativePanel,
       },
       "combat-log": {
         id: "combat-log",
         title: "Combat Log",
         minW: 3,
-        minH: 5,
-        defaultSize: { w: 4, h: 8 },
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         requiresEncounter: true,
-        Render: ({ encounterId }) => <CombatLogPanel campaignId="" encounterId={encounterId} />,
+        Render: CombatLogPanel,
       },
       "monster-roster": {
         id: "monster-roster",
-        title: "Monsters",
-        minW: 3,
-        minH: 6,
-        defaultSize: { w: 4, h: 9 },
-        requiresEncounter: true,
-        Render: ({ encounterId }) => <MonsterRosterPanel campaignId="" encounterId={encounterId} />,
-      },
-      "concentration": {
-        id: "concentration",
-        title: "Concentration",
+        title: "Monster Roster",
         minW: 3,
         minH: 4,
-        defaultSize: { w: 3, h: 6 },
+        defaultSize: { w: 4, h: 6 },
         requiresEncounter: true,
-        Render: ({ encounterId }) => encounterId ? (
-          <GenericPanel title="Concentration">
-            <ConcentrationTracker encounterId={encounterId} />
-          </GenericPanel>
-        ) : <GenericPanel title="Concentration"><div className="text-muted-foreground text-sm">No encounter</div></GenericPanel>,
+        Render: MonsterRosterPanel,
       },
       "conditions": {
         id: "conditions",
         title: "Conditions",
         minW: 3,
-        minH: 4,
-        defaultSize: { w: 3, h: 6 },
+        minH: 3,
+        defaultSize: { w: 3, h: 4 },
         requiresEncounter: true,
-        Render: ({ encounterId }) => encounterId ? (
-          <GenericPanel title="Conditions">
-            <ConditionsManager encounterId={encounterId} currentRound={1} characters={[]} />
-          </GenericPanel>
-        ) : <GenericPanel title="Conditions"><div className="text-muted-foreground text-sm">No encounter</div></GenericPanel>,
+        Render: ({ encounterId }) => (
+          <PanelFrame title="Conditions">
+            <div className="text-sm text-muted-foreground text-center py-8">
+              Conditions panel - coming soon
+            </div>
+          </PanelFrame>
+        ),
       },
       "effects": {
         id: "effects",
         title: "Effects",
         minW: 3,
-        minH: 4,
-        defaultSize: { w: 4, h: 7 },
+        minH: 3,
+        defaultSize: { w: 3, h: 4 },
         requiresEncounter: true,
-        Render: ({ encounterId }) => encounterId ? (
-          <GenericPanel title="Effects">
-            <EffectsList encounterId={encounterId} />
-          </GenericPanel>
-        ) : <GenericPanel title="Effects"><div className="text-muted-foreground text-sm">No encounter</div></GenericPanel>,
+        Render: ({ encounterId }) => (
+          <PanelFrame title="Effects">
+            {encounterId ? (
+              <EffectsList encounterId={encounterId} />
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">No active encounter</div>
+            )}
+          </PanelFrame>
+        ),
+      },
+      "concentration": {
+        id: "concentration",
+        title: "Concentration",
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 3, h: 4 },
+        requiresEncounter: true,
+        Render: ({ encounterId }) => (
+          <PanelFrame title="Concentration">
+            {encounterId ? (
+              <ConcentrationTracker encounterId={encounterId} />
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">No active encounter</div>
+            )}
+          </PanelFrame>
+        ),
       },
       "save-prompts": {
         id: "save-prompts",
-        title: "Saving Throws",
+        title: "Save Prompts",
         minW: 3,
-        minH: 4,
-        defaultSize: { w: 4, h: 6 },
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         requiresEncounter: true,
-        Render: ({ encounterId }) => encounterId ? (
-          <GenericPanel title="Saving Throws">
-            <SavePromptsList encounterId={encounterId} />
-          </GenericPanel>
-        ) : <GenericPanel title="Saving Throws"><div className="text-muted-foreground text-sm">No encounter</div></GenericPanel>,
+        Render: ({ encounterId }) => (
+          <PanelFrame title="Save Prompts">
+            {encounterId ? (
+              <SavePromptsList encounterId={encounterId} />
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-8">No active encounter</div>
+            )}
+          </PanelFrame>
+        ),
       },
       "quests": {
         id: "quests",
         title: "Quests",
-        minW: 4,
-        minH: 5,
-        defaultSize: { w: 5, h: 8 },
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="Quests">
+          <PanelFrame title="Quests">
             <QuestLog campaignId={campaignId} isDM={true} />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "notes": {
         id: "notes",
         title: "Notes",
         minW: 4,
-        minH: 5,
-        defaultSize: { w: 6, h: 8 },
+        minH: 4,
+        defaultSize: { w: 6, h: 6 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="Notes">
+          <PanelFrame title="Notes">
             <NotesBoard campaignId={campaignId} isDM={true} userId="" />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "npcs": {
         id: "npcs",
         title: "NPCs",
-        minW: 4,
-        minH: 5,
-        defaultSize: { w: 5, h: 9 },
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="NPCs">
+          <PanelFrame title="NPCs">
             <EnhancedNPCDirectory campaignId={campaignId} isDM={true} />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "lore": {
         id: "lore",
         title: "Lore",
         minW: 4,
-        minH: 5,
-        defaultSize: { w: 6, h: 8 },
-        Render: () => (
-          <GenericPanel title="Lore">
-            <div className="text-sm text-muted-foreground">
-              Use the Lore page for full wiki editor
+        minH: 4,
+        defaultSize: { w: 6, h: 6 },
+        Render: ({ campaignId }) => (
+          <PanelFrame title="Lore">
+            <div className="text-sm text-muted-foreground text-center py-8">
+              Lore panel - click Lore tab for full editor
             </div>
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "inventory": {
         id: "inventory",
-        title: "Loot",
-        minW: 4,
-        minH: 5,
-        defaultSize: { w: 5, h: 7 },
+        title: "Inventory",
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="Loot Pool">
+          <PanelFrame title="Inventory">
             <LootPool campaignId={campaignId} isDM={true} />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "factions": {
         id: "factions",
         title: "Factions",
-        minW: 4,
-        minH: 5,
-        defaultSize: { w: 5, h: 7 },
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="Factions">
+          <PanelFrame title="Factions">
             <FactionDirectory campaignId={campaignId} isDM={true} />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
       "handouts": {
         id: "handouts",
         title: "Handouts",
-        minW: 4,
-        minH: 5,
-        defaultSize: { w: 5, h: 7 },
+        minW: 3,
+        minH: 3,
+        defaultSize: { w: 4, h: 5 },
         Render: ({ campaignId }) => (
-          <GenericPanel title="Handouts">
+          <PanelFrame title="Handouts">
             <HandoutViewer campaignId={campaignId} isDM={true} />
-          </GenericPanel>
+          </PanelFrame>
         ),
       },
     };
     
     setPanelRegistry(registry);
   }, [setPanelRegistry]);
+
+  // Get default panels based on tab context
+  const getDefaultPanelsForTab = (tab: string): PanelId[] => {
+    switch (tab) {
+      case "combat":
+        return ["party-overview", "initiative-tracker", "combat-log"];
+      case "notes":
+        return ["notes"];
+      case "lore":
+        return ["lore"];
+      case "npcs":
+        return ["npcs"];
+      case "quests":
+        return ["quests"];
+      default:
+        return ["party-overview", "initiative-tracker", "combat-log"];
+    }
+  };
 
   const activePanelIds = useMemo(() => Array.from(enabledPanels), [enabledPanels]);
 

@@ -7,6 +7,7 @@ import PlayerPresence from "@/components/presence/PlayerPresence";
 import { TurnIndicator } from "@/components/presence/TurnIndicator";
 import { DMQuickstart } from "@/components/onboarding/DMQuickstart";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Swords } from "lucide-react";
 import { EncounterControls } from "@/components/combat/EncounterControls";
 import { NeedRulingIndicator } from "@/components/combat/NeedRulingIndicator";
@@ -33,6 +34,7 @@ const SessionDM = () => {
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("combat");
 
   useEffect(() => {
     if (!campaignId) {
@@ -165,7 +167,55 @@ const SessionDM = () => {
           <PlayerPresence campaignId={campaignId!} currentUserId={currentUserId} isDM={true} />
         )}
 
-        <DMScreenGrid campaignId={campaignId!} encounterId={activeEncounter?.id} />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="combat">Combat</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="lore">Lore</TabsTrigger>
+            <TabsTrigger value="npcs">NPCs</TabsTrigger>
+            <TabsTrigger value="quests">Quests</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="combat" className="mt-4">
+            <DMScreenGrid 
+              campaignId={campaignId!} 
+              encounterId={activeEncounter?.id}
+              tabContext="combat"
+            />
+          </TabsContent>
+
+          <TabsContent value="notes" className="mt-4">
+            <DMScreenGrid 
+              campaignId={campaignId!} 
+              encounterId={activeEncounter?.id}
+              tabContext="notes"
+            />
+          </TabsContent>
+
+          <TabsContent value="lore" className="mt-4">
+            <DMScreenGrid 
+              campaignId={campaignId!} 
+              encounterId={activeEncounter?.id}
+              tabContext="lore"
+            />
+          </TabsContent>
+
+          <TabsContent value="npcs" className="mt-4">
+            <DMScreenGrid 
+              campaignId={campaignId!} 
+              encounterId={activeEncounter?.id}
+              tabContext="npcs"
+            />
+          </TabsContent>
+
+          <TabsContent value="quests" className="mt-4">
+            <DMScreenGrid 
+              campaignId={campaignId!} 
+              encounterId={activeEncounter?.id}
+              tabContext="quests"
+            />
+          </TabsContent>
+        </Tabs>
 
         {activeEncounter && (
           <>

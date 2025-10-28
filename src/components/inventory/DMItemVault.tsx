@@ -14,6 +14,7 @@ import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy, Send } from "luci
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EnhancedItemEditor from "./EnhancedItemEditor";
 import ItemAssignDialog from "./ItemAssignDialog";
+import ItemDeleteDialog from "./ItemDeleteDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface DMItemVaultProps {
@@ -40,6 +41,8 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   const [filterRarity, setFilterRarity] = useState<string>("ALL");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assigningItem, setAssigningItem] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     loadItems();
@@ -55,39 +58,43 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
     if (data) setItems(data);
   };
 
-  const handleDelete = async (itemId: string) => {
-    try {
-      // Check if item has been assigned (has holdings)
-      const { data: holdings } = await supabase
-        .from("holdings")
-        .select("id")
-        .eq("item_id", itemId)
-        .limit(1);
+  const handleDeleteClick = (item: any) => {
+    setDeletingItem({ id: item.id, name: item.name });
+    setDeleteDialogOpen(true);
+  };
 
-      if (holdings && holdings.length > 0) {
-        toast({ 
-          title: "Cannot delete item", 
-          description: "This item has been assigned to players or party. Remove all holdings first.",
-          variant: "destructive" 
-        });
-        return;
+  const handleDeleteConfirm = async (deleteFromInventories: boolean) => {
+    if (!deletingItem) return;
+
+    try {
+      if (deleteFromInventories) {
+        // Delete all holdings first
+        await supabase
+          .from("holdings")
+          .delete()
+          .eq("item_id", deletingItem.id);
       }
 
-      // Delete related holding_events first
+      // Delete related holding_events
       await supabase
         .from("holding_events")
         .delete()
-        .eq("item_id", itemId);
+        .eq("item_id", deletingItem.id);
 
       // Now delete the item
       const { error } = await supabase
         .from("items")
         .delete()
-        .eq("id", itemId);
+        .eq("id", deletingItem.id);
 
       if (error) throw error;
 
-      toast({ title: "Item deleted successfully" });
+      toast({ 
+        title: "Item deleted successfully",
+        description: deleteFromInventories 
+          ? "Item removed from vault and all inventories"
+          : "Item removed from vault only"
+      });
       await loadItems();
       onRefresh();
     } catch (error: any) {
@@ -221,7 +228,7 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
                         <Copy className="w-4 h-4 mr-2" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
+                      <DropdownMenuItem onClick={() => handleDeleteClick(item)} className="text-destructive">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -308,6 +315,14 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
         item={assigningItem}
         campaignId={campaignId}
         onSuccess={onRefresh}
+      />
+
+      <ItemDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemId={deletingItem?.id || null}
+        itemName={deletingItem?.name || ""}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

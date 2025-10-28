@@ -68,31 +68,37 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
 
     try {
       // CRITICAL: Delete in correct order to avoid foreign key violations
-      // 1. First delete holding_events (they reference both items and holdings)
-      const { error: eventsError } = await supabase
+      
+      // 1. First delete ALL holding_events for this item (they reference both items and holdings)
+      await supabase
         .from("holding_events")
         .delete()
-        .eq("item_id", deletingItem.id);
-
-      if (eventsError) throw eventsError;
+        .eq("item_id", deletingItem.id)
+        .throwOnError();
 
       // 2. Then delete holdings if requested (they reference items)
       if (deleteFromInventories) {
-        const { error: holdingsError } = await supabase
+        await supabase
           .from("holdings")
           .delete()
-          .eq("item_id", deletingItem.id);
-
-        if (holdingsError) throw holdingsError;
+          .eq("item_id", deletingItem.id)
+          .throwOnError();
+      } else {
+        // Even if not deleting from inventories, we need to clear the item_id reference
+        // to avoid foreign key constraint when deleting the item
+        await supabase
+          .from("holdings")
+          .update({ item_id: null })
+          .eq("item_id", deletingItem.id)
+          .throwOnError();
       }
 
       // 3. Finally delete the item itself
-      const { error: itemError } = await supabase
+      await supabase
         .from("items")
         .delete()
-        .eq("id", deletingItem.id);
-
-      if (itemError) throw itemError;
+        .eq("id", deletingItem.id)
+        .throwOnError();
 
       toast({ 
         title: "Item deleted successfully",

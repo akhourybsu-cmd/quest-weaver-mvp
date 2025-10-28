@@ -6,11 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Package, Coins, Sparkles, History } from "lucide-react";
+import { Plus, Search, Package, Coins, Sparkles, History, Users, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsDM } from "@/hooks/useIsDM";
 import ItemEditor from "@/components/inventory/ItemEditor";
 import ItemCard from "@/components/inventory/ItemCard";
 import HistoryLog from "@/components/inventory/HistoryLog";
+import PlayerInventoryOverview from "@/components/inventory/PlayerInventoryOverview";
+import GoldManager from "@/components/inventory/GoldManager";
+import DMItemVault from "@/components/inventory/DMItemVault";
 
 interface Item {
   id: string;
@@ -38,6 +42,7 @@ const Inventory = () => {
   const [searchParams] = useSearchParams();
   const campaignId = searchParams.get("campaign");
   const { toast } = useToast();
+  const { isDM, isLoading: dmLoading } = useIsDM(campaignId);
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -110,6 +115,123 @@ const Inventory = () => {
   const totalMagicItems = holdings.filter(h => h.items.type === "MAGIC").length;
   const attunedCount = holdings.filter(h => h.is_attuned).length;
 
+  if (dmLoading || loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  // DM View
+  if (isDM) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">DM Inventory Management</h1>
+            <p className="text-muted-foreground">Comprehensive inventory and treasure management</p>
+          </div>
+        </div>
+
+        <Tabs defaultValue="players" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="players">
+              <Users className="w-4 h-4 mr-2" />
+              Player Inventories
+            </TabsTrigger>
+            <TabsTrigger value="vault">
+              <BookOpen className="w-4 h-4 mr-2" />
+              DM Item Vault
+            </TabsTrigger>
+            <TabsTrigger value="gold">
+              <Coins className="w-4 h-4 mr-2" />
+              Gold Management
+            </TabsTrigger>
+            <TabsTrigger value="party">
+              Party Stash ({partyHoldings.length})
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="w-4 h-4 mr-2" />
+              History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="players">
+            <PlayerInventoryOverview
+              campaignId={campaignId!}
+              onRefresh={loadInventory}
+            />
+          </TabsContent>
+
+          <TabsContent value="vault">
+            <DMItemVault
+              campaignId={campaignId!}
+              onRefresh={loadInventory}
+            />
+          </TabsContent>
+
+          <TabsContent value="gold">
+            <GoldManager
+              campaignId={campaignId!}
+              onUpdate={loadInventory}
+            />
+          </TabsContent>
+
+          <TabsContent value="party" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search party stash..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button onClick={() => setEditorOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Item to Party
+              </Button>
+            </div>
+
+            {filteredPartyHoldings.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No items in party stash
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPartyHoldings.map((holding) => (
+                  <ItemCard
+                    key={holding.id}
+                    holding={holding}
+                    campaignId={campaignId!}
+                    onUpdate={loadInventory}
+                    currentCharacterId={currentCharacterId}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history">
+            <HistoryLog campaignId={campaignId!} />
+          </TabsContent>
+        </Tabs>
+
+        <ItemEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          campaignId={campaignId!}
+          onSave={loadInventory}
+        />
+      </div>
+    );
+  }
+
+  // Player View
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -133,7 +255,6 @@ const Inventory = () => {
             <div className="text-2xl font-bold">{totalGold.toLocaleString()} gp</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Items</CardTitle>
@@ -143,7 +264,6 @@ const Inventory = () => {
             <div className="text-2xl font-bold">{holdings.length}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Magic Items</CardTitle>
@@ -153,7 +273,6 @@ const Inventory = () => {
             <div className="text-2xl font-bold">{totalMagicItems}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Attuned Items</CardTitle>

@@ -2642,28 +2642,73 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string
+          encounter_id: string | null
           id: string
           is_completed: boolean | null
+          location: string | null
+          notes: string | null
+          npc_id: string | null
+          objective_type: string | null
+          parent_step_id: string | null
+          progress_current: number | null
+          progress_max: number | null
           quest_id: string
           step_order: number
         }
         Insert: {
           created_at?: string | null
           description: string
+          encounter_id?: string | null
           id?: string
           is_completed?: boolean | null
+          location?: string | null
+          notes?: string | null
+          npc_id?: string | null
+          objective_type?: string | null
+          parent_step_id?: string | null
+          progress_current?: number | null
+          progress_max?: number | null
           quest_id: string
           step_order: number
         }
         Update: {
           created_at?: string | null
           description?: string
+          encounter_id?: string | null
           id?: string
           is_completed?: boolean | null
+          location?: string | null
+          notes?: string | null
+          npc_id?: string | null
+          objective_type?: string | null
+          parent_step_id?: string | null
+          progress_current?: number | null
+          progress_max?: number | null
           quest_id?: string
           step_order?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "quest_steps_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_npc_id_fkey"
+            columns: ["npc_id"]
+            isOneToOne: false
+            referencedRelation: "npcs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_parent_step_id_fkey"
+            columns: ["parent_step_id"]
+            isOneToOne: false
+            referencedRelation: "quest_steps"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quest_steps_quest_id_fkey"
             columns: ["quest_id"]
@@ -2675,32 +2720,71 @@ export type Database = {
       }
       quests: {
         Row: {
+          assigned_to: string[] | null
           campaign_id: string
           created_at: string | null
           description: string | null
+          difficulty: string | null
+          dm_notes: string | null
+          faction_id: string | null
           id: string
           is_completed: boolean | null
+          locations: string[] | null
+          quest_chain_parent: string | null
           quest_giver: string | null
+          quest_type: string | null
+          reward_gp: number | null
+          reward_items: Json | null
+          reward_xp: number | null
+          session_notes: string | null
+          status: string | null
+          tags: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string[] | null
           campaign_id: string
           created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          dm_notes?: string | null
+          faction_id?: string | null
           id?: string
           is_completed?: boolean | null
+          locations?: string[] | null
+          quest_chain_parent?: string | null
           quest_giver?: string | null
+          quest_type?: string | null
+          reward_gp?: number | null
+          reward_items?: Json | null
+          reward_xp?: number | null
+          session_notes?: string | null
+          status?: string | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string[] | null
           campaign_id?: string
           created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          dm_notes?: string | null
+          faction_id?: string | null
           id?: string
           is_completed?: boolean | null
+          locations?: string[] | null
+          quest_chain_parent?: string | null
           quest_giver?: string | null
+          quest_type?: string | null
+          reward_gp?: number | null
+          reward_items?: Json | null
+          reward_xp?: number | null
+          session_notes?: string | null
+          status?: string | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
         }
@@ -2710,6 +2794,20 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_faction_id_fkey"
+            columns: ["faction_id"]
+            isOneToOne: false
+            referencedRelation: "factions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_quest_chain_parent_fkey"
+            columns: ["quest_chain_parent"]
+            isOneToOne: false
+            referencedRelation: "quests"
             referencedColumns: ["id"]
           },
         ]

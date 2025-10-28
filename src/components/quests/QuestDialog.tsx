@@ -22,6 +22,7 @@ interface QuestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
+  questToEdit?: any;
 }
 
 interface QuestStep {
@@ -30,7 +31,8 @@ interface QuestStep {
   progressMax: number;
 }
 
-const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
+const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialogProps) => {
+  const isEditing = !!questToEdit;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [giver, setGiver] = useState("");
@@ -53,8 +55,29 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
   useEffect(() => {
     if (open) {
       loadCharactersAndFactions();
+      if (questToEdit) {
+        // Populate form with existing quest data
+        setTitle(questToEdit.title || "");
+        setDescription(questToEdit.description || "");
+        setGiver(questToEdit.questGiver || "");
+        setQuestType(questToEdit.questType || "side_quest");
+        setDifficulty(questToEdit.difficulty || "");
+        setLocations(questToEdit.locations || []);
+        setTags(questToEdit.tags || []);
+        setRewardXP(questToEdit.rewardXP?.toString() || "");
+        setRewardGP(questToEdit.rewardGP?.toString() || "");
+        setDmNotes(questToEdit.dmNotes || "");
+        setSelectedCharacters(questToEdit.assignedTo || []);
+        setSelectedFaction(questToEdit.factionId || "");
+        setSteps(questToEdit.steps?.map((s: any) => ({
+          id: s.id,
+          description: s.description,
+          objectiveType: s.objectiveType,
+          progressMax: s.progressMax,
+        })) || [{ description: "", objectiveType: "other", progressMax: 1 }]);
+      }
     }
-  }, [open, campaignId]);
+  }, [open, campaignId, questToEdit]);
 
   const loadCharactersAndFactions = async () => {
     const { data: chars } = await supabase
@@ -123,54 +146,107 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
       return;
     }
 
-    const { data: questData, error: questError } = await supabase
-      .from("quests")
-      .insert({
-        campaign_id: campaignId,
-        title,
-        description,
-        quest_giver: giver,
-        quest_type: questType,
-        difficulty: difficulty || null,
-        locations,
-        tags,
-        reward_xp: rewardXP ? parseInt(rewardXP) : 0,
-        reward_gp: rewardGP ? parseFloat(rewardGP) : 0,
-        assigned_to: selectedCharacters,
-        faction_id: selectedFaction || null,
-        dm_notes: dmNotes || null,
-        status: 'not_started',
-      })
-      .select()
-      .single();
+    if (isEditing) {
+      // Update existing quest
+      const { error: questError } = await supabase
+        .from("quests")
+        .update({
+          title,
+          description,
+          quest_giver: giver,
+          quest_type: questType,
+          difficulty: difficulty || null,
+          locations,
+          tags,
+          reward_xp: rewardXP ? parseInt(rewardXP) : 0,
+          reward_gp: rewardGP ? parseFloat(rewardGP) : 0,
+          assigned_to: selectedCharacters,
+          faction_id: selectedFaction || null,
+          dm_notes: dmNotes || null,
+        })
+        .eq("id", questToEdit.id);
 
-    if (questError) {
+      if (questError) {
+        toast({
+          title: "Error",
+          description: questError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Delete existing steps and recreate them
+      await supabase.from("quest_steps").delete().eq("quest_id", questToEdit.id);
+
+      const validSteps = steps.filter((s) => s.description.trim());
+      if (validSteps.length > 0) {
+        const stepsData = validSteps.map((step, index) => ({
+          quest_id: questToEdit.id,
+          description: step.description,
+          objective_type: step.objectiveType,
+          progress_max: step.progressMax,
+          step_order: index,
+        }));
+
+        await supabase.from("quest_steps").insert(stepsData);
+      }
+
       toast({
-        title: "Error",
-        description: questError.message,
-        variant: "destructive",
+        title: "Quest updated!",
+        description: `${title} has been updated.`,
       });
-      return;
+    } else {
+      // Create new quest
+      const { data: questData, error: questError } = await supabase
+        .from("quests")
+        .insert({
+          campaign_id: campaignId,
+          title,
+          description,
+          quest_giver: giver,
+          quest_type: questType,
+          difficulty: difficulty || null,
+          locations,
+          tags,
+          reward_xp: rewardXP ? parseInt(rewardXP) : 0,
+          reward_gp: rewardGP ? parseFloat(rewardGP) : 0,
+          assigned_to: selectedCharacters,
+          faction_id: selectedFaction || null,
+          dm_notes: dmNotes || null,
+          status: 'not_started',
+        })
+        .select()
+        .single();
+
+      if (questError) {
+        toast({
+          title: "Error",
+          description: questError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Add steps
+      const validSteps = steps.filter((s) => s.description.trim());
+      if (validSteps.length > 0) {
+        const stepsData = validSteps.map((step, index) => ({
+          quest_id: questData.id,
+          description: step.description,
+          objective_type: step.objectiveType,
+          progress_max: step.progressMax,
+          step_order: index,
+        }));
+
+        await supabase.from("quest_steps").insert(stepsData);
+      }
+
+      toast({
+        title: "Quest added!",
+        description: `${title} added to quest log.`,
+      });
     }
 
-    // Add steps
-    const validSteps = steps.filter((s) => s.description.trim());
-    if (validSteps.length > 0) {
-      const stepsData = validSteps.map((step, index) => ({
-        quest_id: questData.id,
-        description: step.description,
-        objective_type: step.objectiveType,
-        progress_max: step.progressMax,
-        step_order: index,
-      }));
-
-      await supabase.from("quest_steps").insert(stepsData);
-    }
-
-    toast({
-      title: "Quest added!",
-      description: `${title} added to quest log.`,
-    });
 
     setTitle("");
     setDescription("");
@@ -192,9 +268,9 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Create Quest</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Quest" : "Create Quest"}</DialogTitle>
           <DialogDescription>
-            Create a comprehensive quest with objectives, rewards, and assignments.
+            {isEditing ? "Update quest details, objectives, rewards, and assignments." : "Create a comprehensive quest with objectives, rewards, and assignments."}
           </DialogDescription>
         </DialogHeader>
         
@@ -493,7 +569,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId }: QuestDialogProps) => {
               Cancel
             </Button>
             <Button onClick={handleAdd} className="flex-1">
-              Create Quest
+              {isEditing ? "Update Quest" : "Create Quest"}
             </Button>
           </div>
         </Tabs>

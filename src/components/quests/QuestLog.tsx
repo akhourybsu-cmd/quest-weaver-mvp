@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { 
+import { useToast } from "@/hooks/use-toast";
+import {
   ScrollText, 
   Plus, 
   CheckCircle2, 
@@ -19,7 +20,11 @@ import {
   AlertCircle,
   Sword,
   Target,
-  Users
+  Users,
+  Pencil,
+  Trash2,
+  Play,
+  XCircle
 } from "lucide-react";
 import QuestDialog from "./QuestDialog";
 
@@ -47,6 +52,8 @@ interface Quest {
   rewardXP: number;
   rewardGP: number;
   assignedTo: string[];
+  factionId?: string;
+  dmNotes?: string;
   steps: QuestStep[];
 }
 
@@ -82,6 +89,8 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadQuests = async () => {
@@ -110,7 +119,8 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
             progress_current,
             progress_max,
             notes
-          )
+          ),
+          factions(id, name)
         `)
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
@@ -131,6 +141,8 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
             rewardXP: q.reward_xp || 0,
             rewardGP: q.reward_gp || 0,
             assignedTo: q.assigned_to || [],
+            factionId: q.faction_id,
+            dmNotes: q.dm_notes,
             steps: (q.quest_steps || [])
               .sort((a: any, b: any) => a.step_order - b.step_order)
               .map((s: any) => ({
@@ -193,6 +205,62 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
         is_completed: newCurrent >= max 
       })
       .eq("id", stepId);
+  };
+
+  const handleEditQuest = (quest: Quest) => {
+    setQuestToEdit(quest);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setQuestToEdit(null);
+    }
+  };
+
+  const handleDeleteQuest = async (questId: string, questTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${questTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("quests")
+      .delete()
+      .eq("id", questId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Quest deleted",
+        description: `"${questTitle}" has been removed.`,
+      });
+    }
+  };
+
+  const handleUpdateStatus = async (questId: string, newStatus: string, questTitle: string) => {
+    const { error } = await supabase
+      .from("quests")
+      .update({ status: newStatus })
+      .eq("id", questId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Status updated",
+        description: `"${questTitle}" is now ${newStatus.replace('_', ' ')}.`,
+      });
+    }
   };
 
   const filteredQuests = quests.filter(quest => {
@@ -291,6 +359,48 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
                           )}
                         </div>
                       </div>
+                      
+                      {/* DM Actions */}
+                      {isDM && (
+                        <div className="flex items-center gap-1">
+                          {quest.status === 'not_started' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleUpdateStatus(quest.id, 'in_progress', quest.title)}
+                              title="Start Quest"
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {quest.status === 'in_progress' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleUpdateStatus(quest.id, 'completed', quest.title)}
+                              title="Complete Quest"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditQuest(quest)}
+                            title="Edit Quest"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteQuest(quest.id, quest.title)}
+                            title="Delete Quest"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Quest Description */}
@@ -428,8 +538,9 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
       {isDM && (
         <QuestDialog
           open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          onOpenChange={handleCloseDialog}
           campaignId={campaignId}
+          questToEdit={questToEdit}
         />
       )}
     </Card>

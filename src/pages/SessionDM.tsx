@@ -33,6 +33,7 @@ import DeathSaveTracker from "@/components/combat/DeathSaveTracker";
 import { EncounterControls } from "@/components/combat/EncounterControls";
 import { NeedRulingIndicator } from "@/components/combat/NeedRulingIndicator";
 import { PartyRestManager } from "@/components/combat/PartyRestManager";
+import { PlayerTurnSignals } from "@/components/combat/PlayerTurnSignals";
 
 interface Character {
   id: string;
@@ -348,6 +349,11 @@ const SessionDM = () => {
         {/* Turn Indicator */}
         {activeEncounter && campaignId && (
           <TurnIndicator encounterId={activeEncounter.id} campaignId={campaignId} />
+        )}
+
+        {/* Player Turn Signals */}
+        {activeEncounter && (
+          <PlayerTurnSignals encounterId={activeEncounter.id} />
         )}
 
         {/* Player Presence */}

@@ -10,10 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy } from "lucide-react";
+import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy, Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EnhancedItemEditor from "./EnhancedItemEditor";
-import TransferDialog from "./TransferDialog";
+import ItemAssignDialog from "./ItemAssignDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface DMItemVaultProps {
@@ -38,6 +38,8 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [filterRarity, setFilterRarity] = useState<string>("ALL");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assigningItem, setAssigningItem] = useState<any>(null);
 
   useEffect(() => {
     loadItems();
@@ -179,6 +181,10 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setAssigningItem(item); setAssignDialogOpen(true); }}>
+                        <Send className="w-4 h-4 mr-2" />
+                        Assign to Player/Party
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEditingItem(item); setEditorOpen(true); }}>
                         Edit
                       </DropdownMenuItem>
@@ -265,6 +271,14 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
           loadItems();
           onRefresh();
         }}
+      />
+
+      <ItemAssignDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        item={assigningItem}
+        campaignId={campaignId}
+        onSuccess={onRefresh}
       />
     </div>
   );

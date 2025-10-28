@@ -57,6 +57,29 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
 
   const handleDelete = async (itemId: string) => {
     try {
+      // Check if item has been assigned (has holdings)
+      const { data: holdings } = await supabase
+        .from("holdings")
+        .select("id")
+        .eq("item_id", itemId)
+        .limit(1);
+
+      if (holdings && holdings.length > 0) {
+        toast({ 
+          title: "Cannot delete item", 
+          description: "This item has been assigned to players or party. Remove all holdings first.",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Delete related holding_events first
+      await supabase
+        .from("holding_events")
+        .delete()
+        .eq("item_id", itemId);
+
+      // Now delete the item
       const { error } = await supabase
         .from("items")
         .delete()

@@ -281,6 +281,58 @@ export type Database = {
           },
         ]
       }
+      character_classes: {
+        Row: {
+          character_id: string
+          class_id: string
+          class_level: number
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          subclass_id: string | null
+        }
+        Insert: {
+          character_id: string
+          class_id: string
+          class_level?: number
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          subclass_id?: string | null
+        }
+        Update: {
+          character_id?: string
+          class_id?: string
+          class_level?: number
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          subclass_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_classes_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_classes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_classes_subclass_id_fkey"
+            columns: ["subclass_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subclasses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_conditions: {
         Row: {
           character_id: string
@@ -338,31 +390,46 @@ export type Database = {
       }
       character_equipment: {
         Row: {
+          attunement_required: boolean | null
           character_id: string
           created_at: string | null
           data: Json | null
           equipped: boolean | null
+          equipped_slot: string | null
           id: string
+          is_magical: boolean | null
           item_ref: string
           qty: number | null
+          value_gp: number | null
+          weight: number | null
         }
         Insert: {
+          attunement_required?: boolean | null
           character_id: string
           created_at?: string | null
           data?: Json | null
           equipped?: boolean | null
+          equipped_slot?: string | null
           id?: string
+          is_magical?: boolean | null
           item_ref: string
           qty?: number | null
+          value_gp?: number | null
+          weight?: number | null
         }
         Update: {
+          attunement_required?: boolean | null
           character_id?: string
           created_at?: string | null
           data?: Json | null
           equipped?: boolean | null
+          equipped_slot?: string | null
           id?: string
+          is_magical?: boolean | null
           item_ref?: string
           qty?: number | null
+          value_gp?: number | null
+          weight?: number | null
         }
         Relationships: [
           {
@@ -370,6 +437,48 @@ export type Database = {
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_feats: {
+        Row: {
+          character_id: string
+          choices: Json | null
+          created_at: string | null
+          feat_id: string
+          id: string
+          level_gained: number
+        }
+        Insert: {
+          character_id: string
+          choices?: Json | null
+          created_at?: string | null
+          feat_id: string
+          id?: string
+          level_gained: number
+        }
+        Update: {
+          character_id?: string
+          choices?: Json | null
+          created_at?: string | null
+          feat_id?: string
+          id?: string
+          level_gained?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_feats_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_feats_feat_id_fkey"
+            columns: ["feat_id"]
+            isOneToOne: false
+            referencedRelation: "srd_feats"
             referencedColumns: ["id"]
           },
         ]
@@ -440,6 +549,57 @@ export type Database = {
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_level_history: {
+        Row: {
+          character_id: string
+          choices_made: Json | null
+          class_id: string
+          features_gained: Json | null
+          hp_gained: number
+          id: string
+          leveled_at: string | null
+          new_level: number
+          previous_level: number
+        }
+        Insert: {
+          character_id: string
+          choices_made?: Json | null
+          class_id: string
+          features_gained?: Json | null
+          hp_gained: number
+          id?: string
+          leveled_at?: string | null
+          new_level: number
+          previous_level: number
+        }
+        Update: {
+          character_id?: string
+          choices_made?: Json | null
+          class_id?: string
+          features_gained?: Json | null
+          hp_gained?: number
+          id?: string
+          leveled_at?: string | null
+          new_level?: number
+          previous_level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_level_history_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_level_history_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
             referencedColumns: ["id"]
           },
         ]
@@ -616,6 +776,7 @@ export type Database = {
           death_save_fail: number | null
           death_save_success: number | null
           dex_save: number | null
+          export_version: string | null
           eyes: string | null
           hair: string | null
           height: string | null
@@ -627,6 +788,7 @@ export type Database = {
           initiative_bonus: number
           inspiration: boolean | null
           int_save: number | null
+          last_exported_at: string | null
           level: number
           max_hp: number
           name: string
@@ -672,6 +834,7 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          export_version?: string | null
           eyes?: string | null
           hair?: string | null
           height?: string | null
@@ -683,6 +846,7 @@ export type Database = {
           initiative_bonus?: number
           inspiration?: boolean | null
           int_save?: number | null
+          last_exported_at?: string | null
           level?: number
           max_hp: number
           name: string
@@ -728,6 +892,7 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          export_version?: string | null
           eyes?: string | null
           hair?: string | null
           height?: string | null
@@ -739,6 +904,7 @@ export type Database = {
           initiative_bonus?: number
           inspiration?: boolean | null
           int_save?: number | null
+          last_exported_at?: string | null
           level?: number
           max_hp?: number
           name?: string
@@ -3458,14 +3624,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      auth_role_in_campaign: {
-        Args: { camp_id: string }
-        Returns: string
-      }
-      character_owned_by_user: {
-        Args: { char_id: string }
-        Returns: boolean
-      }
+      auth_role_in_campaign: { Args: { camp_id: string }; Returns: string }
+      character_owned_by_user: { Args: { char_id: string }; Returns: boolean }
       compute_save_prompt_targets: {
         Args: {
           _encounter_id: string
@@ -3474,10 +3634,7 @@ export type Database = {
         }
         Returns: string[]
       }
-      create_character_full: {
-        Args: { payload: Json }
-        Returns: string
-      }
+      create_character_full: { Args: { payload: Json }; Returns: string }
       get_user_campaign_role: {
         Args: { _campaign_id: string }
         Returns: {
@@ -3496,10 +3653,7 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_current_user_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"

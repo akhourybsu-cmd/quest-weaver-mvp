@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Heart, Shield, User, Trash2 } from "lucide-react";
+import { Heart, Shield, User, Trash2, TrendingUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +17,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import { LevelUpWizard } from "./LevelUpWizard";
+import { CharacterExporter } from "./CharacterExporter";
 
 interface CharacterCardProps {
   character: {
@@ -38,6 +40,7 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
   const isIncomplete = character.creation_status === 'draft';
   const hpPercent = (character.current_hp / character.max_hp) * 100;
 
@@ -126,16 +129,28 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
               Continue Creation
             </Button>
           ) : (
-            <Button 
-              className="flex-1" 
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/campaign/${campaignId}/character/${character.id}`);
-              }}
-            >
-              View Character Sheet
-            </Button>
+            <>
+              <Button 
+                className="flex-1" 
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/campaign/${campaignId}/character/${character.id}`);
+                }}
+              >
+                View Sheet
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowLevelUp(true);
+                }}
+              >
+                <TrendingUp className="h-4 w-4" />
+              </Button>
+            </>
           )}
           <Button
             variant="destructive"
@@ -149,6 +164,14 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
           </Button>
         </div>
       </CardContent>
+
+      <LevelUpWizard
+        open={showLevelUp}
+        onOpenChange={setShowLevelUp}
+        characterId={character.id}
+        currentLevel={character.level}
+        onComplete={() => window.location.reload()}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>

@@ -112,7 +112,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{faction ? "Edit Faction" : "New Faction"}</DialogTitle>
         </DialogHeader>

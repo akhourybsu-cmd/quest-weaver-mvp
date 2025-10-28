@@ -121,7 +121,8 @@ ${combatLog.map(entry => `Round ${entry.round}: ${entry.message}`).join('\n')}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <ScrollArea className="h-[calc(80vh-8rem)] pr-4">
+          <div className="space-y-4">
           {/* Stats Overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
@@ -200,6 +201,7 @@ ${combatLog.map(entry => `Round ${entry.round}: ${entry.message}`).join('\n')}
             </CardContent>
           </Card>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

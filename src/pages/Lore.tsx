@@ -247,14 +247,14 @@ export default function Lore() {
       </main>
 
       <Drawer open={editorOpen} onOpenChange={setEditorOpen}>
-        <DrawerContent className="h-[90vh]">
-          <DrawerHeader>
+        <DrawerContent className="h-[90vh] flex flex-col">
+          <DrawerHeader className="flex-shrink-0">
             <DrawerTitle>{currentPage ? 'Edit Page' : 'New Lore Page'}</DrawerTitle>
             <DrawerDescription>
               Create rich lore content with Markdown and cross-links
             </DrawerDescription>
           </DrawerHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden min-h-0">
             <LoreEditor
               campaignId={campaignId}
               page={currentPage}
@@ -266,8 +266,8 @@ export default function Lore() {
       </Drawer>
 
       <Drawer open={viewerOpen} onOpenChange={setViewerOpen}>
-        <DrawerContent className="h-[90vh]">
-          <div className="flex-1 overflow-hidden">
+        <DrawerContent className="h-[90vh] flex flex-col">
+          <div className="flex-1 overflow-hidden min-h-0">
             {currentPage && (
               <LorePageView
                 page={currentPage}

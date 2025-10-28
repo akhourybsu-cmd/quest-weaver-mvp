@@ -67,7 +67,7 @@ const NPCDialog = ({ open, onOpenChange, campaignId }: NPCDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add NPC</DialogTitle>
           <DialogDescription>

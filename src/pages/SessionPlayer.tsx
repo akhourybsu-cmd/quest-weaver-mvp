@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
 import DiceRoller from "@/components/dice/DiceRoller";
 import RestManager from "@/components/character/RestManager";
@@ -13,22 +12,21 @@ import { PlayerMapViewer } from "@/components/player/PlayerMapViewer";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerInventory } from "@/components/player/PlayerInventory";
 import { PlayerEffects } from "@/components/player/PlayerEffects";
+import { PlayerJournal } from "@/components/player/PlayerJournal";
+import { PlayerBackstory } from "@/components/player/PlayerBackstory";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Shield, Zap, Plus, Minus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { 
+  User, 
+  Swords, 
+  BookOpen, 
+  ScrollText, 
+  Package, 
+  Map as MapIcon,
+  Scroll 
+} from "lucide-react";
 
 interface Character {
   id: string;
@@ -283,10 +281,10 @@ const SessionPlayer = () => {
   console.log('SessionPlayer - mapId:', mapId);
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="w-full px-3 sm:px-4 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="text-center">
             <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -300,7 +298,7 @@ const SessionPlayer = () => {
       </header>
 
       {/* Content */}
-      <main className="w-full px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* Character Selection Dialog */}
         {showCharacterSelection && campaignId && (
           <CharacterSelectionDialog
@@ -323,228 +321,99 @@ const SessionPlayer = () => {
           />
         )}
 
-        {/* Combat UI - shown when in active encounter */}
-        {activeEncounter && campaignId && (
-          <div className="grid lg:grid-cols-[1fr_1fr] gap-4 max-w-7xl mx-auto">
-            {/* Left Panel: Character Sheet (Desktop Only) */}
-            <div className="hidden lg:block">
-              <PlayerCharacterSheet characterId={character.id} />
-            </div>
+        <Tabs defaultValue={activeEncounter ? "combat" : "character"} className="space-y-4">
+          <div className="space-y-2">
+            {/* Top Row - Primary Tabs */}
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="character">
+                <User className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Character</span>
+              </TabsTrigger>
+              <TabsTrigger value="combat" disabled={!activeEncounter}>
+                <Swords className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Combat</span>
+              </TabsTrigger>
+              <TabsTrigger value="journal">
+                <BookOpen className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Journal</span>
+              </TabsTrigger>
+              <TabsTrigger value="backstory">
+                <ScrollText className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Story</span>
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Right Panel: Tabbed Content */}
-            <div className="w-full">
-              <Tabs defaultValue="combat" className="w-full">
-                <TabsList className={`grid w-full ${mapId ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                  <TabsTrigger value="combat">Combat</TabsTrigger>
-                  <TabsTrigger value="character" className="lg:hidden">Character</TabsTrigger>
-                  <TabsTrigger value="inventory">Inventory</TabsTrigger>
-                  {mapId && <TabsTrigger value="map">Map</TabsTrigger>}
-                </TabsList>
-
-              <TabsContent value="combat" className="mt-4">
-                <PlayerCombatView
-                  characterId={character.id}
-                  characterName={character.name}
-                  encounterId={activeEncounter}
-                  isMyTurn={isMyTurn}
-                />
-              </TabsContent>
-
-              <TabsContent value="character" className="mt-4 lg:hidden">
-                <PlayerCharacterSheet characterId={character.id} />
-              </TabsContent>
-
-              <TabsContent value="inventory" className="mt-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <PlayerInventory
-                      characterId={character.id}
-                      campaignId={campaignId}
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {mapId && (
-                <TabsContent value="map" className="mt-4">
-                  <PlayerMapViewer
-                    mapId={mapId}
-                    characterId={character.id}
-                  />
-                </TabsContent>
-              )}
-              </Tabs>
-            </div>
+            {/* Bottom Row - Secondary Tabs */}
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="quests">
+                <Scroll className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Quests</span>
+              </TabsTrigger>
+              <TabsTrigger value="inventory">
+                <Package className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Inventory</span>
+              </TabsTrigger>
+              <TabsTrigger value="map" disabled={!mapId}>
+                <MapIcon className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Map</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
-        )}
 
-        {/* Out of Combat View */}
-        {!activeEncounter && campaignId && (
-          <div className="space-y-4">
-            {/* HP Card */}
-            <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-status-hp" />
-                  Hit Points
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl sm:text-3xl font-bold tabular-nums">
-                      {character.current_hp}
-                    </span>
-                    <span className="text-lg sm:text-xl text-muted-foreground">
-                      / {character.max_hp}
-                    </span>
-                  </div>
-                  <Progress value={getHPPercentage()} className="h-3" />
-                </div>
-
-                {character.temp_hp > 0 && (
-                  <Badge variant="outline" className="bg-secondary/10 border-secondary">
-                    +{character.temp_hp} Temporary HP
-                  </Badge>
-                )}
-
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Minus className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Damage</span>
-                        <span className="sm:hidden">-HP</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Take Damage</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Damage Amount</Label>
-                          <Input
-                            type="number"
-                            value={hpAdjustment}
-                            onChange={(e) => setHpAdjustment(e.target.value)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <Button
-                          onClick={() => updateHP(-parseInt(hpAdjustment || "0"))}
-                          className="w-full"
-                        >
-                          Apply Damage
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Plus className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Heal</span>
-                        <span className="sm:hidden">+HP</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Heal</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Healing Amount</Label>
-                          <Input
-                            type="number"
-                            value={hpAdjustment}
-                            onChange={(e) => setHpAdjustment(e.target.value)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <Button
-                          onClick={() => updateHP(parseInt(hpAdjustment || "0"))}
-                          className="w-full"
-                        >
-                          Apply Healing
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <span className="hidden sm:inline">Temp HP</span>
-                        <span className="sm:hidden">THP</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Temporary HP</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Temporary HP</Label>
-                          <Input
-                            type="number"
-                            value={tempHpValue}
-                            onChange={(e) => setTempHpValue(e.target.value)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <Button onClick={updateTempHP} className="w-full">
-                          Set Temp HP
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="shadow-md">
-                <CardContent className="pt-4 pb-3">
-                  <div className="text-center">
-                    <Shield className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                    <div className="text-2xl font-bold">{character.ac}</div>
-                    <div className="text-xs text-muted-foreground">AC</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-md">
-                <CardContent className="pt-4 pb-3">
-                  <div className="text-center">
-                    <Plus className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                    <div className="text-2xl font-bold">+{character.proficiency_bonus}</div>
-                    <div className="text-xs text-muted-foreground">Proficiency</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-md">
-                <CardContent className="pt-4 pb-3">
-                  <div className="text-center">
-                    <Zap className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                    <div className="text-2xl font-bold">{character.speed}</div>
-                    <div className="text-xs text-muted-foreground">Speed</div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Character Tab */}
+          <TabsContent value="character" className="space-y-4">
+            <PlayerCharacterSheet characterId={character.id} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <RestManager character={character} />
+              <DiceRoller />
             </div>
+          </TabsContent>
 
-            <PlayerEffects characterId={character.id} encounterId={null} />
-            
+          {/* Combat Tab */}
+          {activeEncounter && (
+            <TabsContent value="combat" className="space-y-4">
+              <PlayerCombatView
+                characterId={character.id}
+                characterName={character.name}
+                encounterId={activeEncounter}
+                isMyTurn={isMyTurn}
+              />
+            </TabsContent>
+          )}
+
+          {/* Journal Tab */}
+          <TabsContent value="journal" className="space-y-4">
+            <PlayerJournal campaignId={campaignId} characterId={character.id} />
+          </TabsContent>
+
+          {/* Backstory Tab */}
+          <TabsContent value="backstory" className="space-y-4">
+            <PlayerBackstory characterId={character.id} />
+          </TabsContent>
+
+          {/* Quests Tab */}
+          <TabsContent value="quests" className="space-y-4">
             <PlayerQuestTracker campaignId={campaignId} />
-            
+          </TabsContent>
+
+          {/* Inventory Tab */}
+          <TabsContent value="inventory" className="space-y-4">
             <PlayerInventory
               characterId={character.id}
               campaignId={campaignId}
             />
-          </div>
-        )}
+          </TabsContent>
+
+          {/* Map Tab */}
+          {mapId && (
+            <TabsContent value="map" className="space-y-4">
+              <PlayerMapViewer
+                mapId={mapId}
+                characterId={character.id}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
 
         {/* Saving Throw Listener */}
         {campaignId && (
@@ -555,14 +424,7 @@ const SessionPlayer = () => {
           />
         )}
 
-        {/* Rest & Dice Tools */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <RestManager character={character} />
-          <DiceRoller />
-        </div>
       </main>
-
-      <BottomNav role="player" />
     </div>
   );
 };

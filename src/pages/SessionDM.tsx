@@ -650,8 +650,6 @@ const SessionDM = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      <BottomNav role="dm" />
     </div>
   );
 };

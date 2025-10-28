@@ -712,30 +712,80 @@ export type Database = {
           },
         ]
       }
+      character_spell_slots: {
+        Row: {
+          bonus_slots: number | null
+          character_id: string
+          id: string
+          max_slots: number
+          spell_level: number
+          updated_at: string | null
+          used_slots: number
+        }
+        Insert: {
+          bonus_slots?: number | null
+          character_id: string
+          id?: string
+          max_slots?: number
+          spell_level: number
+          updated_at?: string | null
+          used_slots?: number
+        }
+        Update: {
+          bonus_slots?: number | null
+          character_id?: string
+          id?: string
+          max_slots?: number
+          spell_level?: number
+          updated_at?: string | null
+          used_slots?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_spell_slots_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_spells: {
         Row: {
+          can_be_prepared: boolean | null
           character_id: string
           created_at: string | null
           id: string
+          is_always_prepared: boolean | null
+          is_ritual: boolean | null
           known: boolean | null
+          preparation_date: string | null
           prepared: boolean | null
           source: string | null
           spell_id: string
         }
         Insert: {
+          can_be_prepared?: boolean | null
           character_id: string
           created_at?: string | null
           id?: string
+          is_always_prepared?: boolean | null
+          is_ritual?: boolean | null
           known?: boolean | null
+          preparation_date?: string | null
           prepared?: boolean | null
           source?: string | null
           spell_id: string
         }
         Update: {
+          can_be_prepared?: boolean | null
           character_id?: string
           created_at?: string | null
           id?: string
+          is_always_prepared?: boolean | null
+          is_ritual?: boolean | null
           known?: boolean | null
+          preparation_date?: string | null
           prepared?: boolean | null
           source?: string | null
           spell_id?: string
@@ -767,6 +817,7 @@ export type Database = {
           background_id: string | null
           bonus_action_used: boolean | null
           campaign_id: string | null
+          can_cast_rituals: boolean | null
           cha_save: number | null
           class: string
           con_save: number | null
@@ -799,6 +850,7 @@ export type Database = {
           reaction_used: boolean | null
           resistances: Database["public"]["Enums"]["damage_type"][] | null
           resources: Json | null
+          ritual_casting_notes: string | null
           size: string | null
           skin: string | null
           speed: number | null
@@ -825,6 +877,7 @@ export type Database = {
           background_id?: string | null
           bonus_action_used?: boolean | null
           campaign_id?: string | null
+          can_cast_rituals?: boolean | null
           cha_save?: number | null
           class: string
           con_save?: number | null
@@ -857,6 +910,7 @@ export type Database = {
           reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
           resources?: Json | null
+          ritual_casting_notes?: string | null
           size?: string | null
           skin?: string | null
           speed?: number | null
@@ -883,6 +937,7 @@ export type Database = {
           background_id?: string | null
           bonus_action_used?: boolean | null
           campaign_id?: string | null
+          can_cast_rituals?: boolean | null
           cha_save?: number | null
           class?: string
           con_save?: number | null
@@ -915,6 +970,7 @@ export type Database = {
           reaction_used?: boolean | null
           resistances?: Database["public"]["Enums"]["damage_type"][] | null
           resources?: Json | null
+          ritual_casting_notes?: string | null
           size?: string | null
           skin?: string | null
           speed?: number | null
@@ -1020,6 +1076,80 @@ export type Database = {
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_spells: {
+        Row: {
+          campaign_id: string
+          casting_time: string
+          classes: string[] | null
+          components: Json | null
+          concentration: boolean | null
+          created_at: string | null
+          created_by: string
+          damage_type: string | null
+          description: string
+          duration: string
+          higher_levels: string | null
+          id: string
+          level: number
+          name: string
+          range: string
+          ritual: boolean | null
+          save_type: string | null
+          school: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          casting_time: string
+          classes?: string[] | null
+          components?: Json | null
+          concentration?: boolean | null
+          created_at?: string | null
+          created_by: string
+          damage_type?: string | null
+          description: string
+          duration: string
+          higher_levels?: string | null
+          id?: string
+          level: number
+          name: string
+          range: string
+          ritual?: boolean | null
+          save_type?: string | null
+          school: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          casting_time?: string
+          classes?: string[] | null
+          components?: Json | null
+          concentration?: boolean | null
+          created_at?: string | null
+          created_by?: string
+          damage_type?: string | null
+          description?: string
+          duration?: string
+          higher_levels?: string | null
+          id?: string
+          level?: number
+          name?: string
+          range?: string
+          ritual?: boolean | null
+          save_type?: string | null
+          school?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_spells_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -2834,6 +2964,147 @@ export type Database = {
           },
         ]
       }
+      spell_casting_history: {
+        Row: {
+          cast_at: string | null
+          character_id: string
+          custom_spell_id: string | null
+          encounter_id: string | null
+          id: string
+          spell_id: string | null
+          spell_level_cast: number
+          target_info: Json | null
+          was_ritual: boolean | null
+          was_upcast: boolean | null
+        }
+        Insert: {
+          cast_at?: string | null
+          character_id: string
+          custom_spell_id?: string | null
+          encounter_id?: string | null
+          id?: string
+          spell_id?: string | null
+          spell_level_cast: number
+          target_info?: Json | null
+          was_ritual?: boolean | null
+          was_upcast?: boolean | null
+        }
+        Update: {
+          cast_at?: string | null
+          character_id?: string
+          custom_spell_id?: string | null
+          encounter_id?: string | null
+          id?: string
+          spell_id?: string | null
+          spell_level_cast?: number
+          target_info?: Json | null
+          was_ritual?: boolean | null
+          was_upcast?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spell_casting_history_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spell_casting_history_custom_spell_id_fkey"
+            columns: ["custom_spell_id"]
+            isOneToOne: false
+            referencedRelation: "custom_spells"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spell_casting_history_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spell_preparation_sessions: {
+        Row: {
+          character_id: string
+          id: string
+          notes: string | null
+          prepared_at: string | null
+          spell_ids: string[] | null
+        }
+        Insert: {
+          character_id: string
+          id?: string
+          notes?: string | null
+          prepared_at?: string | null
+          spell_ids?: string[] | null
+        }
+        Update: {
+          character_id?: string
+          id?: string
+          notes?: string | null
+          prepared_at?: string | null
+          spell_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spell_preparation_sessions_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spellbook_entries: {
+        Row: {
+          added_at: string | null
+          character_id: string
+          cost_paid: number | null
+          custom_spell_id: string | null
+          id: string
+          learned_at_level: number | null
+          notes: string | null
+          spell_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          character_id: string
+          cost_paid?: number | null
+          custom_spell_id?: string | null
+          id?: string
+          learned_at_level?: number | null
+          notes?: string | null
+          spell_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          character_id?: string
+          cost_paid?: number | null
+          custom_spell_id?: string | null
+          id?: string
+          learned_at_level?: number | null
+          notes?: string | null
+          spell_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spellbook_entries_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spellbook_entries_custom_spell_id_fkey"
+            columns: ["custom_spell_id"]
+            isOneToOne: false
+            referencedRelation: "custom_spells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       srd_ancestries: {
         Row: {
           ability_bonuses: Json
@@ -3635,6 +3906,7 @@ export type Database = {
         Returns: string[]
       }
       create_character_full: { Args: { payload: Json }; Returns: string }
+      get_prepared_spell_count: { Args: { char_id: string }; Returns: number }
       get_user_campaign_role: {
         Args: { _campaign_id: string }
         Returns: {
@@ -3654,6 +3926,7 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      reset_spell_slots: { Args: { char_id: string }; Returns: undefined }
     }
     Enums: {
       ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"

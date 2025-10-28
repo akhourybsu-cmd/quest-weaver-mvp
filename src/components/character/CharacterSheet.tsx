@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote } from "lucide-react";
+import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier } from "@/lib/characterRules";
+import { SpellPreparationManager } from "@/components/spells/SpellPreparationManager";
+import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
+import { SpellSlotTracker } from "@/components/spells/SpellSlotTracker";
+import { SpellbookManager } from "@/components/spells/SpellbookManager";
 
 interface CharacterSheetProps {
   characterId: string;
@@ -29,6 +33,9 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   const [attacks, setAttacks] = useState<any[]>([]);
   const [spells, setSpells] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSpellPreparation, setShowSpellPreparation] = useState(false);
+  const [showCustomSpell, setShowCustomSpell] = useState(false);
+  const [showSpellbook, setShowSpellbook] = useState(false);
 
   useEffect(() => {
     loadCharacter();
@@ -591,7 +598,7 @@ const FeaturesTab = ({ features }: any) => {
   );
 };
 
-const SpellsTab = ({ spells, character, abilities }: any) => {
+const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpenCustomSpell, onOpenSpellbook }: any) => {
   const groupedSpells = spells.reduce((acc: any, spell: any) => {
     const level = spell.spell?.level || 0;
     if (!acc[level]) {
@@ -601,29 +608,63 @@ const SpellsTab = ({ spells, character, abilities }: any) => {
     return acc;
   }, {});
 
+  const isSpellcaster = character.spell_ability || spells.length > 0;
+  const isWizard = character.class === "Wizard";
+  const canPrepareSpells = ["Cleric", "Druid", "Paladin", "Wizard"].includes(character.class);
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Spellcasting</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-1">Spell Save DC</div>
-            <div className="text-2xl font-bold">{character.spell_save_dc || "—"}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-1">Spell Attack</div>
-            <div className="text-2xl font-bold">
-              {character.spell_attack_mod ? `+${character.spell_attack_mod}` : "—"}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-1">Ability</div>
-            <div className="text-2xl font-bold">{character.spell_ability?.toUpperCase() || "—"}</div>
-          </div>
-        </CardContent>
-      </Card>
+      {isSpellcaster && (
+        <>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Spellcasting</CardTitle>
+                <div className="flex gap-2">
+                  {canPrepareSpells && (
+                    <Button size="sm" variant="outline" onClick={onOpenSpellPreparation}>
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Prepare Spells
+                    </Button>
+                  )}
+                  {isWizard && (
+                    <Button size="sm" variant="outline" onClick={onOpenSpellbook}>
+                      <BookMarked className="h-4 w-4 mr-2" />
+                      Spellbook
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" onClick={onOpenCustomSpell}>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Custom Spell
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground mb-1">Spell Save DC</div>
+                <div className="text-2xl font-bold">{character.spell_save_dc || "—"}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground mb-1">Spell Attack</div>
+                <div className="text-2xl font-bold">
+                  {character.spell_attack_mod ? `+${character.spell_attack_mod}` : "—"}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground mb-1">Ability</div>
+                <div className="text-2xl font-bold">{character.spell_ability?.toUpperCase() || "—"}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <SpellSlotTracker
+            characterId={character.id}
+            characterLevel={character.level}
+            characterClass={character.class}
+          />
+        </>
+      )}
 
       {Object.entries(groupedSpells).sort(([a], [b]) => Number(a) - Number(b)).map(([level, levelSpells]: [string, any]) => (
         <Card key={level}>

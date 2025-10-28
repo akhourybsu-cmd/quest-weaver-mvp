@@ -67,27 +67,32 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
     if (!deletingItem) return;
 
     try {
-      if (deleteFromInventories) {
-        // Delete all holdings first
-        await supabase
-          .from("holdings")
-          .delete()
-          .eq("item_id", deletingItem.id);
-      }
-
-      // Delete related holding_events
-      await supabase
+      // CRITICAL: Delete in correct order to avoid foreign key violations
+      // 1. First delete holding_events (they reference both items and holdings)
+      const { error: eventsError } = await supabase
         .from("holding_events")
         .delete()
         .eq("item_id", deletingItem.id);
 
-      // Now delete the item
-      const { error } = await supabase
+      if (eventsError) throw eventsError;
+
+      // 2. Then delete holdings if requested (they reference items)
+      if (deleteFromInventories) {
+        const { error: holdingsError } = await supabase
+          .from("holdings")
+          .delete()
+          .eq("item_id", deletingItem.id);
+
+        if (holdingsError) throw holdingsError;
+      }
+
+      // 3. Finally delete the item itself
+      const { error: itemError } = await supabase
         .from("items")
         .delete()
         .eq("id", deletingItem.id);
 
-      if (error) throw error;
+      if (itemError) throw itemError;
 
       toast({ 
         title: "Item deleted successfully",

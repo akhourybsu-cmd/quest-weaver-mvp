@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, MapPin, Users, Eye, EyeOff, ScrollText } from "lucide-react";
+import { Edit, Users, Eye, EyeOff, ScrollText } from "lucide-react";
 
 interface NPC {
   id: string;
@@ -35,11 +35,13 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   const [relationships, setRelationships] = useState<any[]>([]);
   const [appearances, setAppearances] = useState<any[]>([]);
   const [faction, setFaction] = useState<any>(null);
+  const [linkedNotes, setLinkedNotes] = useState<any[]>([]);
 
   useEffect(() => {
     if (open && npc) {
       loadRelationships();
       loadAppearances();
+      loadLinkedNotes();
       if (npc.faction_id) loadFaction();
     }
   }, [open, npc]);
@@ -73,6 +75,32 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
       .single();
 
     setFaction(data);
+  };
+
+  const loadLinkedNotes = async () => {
+    // Get notes that have this NPC linked
+    const { data: links } = await supabase
+      .from("note_links")
+      .select("note_id")
+      .eq("link_type", "npc")
+      .eq("link_id", npc.id);
+
+    if (!links || links.length === 0) {
+      setLinkedNotes([]);
+      return;
+    }
+
+    const noteIds = links.map(l => l.note_id);
+    
+    // Fetch the actual notes
+    const { data: notes } = await supabase
+      .from("session_notes")
+      .select("id, title, content_markdown, visibility, is_pinned, created_at, updated_at")
+      .in("id", noteIds)
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: false });
+
+    setLinkedNotes(notes || []);
   };
 
   return (
@@ -238,9 +266,39 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
             </TabsContent>
 
             <TabsContent value="notes" className="space-y-2">
-              <p className="text-center py-8 text-muted-foreground">
-                Linked notes will appear here
-              </p>
+              {linkedNotes.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  No notes linked to this NPC yet. Use @{npc.name} in notes to link them automatically.
+                </p>
+              ) : (
+                linkedNotes.map((note) => (
+                  <Card key={note.id}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold flex items-center gap-2">
+                            {note.title}
+                            {note.is_pinned && (
+                              <Badge variant="secondary" className="text-xs">Pinned</Badge>
+                            )}
+                          </h4>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {note.content_markdown}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {note.visibility === "DM_ONLY" && "DM Only"}
+                          {note.visibility === "SHARED" && "Shared"}
+                          {note.visibility === "PRIVATE" && "Private"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Updated {new Date(note.updated_at).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </div>

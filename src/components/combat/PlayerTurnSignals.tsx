@@ -19,9 +19,10 @@ interface TurnSignal {
 
 interface PlayerTurnSignalsProps {
   encounterId: string;
+  currentRound: number;
 }
 
-export function PlayerTurnSignals({ encounterId }: PlayerTurnSignalsProps) {
+export function PlayerTurnSignals({ encounterId, currentRound }: PlayerTurnSignalsProps) {
   const [signals, setSignals] = useState<TurnSignal[]>([]);
   const { toast } = useToast();
 
@@ -184,15 +185,15 @@ export function PlayerTurnSignals({ encounterId }: PlayerTurnSignalsProps) {
                 key={signal.id}
                 className="flex items-center justify-between gap-2 p-3 bg-card rounded-lg border"
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <SkipForward className="w-4 h-4 text-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{signal.character_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {signal.message || "Ready to end turn"}
-                    </p>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <SkipForward className="w-4 h-4 text-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{signal.character_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {signal.message || "Ready to end turn"} • Round {currentRound}
+                      </p>
+                    </div>
                   </div>
-                </div>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"

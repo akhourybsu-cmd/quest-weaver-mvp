@@ -353,7 +353,7 @@ const SessionDM = () => {
 
         {/* Player Turn Signals */}
         {activeEncounter && (
-          <PlayerTurnSignals encounterId={activeEncounter.id} />
+          <PlayerTurnSignals encounterId={activeEncounter.id} currentRound={activeEncounter.current_round} />
         )}
 
         {/* Player Presence */}

@@ -23,6 +23,8 @@ interface LorePage {
   content_md: string;
   excerpt: string | null;
   tags: string[];
+  category: string;
+  era: string | null;
   visibility: 'DM_ONLY' | 'SHARED' | 'PUBLIC';
   author_id: string | null;
   created_at: string;
@@ -38,7 +40,7 @@ export default function Lore() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState("pages");
+  const [activeCategory, setActiveCategory] = useState("regions");
   const [editorOpen, setEditorOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<LorePage | null>(null);
@@ -90,6 +92,7 @@ export default function Lore() {
   };
 
   const filteredPages = pages.filter((page) => {
+    const matchesCategory = page.category === activeCategory;
     const matchesSearch = page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       page.content_md.toLowerCase().includes(searchQuery.toLowerCase()) ||
       page.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -97,7 +100,7 @@ export default function Lore() {
     const matchesTags = selectedTags.length === 0 || 
       selectedTags.some(tag => page.tags.includes(tag));
     
-    return matchesSearch && matchesTags;
+    return matchesCategory && matchesSearch && matchesTags;
   });
 
   const allTags = Array.from(new Set(pages.flatMap(p => p.tags)));
@@ -123,19 +126,19 @@ export default function Lore() {
       </header>
 
       <main className="container py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="pages">
-              <FileText className="h-4 w-4 mr-2" />
-              Pages
-            </TabsTrigger>
-            <TabsTrigger value="graph">
-              <Network className="h-4 w-4 mr-2" />
-              Knowledge Graph
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-4">
+          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+              <TabsTrigger value="regions">Regions</TabsTrigger>
+              <TabsTrigger value="factions">Factions</TabsTrigger>
+              <TabsTrigger value="npcs">NPCs</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="religion">Myth & Faith</TabsTrigger>
+              <TabsTrigger value="magic">Magic</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <TabsContent value="pages" className="space-y-4">
+          <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -202,19 +205,22 @@ export default function Lore() {
                       className="cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => handleViewPage(page)}
                     >
-                      <CardHeader>
-                        <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="text-base">{page.title}</CardTitle>
-                          <Badge variant="outline" className="text-xs">
-                            {page.visibility.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                        {page.excerpt && (
-                          <CardDescription className="line-clamp-2">
-                            {page.excerpt}
-                          </CardDescription>
-                        )}
-                      </CardHeader>
+                       <CardHeader>
+                         <div className="flex items-start justify-between gap-2">
+                           <CardTitle className="text-base">{page.title}</CardTitle>
+                           <Badge variant="outline" className="text-xs">
+                             {page.category}
+                           </Badge>
+                         </div>
+                         {page.excerpt && (
+                           <CardDescription className="line-clamp-2">
+                             {page.excerpt}
+                           </CardDescription>
+                         )}
+                         {page.era && (
+                           <p className="text-xs text-muted-foreground mt-1">{page.era}</p>
+                         )}
+                       </CardHeader>
                       {page.tags.length > 0 && (
                         <CardContent>
                           <div className="flex flex-wrap gap-1">
@@ -236,12 +242,8 @@ export default function Lore() {
                 )}
               </div>
             </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="graph" className="h-[calc(100vh-12rem)]">
-            <LoreGraph campaignId={campaignId} />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </main>
 
       <Drawer open={editorOpen} onOpenChange={setEditorOpen}>

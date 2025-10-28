@@ -2023,8 +2023,10 @@ export type Database = {
         Row: {
           author_id: string | null
           campaign_id: string
+          category: string
           content_md: string
           created_at: string
+          era: string | null
           excerpt: string | null
           id: string
           slug: string
@@ -2036,8 +2038,10 @@ export type Database = {
         Insert: {
           author_id?: string | null
           campaign_id: string
+          category?: string
           content_md: string
           created_at?: string
+          era?: string | null
           excerpt?: string | null
           id?: string
           slug: string
@@ -2049,8 +2053,10 @@ export type Database = {
         Update: {
           author_id?: string | null
           campaign_id?: string
+          category?: string
           content_md?: string
           created_at?: string
+          era?: string | null
           excerpt?: string | null
           id?: string
           slug?: string

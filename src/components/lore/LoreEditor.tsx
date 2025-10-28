@@ -27,6 +27,8 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
   const [excerpt, setExcerpt] = useState(page?.excerpt || "");
   const [tags, setTags] = useState<string[]>(page?.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [category, setCategory] = useState(page?.category || "regions");
+  const [era, setEra] = useState(page?.era || "");
   const [visibility, setVisibility] = useState<'DM_ONLY' | 'SHARED' | 'PUBLIC'>(page?.visibility || 'DM_ONLY');
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
@@ -101,6 +103,8 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
         content_md: content,
         excerpt: excerpt.trim() || null,
         tags,
+        category,
+        era: era.trim() || null,
         visibility,
         author_id: user.id
       };
@@ -196,16 +200,33 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
         </div>
 
         <div>
-          <Label htmlFor="excerpt">Excerpt (optional)</Label>
-          <Input
+          <Label htmlFor="excerpt">Summary</Label>
+          <Textarea
             id="excerpt"
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
             placeholder="Brief summary for cards"
+            rows={2}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="regions">Region</SelectItem>
+                <SelectItem value="factions">Faction</SelectItem>
+                <SelectItem value="npcs">NPC</SelectItem>
+                <SelectItem value="history">History</SelectItem>
+                <SelectItem value="religion">Myth & Faith</SelectItem>
+                <SelectItem value="magic">Magic & Artifacts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label htmlFor="visibility">Visibility</Label>
             <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
@@ -220,19 +241,29 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
             </Select>
           </div>
           <div>
-            <Label htmlFor="tags">Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                id="tags"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                placeholder="Add tag"
-              />
-              <Button type="button" size="sm" onClick={handleAddTag}>
-                Add
-              </Button>
-            </div>
+            <Label htmlFor="era">Era / Date</Label>
+            <Input
+              id="era"
+              value={era}
+              onChange={(e) => setEra(e.target.value)}
+              placeholder="e.g. The Halcyon Age"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="tags">Tags</Label>
+          <div className="flex gap-2">
+            <Input
+              id="tags"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+              placeholder="Add tag (press Enter)"
+            />
+            <Button type="button" size="sm" onClick={handleAddTag}>
+              Add
+            </Button>
           </div>
         </div>
 

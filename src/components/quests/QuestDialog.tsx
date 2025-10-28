@@ -37,6 +37,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [description, setDescription] = useState("");
   const [giver, setGiver] = useState("");
   const [questType, setQuestType] = useState("side_quest");
+  const [questStatus, setQuestStatus] = useState("not_started");
   const [difficulty, setDifficulty] = useState<string>("");
   const [locations, setLocations] = useState<string[]>([]);
   const [locationInput, setLocationInput] = useState("");
@@ -61,6 +62,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         setDescription(questToEdit.description || "");
         setGiver(questToEdit.questGiver || "");
         setQuestType(questToEdit.questType || "side_quest");
+        setQuestStatus(questToEdit.status || "not_started");
         setDifficulty(questToEdit.difficulty || "");
         setLocations(questToEdit.locations || []);
         setTags(questToEdit.tags || []);
@@ -155,6 +157,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           description,
           quest_giver: giver,
           quest_type: questType,
+          status: questStatus,
           difficulty: difficulty || null,
           locations,
           tags,
@@ -252,6 +255,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
     setDescription("");
     setGiver("");
     setQuestType("side_quest");
+    setQuestStatus("not_started");
     setDifficulty("");
     setLocations([]);
     setTags([]);
@@ -310,6 +314,23 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                   </Select>
                 </div>
               </div>
+
+              {isEditing && (
+                <div className="space-y-2">
+                  <Label htmlFor="quest-status">Quest Status</Label>
+                  <Select value={questStatus} onValueChange={setQuestStatus}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_started">Not Started</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>

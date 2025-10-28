@@ -56,19 +56,25 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   };
 
   const handleDelete = async (itemId: string) => {
-    const { error } = await supabase
-      .from("items")
-      .delete()
-      .eq("id", itemId);
+    try {
+      const { error } = await supabase
+        .from("items")
+        .delete()
+        .eq("id", itemId);
 
-    if (error) {
-      toast({ title: "Error deleting item", variant: "destructive" });
-      return;
+      if (error) throw error;
+
+      toast({ title: "Item deleted successfully" });
+      await loadItems();
+      onRefresh();
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast({ 
+        title: "Error deleting item", 
+        description: error.message,
+        variant: "destructive" 
+      });
     }
-
-    toast({ title: "Item deleted" });
-    loadItems();
-    onRefresh();
   };
 
   const handleDuplicate = async (item: any) => {

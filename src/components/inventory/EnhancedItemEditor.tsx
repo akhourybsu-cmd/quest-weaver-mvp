@@ -48,12 +48,17 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
   const [maxCharges, setMaxCharges] = useState("");
   const [rechargeRate, setRechargeRate] = useState("dawn");
   const [bonus, setBonus] = useState("");
+  const [spellDC, setSpellDC] = useState("");
+  const [spellAttackBonus, setSpellAttackBonus] = useState("");
+  const [spellsGranted, setSpellsGranted] = useState("");
   
   // Weapon properties
   const [damage, setDamage] = useState("");
   const [damageType, setDamageType] = useState("");
   const [weaponProperties, setWeaponProperties] = useState<string[]>([]);
   const [attackBonus, setAttackBonus] = useState("");
+  const [range, setRange] = useState("");
+  const [versatileDamage, setVersatileDamage] = useState("");
   
   // Armor properties
   const [ac, setAc] = useState("");
@@ -62,8 +67,15 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
   const [strengthRequirement, setStrengthRequirement] = useState("");
   
   // Consumable properties
+  const [consumableName, setConsumableName] = useState("");
   const [healingAmount, setHealingAmount] = useState("");
   const [effectDuration, setEffectDuration] = useState("");
+  const [effectType, setEffectType] = useState("");
+  const [conditionsApplied, setConditionsApplied] = useState("");
+  const [abilityBonus, setAbilityBonus] = useState("");
+  const [consumableDamage, setConsumableDamage] = useState("");
+  const [consumableDamageType, setConsumableDamageType] = useState("");
+  const [saveType, setSaveType] = useState("");
   const [saveDC, setSaveDC] = useState("");
 
   useEffect(() => {
@@ -80,19 +92,31 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
       setMaxCharges(existingItem.properties?.charges?.max || "");
       setRechargeRate(existingItem.properties?.charges?.recharge || "dawn");
       setBonus(existingItem.properties?.bonus || "");
+      setSpellDC(existingItem.properties?.spellDC || "");
+      setSpellAttackBonus(existingItem.properties?.spellAttackBonus || "");
+      setSpellsGranted(existingItem.properties?.spellsGranted || "");
       
       setDamage(existingItem.properties?.damage || "");
       setDamageType(existingItem.properties?.damageType || "");
       setWeaponProperties(existingItem.properties?.weaponProperties || []);
       setAttackBonus(existingItem.properties?.attackBonus || "");
+      setRange(existingItem.properties?.range || "");
+      setVersatileDamage(existingItem.properties?.versatileDamage || "");
       
       setAc(existingItem.properties?.ac || "");
       setArmorType(existingItem.properties?.armorType || "");
       setStealthDisadvantage(existingItem.properties?.stealthDisadvantage || false);
       setStrengthRequirement(existingItem.properties?.strengthRequirement || "");
       
+      setConsumableName(existingItem.properties?.consumableName || "");
       setHealingAmount(existingItem.properties?.healingAmount || "");
       setEffectDuration(existingItem.properties?.effectDuration || "");
+      setEffectType(existingItem.properties?.effectType || "");
+      setConditionsApplied(existingItem.properties?.conditionsApplied || "");
+      setAbilityBonus(existingItem.properties?.abilityBonus || "");
+      setConsumableDamage(existingItem.properties?.consumableDamage || "");
+      setConsumableDamageType(existingItem.properties?.consumableDamageType || "");
+      setSaveType(existingItem.properties?.saveType || "");
       setSaveDC(existingItem.properties?.saveDC || "");
     } else {
       resetForm();
@@ -115,12 +139,24 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
     setDamageType("");
     setWeaponProperties([]);
     setAttackBonus("");
+    setRange("");
+    setVersatileDamage("");
     setAc("");
     setArmorType("");
     setStealthDisadvantage(false);
     setStrengthRequirement("");
+    setSpellDC("");
+    setSpellAttackBonus("");
+    setSpellsGranted("");
+    setConsumableName("");
     setHealingAmount("");
     setEffectDuration("");
+    setEffectType("");
+    setConditionsApplied("");
+    setAbilityBonus("");
+    setConsumableDamage("");
+    setConsumableDamageType("");
+    setSaveType("");
     setSaveDC("");
   };
 
@@ -143,6 +179,9 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
     }
     
     if (bonus) properties.bonus = parseInt(bonus);
+    if (spellDC) properties.spellDC = parseInt(spellDC);
+    if (spellAttackBonus) properties.spellAttackBonus = parseInt(spellAttackBonus);
+    if (spellsGranted) properties.spellsGranted = spellsGranted;
     
     // Weapon properties
     if (type === "WEAPON" || type === "MAGIC") {
@@ -150,6 +189,8 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
       if (damageType) properties.damageType = damageType;
       if (weaponProperties.length > 0) properties.weaponProperties = weaponProperties;
       if (attackBonus) properties.attackBonus = parseInt(attackBonus);
+      if (range) properties.range = range;
+      if (versatileDamage) properties.versatileDamage = versatileDamage;
     }
     
     // Armor properties
@@ -162,8 +203,15 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
     
     // Consumable properties
     if (type === "CONSUMABLE") {
+      if (consumableName) properties.consumableName = consumableName;
       if (healingAmount) properties.healingAmount = healingAmount;
       if (effectDuration) properties.effectDuration = effectDuration;
+      if (effectType) properties.effectType = effectType;
+      if (conditionsApplied) properties.conditionsApplied = conditionsApplied;
+      if (abilityBonus) properties.abilityBonus = abilityBonus;
+      if (consumableDamage) properties.consumableDamage = consumableDamage;
+      if (consumableDamageType) properties.consumableDamageType = consumableDamageType;
+      if (saveType) properties.saveType = saveType;
       if (saveDC) properties.saveDC = parseInt(saveDC);
     }
 
@@ -249,14 +297,13 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MUNDANE">Mundane</SelectItem>
-                      <SelectItem value="WEAPON">Weapon</SelectItem>
-                      <SelectItem value="ARMOR">Armor</SelectItem>
-                      <SelectItem value="CONSUMABLE">Consumable</SelectItem>
-                      <SelectItem value="MAGIC">Magic Item</SelectItem>
-                      <SelectItem value="CURRENCY">Currency</SelectItem>
-                    </SelectContent>
+                      <SelectContent>
+                        <SelectItem value="MUNDANE">Mundane</SelectItem>
+                        <SelectItem value="WEAPON">Weapon</SelectItem>
+                        <SelectItem value="ARMOR">Armor</SelectItem>
+                        <SelectItem value="CONSUMABLE">Consumable</SelectItem>
+                        <SelectItem value="MAGIC">Magic Item</SelectItem>
+                      </SelectContent>
                   </Select>
                 </div>
 
@@ -396,6 +443,28 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
                   ))}
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="range">Range (e.g., 20/60)</Label>
+                  <Input
+                    id="range"
+                    value={range}
+                    onChange={(e) => setRange(e.target.value)}
+                    placeholder="20/60"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="versatileDamage">Versatile Damage</Label>
+                  <Input
+                    id="versatileDamage"
+                    value={versatileDamage}
+                    onChange={(e) => setVersatileDamage(e.target.value)}
+                    placeholder="1d10"
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="armor" className="space-y-4">
@@ -501,9 +570,72 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
                   </Select>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="spellDC">Spell Save DC</Label>
+                  <Input
+                    id="spellDC"
+                    type="number"
+                    min="0"
+                    value={spellDC}
+                    onChange={(e) => setSpellDC(e.target.value)}
+                    placeholder="15"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="spellAttackBonus">Spell Attack Bonus</Label>
+                  <Input
+                    id="spellAttackBonus"
+                    type="number"
+                    value={spellAttackBonus}
+                    onChange={(e) => setSpellAttackBonus(e.target.value)}
+                    placeholder="+7"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="spellsGranted">Spells Granted</Label>
+                <Textarea
+                  id="spellsGranted"
+                  value={spellsGranted}
+                  onChange={(e) => setSpellsGranted(e.target.value)}
+                  placeholder="Fireball (1/day), Shield (3/day)"
+                  rows={2}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="consumable" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="consumableName">Consumable Name</Label>
+                <Input
+                  id="consumableName"
+                  value={consumableName}
+                  onChange={(e) => setConsumableName(e.target.value)}
+                  placeholder="Potion of Greater Healing"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Effect Type</Label>
+                <Select value={effectType} onValueChange={setEffectType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select effect type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="healing">Healing</SelectItem>
+                    <SelectItem value="buff">Buff</SelectItem>
+                    <SelectItem value="damage">Damage</SelectItem>
+                    <SelectItem value="condition">Apply Condition</SelectItem>
+                    <SelectItem value="utility">Utility</SelectItem>
+                    <SelectItem value="restoration">Restoration</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="healing">Healing Amount (e.g., 2d4+2)</Label>
                 <Input
@@ -511,6 +643,56 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
                   value={healingAmount}
                   onChange={(e) => setHealingAmount(e.target.value)}
                   placeholder="2d4+2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="consumableDamage">Damage (e.g., 3d6)</Label>
+                  <Input
+                    id="consumableDamage"
+                    value={consumableDamage}
+                    onChange={(e) => setConsumableDamage(e.target.value)}
+                    placeholder="3d6"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Damage Type</Label>
+                  <Select value={consumableDamageType} onValueChange={setConsumableDamageType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fire">Fire</SelectItem>
+                      <SelectItem value="cold">Cold</SelectItem>
+                      <SelectItem value="poison">Poison</SelectItem>
+                      <SelectItem value="acid">Acid</SelectItem>
+                      <SelectItem value="necrotic">Necrotic</SelectItem>
+                      <SelectItem value="radiant">Radiant</SelectItem>
+                      <SelectItem value="force">Force</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="conditionsApplied">Conditions Applied</Label>
+                <Input
+                  id="conditionsApplied"
+                  value={conditionsApplied}
+                  onChange={(e) => setConditionsApplied(e.target.value)}
+                  placeholder="Poisoned, Blinded"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="abilityBonus">Ability Score Bonus</Label>
+                <Input
+                  id="abilityBonus"
+                  value={abilityBonus}
+                  onChange={(e) => setAbilityBonus(e.target.value)}
+                  placeholder="STR +2, DEX +1"
                 />
               </div>
 
@@ -524,16 +706,35 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="saveDC">Save DC</Label>
-                <Input
-                  id="saveDC"
-                  type="number"
-                  min="0"
-                  value={saveDC}
-                  onChange={(e) => setSaveDC(e.target.value)}
-                  placeholder="15"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Save Type</Label>
+                  <Select value={saveType} onValueChange={setSaveType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="STR">Strength</SelectItem>
+                      <SelectItem value="DEX">Dexterity</SelectItem>
+                      <SelectItem value="CON">Constitution</SelectItem>
+                      <SelectItem value="INT">Intelligence</SelectItem>
+                      <SelectItem value="WIS">Wisdom</SelectItem>
+                      <SelectItem value="CHA">Charisma</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="saveDC">Save DC</Label>
+                  <Input
+                    id="saveDC"
+                    type="number"
+                    min="0"
+                    value={saveDC}
+                    onChange={(e) => setSaveDC(e.target.value)}
+                    placeholder="15"
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>

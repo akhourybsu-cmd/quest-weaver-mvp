@@ -1633,7 +1633,7 @@ export type Database = {
           campaign_id: string
           id: string
           is_attuned: boolean | null
-          item_id: string
+          item_id: string | null
           notes: string | null
           owner_id: string | null
           owner_type: string | null
@@ -1645,7 +1645,7 @@ export type Database = {
           campaign_id: string
           id?: string
           is_attuned?: boolean | null
-          item_id: string
+          item_id?: string | null
           notes?: string | null
           owner_id?: string | null
           owner_type?: string | null
@@ -1657,7 +1657,7 @@ export type Database = {
           campaign_id?: string
           id?: string
           is_attuned?: boolean | null
-          item_id?: string
+          item_id?: string | null
           notes?: string | null
           owner_id?: string | null
           owner_type?: string | null

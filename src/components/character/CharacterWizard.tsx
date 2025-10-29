@@ -296,7 +296,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   // Auto-save draft on data change
   useEffect(() => {
-    if (draftId && draft.name) {
+    // Save if we have an existing draft, OR if we have minimum data for a new draft
+    if (draft.name && (draftId || (draft.classId && draft.className))) {
       saveDraft();
     }
   }, [draft, draftId]);
@@ -336,7 +337,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             wizard_state: wizardState as any
           })
           .eq("id", draftId);
-      } else if (draft.name && draft.classId) {
+      } else if (draft.name && draft.classId && draft.className) {
         // Create new draft with full state
         const { data, error } = await supabase
           .from("characters")
@@ -344,7 +345,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             user_id: user.id,
             campaign_id: campaignId,
             name: draft.name,
-            class: draft.className || "",
+            class: draft.className,
             level: draft.level,
             creation_status: 'draft',
             max_hp: 10,
@@ -358,6 +359,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
         if (!error && data) {
           setDraftId(data.id);
+        } else if (error) {
+          console.error("Error creating draft:", error);
         }
       }
     } catch (error) {
@@ -477,7 +480,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         })
         .eq("id", draftId);
 
-      if (charError) throw charError;
+      if (charError) {
+        console.error("Error updating character:", charError);
+        throw charError;
+      }
 
       // Write abilities
       const { error: abilitiesError } = await supabase
@@ -493,7 +499,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           method: draft.abilityMethod,
         });
 
-      if (abilitiesError) throw abilitiesError;
+      if (abilitiesError) {
+        console.error("Error saving abilities:", abilitiesError);
+        throw abilitiesError;
+      }
 
       // Write saves (from grants)
       if (draft.grants.savingThrows.size > 0) {
@@ -511,7 +520,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_saves")
           .upsert(savesData);
 
-        if (savesError) throw savesError;
+        if (savesError) {
+          console.error("Error saving saves:", savesError);
+          throw savesError;
+        }
       }
 
       // Write skills
@@ -527,7 +539,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_skills")
           .upsert(skillsData);
 
-        if (skillsError) throw skillsError;
+        if (skillsError) {
+          console.error("Error saving skills:", skillsError);
+          throw skillsError;
+        }
       }
 
       // Write proficiencies
@@ -548,7 +563,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_proficiencies")
           .upsert(proficiencies);
 
-        if (profError) throw profError;
+        if (profError) {
+          console.error("Error saving proficiencies:", profError);
+          throw profError;
+        }
       }
 
       // Write languages
@@ -562,7 +580,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_languages")
           .upsert(languagesData);
 
-        if (langError) throw langError;
+        if (langError) {
+          console.error("Error saving languages:", langError);
+          throw langError;
+        }
       }
 
       // Write features
@@ -580,7 +601,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_features")
           .upsert(featuresData);
 
-        if (featuresError) throw featuresError;
+        if (featuresError) {
+          console.error("Error saving features:", featuresError);
+          throw featuresError;
+        }
       }
 
       // Write spells (if caster)
@@ -596,7 +620,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_spells")
           .upsert(spellsData);
 
-        if (spellsError) throw spellsError;
+        if (spellsError) {
+          console.error("Error saving spells:", spellsError);
+          throw spellsError;
+        }
       }
 
       toast({

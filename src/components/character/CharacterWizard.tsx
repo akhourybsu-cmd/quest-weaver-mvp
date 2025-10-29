@@ -357,27 +357,30 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       return;
     }
     
-    // Skip spells step if not a caster
-    if (currentStep === 6 && !isSpellcaster()) {
-      setCurrentStep(prev => prev + 2);
+    // Skip spells step if not a caster (from Equipment to Features)
+    if (currentStep === 5 && !isSpellcaster()) {
+      setCurrentStep(7); // Skip directly to Features
     } else {
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
     }
   };
 
   const handleBack = () => {
-    // Skip spells step if not a caster
-    if (currentStep === 8 && !isSpellcaster()) {
-      setCurrentStep(prev => prev - 2);
+    // Skip spells step if not a caster (from Features back to Equipment)
+    if (currentStep === 7 && !isSpellcaster()) {
+      setCurrentStep(5); // Skip back to Equipment
     } else {
       setCurrentStep(prev => Math.max(prev - 1, 0));
     }
   };
 
   const isSpellcaster = (): boolean => {
-    // TODO: Check if class has spellcasting
-    const casters = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
-    return casters.includes(draft.className || "");
+    // Check if class has spellcasting progression in SRD data
+    // This requires us to fetch class data - for now, check via known caster names
+    const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
+                         "Eldritch Knight", "Arcane Trickster"];
+    const className = draft.className || "";
+    return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
   };
 
   const handleSaveAndExit = async () => {

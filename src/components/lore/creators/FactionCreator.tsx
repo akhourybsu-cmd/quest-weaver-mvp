@@ -185,13 +185,12 @@ export default function FactionCreator({ campaignId, onSave, onCancel }: Faction
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hqRegion">Headquarters</Label>
+              <Label htmlFor="hqRegion">Headquarters (optional)</Label>
               <Select value={hqRegion} onValueChange={setHqRegion}>
                 <SelectTrigger>
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="Select headquarters" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {regions.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
                   ))}

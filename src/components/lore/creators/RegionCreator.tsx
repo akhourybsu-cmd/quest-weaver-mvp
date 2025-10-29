@@ -189,13 +189,12 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="parentRegion">Parent Region</Label>
+              <Label htmlFor="parentRegion">Parent Region (optional)</Label>
               <Select value={parentRegion} onValueChange={setParentRegion}>
                 <SelectTrigger>
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="Select parent region" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {regions.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
                   ))}

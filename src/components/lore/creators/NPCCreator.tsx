@@ -211,13 +211,12 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="homeRegion">Home Region</Label>
+              <Label htmlFor="homeRegion">Home Region (optional)</Label>
               <Select value={homeRegion} onValueChange={setHomeRegion}>
                 <SelectTrigger>
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="Select home region" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {regions.map(r => (
                     <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
                   ))}

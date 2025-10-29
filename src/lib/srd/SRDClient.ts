@@ -66,6 +66,24 @@ export type SrdSpell = {
   description: string;
 };
 
+export type SrdClassFeature = {
+  id: string;
+  class_id: string;
+  level: number;
+  name: string;
+  description: string;
+  choices: any;
+};
+
+export type SrdSubclassFeature = {
+  id: string;
+  subclass_id: string;
+  level: number;
+  name: string;
+  description: string;
+  choices: any;
+};
+
 export const SRD = {
   async classes(): Promise<SrdClass[]> {
     const { data, error } = await supabase
@@ -151,5 +169,25 @@ export const SRD = {
   async languages() {
     const { data } = await supabase.from("srd_languages").select("*").order("name");
     return data || [];
+  },
+
+  async classFeatures(classId: string): Promise<SrdClassFeature[]> {
+    const { data, error } = await supabase
+      .from("srd_class_features")
+      .select("*")
+      .eq("class_id", classId)
+      .order("level");
+    if (error) throw error;
+    return (data || []) as SrdClassFeature[];
+  },
+
+  async subclassFeatures(subclassId: string): Promise<SrdSubclassFeature[]> {
+    const { data, error } = await supabase
+      .from("srd_subclass_features")
+      .select("*")
+      .eq("subclass_id", subclassId)
+      .order("level");
+    if (error) throw error;
+    return (data || []) as SrdSubclassFeature[];
   },
 };

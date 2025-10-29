@@ -368,7 +368,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0: // Basics
-        return !!(draft.name && draft.classId);
+        return !!(draft.name && draft.classId && draft.className);
       case 1: // Ancestry
         return !!draft.ancestryId;
       case 2: // Abilities

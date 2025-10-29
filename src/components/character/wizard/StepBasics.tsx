@@ -52,7 +52,7 @@ const StepBasics = () => {
     const cls = classes.find(c => c.id === classId);
     if (!cls) return;
 
-    setClass(classId);
+    setClass({ classId, className: cls.name });
     setSelectedClass(cls);
 
     // Auto-grant from class

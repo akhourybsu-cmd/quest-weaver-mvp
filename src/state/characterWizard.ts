@@ -85,11 +85,12 @@ export const setLevelAtom = atom(null, (get, set, level: number) => {
   set(draftAtom, { ...d, level });
 });
 
-export const setClassAtom = atom(null, (get, set, classId: string) => {
+export const setClassAtom = atom(null, (get, set, payload: { classId: string, className: string }) => {
   const d = get(draftAtom);
   set(draftAtom, { 
     ...d, 
-    classId, 
+    classId: payload.classId,
+    className: payload.className,
     subclassId: undefined,
     choices: { ...d.choices, skills: [], tools: [] }
   });

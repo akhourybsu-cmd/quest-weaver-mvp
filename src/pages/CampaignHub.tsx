@@ -21,7 +21,8 @@ import { SRDImportButton } from "@/components/admin/SRDImportButton";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Badge } from "@/components/ui/badge";
 import RestManager from "@/components/character/RestManager";
-import { ResourceSetupDialog } from "@/components/combat/ResourceSetupDialog";
+import { ViewResourcesDialog } from "@/components/combat/ViewResourcesDialog";
+import { calculateCharacterResources } from "@/lib/resourceCalculator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   AlertDialog,
@@ -142,9 +143,21 @@ const CampaignHub = () => {
 
       if (error) throw error;
 
-      // Fetch campaign names for characters assigned to campaigns
+      // Auto-populate resources and fetch campaign names
       const charactersWithCampaigns = await Promise.all(
         (characters || []).map(async (character) => {
+          // Auto-populate resources if missing or empty
+          const currentResources = (character.resources as any) || {};
+          const hasResources = currentResources.spellSlots?.length > 0 || currentResources.classResources?.length > 0;
+          
+          if (!hasResources && character.creation_status === 'complete') {
+            const autoResources = calculateCharacterResources(character.class, character.level);
+            await supabase
+              .from("characters")
+              .update({ resources: autoResources as any })
+              .eq("id", character.id);
+          }
+
           if (character.campaign_id) {
             const { data: campaign } = await supabase
               .from("campaigns")
@@ -644,13 +657,23 @@ const CampaignHub = () => {
                                     >
                                       Continue Creation
                                     </Button>
-                                  ) : (
-                                    <ResourceSetupDialog
-                                      characterId={character.id}
-                                      characterName={character.name}
-                                      currentResources={(character as any).resources || {}}
-                                      onUpdate={fetchMyCharacters}
-                                    />
+                                   ) : (
+                                    <>
+                                      <RestManager character={{
+                                        id: character.id,
+                                        name: character.name,
+                                        class: character.class,
+                                        level: character.level,
+                                        current_hp: (character as any).current_hp || 1,
+                                        max_hp: (character as any).max_hp || 1,
+                                        con_save: 0
+                                      }} />
+                                      <ViewResourcesDialog
+                                        className={character.class}
+                                        level={character.level}
+                                        characterName={character.name}
+                                      />
+                                    </>
                                   )}
                                 </div>
                               </CardContent>

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { ResourceTracker } from "./ResourceTracker";
+import { calculateCharacterResources } from "@/lib/resourceCalculator";
 
 interface Condition {
   id: string;
@@ -56,7 +57,23 @@ export function PlayerCharacterSheet({
       .eq('id', characterId)
       .single();
 
-    if (data) setCharacter(data);
+    if (data) {
+      // Auto-populate resources if missing or empty
+      const currentResources = (data.resources as any) || {};
+      const hasResources = currentResources.spellSlots?.length > 0 || currentResources.classResources?.length > 0;
+      
+      if (!hasResources && data.creation_status === 'complete') {
+        const autoResources = calculateCharacterResources(data.class, data.level);
+        await supabase
+          .from("characters")
+          .update({ resources: autoResources as any })
+          .eq("id", characterId);
+        
+        setCharacter({ ...data, resources: autoResources });
+      } else {
+        setCharacter(data);
+      }
+    }
   };
 
   const fetchConditions = async () => {

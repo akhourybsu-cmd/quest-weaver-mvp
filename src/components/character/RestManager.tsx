@@ -66,18 +66,23 @@ const RestManager = ({ character }: RestManagerProps) => {
 
     const newHP = Math.min(character.max_hp, character.current_hp + healing);
 
-    // Get current resources to restore some class features
+    // Get current resources to restore short rest resources
     const { data: charData } = await supabase
       .from("characters")
       .select("resources")
       .eq("id", character.id)
       .single();
 
-    const currentResources = (charData?.resources as any) || {};
+    const currentResources = (charData?.resources as any) || { spellSlots: [], classResources: [] };
     const updatedResources = { ...currentResources };
 
-    // Restore some short-rest resources (Warlock spell slots, some class features)
-    // This is a simplified version - in a full implementation, you'd track this more precisely
+    // Restore short-rest class resources
+    if (updatedResources.classResources) {
+      updatedResources.classResources = updatedResources.classResources.map((resource: any) => ({
+        ...resource,
+        used: resource.resetOn === "short" ? 0 : resource.used,
+      }));
+    }
     
     const { error } = await supabase
       .from("characters")
@@ -97,7 +102,7 @@ const RestManager = ({ character }: RestManagerProps) => {
     } else {
       toast({
         title: "Short Rest Complete",
-        description: `Rolled 1d${hitDieSize} + ${conModifier} = ${healing} HP. Current HP: ${newHP}/${character.max_hp}`,
+        description: `Rolled 1d${hitDieSize} + ${conModifier} = ${healing} HP. Short rest resources restored!`,
       });
     }
 
@@ -114,15 +119,24 @@ const RestManager = ({ character }: RestManagerProps) => {
       .eq("id", character.id)
       .single();
 
-    const currentResources = (charData?.resources as any) || {};
+    const currentResources = (charData?.resources as any) || { spellSlots: [], classResources: [] };
     const restoredResources = { ...currentResources };
 
-    // Restore all resources to max
-    Object.keys(restoredResources).forEach(key => {
-      if (restoredResources[key]?.max !== undefined) {
-        restoredResources[key].current = restoredResources[key].max;
-      }
-    });
+    // Restore all spell slots
+    if (restoredResources.spellSlots) {
+      restoredResources.spellSlots = restoredResources.spellSlots.map((slot: any) => ({
+        ...slot,
+        used: 0,
+      }));
+    }
+
+    // Restore all class resources (both short and long rest)
+    if (restoredResources.classResources) {
+      restoredResources.classResources = restoredResources.classResources.map((resource: any) => ({
+        ...resource,
+        used: 0,
+      }));
+    }
 
     // Long rest: Full HP recovery, all resources, clear death saves
     const { error } = await supabase
@@ -148,7 +162,7 @@ const RestManager = ({ character }: RestManagerProps) => {
     } else {
       toast({
         title: "Long Rest Complete",
-        description: `Fully restored! HP, resources, death saves, and actions reset.`,
+        description: `Fully restored! HP, spell slots, class resources, and actions reset.`,
         duration: 5000,
       });
     }

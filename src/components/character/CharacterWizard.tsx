@@ -454,7 +454,39 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      if (!draftId) throw new Error("No character draft found");
+      // Ensure we have a character ID to work with
+      let characterId = draftId;
+      
+      if (!characterId) {
+        console.log("No draftId found, creating character now...");
+        const { data: newChar, error: createError } = await supabase
+          .from("characters")
+          .insert({
+            user_id: user.id,
+            campaign_id: campaignId,
+            name: draft.name,
+            class: draft.className,
+            level: draft.level,
+            creation_status: 'draft',
+            max_hp: 10,
+            current_hp: 10,
+            ac: 10,
+            proficiency_bonus: 2,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error("Error creating character:", createError);
+          throw createError;
+        }
+        if (!newChar) throw new Error("Failed to create character");
+        
+        characterId = newChar.id;
+        setDraftId(characterId);
+      }
+
+      if (!characterId) throw new Error("Unable to create character");
 
       // Update main character record
       const { error: charError } = await supabase
@@ -478,7 +510,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           hair: draft.hair || null,
           notes: draft.notes || null,
         })
-        .eq("id", draftId);
+        .eq("id", characterId);
 
       if (charError) {
         console.error("Error updating character:", charError);
@@ -489,7 +521,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { error: abilitiesError } = await supabase
         .from("character_abilities")
         .upsert({
-          character_id: draftId,
+          character_id: characterId,
           str: draft.abilityScores.STR,
           dex: draft.abilityScores.DEX,
           con: draft.abilityScores.CON,
@@ -507,7 +539,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write saves (from grants)
       if (draft.grants.savingThrows.size > 0) {
         const savesData: any = {
-          character_id: draftId,
+          character_id: characterId,
           str: draft.grants.savingThrows.has('STR'),
           dex: draft.grants.savingThrows.has('DEX'),
           con: draft.grants.savingThrows.has('CON'),
@@ -529,7 +561,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write skills
       if (draft.choices.skills.length > 0) {
         const skillsData = draft.choices.skills.map(skill => ({
-          character_id: draftId,
+          character_id: characterId,
           skill,
           proficient: true,
           expertise: false,
@@ -549,13 +581,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const proficiencies = [];
       
       for (const tool of draft.grants.toolProficiencies) {
-        proficiencies.push({ character_id: draftId, type: 'tool', name: tool });
+        proficiencies.push({ character_id: characterId, type: 'tool', name: tool });
       }
       for (const armor of draft.grants.armorProficiencies) {
-        proficiencies.push({ character_id: draftId, type: 'armor', name: armor });
+        proficiencies.push({ character_id: characterId, type: 'armor', name: armor });
       }
       for (const weapon of draft.grants.weaponProficiencies) {
-        proficiencies.push({ character_id: draftId, type: 'weapon', name: weapon });
+        proficiencies.push({ character_id: characterId, type: 'weapon', name: weapon });
       }
 
       if (proficiencies.length > 0) {
@@ -572,7 +604,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write languages
       if (draft.grants.languages.size > 0) {
         const languagesData = Array.from(draft.grants.languages).map(lang => ({
-          character_id: draftId,
+          character_id: characterId,
           name: lang,
         }));
 
@@ -589,7 +621,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write features
       if (draft.grants.features.length > 0) {
         const featuresData = draft.grants.features.map(feature => ({
-          character_id: draftId,
+          character_id: characterId,
           source: feature.source,
           name: feature.name,
           level: feature.level,
@@ -610,7 +642,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write spells (if caster)
       if (draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0) {
         const spellsData = draft.choices.spellsKnown.map(spellId => ({
-          character_id: draftId,
+          character_id: characterId,
           spell_id: spellId,
           known: true,
           prepared: draft.choices.spellsPrepared?.includes(spellId) || false,

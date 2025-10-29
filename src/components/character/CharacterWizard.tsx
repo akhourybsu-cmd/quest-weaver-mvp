@@ -451,31 +451,153 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Mark character as complete and clear wizard_state
-      if (draftId) {
-        const { error } = await supabase
-          .from("characters")
-          .update({ 
-            creation_status: 'complete',
-            wizard_state: null // Clear the wizard state once complete
-          })
-          .eq("id", draftId);
+      if (!draftId) throw new Error("No character draft found");
 
-        if (error) throw error;
+      // Update main character record
+      const { error: charError } = await supabase
+        .from("characters")
+        .update({ 
+          creation_status: 'complete',
+          wizard_state: null,
+          name: draft.name,
+          class: draft.className,
+          level: draft.level,
+          ancestry_id: draft.ancestryId || null,
+          subancestry_id: draft.subAncestryId || null,
+          background_id: draft.backgroundId || null,
+          subclass_id: draft.subclassId || null,
+          alignment: draft.alignment || null,
+          age: draft.age || null,
+          height: draft.height || null,
+          weight: draft.weight || null,
+          eyes: draft.eyes || null,
+          skin: draft.skin || null,
+          hair: draft.hair || null,
+          notes: draft.notes || null,
+        })
+        .eq("id", draftId);
+
+      if (charError) throw charError;
+
+      // Write abilities
+      const { error: abilitiesError } = await supabase
+        .from("character_abilities")
+        .upsert({
+          character_id: draftId,
+          str: draft.abilityScores.STR,
+          dex: draft.abilityScores.DEX,
+          con: draft.abilityScores.CON,
+          int: draft.abilityScores.INT,
+          wis: draft.abilityScores.WIS,
+          cha: draft.abilityScores.CHA,
+          method: draft.abilityMethod,
+        });
+
+      if (abilitiesError) throw abilitiesError;
+
+      // Write saves (from grants)
+      if (draft.grants.savingThrows.size > 0) {
+        const savesData: any = {
+          character_id: draftId,
+          str: draft.grants.savingThrows.has('STR'),
+          dex: draft.grants.savingThrows.has('DEX'),
+          con: draft.grants.savingThrows.has('CON'),
+          int: draft.grants.savingThrows.has('INT'),
+          wis: draft.grants.savingThrows.has('WIS'),
+          cha: draft.grants.savingThrows.has('CHA'),
+        };
+
+        const { error: savesError } = await supabase
+          .from("character_saves")
+          .upsert(savesData);
+
+        if (savesError) throw savesError;
       }
 
-      // TODO: Implement full character creation with all normalized tables
-      // This will write to:
-      // - characters (main record)
-      // - character_abilities
-      // - character_saves
-      // - character_skills
-      // - character_proficiencies
-      // - character_languages
-      // - character_features
-      // - character_equipment
-      // - character_attacks
-      // - character_spells (if caster)
+      // Write skills
+      if (draft.choices.skills.length > 0) {
+        const skillsData = draft.choices.skills.map(skill => ({
+          character_id: draftId,
+          skill,
+          proficient: true,
+          expertise: false,
+        }));
+
+        const { error: skillsError } = await supabase
+          .from("character_skills")
+          .upsert(skillsData);
+
+        if (skillsError) throw skillsError;
+      }
+
+      // Write proficiencies
+      const proficiencies = [];
+      
+      for (const tool of draft.grants.toolProficiencies) {
+        proficiencies.push({ character_id: draftId, type: 'tool', name: tool });
+      }
+      for (const armor of draft.grants.armorProficiencies) {
+        proficiencies.push({ character_id: draftId, type: 'armor', name: armor });
+      }
+      for (const weapon of draft.grants.weaponProficiencies) {
+        proficiencies.push({ character_id: draftId, type: 'weapon', name: weapon });
+      }
+
+      if (proficiencies.length > 0) {
+        const { error: profError } = await supabase
+          .from("character_proficiencies")
+          .upsert(proficiencies);
+
+        if (profError) throw profError;
+      }
+
+      // Write languages
+      if (draft.grants.languages.size > 0) {
+        const languagesData = Array.from(draft.grants.languages).map(lang => ({
+          character_id: draftId,
+          name: lang,
+        }));
+
+        const { error: langError } = await supabase
+          .from("character_languages")
+          .upsert(languagesData);
+
+        if (langError) throw langError;
+      }
+
+      // Write features
+      if (draft.grants.features.length > 0) {
+        const featuresData = draft.grants.features.map(feature => ({
+          character_id: draftId,
+          source: feature.source,
+          name: feature.name,
+          level: feature.level,
+          description: feature.description,
+          data: {},
+        }));
+
+        const { error: featuresError } = await supabase
+          .from("character_features")
+          .upsert(featuresData);
+
+        if (featuresError) throw featuresError;
+      }
+
+      // Write spells (if caster)
+      if (draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0) {
+        const spellsData = draft.choices.spellsKnown.map(spellId => ({
+          character_id: draftId,
+          spell_id: spellId,
+          known: true,
+          prepared: draft.choices.spellsPrepared?.includes(spellId) || false,
+        }));
+
+        const { error: spellsError } = await supabase
+          .from("character_spells")
+          .upsert(spellsData);
+
+        if (spellsError) throw spellsError;
+      }
 
       toast({
         title: "Character Created!",

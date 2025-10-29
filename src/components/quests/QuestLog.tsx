@@ -236,6 +236,9 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
         variant: "destructive",
       });
     } else {
+      // Remove from local state immediately
+      setQuests(prevQuests => prevQuests.filter(q => q.id !== questId));
+      
       toast({
         title: "Quest deleted",
         description: `"${questTitle}" has been removed.`,

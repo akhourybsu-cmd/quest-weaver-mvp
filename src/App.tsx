@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { CampaignProvider } from "@/contexts/CampaignContext";
+import { useAppVersion } from "@/hooks/useAppVersion";
 import Auth from "./components/Auth";
 import Index from "./pages/Index";
 import CampaignHub from "./pages/CampaignHub";
@@ -29,6 +30,9 @@ const queryClient = new QueryClient();
 const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Auto-refresh when new version is deployed
+  useAppVersion();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

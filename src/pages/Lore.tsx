@@ -13,6 +13,12 @@ import { toast } from "sonner";
 import LoreEditor from "@/components/lore/LoreEditor";
 import LorePageView from "@/components/lore/LorePageView";
 import LoreGraph from "@/components/lore/LoreGraph";
+import RegionCreator from "@/components/lore/creators/RegionCreator";
+import FactionCreator from "@/components/lore/creators/FactionCreator";
+import NPCCreator from "@/components/lore/creators/NPCCreator";
+import HistoryCreator from "@/components/lore/creators/HistoryCreator";
+import MythCreator from "@/components/lore/creators/MythCreator";
+import MagicCreator from "@/components/lore/creators/MagicCreator";
 import BottomNav from "@/components/BottomNav";
 
 interface LorePage {
@@ -72,6 +78,12 @@ export default function Lore() {
   };
 
   const handleCreatePage = () => {
+    setCurrentPage(null);
+    setEditorOpen(true);
+  };
+
+  const handleCreateByCategory = (category: string) => {
+    setActiveCategory(category);
     setCurrentPage(null);
     setEditorOpen(true);
   };
@@ -150,9 +162,14 @@ export default function Lore() {
                 />
               </div>
               {isDM && (
-                <Button onClick={handleCreatePage}>
+                <Button onClick={() => handleCreateByCategory(activeCategory)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  New Page
+                  New {activeCategory === "regions" ? "Region" : 
+                       activeCategory === "factions" ? "Faction" :
+                       activeCategory === "npcs" ? "NPC" :
+                       activeCategory === "history" ? "Event" :
+                       activeCategory === "religion" ? "Deity/Myth" :
+                       "Magic Entry"}
                 </Button>
               )}
             </div>
@@ -191,9 +208,14 @@ export default function Lore() {
                         Start building your world's knowledge base
                       </p>
                       {isDM && (
-                        <Button onClick={handleCreatePage}>
+                        <Button onClick={() => handleCreateByCategory(activeCategory)}>
                           <Plus className="h-4 w-4 mr-2" />
-                          Create First Page
+                          Create First {activeCategory === "regions" ? "Region" : 
+                                       activeCategory === "factions" ? "Faction" :
+                                       activeCategory === "npcs" ? "NPC" :
+                                       activeCategory === "history" ? "Event" :
+                                       activeCategory === "religion" ? "Deity/Myth" :
+                                       "Magic Entry"}
                         </Button>
                       )}
                     </CardContent>
@@ -255,12 +277,50 @@ export default function Lore() {
             </DrawerDescription>
           </DrawerHeader>
           <div className="flex-1 overflow-hidden min-h-0">
-            <LoreEditor
-              campaignId={campaignId}
-              page={currentPage}
-              onSave={handleSavePage}
-              onCancel={() => setEditorOpen(false)}
-            />
+            {!currentPage && activeCategory === "regions" ? (
+              <RegionCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : !currentPage && activeCategory === "factions" ? (
+              <FactionCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : !currentPage && activeCategory === "npcs" ? (
+              <NPCCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : !currentPage && activeCategory === "history" ? (
+              <HistoryCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : !currentPage && activeCategory === "religion" ? (
+              <MythCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : !currentPage && activeCategory === "magic" ? (
+              <MagicCreator
+                campaignId={campaignId}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            ) : (
+              <LoreEditor
+                campaignId={campaignId}
+                page={currentPage}
+                onSave={handleSavePage}
+                onCancel={() => setEditorOpen(false)}
+              />
+            )}
           </div>
         </DrawerContent>
       </Drawer>

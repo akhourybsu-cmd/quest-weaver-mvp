@@ -2026,6 +2026,7 @@ export type Database = {
           category: string
           content_md: string
           created_at: string
+          details: Json | null
           era: string | null
           excerpt: string | null
           id: string
@@ -2041,6 +2042,7 @@ export type Database = {
           category?: string
           content_md: string
           created_at?: string
+          details?: Json | null
           era?: string | null
           excerpt?: string | null
           id?: string
@@ -2056,6 +2058,7 @@ export type Database = {
           category?: string
           content_md?: string
           created_at?: string
+          details?: Json | null
           era?: string | null
           excerpt?: string | null
           id?: string

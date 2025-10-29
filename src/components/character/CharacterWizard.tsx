@@ -135,6 +135,38 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       if (charError) throw charError;
       if (!character) return;
 
+      // Check if we have a saved wizard state (for draft characters)
+      if (character.wizard_state && character.creation_status === 'draft') {
+        const wizardState = character.wizard_state as any;
+        
+        // Restore the full wizard state including current step
+        if (wizardState.currentStep !== undefined) {
+          setCurrentStep(wizardState.currentStep);
+        }
+        
+        if (wizardState.draft) {
+          // Convert arrays back to Sets for grant collections
+          const restoredDraft = {
+            ...wizardState.draft,
+            grants: {
+              ...wizardState.draft.grants,
+              savingThrows: new Set(wizardState.draft.grants.savingThrows || []),
+              skillProficiencies: new Set(wizardState.draft.grants.skillProficiencies || []),
+              toolProficiencies: new Set(wizardState.draft.grants.toolProficiencies || []),
+              armorProficiencies: new Set(wizardState.draft.grants.armorProficiencies || []),
+              weaponProficiencies: new Set(wizardState.draft.grants.weaponProficiencies || []),
+              languages: new Set(wizardState.draft.grants.languages || []),
+            }
+          };
+          
+          setDraft(restoredDraft);
+          setDraftId(id);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fallback: Load from normalized tables (for completed characters or old drafts)
       // Load abilities
       const { data: abilities } = await supabase
         .from("character_abilities")
@@ -274,18 +306,38 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Serialize the full wizard state to preserve all selections
+      const wizardState = {
+        currentStep,
+        draft: {
+          ...draft,
+          // Convert Sets to arrays for JSON serialization
+          grants: {
+            ...draft.grants,
+            savingThrows: Array.from(draft.grants.savingThrows),
+            skillProficiencies: Array.from(draft.grants.skillProficiencies),
+            toolProficiencies: Array.from(draft.grants.toolProficiencies),
+            armorProficiencies: Array.from(draft.grants.armorProficiencies),
+            weaponProficiencies: Array.from(draft.grants.weaponProficiencies),
+            languages: Array.from(draft.grants.languages),
+          }
+        }
+      };
+
       if (draftId) {
-        // Update existing draft
+        // Update existing draft with full state
         await supabase
           .from("characters")
           .update({ 
             name: draft.name,
             class: draft.className || "",
-            creation_status: 'draft'
+            level: draft.level,
+            creation_status: 'draft',
+            wizard_state: wizardState as any
           })
           .eq("id", draftId);
       } else if (draft.name && draft.classId) {
-        // Create new draft
+        // Create new draft with full state
         const { data, error } = await supabase
           .from("characters")
           .insert({
@@ -299,6 +351,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             current_hp: 10,
             ac: 10,
             proficiency_bonus: 2,
+            wizard_state: wizardState as any
           })
           .select()
           .single();
@@ -398,11 +451,14 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Mark character as complete
+      // Mark character as complete and clear wizard_state
       if (draftId) {
         const { error } = await supabase
           .from("characters")
-          .update({ creation_status: 'complete' })
+          .update({ 
+            creation_status: 'complete',
+            wizard_state: null // Clear the wizard state once complete
+          })
           .eq("id", draftId);
 
         if (error) throw error;

@@ -867,6 +867,7 @@ export type Database = {
           vulnerabilities: Database["public"]["Enums"]["damage_type"][] | null
           weight: string | null
           wis_save: number | null
+          wizard_state: Json | null
         }
         Insert: {
           ac: number
@@ -927,6 +928,7 @@ export type Database = {
           vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
           weight?: string | null
           wis_save?: number | null
+          wizard_state?: Json | null
         }
         Update: {
           ac?: number
@@ -987,6 +989,7 @@ export type Database = {
           vulnerabilities?: Database["public"]["Enums"]["damage_type"][] | null
           weight?: string | null
           wis_save?: number | null
+          wizard_state?: Json | null
         }
         Relationships: [
           {

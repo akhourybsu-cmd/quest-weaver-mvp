@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Faction {
@@ -33,6 +34,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [motto, setMotto] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -110,6 +112,33 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
     }
   };
 
+  const handleDelete = async () => {
+    if (!faction) return;
+
+    try {
+      const { error } = await supabase
+        .from("factions")
+        .delete()
+        .eq("id", faction.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Faction deleted",
+        description: `${name} has been deleted successfully`,
+      });
+
+      onSaved();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error deleting faction",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -170,16 +199,44 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              {faction ? "Save Changes" : "Create Faction"}
-            </Button>
+          <div className="flex justify-between gap-2 pt-4 border-t">
+            {faction && (
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                {faction ? "Save Changes" : "Create Faction"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Faction</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

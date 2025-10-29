@@ -13,8 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X, Coins, Award, Package } from "lucide-react";
+import { Plus, X, Coins, Award, Package, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -51,6 +52,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [factions, setFactions] = useState<any[]>([]);
   const [selectedFaction, setSelectedFaction] = useState<string>("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -266,6 +268,50 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
     setSelectedFaction("");
     setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
     onOpenChange(false);
+  };
+
+  const handleDelete = async () => {
+    if (!questToEdit) return;
+
+    try {
+      // Delete quest steps first
+      await supabase.from("quest_steps").delete().eq("quest_id", questToEdit.id);
+      
+      // Delete quest
+      const { error } = await supabase
+        .from("quests")
+        .delete()
+        .eq("id", questToEdit.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Quest deleted!",
+        description: `${title} has been deleted.`,
+      });
+
+      setTitle("");
+      setDescription("");
+      setGiver("");
+      setQuestType("side_quest");
+      setQuestStatus("not_started");
+      setDifficulty("");
+      setLocations([]);
+      setTags([]);
+      setRewardXP("");
+      setRewardGP("");
+      setDmNotes("");
+      setSelectedCharacters([]);
+      setSelectedFaction("");
+      setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -585,16 +631,44 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
             </TabsContent>
           </ScrollArea>
 
-          <div className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleAdd} className="flex-1">
-              {isEditing ? "Update Quest" : "Create Quest"}
-            </Button>
+          <div className="flex justify-between gap-2 mt-4">
+            {isEditing && (
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAdd}>
+                {isEditing ? "Update Quest" : "Create Quest"}
+              </Button>
+            </div>
           </div>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Quest</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{title}"? This will also delete all quest steps. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Trash2 } from "lucide-react";
 
 interface EnhancedItemEditorProps {
   open: boolean;
@@ -42,6 +44,7 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
   const [tags, setTags] = useState("");
   const [value, setValue] = useState("");
   const [weight, setWeight] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   // Magic properties
   const [requiresAttunement, setRequiresAttunement] = useState(false);
@@ -249,6 +252,30 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
     } catch (error: any) {
       toast({
         title: "Error saving item",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!existingItem) return;
+
+    try {
+      const { error } = await supabase
+        .from("items")
+        .delete()
+        .eq("id", existingItem.id);
+
+      if (error) throw error;
+
+      toast({ title: "Item deleted successfully" });
+      onSave();
+      onOpenChange(false);
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting item",
         description: error.message,
         variant: "destructive",
       });
@@ -740,15 +767,43 @@ const EnhancedItemEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
           </Tabs>
         </ScrollArea>
 
-        <div className="flex gap-2 pt-4 border-t">
-          <Button onClick={handleSave} className="flex-1">
-            {existingItem ? "Update Item" : "Create Item"}
-          </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
+        <div className="flex justify-between gap-2 pt-4 border-t">
+          {existingItem && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>
+              {existingItem ? "Update Item" : "Create Item"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

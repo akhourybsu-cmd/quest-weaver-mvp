@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, Code, Save, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Eye, Code, Save, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -32,6 +33,7 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
   const [visibility, setVisibility] = useState<'DM_ONLY' | 'SHARED' | 'PUBLIC'>(page?.visibility || 'DM_ONLY');
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -173,6 +175,24 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
 
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter(t => t !== tag));
+  };
+
+  const handleDelete = async () => {
+    if (!page) return;
+
+    try {
+      const { error } = await supabase
+        .from("lore_pages")
+        .delete()
+        .eq("id", page.id);
+
+      if (error) throw error;
+
+      toast.success("Page deleted successfully");
+      onSave();
+    } catch (error: any) {
+      toast.error("Failed to delete page: " + error.message);
+    }
   };
 
   return (
@@ -322,9 +342,21 @@ Use @NPC, #Location, %Faction, !Quest, $Item to link entities"
       </Tabs>
 
       <div className="p-4 border-t flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {saving ? "Saving..." : "Autosave enabled"}
-        </p>
+        <div className="flex items-center gap-2">
+          {page && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {saving ? "Saving..." : "Autosave enabled"}
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>
             Cancel
@@ -335,6 +367,23 @@ Use @NPC, #Location, %Faction, !Quest, $Item to link entities"
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lore Page</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

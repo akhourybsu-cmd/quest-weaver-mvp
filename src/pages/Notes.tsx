@@ -1,24 +1,30 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import QuestLog from "@/components/quests/QuestLog";
-import EnhancedNPCDirectory from "@/components/npcs/EnhancedNPCDirectory";
-import FactionDirectory from "@/components/factions/FactionDirectory";
-import LootPool from "@/components/loot/LootPool";
-import HandoutViewer from "@/components/handouts/HandoutViewer";
+import NotesBoard from "@/components/notes/NotesBoard";
 import { ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 const Notes = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const campaignId = searchParams.get("campaign");
   const isDM = searchParams.get("dm") === "true";
+  const [userId, setUserId] = useState<string | null>(null);
 
-  if (!campaignId) {
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUserId();
+  }, []);
+
+  if (!campaignId || !userId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>No campaign selected</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -33,19 +39,19 @@ const Notes = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold">Campaign Notes</h1>
+            <h1 className="text-2xl font-bold">Session Notes</h1>
             <div className="w-20" />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        <QuestLog campaignId={campaignId} isDM={isDM} />
-        <EnhancedNPCDirectory campaignId={campaignId} isDM={isDM} />
-        <FactionDirectory campaignId={campaignId} isDM={isDM} />
-        <LootPool campaignId={campaignId} isDM={isDM} />
-        <HandoutViewer campaignId={campaignId} isDM={isDM} />
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <NotesBoard
+          campaignId={campaignId}
+          isDM={isDM}
+          userId={userId}
+        />
       </div>
 
       <BottomNav role={isDM ? "dm" : "player"} />

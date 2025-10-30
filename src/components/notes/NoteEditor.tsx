@@ -8,10 +8,22 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Save, Pin, X, Check, Trash2 } from "lucide-react";
+import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import NoteLinkSelector from "./NoteLinkSelector";
+
+const PREDEFINED_TAGS = [
+  { name: "NPC", icon: Target, color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400" },
+  { name: "Quest", icon: Target, color: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400" },
+  { name: "Clue", icon: Lightbulb, color: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400" },
+  { name: "Combat", icon: Swords, color: "bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400" },
+  { name: "Loot", icon: Package, color: "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400" },
+  { name: "Lore", icon: BookOpen, color: "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-400" },
+  { name: "Location", icon: MapPin, color: "bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-400" },
+  { name: "Downtime", icon: Clock, color: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400" },
+  { name: "GM Thought", icon: Brain, color: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400" },
+];
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -371,44 +383,63 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={visibility} onValueChange={(v) => setVisibility(v as typeof visibility)}>
-                <SelectTrigger id="visibility">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {isDM && <SelectItem value="DM_ONLY">DM Only</SelectItem>}
-                  <SelectItem value="SHARED">Shared with Party</SelectItem>
-                  <SelectItem value="PRIVATE">Private</SelectItem>
-                </SelectContent>
-              </Select>
+          <div>
+            <Label htmlFor="visibility">Visibility</Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {isDM && (
+                <Button
+                  type="button"
+                  variant={visibility === "DM_ONLY" ? "default" : "outline"}
+                  className={visibility === "DM_ONLY" ? "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-400" : ""}
+                  onClick={() => setVisibility("DM_ONLY")}
+                >
+                  DM Only
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant={visibility === "SHARED" ? "default" : "outline"}
+                className={visibility === "SHARED" ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-400" : ""}
+                onClick={() => setVisibility("SHARED")}
+              >
+                Shared
+              </Button>
+              <Button
+                type="button"
+                variant={visibility === "PRIVATE" ? "default" : "outline"}
+                className={visibility === "PRIVATE" ? "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400" : ""}
+                onClick={() => setVisibility("PRIVATE")}
+              >
+                Private
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {visibility === "DM_ONLY" && "Visible only to you as DM"}
+              {visibility === "SHARED" && "Players can see this in recap/player view"}
+              {visibility === "PRIVATE" && "Personal planning. Treated as hidden from players"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="pinned"
+                checked={isPinned}
+                onCheckedChange={setIsPinned}
+              />
+              <Label htmlFor="pinned" className="flex items-center gap-1.5">
+                <Pin className="w-4 h-4" />
+                Pin this note
+              </Label>
             </div>
 
-            <div className="flex items-center gap-4 pt-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="pinned"
-                  checked={isPinned}
-                  onCheckedChange={setIsPinned}
-                />
-                <Label htmlFor="pinned" className="flex items-center gap-1">
-                  <Pin className="w-4 h-4" />
-                  Pin
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="autosave"
-                  checked={autoSaveEnabled}
-                  onCheckedChange={setAutoSaveEnabled}
-                />
-                <Label htmlFor="autosave" className="flex items-center gap-1">
-                  Auto-save
-                </Label>
-              </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="autosave"
+                checked={autoSaveEnabled}
+                onCheckedChange={setAutoSaveEnabled}
+              />
+              <Label htmlFor="autosave">Auto-save</Label>
             </div>
           </div>
 
@@ -444,27 +475,59 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           </div>
 
           <div>
-            <Label htmlFor="tags">Custom Tags</Label>
+            <Label>Tags</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {PREDEFINED_TAGS.map((tagDef) => {
+                const isSelected = tags.includes(tagDef.name);
+                const TagIcon = tagDef.icon;
+                return (
+                  <Button
+                    key={tagDef.name}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    className={`rounded-full ${isSelected ? tagDef.color : ""}`}
+                    onClick={() => {
+                      if (isSelected) {
+                        handleRemoveTag(tagDef.name);
+                      } else {
+                        setTags([...tags, tagDef.name]);
+                      }
+                    }}
+                  >
+                    <TagIcon className="w-3 h-3 mr-1.5" />
+                    {tagDef.name}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="customTags">Custom Tags</Label>
             <Input
-              id="tags"
+              id="customTags"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleAddTag}
               placeholder="Type and press Enter to add custom tags..."
+              className="mt-2"
             />
-            <div className="flex flex-wrap gap-1 mt-2">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
+            {tags.filter(tag => !PREDEFINED_TAGS.some(pt => pt.name === tag)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.filter(tag => !PREDEFINED_TAGS.some(pt => pt.name === tag)).map((tag) => (
+                  <Badge key={tag} variant="secondary" className="rounded-full">
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1.5 hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

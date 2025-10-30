@@ -106,6 +106,10 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     }
   });
 
+  // Separate pinned and unpinned notes
+  const pinnedNotes = filteredNotes.filter(note => note.is_pinned);
+  const unpinnedNotes = filteredNotes.filter(note => !note.is_pinned);
+
   const handleNewNote = () => {
     setSelectedNote(null);
     setEditorOpen(true);
@@ -117,7 +121,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   };
 
   return (
-    <Card>
+    <Card className="border-border/50 shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Session Notes</CardTitle>
@@ -131,48 +135,81 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search notes, tags..."
+              placeholder="Search notes, tags, NPCs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 rounded-lg"
             />
           </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="mine">Mine</TabsTrigger>
-            <TabsTrigger value="dm">DM Only</TabsTrigger>
-            <TabsTrigger value="shared">Shared</TabsTrigger>
-            <TabsTrigger value="private">Private</TabsTrigger>
-            <TabsTrigger value="pinned">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6 rounded-lg">
+            <TabsTrigger value="all" className="rounded-md">All</TabsTrigger>
+            <TabsTrigger value="mine" className="rounded-md">Mine</TabsTrigger>
+            <TabsTrigger value="dm" className="rounded-md">DM Only</TabsTrigger>
+            <TabsTrigger value="shared" className="rounded-md">Shared</TabsTrigger>
+            <TabsTrigger value="private" className="rounded-md">Private</TabsTrigger>
+            <TabsTrigger value="pinned" className="rounded-md">
               <Pin className="w-4 h-4" />
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={filter} className="mt-4">
+          <TabsContent value={filter} className="mt-0 space-y-6">
             {filteredNotes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No notes found</p>
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg">No notes found</p>
                 {filter !== "all" && (
-                  <p className="text-sm mt-1">Try a different filter or create a new note</p>
+                  <p className="text-sm mt-2">Try a different filter or create a new note</p>
                 )}
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onClick={() => handleEditNote(note)}
-                    isDM={isDM}
-                    isOwner={note.author_id === userId}
-                  />
-                ))}
-              </div>
+              <>
+                {/* Pinned Section */}
+                {pinnedNotes.length > 0 && filter === "all" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Pin className="w-4 h-4 text-amber-600 fill-amber-500" />
+                      <span>Pinned</span>
+                    </div>
+                    <div className="grid gap-3">
+                      {pinnedNotes.map((note) => (
+                        <NoteCard
+                          key={note.id}
+                          note={note}
+                          onClick={() => handleEditNote(note)}
+                          isDM={isDM}
+                          isOwner={note.author_id === userId}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular Notes */}
+                {unpinnedNotes.length > 0 && (
+                  <div className="space-y-3">
+                    {filter === "all" && pinnedNotes.length > 0 && (
+                      <div className="text-sm font-medium text-muted-foreground pt-3 border-t">
+                        Recent Notes
+                      </div>
+                    )}
+                    <div className="grid gap-3">
+                      {unpinnedNotes.map((note) => (
+                        <NoteCard
+                          key={note.id}
+                          note={note}
+                          onClick={() => handleEditNote(note)}
+                          isDM={isDM}
+                          isOwner={note.author_id === userId}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>

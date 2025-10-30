@@ -20,6 +20,14 @@ interface Note {
   created_at: string;
   updated_at: string;
   author_id: string;
+  session_id: string | null;
+}
+
+interface Session {
+  id: string;
+  title: string;
+  session_number: number;
+  session_date: string;
 }
 
 interface NotesBoardProps {
@@ -30,6 +38,7 @@ interface NotesBoardProps {
 
 const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -38,6 +47,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
 
   useEffect(() => {
     loadNotes();
+    loadSessions();
 
     const channel = supabase
       .channel(`session_notes:${campaignId}`)
@@ -78,6 +88,25 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     setNotes((data || []) as Note[]);
   };
 
+  const loadSessions = async () => {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("id, title, session_number, session_date")
+      .eq("campaign_id", campaignId)
+      .order("session_number", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error loading sessions",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSessions((data || []) as Session[]);
+  };
+
   const filteredNotes = notes.filter((note) => {
     // Apply search filter
     if (searchQuery) {
@@ -109,6 +138,16 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   // Separate pinned and unpinned notes
   const pinnedNotes = filteredNotes.filter(note => note.is_pinned);
   const unpinnedNotes = filteredNotes.filter(note => !note.is_pinned);
+
+  // Group unpinned notes by session
+  const notesBySession = unpinnedNotes.reduce((acc, note) => {
+    const sessionId = note.session_id || "no-session";
+    if (!acc[sessionId]) {
+      acc[sessionId] = [];
+    }
+    acc[sessionId].push(note);
+    return acc;
+  }, {} as Record<string, Note[]>);
 
   const handleNewNote = () => {
     setSelectedNote(null);
@@ -188,25 +227,42 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                   </div>
                 )}
 
-                {/* Regular Notes */}
-                {unpinnedNotes.length > 0 && (
-                  <div className="space-y-3">
+                {/* Notes Grouped by Session */}
+                {Object.keys(notesBySession).length > 0 && (
+                  <div className="space-y-6">
                     {filter === "all" && pinnedNotes.length > 0 && (
                       <div className="text-sm font-medium text-muted-foreground pt-3 border-t">
                         Recent Notes
                       </div>
                     )}
-                    <div className="grid gap-3">
-                      {unpinnedNotes.map((note) => (
-                        <NoteCard
-                          key={note.id}
-                          note={note}
-                          onClick={() => handleEditNote(note)}
-                          isDM={isDM}
-                          isOwner={note.author_id === userId}
-                        />
-                      ))}
-                    </div>
+                    {Object.entries(notesBySession).map(([sessionId, sessionNotes]) => {
+                      const session = sessions.find(s => s.id === sessionId);
+                      return (
+                        <div key={sessionId} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-semibold text-foreground">
+                              {session ? `Session ${session.session_number}: ${session.title}` : "Unassigned Notes"}
+                            </div>
+                            {session?.session_date && (
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(session.session_date).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid gap-3">
+                            {sessionNotes.map((note) => (
+                              <NoteCard
+                                key={note.id}
+                                note={note}
+                                onClick={() => handleEditNote(note)}
+                                isDM={isDM}
+                                isOwner={note.author_id === userId}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </>

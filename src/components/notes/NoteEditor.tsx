@@ -80,7 +80,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [mentionOptions, setMentionOptions] = useState<Array<{ id: string; name: string; type: string }>>([]);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Array<{ id: string; title: string; session_number: number }>>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadSessions();
+  }, [campaignId]);
 
   useEffect(() => {
     if (note) {
@@ -90,6 +96,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setIsPinned(note.is_pinned);
       setTags(note.tags || []);
       loadLinks(note.id);
+      loadNoteSession(note.id);
     } else {
       setTitle("");
       setContent("");
@@ -97,9 +104,34 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setIsPinned(false);
       setTags([]);
       setLinks([]);
+      setSessionId(null);
     }
     setLastSaved(null);
   }, [note, open, isDM]);
+
+  const loadSessions = async () => {
+    const { data } = await supabase
+      .from("sessions")
+      .select("id, title, session_number")
+      .eq("campaign_id", campaignId)
+      .order("session_number", { ascending: false });
+    
+    if (data) {
+      setSessions(data);
+    }
+  };
+
+  const loadNoteSession = async (noteId: string) => {
+    const { data } = await supabase
+      .from("session_notes")
+      .select("session_id")
+      .eq("id", noteId)
+      .single();
+    
+    if (data) {
+      setSessionId(data.session_id);
+    }
+  };
 
   const loadLinks = async (noteId: string) => {
     const { data } = await supabase
@@ -196,6 +228,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             visibility,
             is_pinned: isPinned,
             tags,
+            session_id: sessionId,
             updated_at: new Date().toISOString(),
           })
           .eq("id", note.id);
@@ -211,6 +244,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           visibility,
           is_pinned: isPinned,
           tags,
+          session_id: sessionId,
         }).select().single();
 
         if (error) throw error;
@@ -420,60 +454,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="pinned"
-                checked={isPinned}
-                onCheckedChange={setIsPinned}
-              />
-              <Label htmlFor="pinned" className="flex items-center gap-1.5">
-                <Pin className="w-4 h-4" />
-                Pin this note
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                id="autosave"
-                checked={autoSaveEnabled}
-                onCheckedChange={setAutoSaveEnabled}
-              />
-              <Label htmlFor="autosave">Auto-save</Label>
-            </div>
-          </div>
-
-          <div className="relative">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
-              className="min-h-[300px] font-mono"
-            />
-            
-            {showMentions && mentionOptions.length > 0 && (
-              <div 
-                className="absolute z-50 w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
-                style={{ top: mentionPosition.top, left: mentionPosition.left }}
-              >
-                {mentionOptions.map((option) => (
-                  <button
-                    key={`${option.type}-${option.id}`}
-                    onClick={() => handleMentionSelect(option)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2"
-                  >
-                    <Badge variant="outline" className="text-xs">
-                      {option.type}
-                    </Badge>
-                    <span>{option.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div>
             <Label>Tags</Label>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -529,6 +509,78 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               </div>
             )}
           </div>
+
+          <div>
+            <Label htmlFor="session">Session</Label>
+            <Select value={sessionId || "none"} onValueChange={(v) => setSessionId(v === "none" ? null : v)}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Select a session (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No session</SelectItem>
+                {sessions.map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                    Session {session.session_number}: {session.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="pinned"
+                checked={isPinned}
+                onCheckedChange={setIsPinned}
+              />
+              <Label htmlFor="pinned" className="flex items-center gap-1.5">
+                <Pin className="w-4 h-4" />
+                Pin this note
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="autosave"
+                checked={autoSaveEnabled}
+                onCheckedChange={setAutoSaveEnabled}
+              />
+              <Label htmlFor="autosave">Auto-save</Label>
+            </div>
+          </div>
+
+          <div className="relative">
+            <Label htmlFor="content">Content</Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={handleContentChange}
+              placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
+              className="min-h-[300px] font-mono"
+            />
+            
+            {showMentions && mentionOptions.length > 0 && (
+              <div 
+                className="absolute z-50 w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+                style={{ top: mentionPosition.top, left: mentionPosition.left }}
+              >
+                {mentionOptions.map((option) => (
+                  <button
+                    key={`${option.type}-${option.id}`}
+                    onClick={() => handleMentionSelect(option)}
+                    className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2"
+                  >
+                    <Badge variant="outline" className="text-xs">
+                      {option.type}
+                    </Badge>
+                    <span>{option.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
 
           <div>
             <Label>Linked Entities</Label>

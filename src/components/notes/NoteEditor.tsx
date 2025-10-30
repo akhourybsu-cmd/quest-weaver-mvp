@@ -129,7 +129,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       .limit(10);
     
     if (npcs) {
-      options.push(...npcs.map(npc => ({ id: npc.id, name: npc.name, type: "npc" })));
+      options.push(...npcs.map(npc => ({ id: npc.id, name: npc.name, type: "NPC" })));
     }
 
     // Fetch Characters
@@ -141,7 +141,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       .limit(10);
     
     if (characters) {
-      options.push(...characters.map(char => ({ id: char.id, name: char.name, type: "character" })));
+      options.push(...characters.map(char => ({ id: char.id, name: char.name, type: "CHARACTER" })));
     }
 
     // Fetch Locations
@@ -153,7 +153,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       .limit(10);
     
     if (locations) {
-      options.push(...locations.map(loc => ({ id: loc.id, name: loc.name, type: "location" })));
+      options.push(...locations.map(loc => ({ id: loc.id, name: loc.name, type: "LOCATION" })));
     }
 
     // Fetch Quests
@@ -165,7 +165,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       .limit(10);
     
     if (quests) {
-      options.push(...quests.map(quest => ({ id: quest.id, name: quest.title, type: "quest" })));
+      options.push(...quests.map(quest => ({ id: quest.id, name: quest.title, type: "QUEST" })));
     }
 
     setMentionOptions(options);

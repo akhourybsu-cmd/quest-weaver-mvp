@@ -78,12 +78,20 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLinkedNotes = async () => {
-    // Get notes that have this NPC linked
-    const { data: links } = await supabase
+    console.log(`[NPCDetailDrawer] Loading notes for NPC: ${npc.name} (${npc.id})`);
+    
+    // Get notes that have this NPC linked (using uppercase NPC)
+    const { data: links, error: linksError } = await supabase
       .from("note_links")
       .select("note_id")
-      .eq("link_type", "npc")
+      .eq("link_type", "NPC")
       .eq("link_id", npc.id);
+
+    console.log(`[NPCDetailDrawer] Found ${links?.length || 0} note links`, links);
+    
+    if (linksError) {
+      console.error("[NPCDetailDrawer] Error loading note links:", linksError);
+    }
 
     if (!links || links.length === 0) {
       setLinkedNotes([]);
@@ -93,12 +101,25 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
     const noteIds = links.map(l => l.note_id);
     
     // Fetch the actual notes
-    const { data: notes } = await supabase
+    // Filter based on visibility: DMs see all, players only see SHARED notes
+    let query = supabase
       .from("session_notes")
-      .select("id, title, content_markdown, visibility, is_pinned, created_at, updated_at")
+      .select("id, title, content_markdown, visibility, is_pinned, created_at, updated_at, tags")
       .in("id", noteIds)
-      .eq("campaign_id", campaignId)
-      .order("updated_at", { ascending: false });
+      .eq("campaign_id", campaignId);
+
+    // Players can only see SHARED notes
+    if (!isDM) {
+      query = query.eq("visibility", "SHARED");
+    }
+
+    const { data: notes, error: notesError } = await query.order("updated_at", { ascending: false });
+
+    console.log(`[NPCDetailDrawer] Loaded ${notes?.length || 0} notes for display`, notes);
+    
+    if (notesError) {
+      console.error("[NPCDetailDrawer] Error loading notes:", notesError);
+    }
 
     setLinkedNotes(notes || []);
   };
@@ -265,39 +286,82 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
               )}
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-2">
+            <TabsContent value="notes" className="space-y-3">
               {linkedNotes.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  No notes linked to this NPC yet. Use @{npc.name} in notes to link them automatically.
-                </p>
+                <Card className="border-dashed">
+                  <CardContent className="pt-6">
+                    <p className="text-center py-4 text-muted-foreground text-sm">
+                      No notes linked to this NPC yet.
+                      {isDM && (
+                        <span className="block mt-2">
+                          Use <span className="font-mono text-primary">@{npc.name}</span> in Session Notes to link them automatically.
+                        </span>
+                      )}
+                    </p>
+                  </CardContent>
+                </Card>
               ) : (
-                linkedNotes.map((note) => (
-                  <Card key={note.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold flex items-center gap-2">
-                            {note.title}
-                            {note.is_pinned && (
-                              <Badge variant="secondary" className="text-xs">Pinned</Badge>
-                            )}
-                          </h4>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                <>
+                  <div className="text-sm text-muted-foreground px-1">
+                    {linkedNotes.length} {linkedNotes.length === 1 ? 'note' : 'notes'} mentioning {npc.name}
+                  </div>
+                  {linkedNotes.map((note) => {
+                    const visibilityConfig = {
+                      DM_ONLY: { 
+                        label: "DM Only", 
+                        className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-400"
+                      },
+                      SHARED: { 
+                        label: "Shared", 
+                        className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-400"
+                      },
+                      PRIVATE: { 
+                        label: "Private", 
+                        className: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400"
+                      },
+                    };
+                    const visConfig = visibilityConfig[note.visibility as keyof typeof visibilityConfig];
+                    
+                    return (
+                      <Card key={note.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h4 className="font-semibold flex items-center gap-2 flex-1">
+                              {note.title}
+                              {note.is_pinned && (
+                                <Badge variant="secondary" className="text-xs rounded-full">Pinned</Badge>
+                              )}
+                            </h4>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs shrink-0 rounded-full ${visConfig.className}`}
+                            >
+                              {visConfig.label}
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground line-clamp-3 mb-2 whitespace-pre-wrap">
                             {note.content_markdown}
                           </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {note.visibility === "DM_ONLY" && "DM Only"}
-                          {note.visibility === "SHARED" && "Shared"}
-                          {note.visibility === "PRIVATE" && "Private"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Updated {new Date(note.updated_at).toLocaleDateString()}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))
+                          
+                          {note.tags && note.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {note.tags.map((tag: string) => (
+                                <Badge key={tag} variant="secondary" className="text-xs rounded-full">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <p className="text-xs text-muted-foreground">
+                            Updated {new Date(note.updated_at).toLocaleDateString()} at {new Date(note.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </>
               )}
             </TabsContent>
           </Tabs>

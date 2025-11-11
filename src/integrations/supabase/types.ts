@@ -1327,6 +1327,7 @@ export type Database = {
         Row: {
           actor_id: string
           actor_type: string
+          cover_type: string | null
           created_at: string
           encounter_id: string
           expires_at: string
@@ -1338,6 +1339,7 @@ export type Database = {
         Insert: {
           actor_id: string
           actor_type?: string
+          cover_type?: string | null
           created_at?: string
           encounter_id: string
           expires_at?: string
@@ -1349,6 +1351,7 @@ export type Database = {
         Update: {
           actor_id?: string
           actor_type?: string
+          cover_type?: string | null
           created_at?: string
           encounter_id?: string
           expires_at?: string
@@ -2932,6 +2935,53 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_attacks: {
+        Row: {
+          attack_result: Json | null
+          attacker_id: string
+          attacker_type: string
+          created_at: string | null
+          encounter_id: string
+          id: string
+          resolved: boolean | null
+          target_id: string
+          target_type: string
+          triggered_at: string | null
+        }
+        Insert: {
+          attack_result?: Json | null
+          attacker_id: string
+          attacker_type: string
+          created_at?: string | null
+          encounter_id: string
+          id?: string
+          resolved?: boolean | null
+          target_id: string
+          target_type: string
+          triggered_at?: string | null
+        }
+        Update: {
+          attack_result?: Json | null
+          attacker_id?: string
+          attacker_type?: string
+          created_at?: string | null
+          encounter_id?: string
+          id?: string
+          resolved?: boolean | null
+          target_id?: string
+          target_type?: string
+          triggered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_attacks_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
             referencedColumns: ["id"]
           },
         ]

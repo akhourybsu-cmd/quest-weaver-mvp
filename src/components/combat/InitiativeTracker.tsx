@@ -19,7 +19,8 @@ import { ResourceChips } from "@/components/combat/ResourceChips";
 import { InspirationToggle } from "@/components/combat/InspirationToggle";
 import { QuickHPControls } from "@/components/combat/QuickHPControls";
 import { CombatSummary } from "@/components/combat/CombatSummary";
-import CombatModifierManager from "@/components/combat/CombatModifierManager";
+import CombatModifierManager from "./CombatModifierManager";
+import CoverSelector from "./CoverSelector";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -566,6 +567,11 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                         actorType={entry.combatant_type}
                         actorName={entry.combatant_name || "Unknown"}
                         isDM={true}
+                      />
+                      <CoverSelector
+                        encounterId={encounterId}
+                        actorId={entry.combatant_id}
+                        actorType={entry.combatant_type}
                       />
                       {entry.combatant_type === 'character' && (
                         <QuickConditionsPopover

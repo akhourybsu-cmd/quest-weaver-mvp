@@ -33,6 +33,7 @@ import DeathSaveTracker from "@/components/combat/DeathSaveTracker";
 import { EncounterControls } from "@/components/combat/EncounterControls";
 import { NeedRulingIndicator } from "@/components/combat/NeedRulingIndicator";
 import { PartyRestManager } from "@/components/combat/PartyRestManager";
+import { ReadiedActionsList } from "@/components/combat/ReadiedActionsList";
 import { PlayerTurnSignals } from "@/components/combat/PlayerTurnSignals";
 
 interface Character {
@@ -634,6 +635,11 @@ const SessionDM = () => {
                   encounterId={activeEncounter.id}
                   currentRound={activeEncounter.current_round}
                   characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                />
+                <ReadiedActionsList 
+                  encounterId={activeEncounter.id} 
+                  currentRound={activeEncounter.current_round}
+                  isDM={true}
                 />
                 <EffectsList encounterId={activeEncounter.id} />
               </>

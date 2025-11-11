@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, SkipForward } from "lucide-react";
+import { Check, X, SkipForward, Zap, Mountain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import GrappleShoveMenu from "@/components/combat/GrappleShoveMenu";
 import EscapeGrappleButton from "@/components/combat/EscapeGrappleButton";
+import { ReadiedActionDialog } from "@/components/combat/ReadiedActionDialog";
+import { MountCombatManager } from "@/components/combat/MountCombatManager";
+import { useMountedStatus } from "@/hooks/useMountedStatus";
 
 interface PlayerCombatActionsProps {
   characterId: string;
@@ -36,13 +39,21 @@ export function PlayerCombatActions({
   const [character, setCharacter] = useState<any>(null);
   const [targets, setTargets] = useState<any[]>([]);
   const [grappleCondition, setGrappleCondition] = useState<any>(null);
+  const [showReadiedActionDialog, setShowReadiedActionDialog] = useState(false);
+  const [showMountDialog, setShowMountDialog] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [availableMounts, setAvailableMounts] = useState<any[]>([]);
   const { toast } = useToast();
+  
+  const mountedStatus = useMountedStatus(encounterId, characterId, 'character');
 
   useEffect(() => {
     fetchActionEconomy();
     fetchCharacterData();
     fetchTargets();
     fetchGrappleCondition();
+    fetchEncounterRound();
+    fetchAvailableMounts();
 
     const channel = supabase
       .channel(`player-actions:${characterId}`)
@@ -72,9 +83,24 @@ export function PlayerCombatActions({
       )
       .subscribe();
 
+    const encounterChannel = supabase
+      .channel(`encounter-round:${encounterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'encounters',
+          filter: `id=eq.${encounterId}`,
+        },
+        () => fetchEncounterRound()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(conditionsChannel);
+      supabase.removeChannel(encounterChannel);
     };
   }, [characterId, encounterId]);
 
@@ -95,7 +121,7 @@ export function PlayerCombatActions({
   const fetchCharacterData = async () => {
     const { data } = await supabase
       .from("characters")
-      .select("id, name, str_save, dex_save, proficiency_bonus")
+      .select("id, name, str_save, dex_save, proficiency_bonus, size")
       .eq("id", characterId)
       .single();
 
@@ -111,6 +137,62 @@ export function PlayerCombatActions({
         acrobaticsBonus,
       });
     }
+  };
+
+  const fetchEncounterRound = async () => {
+    const { data } = await supabase
+      .from("encounters")
+      .select("current_round")
+      .eq("id", encounterId)
+      .single();
+
+    if (data) {
+      setCurrentRound(data.current_round || 1);
+    }
+  };
+
+  const fetchAvailableMounts = async () => {
+    const { data: initData } = await supabase
+      .from("initiative")
+      .select("combatant_id, combatant_type")
+      .eq("encounter_id", encounterId);
+
+    if (!initData) return;
+
+    const mounts = await Promise.all(
+      initData.map(async (init) => {
+        if (init.combatant_type === 'character' && init.combatant_id !== characterId) {
+          const { data } = await supabase
+            .from('characters')
+            .select('id, name, size')
+            .eq('id', init.combatant_id)
+            .single();
+
+          return data ? {
+            id: data.id,
+            name: data.name,
+            type: 'character' as const,
+            size: data.size || 'Medium',
+          } : null;
+        } else if (init.combatant_type === 'monster') {
+          const { data } = await supabase
+            .from('encounter_monsters')
+            .select('id, display_name, size')
+            .eq('id', init.combatant_id)
+            .single();
+
+          return data ? {
+            id: data.id,
+            name: data.display_name,
+            type: 'monster' as const,
+            size: data.size || 'Medium',
+          } : null;
+        }
+        return null;
+      })
+    );
+
+    setAvailableMounts(mounts.filter(Boolean) as any[]);
   };
 
   const fetchTargets = async () => {
@@ -273,6 +355,23 @@ export function PlayerCombatActions({
                     conditionId={grappleCondition.id}
                   />
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowReadiedActionDialog(true)}
+                  disabled={actionUsed}
+                >
+                  <Zap className="w-4 h-4 mr-1" />
+                  Ready Action
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowMountDialog(true)}
+                >
+                  <Mountain className="w-4 h-4 mr-1" />
+                  {mountedStatus.isMounted ? 'Dismount' : 'Mount'}
+                </Button>
               </div>
             </div>
           )}
@@ -304,6 +403,31 @@ export function PlayerCombatActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {character && (
+        <>
+          <ReadiedActionDialog
+            open={showReadiedActionDialog}
+            onOpenChange={setShowReadiedActionDialog}
+            encounterId={encounterId}
+            characterId={characterId}
+            combatantName={character.name}
+            currentRound={currentRound}
+          />
+
+          <MountCombatManager
+            open={showMountDialog}
+            onOpenChange={setShowMountDialog}
+            encounterId={encounterId}
+            riderId={characterId}
+            riderType="character"
+            riderName={character.name}
+            riderSize={character.size || 'Medium'}
+            currentRound={currentRound}
+            availableMounts={availableMounts}
+          />
+        </>
+      )}
     </>
   );
 }

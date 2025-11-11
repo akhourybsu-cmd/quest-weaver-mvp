@@ -2723,6 +2723,78 @@ export type Database = {
           },
         ]
       }
+      mount_rider_pairs: {
+        Row: {
+          created_at: string | null
+          encounter_id: string
+          id: string
+          is_controlled: boolean | null
+          mount_character_id: string | null
+          mount_monster_id: string | null
+          mounted_at_round: number
+          rider_character_id: string | null
+          rider_monster_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          encounter_id: string
+          id?: string
+          is_controlled?: boolean | null
+          mount_character_id?: string | null
+          mount_monster_id?: string | null
+          mounted_at_round: number
+          rider_character_id?: string | null
+          rider_monster_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          encounter_id?: string
+          id?: string
+          is_controlled?: boolean | null
+          mount_character_id?: string | null
+          mount_monster_id?: string | null
+          mounted_at_round?: number
+          rider_character_id?: string | null
+          rider_monster_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mount_rider_pairs_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mount_rider_pairs_mount_character_id_fkey"
+            columns: ["mount_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mount_rider_pairs_mount_monster_id_fkey"
+            columns: ["mount_monster_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_monsters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mount_rider_pairs_rider_character_id_fkey"
+            columns: ["rider_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mount_rider_pairs_rider_monster_id_fkey"
+            columns: ["rider_monster_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_monsters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_links: {
         Row: {
           created_at: string | null
@@ -3249,6 +3321,61 @@ export type Database = {
             columns: ["quest_chain_parent"]
             isOneToOne: false
             referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      readied_actions: {
+        Row: {
+          action_description: string
+          character_id: string | null
+          created_at: string | null
+          encounter_id: string
+          expires_at_round: number
+          id: string
+          monster_id: string | null
+          trigger_condition: string
+        }
+        Insert: {
+          action_description: string
+          character_id?: string | null
+          created_at?: string | null
+          encounter_id: string
+          expires_at_round: number
+          id?: string
+          monster_id?: string | null
+          trigger_condition: string
+        }
+        Update: {
+          action_description?: string
+          character_id?: string | null
+          created_at?: string | null
+          encounter_id?: string
+          expires_at_round?: number
+          id?: string
+          monster_id?: string | null
+          trigger_condition?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "readied_actions_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "readied_actions_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "readied_actions_monster_id_fkey"
+            columns: ["monster_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_monsters"
             referencedColumns: ["id"]
           },
         ]

@@ -154,21 +154,46 @@ export async function applyFeature(application: FeatureApplication): Promise<{
       const res = rules.grantResource;
       const maxValue = evaluateFormula(res.maxFormula, level);
       
-      const { error } = await supabase
+      // Check if resource already exists (for upgrades)
+      const { data: existing } = await supabase
         .from('character_resources')
-        .upsert({
-          character_id: characterId,
-          resource_key: res.key,
-          label: res.label,
-          max_value: maxValue,
-          current_value: maxValue,
-          max_formula: res.maxFormula,
-          recharge: res.recharge,
-          metadata_json: res.metadata || {}
-        });
-      
-      if (!error) changes.push(`Gained ${res.label} (${maxValue})`);
-      else errors.push(`Failed to add resource: ${error.message}`);
+        .select('id')
+        .eq('character_id', characterId)
+        .eq('resource_key', res.key)
+        .single();
+
+      if (existing) {
+        // Update existing resource
+        const { error } = await supabase
+          .from('character_resources')
+          .update({
+            max_value: maxValue,
+            current_value: maxValue,
+            max_formula: res.maxFormula,
+            metadata_json: res.metadata || {}
+          })
+          .eq('id', existing.id);
+        
+        if (!error) changes.push(`Upgraded ${res.label} to ${maxValue}`);
+        else errors.push(`Failed to upgrade resource: ${error.message}`);
+      } else {
+        // Create new resource
+        const { error } = await supabase
+          .from('character_resources')
+          .insert({
+            character_id: characterId,
+            resource_key: res.key,
+            label: res.label,
+            max_value: maxValue,
+            current_value: maxValue,
+            max_formula: res.maxFormula,
+            recharge: res.recharge,
+            metadata_json: res.metadata || {}
+          });
+        
+        if (!error) changes.push(`Gained ${res.label} (${maxValue})`);
+        else errors.push(`Failed to add resource: ${error.message}`);
+      }
     }
 
     // Grant Spell

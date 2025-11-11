@@ -14,6 +14,7 @@ import { SpellPreparationManager } from "@/components/spells/SpellPreparationMan
 import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
 import { SpellSlotTracker } from "@/components/spells/SpellSlotTracker";
 import { SpellbookManager } from "@/components/spells/SpellbookManager";
+import { ResourcePanel } from "@/components/character/ResourcePanel";
 
 interface CharacterSheetProps {
   characterId: string;
@@ -324,6 +325,9 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Resource Panel */}
+      <ResourcePanel characterId={character.id} canEdit={false} />
 
       <Card>
         <CardHeader>

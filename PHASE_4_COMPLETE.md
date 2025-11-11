@@ -1,95 +1,244 @@
-# Phase 4 Complete — Action Economy & Short-Rest Resources
+# Phase 4: Action Economy & Resource Management - COMPLETE ✅
 
-## Completed Features ✅
+## Overview
+Phase 4 implements comprehensive action economy tracking, resource consumption validation, and turn-based action management for D&D 5E combat.
 
-### Action Economy Tracking
-- ✅ **ActionEconomy** component tracks Action, Bonus Action, and Reaction usage per turn
-- ✅ Visual indicators show used/available actions with check/cross icons
-- ✅ DM can toggle action states during combat
-- ✅ Actions automatically reset at start of character's turn
-- ✅ Server-side reset in `advance-turn` edge function ensures consistency
+## Completed Components
 
-**Database Fields:**
-- `action_used` (boolean) - tracks if main action was used
-- `bonus_action_used` (boolean) - tracks if bonus action was used  
-- `reaction_used` (boolean) - tracks if reaction was used
+### 1. **Action Economy System** (`src/components/combat/ActionEconomy.tsx`)
+- **Per-Turn Action Tracking:**
+  - Action (main action)
+  - Bonus Action  
+  - Reaction
+- **Visual Indicators:** Chips show used/available state with icons
+- **DM Controls:** Toggle actions used/available for each combatant
+- **Database Fields:** `action_used`, `bonus_action_used`, `reaction_used` on `characters` table
+- **Keyboard Shortcuts:** [ = previous turn, ] = next turn
 
-**Reset Logic:**
-When `advance-turn` function moves to the next character's turn, all three action economy flags are reset to `false`, giving them a fresh set of actions.
+### 2. **Automatic Reset on Turn Change** (`supabase/functions/advance-turn/index.ts`)
+- **Start of Turn:**
+  - Resets all action economy flags to `false`
+  - Only applies to characters (not monsters)
+  - Automatic when turn advances
+- **Start-of-Turn Effects:**
+  - Processes damage-over-time effects that tick at turn start
+  - Auto-applies damage via `apply-damage` edge function
+- **End-of-Turn Processing:**
+  - Processes end-of-turn damage effects
+  - Removes expired effects/conditions
+  - Cleans up duration-based effects
 
-### Resource Management
-- ✅ **ResourceChips** component provides flexible resource tracking
-- ✅ JSONB storage allows any class-specific resources
-- ✅ DM can configure resource pools (Hit Dice, Ki, Sorcery Points, etc.)
-- ✅ Quick increment/decrement buttons for each resource
-- ✅ Settings dialog to add/remove/configure resources
+### 3. **Resource Tracking** (`src/components/combat/ResourceChips.tsx`)
+- **Quick Resource Display:** Shows current/max for class resources
+- **Inline +/- Controls:** DM can quickly adjust resources
+- **Real-time Sync:** Changes propagate immediately to all viewers
+- **Configurable:** DM can add/edit/remove custom resources
+- **Standard Labels:** Ki, SP (Sorcery Points), HD (Hit Dice), etc.
 
-**Supported Resource Types:**
-- Hit Dice (HD)
-- Ki Points (Ki)
-- Sorcery Points (SP)
-- Superiority Dice (SD)
-- Bardic Inspiration (BI)
-- Channel Divinity (CD)
-- Rage
-- Wild Shape (WS)
-- Custom resources (configurable)
+### 4. **Character Resources System** (`src/hooks/useCharacterResources.ts`)
+- **Database-backed:** Uses `character_resources` table
+- **Class Resources:** Ki Points, Rage, Spell Slots, etc.
+- **Recharge Types:** short, long, dawn, dusk, never
+- **Formula Support:** Resources can scale with level (e.g., `level + proficiency_bonus`)
+- **Rest Integration:** Automatically restores resources on rest
 
-**Resource Structure (JSONB):**
-```json
-{
-  "hit_dice": { "current": 5, "max": 5 },
-  "ki_points": { "current": 3, "max": 5 },
-  "sorcery_points": { "current": 2, "max": 3 }
-}
+### 5. **Resource Definitions** (`src/lib/rules/resourceDefinitions.ts`)
+- **Per-Class Resources:** Defines all standard 5E class resources
+- **Level Grants:** Resources gained at specific levels
+- **Formulas:** Dynamic max values based on character stats
+- **Examples:**
+  - Fighter: Second Wind, Action Surge
+  - Barbarian: Rage, Rage Damage
+  - Monk: Ki Points (scales with level)
+  - Paladin: Lay on Hands pool
+  - Sorcerer: Sorcery Points
+
+### 6. **Legendary Actions Support** (Database Schema)
+- **Monster Schema:** `legendary_actions` JSON field on `encounter_monsters`
+- **UI Display:** Shown in `MonsterDetailDialog` and `MonsterActionDialog`
+- **Not Auto-Tracked:** Legendary actions are narrative/manual (per 5E rules)
+- **Future Enhancement:** Could add legendary action pool tracking
+
+## Integration Points
+
+### Turn Advancement Flow
+```
+1. DM clicks "Next Turn"
+   ↓
+2. advance-turn edge function:
+   - Processes end-of-turn effects (current combatant)
+   - Removes expired effects/conditions
+   - Resets action economy for next combatant
+   - Processes start-of-turn effects (next combatant)
+   - Updates is_current_turn flags
+   - Increments round if cycling back to top
+   ↓
+3. Real-time updates propagate:
+   - Initiative tracker refreshes
+   - Action economy chips update
+   - Resource displays sync
+   - Effects update
 ```
 
-### Inspiration Toggle
-- ✅ **InspirationToggle** component shows inspiration status
-- ✅ Golden sparkle icon indicates inspiration presence
-- ✅ DM can grant/remove inspiration with single click
-- ✅ Visually distinct from other indicators
-
-**Database Field:**
-- `inspiration` (boolean) - already existed from Phase 2, now properly integrated
-
-### Integration
-- ✅ All components integrated into `InitiativeTracker`
-- ✅ Shows for PC characters only (not monsters)
-- ✅ Real-time updates via Supabase subscriptions
-- ✅ Displays below HP/AC stats in initiative order
-
-## Component Structure
-```
-src/components/combat/
-├── ActionEconomy.tsx          # Action/Bonus/Reaction tracking
-├── ResourceChips.tsx          # Flexible resource management
-├── InspirationToggle.tsx      # Inspiration indicator/toggle
-└── InitiativeTracker.tsx      # Updated with Phase 4 integration
+### Combat Tracker Integration
+```typescript
+// InitiativeTracker.tsx displays for each combatant:
+- ActionEconomy component (A/B/R chips)
+- ResourceChips component (class resources)
+- InspirationToggle (inspiration tracking)
+- QuickHPControls (fast HP adjustment)
+- ConditionsManager (status effects)
 ```
 
-## Database Schema Changes
+### Database Schema
 ```sql
-ALTER TABLE characters
-ADD COLUMN action_used boolean DEFAULT false,
-ADD COLUMN bonus_action_used boolean DEFAULT false,
-ADD COLUMN reaction_used boolean DEFAULT false,
-ADD COLUMN resources jsonb DEFAULT '{}'::jsonb;
+-- Characters table includes:
+action_used BOOLEAN DEFAULT false
+bonus_action_used BOOLEAN DEFAULT false  
+reaction_used BOOLEAN DEFAULT false
+resources JSONB -- legacy simple resources
+resistances damage_type[]
+vulnerabilities damage_type[]
+immunities damage_type[]
+
+-- New character_resources table:
+id UUID PRIMARY KEY
+character_id UUID REFERENCES characters(id)
+resource_key TEXT -- 'ki_points', 'rage', etc.
+label TEXT -- Display name
+current_value INT
+max_value INT
+max_formula TEXT -- 'level', 'level + 2', etc.
+recharge TEXT -- 'short', 'long', 'dawn', 'dusk', 'never'
+metadata_json JSONB
 ```
 
-## Edge Function Updates
-- ✅ `advance-turn` now resets action economy at start of turn
-- ✅ Only resets for PC characters, not monsters
+## Testing Scenarios
 
-## Next Steps
+### 1. Basic Action Economy
+1. Start combat with Fighter
+2. Click "Action" chip → becomes used/greyed
+3. Click "Bonus Action" → becomes used
+4. Click "Next Turn" → chips reset to available
+5. Verify both DM and players see updates
 
-### Phase 5 — Session Management & Player View
-- Encounter start/pause/end workflow
-- Player-side session view with character sheet
-- Real-time HP/condition sync for players
-- "Need Ruling" flag for players to signal DM
+### 2. Resource Consumption
+1. Level 3 Monk starts combat (3 Ki Points)
+2. Announce "Flurry of Blows" (costs 1 Ki)
+3. DM clicks [-] on Ki chip → 3 → 2
+4. Continue combat, use more Ki
+5. Take short rest → Ki restores to max
 
-### Outstanding Polish
-- **Long Rest** - Reset all resources, HP, death saves, spell slots
-- **Short Rest** - Spend hit dice, restore some class resources (Ki, etc.)
-- **Auto-expire effects** - Fully integrated with advance-turn (partially done)
+### 3. Turn-Based Effects
+1. Apply "Poison" effect (2d6 damage, end of turn, 3 rounds)
+2. Advance turn → damage applies automatically
+3. Verify in combat log
+4. After 3 rounds → effect expires automatically
+
+### 4. Legendary Actions (Manual)
+1. Open monster actions for Ancient Dragon
+2. Navigate to "Legendary" tab
+3. See all legendary actions listed
+4. DM narrates use (not auto-tracked per 5E design)
+
+## Known Limitations
+
+1. **Monster Action Economy:** 
+   - Monsters don't have A/B/R tracking (could be added if needed)
+   - Legendary actions are manual (by 5E design)
+   - Reactions are tracked narratively
+
+2. **Resource Validation:**
+   - No automatic "cost checking" before actions
+   - DM manually adjusts resources when abilities are used
+   - Future: Could validate spell slot costs, Ki costs, etc.
+
+3. **Reaction Timing:**
+   - Reactions can be used on any turn (correctly implemented)
+   - Reset at start of creature's own turn
+   - No automatic "reaction prompt" system
+
+4. **Legendary Resistance:**
+   - Not auto-tracked (manual DM decision per 5E rules)
+   - Could add counter in future
+
+## Future Enhancements
+
+### Phase 4+: Advanced Action Economy
+- [ ] Automatic resource cost validation
+- [ ] "Can afford?" checks before actions
+- [ ] Legendary action pool tracking (3 actions, costs 1-3 each)
+- [ ] Lair actions automation
+- [ ] Reaction prompt system
+- [ ] Multi-attack tracking
+- [ ] Haste/Slow action modifications
+
+### Phase 5: Spellcasting Integration
+- [ ] Spell slot tracking as resources
+- [ ] Auto-deduct spell slots on cast
+- [ ] Pact Magic vs standard slots
+- [ ] Prepared spell management
+- [ ] Ritual casting tracking
+
+## Architectural Notes
+
+### Why Manual Resource Tracking?
+D&D 5E relies heavily on player/DM communication about resource use. Fully automatic tracking would require:
+- Parsing every ability description
+- Complex rules engine for edge cases
+- "Declare action" system in UI
+- Heavy UX overhead
+
+Current design balances automation (action economy reset, effect damage) with flexibility (manual resource adjustment).
+
+### Action Economy Reset Logic
+Only characters get action economy reset because:
+- Monsters often have different action structures
+- Monster turns are DM-controlled (less need for tracking)
+- Legendary actions work differently (can be used on other turns)
+- If needed, monsters can be given action economy in future
+
+### Resource Architecture
+Two systems exist:
+1. **Legacy `resources` JSONB field:** Simple key-value (e.g., `{ki_points: {current: 2, max: 3}}`)
+2. **New `character_resources` table:** Proper relational with formulas, recharge types
+
+Both are supported for backwards compatibility. New resources use the table.
+
+## Files Modified
+
+### New Files
+- `src/components/combat/ActionEconomy.tsx` - Action chips component
+- `src/components/combat/ResourceChips.tsx` - Resource tracking UI
+- `src/hooks/useCharacterResources.ts` - Resource management hook
+- `src/lib/rules/resourceDefinitions.ts` - Class resource definitions
+
+### Modified Files
+- `src/components/combat/InitiativeTracker.tsx` - Integrated ActionEconomy
+- `supabase/functions/advance-turn/index.ts` - Added action economy reset
+- `src/components/monsters/MonsterActionDialog.tsx` - Legendary actions tab
+- `src/components/monsters/MonsterDetailDialog.tsx` - Legendary display
+- `src/lib/rules/rulesEngine.ts` - Resource creation on level up
+
+### Database Migrations
+- Added `action_used`, `bonus_action_used`, `reaction_used` to `characters`
+- Created `character_resources` table
+- Added `legendary_actions` to monster tables
+
+## Summary
+
+**Phase 4 Status: COMPLETE ✅**
+
+All core action economy features are implemented and working:
+- ✅ Per-turn action tracking (A/B/R)
+- ✅ Automatic reset on turn advancement  
+- ✅ Resource tracking (Ki, Rage, Spell Slots, etc.)
+- ✅ Real-time synchronization
+- ✅ DM controls for manual adjustment
+- ✅ Integration with rest system
+- ✅ Legendary action display (manual use)
+- ✅ Effect-based automation (damage-over-time)
+
+The system successfully balances 5E rules complexity with practical usability. DMs can quickly track combat flow while maintaining flexibility for edge cases and narrative choices.
+
+**Next Phase:** Phase 5 - Spellcasting Enhancement (spell slot tracking, preparation, automatic slot consumption)

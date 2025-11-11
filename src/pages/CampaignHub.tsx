@@ -659,15 +659,18 @@ const CampaignHub = () => {
                                     </Button>
                                    ) : (
                                     <>
-                                      <RestManager character={{
-                                        id: character.id,
-                                        name: character.name,
-                                        class: character.class,
-                                        level: character.level,
-                                        current_hp: (character as any).current_hp || 1,
-                                        max_hp: (character as any).max_hp || 1,
-                                        con_save: 0
-                                      }} />
+                                      <RestManager 
+                                        characterId={character.id}
+                                        character={{
+                                          hit_dice_current: (character as any).hit_dice_current || character.level,
+                                          hit_dice_total: (character as any).hit_dice_total || character.level,
+                                          hit_die: (character as any).hit_die || 'd8',
+                                          current_hp: (character as any).current_hp || 1,
+                                          max_hp: (character as any).max_hp || 1,
+                                          level: character.level,
+                                          con_save: (character as any).con_save || 0,
+                                        }} 
+                                      />
                                       <ViewResourcesDialog
                                         className={character.class}
                                         level={character.level}

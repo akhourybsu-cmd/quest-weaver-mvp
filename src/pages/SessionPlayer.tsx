@@ -46,6 +46,9 @@ interface Character {
   int_save: number;
   wis_save: number;
   cha_save: number;
+  hit_dice_current?: number;
+  hit_dice_total?: number;
+  hit_die?: string;
 }
 
 const SessionPlayer = () => {
@@ -364,7 +367,18 @@ const SessionPlayer = () => {
           <TabsContent value="character" className="space-y-4">
             <PlayerCharacterSheet characterId={character.id} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <RestManager character={character} />
+              <RestManager 
+                characterId={character.id}
+                character={{
+                  hit_dice_current: character.hit_dice_current || character.level,
+                  hit_dice_total: character.hit_dice_total || character.level,
+                  hit_die: character.hit_die || 'd8',
+                  current_hp: character.current_hp,
+                  max_hp: character.max_hp,
+                  level: character.level,
+                  con_save: character.con_save,
+                }} 
+              />
               <DiceRoller />
             </div>
           </TabsContent>

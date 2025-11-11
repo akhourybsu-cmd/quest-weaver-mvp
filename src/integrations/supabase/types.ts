@@ -1896,6 +1896,47 @@ export type Database = {
           },
         ]
       }
+      hit_dice_rolls: {
+        Row: {
+          character_id: string
+          con_modifier: number
+          created_at: string | null
+          dice_rolled: number
+          id: string
+          rest_type: string
+          roll_result: number
+          total_healing: number
+        }
+        Insert: {
+          character_id: string
+          con_modifier: number
+          created_at?: string | null
+          dice_rolled: number
+          id?: string
+          rest_type: string
+          roll_result: number
+          total_healing: number
+        }
+        Update: {
+          character_id?: string
+          con_modifier?: number
+          created_at?: string | null
+          dice_rolled?: number
+          id?: string
+          rest_type?: string
+          roll_result?: number
+          total_healing?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hit_dice_rolls_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holding_events: {
         Row: {
           author_id: string | null

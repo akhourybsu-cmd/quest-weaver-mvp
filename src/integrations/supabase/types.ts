@@ -163,6 +163,97 @@ export type Database = {
           },
         ]
       }
+      campaign_pitch: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          house_rules: string | null
+          id: string
+          pitch_text: string | null
+          player_expectations: Json | null
+          safety_tools: Json | null
+          session_zero_completed: boolean | null
+          themes: string[] | null
+          tone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          house_rules?: string | null
+          id?: string
+          pitch_text?: string | null
+          player_expectations?: Json | null
+          safety_tools?: Json | null
+          session_zero_completed?: boolean | null
+          themes?: string[] | null
+          tone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          house_rules?: string | null
+          id?: string
+          pitch_text?: string | null
+          player_expectations?: Json | null
+          safety_tools?: Json | null
+          session_zero_completed?: boolean | null
+          themes?: string[] | null
+          tone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_pitch_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_weather: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          effects: Json | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          temperature: string | null
+          weather_type: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          effects?: Json | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          temperature?: string | null
+          weather_type: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          effects?: Json | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          temperature?: string | null
+          weather_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_weather_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           code: string
@@ -452,6 +543,7 @@ export type Database = {
           equipped: boolean | null
           equipped_slot: string | null
           id: string
+          identified: boolean | null
           is_magical: boolean | null
           item_ref: string
           qty: number | null
@@ -466,6 +558,7 @@ export type Database = {
           equipped?: boolean | null
           equipped_slot?: string | null
           id?: string
+          identified?: boolean | null
           is_magical?: boolean | null
           item_ref: string
           qty?: number | null
@@ -480,6 +573,7 @@ export type Database = {
           equipped?: boolean | null
           equipped_slot?: string | null
           id?: string
+          identified?: boolean | null
           is_magical?: boolean | null
           item_ref?: string
           qty?: number | null
@@ -1005,7 +1099,9 @@ export type Database = {
           alignment: string | null
           ancestry_id: string | null
           background_id: string | null
+          bonds: string | null
           bonus_action_used: boolean | null
+          breath_remaining_rounds: number | null
           campaign_id: string | null
           can_cast_rituals: boolean | null
           cha_save: number | null
@@ -1013,28 +1109,36 @@ export type Database = {
           con_save: number | null
           created_at: string | null
           creation_status: string | null
+          crit_range_min: number | null
           current_hp: number
           death_save_fail: number | null
           death_save_success: number | null
           dex_save: number | null
           export_version: string | null
           eyes: string | null
+          flaws: string | null
           hair: string | null
           height: string | null
           hit_dice_current: number | null
           hit_dice_total: number | null
           hit_die: string | null
           id: string
+          ideals: string | null
           immunities: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus: number
           inspiration: boolean | null
           int_save: number | null
           last_exported_at: string | null
           level: number
+          luck_points_total: number | null
+          luck_points_used: number | null
           max_hp: number
           name: string
           notes: string | null
+          passive_insight: number | null
+          passive_investigation: number | null
           passive_perception: number | null
+          personality_traits: string | null
           portrait_url: string | null
           proficiency_bonus: number
           reaction_used: boolean | null
@@ -1066,7 +1170,9 @@ export type Database = {
           alignment?: string | null
           ancestry_id?: string | null
           background_id?: string | null
+          bonds?: string | null
           bonus_action_used?: boolean | null
+          breath_remaining_rounds?: number | null
           campaign_id?: string | null
           can_cast_rituals?: boolean | null
           cha_save?: number | null
@@ -1074,28 +1180,36 @@ export type Database = {
           con_save?: number | null
           created_at?: string | null
           creation_status?: string | null
+          crit_range_min?: number | null
           current_hp: number
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
           export_version?: string | null
           eyes?: string | null
+          flaws?: string | null
           hair?: string | null
           height?: string | null
           hit_dice_current?: number | null
           hit_dice_total?: number | null
           hit_die?: string | null
           id?: string
+          ideals?: string | null
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
           inspiration?: boolean | null
           int_save?: number | null
           last_exported_at?: string | null
           level?: number
+          luck_points_total?: number | null
+          luck_points_used?: number | null
           max_hp: number
           name: string
           notes?: string | null
+          passive_insight?: number | null
+          passive_investigation?: number | null
           passive_perception?: number | null
+          personality_traits?: string | null
           portrait_url?: string | null
           proficiency_bonus: number
           reaction_used?: boolean | null
@@ -1127,7 +1241,9 @@ export type Database = {
           alignment?: string | null
           ancestry_id?: string | null
           background_id?: string | null
+          bonds?: string | null
           bonus_action_used?: boolean | null
+          breath_remaining_rounds?: number | null
           campaign_id?: string | null
           can_cast_rituals?: boolean | null
           cha_save?: number | null
@@ -1135,28 +1251,36 @@ export type Database = {
           con_save?: number | null
           created_at?: string | null
           creation_status?: string | null
+          crit_range_min?: number | null
           current_hp?: number
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
           export_version?: string | null
           eyes?: string | null
+          flaws?: string | null
           hair?: string | null
           height?: string | null
           hit_dice_current?: number | null
           hit_dice_total?: number | null
           hit_die?: string | null
           id?: string
+          ideals?: string | null
           immunities?: Database["public"]["Enums"]["damage_type"][] | null
           initiative_bonus?: number
           inspiration?: boolean | null
           int_save?: number | null
           last_exported_at?: string | null
           level?: number
+          luck_points_total?: number | null
+          luck_points_used?: number | null
           max_hp?: number
           name?: string
           notes?: string | null
+          passive_insight?: number | null
+          passive_investigation?: number | null
           passive_perception?: number | null
+          personality_traits?: string | null
           portrait_url?: string | null
           proficiency_bonus?: number
           reaction_used?: boolean | null
@@ -1449,6 +1573,75 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      downtime_activities: {
+        Row: {
+          activity_type: string
+          campaign_id: string
+          character_id: string
+          completed_at: string | null
+          created_at: string | null
+          days_completed: number | null
+          description: string | null
+          id: string
+          item_name: string | null
+          item_rarity: string | null
+          item_type: string | null
+          materials_json: Json | null
+          started_at: string | null
+          total_cost_gp: number | null
+          total_days_required: number | null
+        }
+        Insert: {
+          activity_type: string
+          campaign_id: string
+          character_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          days_completed?: number | null
+          description?: string | null
+          id?: string
+          item_name?: string | null
+          item_rarity?: string | null
+          item_type?: string | null
+          materials_json?: Json | null
+          started_at?: string | null
+          total_cost_gp?: number | null
+          total_days_required?: number | null
+        }
+        Update: {
+          activity_type?: string
+          campaign_id?: string
+          character_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          days_completed?: number | null
+          description?: string | null
+          id?: string
+          item_name?: string | null
+          item_rarity?: string | null
+          item_type?: string | null
+          materials_json?: Json | null
+          started_at?: string | null
+          total_cost_gp?: number | null
+          total_days_required?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downtime_activities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "downtime_activities_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
             referencedColumns: ["id"]
           },
         ]
@@ -2072,6 +2265,7 @@ export type Database = {
           id: string
           initiative_roll: number
           is_current_turn: boolean | null
+          is_surprised: boolean | null
           leveled_spell_was_bonus_action: boolean | null
           passive_perception: number | null
         }
@@ -2085,6 +2279,7 @@ export type Database = {
           id?: string
           initiative_roll: number
           is_current_turn?: boolean | null
+          is_surprised?: boolean | null
           leveled_spell_was_bonus_action?: boolean | null
           passive_perception?: number | null
         }
@@ -2098,6 +2293,7 @@ export type Database = {
           id?: string
           initiative_roll?: number
           is_current_turn?: boolean | null
+          is_surprised?: boolean | null
           leveled_spell_was_bonus_action?: boolean | null
           passive_perception?: number | null
         }
@@ -2149,6 +2345,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          identified: boolean | null
           is_component_pouch: boolean | null
           is_focus: boolean | null
           name: string
@@ -2164,6 +2361,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          identified?: boolean | null
           is_component_pouch?: boolean | null
           is_focus?: boolean | null
           name: string
@@ -2179,6 +2377,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          identified?: boolean | null
           is_component_pouch?: boolean | null
           is_focus?: boolean | null
           name?: string
@@ -2195,6 +2394,50 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lingering_injuries: {
+        Row: {
+          acquired_at: string | null
+          character_id: string | null
+          created_at: string | null
+          description: string
+          effects: Json | null
+          healed_at: string | null
+          id: string
+          injury_type: string
+          is_permanent: boolean | null
+        }
+        Insert: {
+          acquired_at?: string | null
+          character_id?: string | null
+          created_at?: string | null
+          description: string
+          effects?: Json | null
+          healed_at?: string | null
+          id?: string
+          injury_type: string
+          is_permanent?: boolean | null
+        }
+        Update: {
+          acquired_at?: string | null
+          character_id?: string | null
+          created_at?: string | null
+          description?: string
+          effects?: Json | null
+          healed_at?: string | null
+          id?: string
+          injury_type?: string
+          is_permanent?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lingering_injuries_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
             referencedColumns: ["id"]
           },
         ]
@@ -2928,6 +3171,7 @@ export type Database = {
       }
       npcs: {
         Row: {
+          attitude: string | null
           campaign_id: string
           created_at: string | null
           description: string | null
@@ -2948,6 +3192,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          attitude?: string | null
           campaign_id: string
           created_at?: string | null
           description?: string | null
@@ -2968,6 +3213,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          attitude?: string | null
           campaign_id?: string
           created_at?: string | null
           description?: string | null

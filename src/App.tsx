@@ -11,6 +11,7 @@ import { useAppVersion } from "@/hooks/useAppVersion";
 import Auth from "./components/Auth";
 import Index from "./pages/Index";
 import CampaignHub from "./pages/CampaignHub";
+import DemoCampaignHub from "./pages/DemoCampaignHub";
 import SessionDM from "./pages/SessionDM";
 import SessionPlayer from "./pages/SessionPlayer";
 import SessionSpectator from "./pages/SessionSpectator";
@@ -70,7 +71,8 @@ const App = () => {
           <CampaignProvider>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/campaign-hub" element={<CampaignHub />} />
+        <Route path="/campaign-hub" element={<CampaignHub />} />
+        <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
               <Route path="/session/dm" element={<SessionDM />} />
               <Route path="/session/player" element={<SessionPlayer />} />
               <Route path="/session/spectator" element={<SessionSpectator />} />

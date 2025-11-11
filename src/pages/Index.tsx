@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -30,6 +31,11 @@ const Index = () => {
   const [joinError, setJoinError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    // Cleanup expired demos on load
+    cleanupExpiredDemos();
+  }, []);
+
   const handleJoinCode = () => {
     if (!joinCode || joinCode.length < 6 || joinCode.length > 8) {
       setJoinError("Enter a valid 6-8 character code");
@@ -37,6 +43,11 @@ const Index = () => {
     }
     setJoinError("");
     navigate("/session-player");
+  };
+
+  const handleTryDemo = () => {
+    const { demoId } = createDemo();
+    navigate(`/demo/${demoId}/campaign`);
   };
 
   const dmFeatures = [
@@ -225,7 +236,7 @@ const Index = () => {
                   {viewMode === "dm" ? "Start a Session" : "Join a Session"}
                   <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate("/campaign-hub")}>
+                <Button size="lg" variant="outline" onClick={handleTryDemo}>
                   Try a Demo
                 </Button>
               </div>
@@ -439,7 +450,7 @@ const Index = () => {
               Start a Session
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/campaign-hub")}>
+            <Button size="lg" variant="outline" onClick={handleTryDemo}>
               Try a Demo
             </Button>
           </div>

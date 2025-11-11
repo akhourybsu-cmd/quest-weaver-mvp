@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -30,11 +31,35 @@ const Index = () => {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Cleanup expired demos on load
     cleanupExpiredDemos();
+    
+    // Check authentication status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleStartSession = () => {
+    if (isAuthenticated) {
+      navigate("/campaign-hub");
+    } else {
+      // Scroll to top and let App.tsx handle showing Auth
+      window.scrollTo(0, 0);
+      // Trigger a page reload to show auth
+      window.location.href = "/campaign-hub";
+    }
+  };
 
   const handleJoinCode = () => {
     if (!joinCode || joinCode.length < 6 || joinCode.length > 8) {
@@ -194,7 +219,7 @@ const Index = () => {
               Try Demo
             </Button>
             <Button 
-              onClick={() => navigate("/session-dm")} 
+              onClick={handleStartSession}
               size="default"
               className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
             >
@@ -262,7 +287,7 @@ const Index = () => {
               </Button>
               <Button 
                 onClick={() => {
-                  navigate("/session-dm");
+                  handleStartSession();
                   setMobileMenuOpen(false);
                 }} 
                 className="w-full mt-2"
@@ -305,7 +330,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  onClick={() => navigate(viewMode === "dm" ? "/session-dm" : "/session-player")}
+                  onClick={handleStartSession}
                   className="group shadow-lg hover:shadow-xl transition-all"
                 >
                   {viewMode === "dm" ? "Start a Session" : "Join a Session"}

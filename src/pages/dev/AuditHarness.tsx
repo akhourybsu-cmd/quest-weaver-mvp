@@ -60,6 +60,20 @@ export default function AuditHarness() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      // Create a campaign with proper UUID
+      const campaignCode = `AUDIT_${Date.now()}`;
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .insert({
+          name: 'Audit Test Campaign',
+          code: campaignCode,
+          dm_user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (campaignError) throw campaignError;
+
       // Step 3: Set up test context (30%)
       setProgress(30);
       toast({ title: "Setting up test context..." });
@@ -68,7 +82,7 @@ export default function AuditHarness() {
       const { data: encounter, error: encounterError } = await supabase
         .from('encounters')
         .insert({
-          campaign_id: demoId,
+          campaign_id: campaign.id,
           name: 'Audit Test Encounter',
           status: 'active',
           current_round: 1,
@@ -82,7 +96,7 @@ export default function AuditHarness() {
       const { data: character, error: charError } = await supabase
         .from('characters')
         .insert({
-          campaign_id: demoId,
+          campaign_id: campaign.id,
           user_id: user.id,
           name: 'Test Character',
           class: 'Fighter',
@@ -109,7 +123,7 @@ export default function AuditHarness() {
 
       const context: TestContext = {
         demoId,
-        campaignId: demoId,
+        campaignId: campaign.id,
         encounterId: encounter.id,
         characterId: character.id,
         dmUserId: user.id,
@@ -168,8 +182,9 @@ export default function AuditHarness() {
         description: `${testResults.length} scenarios executed. Reports downloaded.`
       });
 
-      // Cleanup demo
+      // Cleanup test data
       localStorage.removeItem(`demo_${demoId}`);
+      await supabase.from('campaigns').delete().eq('id', campaign.id);
 
     } catch (error: any) {
       console.error('[AUDIT] Error:', error);

@@ -15,6 +15,9 @@ import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
 import { SpellSlotTracker } from "@/components/spells/SpellSlotTracker";
 import { SpellbookManager } from "@/components/spells/SpellbookManager";
 import { ResourcePanel } from "@/components/character/ResourcePanel";
+import { DefensesPanel } from "@/components/character/DefensesPanel";
+import { DefensesEditor } from "@/components/character/DefensesEditor";
+import type { DamageType } from "@/lib/damageEngine";
 
 interface CharacterSheetProps {
   characterId: string;
@@ -38,6 +41,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   const [showSpellPreparation, setShowSpellPreparation] = useState(false);
   const [showCustomSpell, setShowCustomSpell] = useState(false);
   const [showSpellbook, setShowSpellbook] = useState(false);
+  const [showDefensesEditor, setShowDefensesEditor] = useState(false);
 
   useEffect(() => {
     loadCharacter();
@@ -294,6 +298,17 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
           </div>
         </Tabs>
       </div>
+
+      {/* Defenses Editor Dialog */}
+      <DefensesEditor
+        open={showDefensesEditor}
+        onOpenChange={setShowDefensesEditor}
+        characterId={character.id}
+        currentResistances={(character.resistances || []) as DamageType[]}
+        currentVulnerabilities={(character.vulnerabilities || []) as DamageType[]}
+        currentImmunities={(character.immunities || []) as DamageType[]}
+        onUpdate={loadCharacter}
+      />
     </div>
   );
 };
@@ -344,6 +359,12 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
           </div>
         </CardContent>
       </Card>
+
+      <DefensesPanel
+        resistances={(character.resistances || []) as DamageType[]}
+        vulnerabilities={(character.vulnerabilities || []) as DamageType[]}
+        immunities={(character.immunities || []) as DamageType[]}
+      />
 
       {character.notes && (
         <Card>

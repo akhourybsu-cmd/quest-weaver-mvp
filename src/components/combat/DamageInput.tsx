@@ -3,13 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,12 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Swords } from "lucide-react";
-
-const DAMAGE_TYPES = [
-  "acid", "bludgeoning", "cold", "fire", "force",
-  "lightning", "necrotic", "piercing", "poison",
-  "psychic", "radiant", "slashing", "thunder"
-];
+import { DamageTypeSelector, type DamageType } from "./DamageTypeSelector";
 
 interface DamageInputProps {
   characterId: string;
@@ -34,7 +22,7 @@ interface DamageInputProps {
 
 const DamageInput = ({ characterName, sourceName, onApplyDamage }: DamageInputProps) => {
   const [amount, setAmount] = useState("");
-  const [damageType, setDamageType] = useState("bludgeoning");
+  const [damageType, setDamageType] = useState<DamageType>("bludgeoning");
   const [abilityName, setAbilityName] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -87,21 +75,13 @@ const DamageInput = ({ characterName, sourceName, onApplyDamage }: DamageInputPr
               placeholder="0"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="damage-type">Damage Type</Label>
-            <Select value={damageType} onValueChange={setDamageType}>
-              <SelectTrigger id="damage-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DAMAGE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          
+          <DamageTypeSelector
+            value={damageType}
+            onValueChange={setDamageType}
+            label="Damage Type"
+          />
+          
           <Button onClick={handleApply} className="w-full">
             Apply Damage
           </Button>

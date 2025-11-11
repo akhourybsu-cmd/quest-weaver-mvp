@@ -3372,6 +3372,57 @@ export type Database = {
           },
         ]
       }
+      player_campaign_links: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          join_code: string
+          last_joined_at: string | null
+          nickname: string | null
+          pinned: boolean | null
+          player_id: string
+          role: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          join_code: string
+          last_joined_at?: string | null
+          nickname?: string | null
+          pinned?: boolean | null
+          player_id: string
+          role?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          join_code?: string
+          last_joined_at?: string | null
+          nickname?: string | null
+          pinned?: boolean | null
+          player_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_campaign_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_campaign_links_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_presence: {
         Row: {
           campaign_id: string
@@ -3464,6 +3515,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      players: {
+        Row: {
+          avatar_url: string | null
+          color: string
+          created_at: string | null
+          device_id: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          color?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          color?: string
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       quest_steps: {
         Row: {

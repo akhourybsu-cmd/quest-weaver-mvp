@@ -333,12 +333,19 @@ const Index = () => {
                   onClick={handleStartSession}
                   className="group shadow-lg hover:shadow-xl transition-all"
                 >
-                  {viewMode === "dm" ? "Start a Session" : "Join a Session"}
+                  {viewMode === "dm" ? "Start a Session" : "I'm a DM"}
                   <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={handleTryDemo}>
-                  Try a Demo
-                </Button>
+                {viewMode === "player" ? (
+                  <Button size="lg" variant="outline" onClick={() => navigate("/player")}>
+                    <Users className="w-4 h-4 mr-2" />
+                    I'm a Player
+                  </Button>
+                ) : (
+                  <Button size="lg" variant="outline" onClick={handleTryDemo}>
+                    Try a Demo
+                  </Button>
+                )}
               </div>
 
               {/* Join Code Input */}

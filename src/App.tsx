@@ -26,6 +26,12 @@ import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
 import { PlayerHome } from "./components/permissions/PlayerHome";
 import AuditHarness from "./pages/dev/AuditHarness";
+import PlayerHub from "./pages/PlayerHub";
+import CreatePlayer from "./pages/CreatePlayer";
+import PlayerDashboard from "./pages/PlayerDashboard";
+import LinkCampaign from "./pages/LinkCampaign";
+import WaitingRoom from "./pages/WaitingRoom";
+import JoinCode from "./pages/JoinCode";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +93,13 @@ const App = () => {
               <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
               <Route path="/campaign/:campaignId/character/:characterId" element={<CharacterSheetPage />} />
               <Route path="/dev/audit" element={<AuditHarness />} />
+              {/* Player Hub Routes */}
+              <Route path="/player" element={<PlayerHub />} />
+              <Route path="/player/new" element={<CreatePlayer />} />
+              <Route path="/player/:playerId" element={<PlayerDashboard />} />
+              <Route path="/player/:playerId/link" element={<LinkCampaign />} />
+              <Route path="/player/:playerId/waiting" element={<WaitingRoom />} />
+              <Route path="/join/:code" element={<JoinCode />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

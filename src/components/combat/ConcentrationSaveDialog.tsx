@@ -1,112 +1,190 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Focus, Dices, Shield, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Dices } from "lucide-react";
+import { toast } from "sonner";
 
 interface ConcentrationSaveDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   characterId: string;
   characterName: string;
-  dc: number;
+  damageTaken: number;
   encounterId: string;
-  effectId: string;
-  conSaveBonus: number;
+  concentrationSpell: string;
+  conModifier: number;
+  isProficient: boolean;
+  level: number;
 }
 
-const ConcentrationSaveDialog = ({
+export function ConcentrationSaveDialog({
   open,
-  onClose,
+  onOpenChange,
   characterId,
   characterName,
-  dc,
+  damageTaken,
   encounterId,
-  effectId,
-  conSaveBonus,
-}: ConcentrationSaveDialogProps) => {
+  concentrationSpell,
+  conModifier,
+  isProficient,
+  level,
+}: ConcentrationSaveDialogProps) {
   const [rolling, setRolling] = useState(false);
-  const { toast } = useToast();
+  const [result, setResult] = useState<{
+    roll: number;
+    total: number;
+    dc: number;
+    success: boolean;
+  } | null>(null);
 
-  const rollConcentrationSave = async () => {
+  // RAW: DC = 10 or half damage (whichever is higher)
+  const dc = Math.max(10, Math.floor(damageTaken / 2));
+  
+  // Calculate save bonus: CON mod + prof bonus (if proficient)
+  const profBonus = isProficient ? Math.floor((level - 1) / 4) + 2 : 0;
+  const saveBonus = conModifier + profBonus;
+
+  const rollSave = async () => {
     setRolling(true);
 
-    const roll = Math.floor(Math.random() * 20) + 1;
-    const total = roll + conSaveBonus;
-    const success = total >= dc;
+    try {
+      // Roll d20
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + saveBonus;
+      const success = total >= dc;
 
-    // Log the save result
-    await supabase.from("combat_log").insert({
-      encounter_id: encounterId,
-      character_id: characterId,
-      round: 0, // Current round would need to be passed
-      action_type: "save",
-      message: `${characterName} ${success ? "maintains" : "loses"} concentration (${roll}+${conSaveBonus}=${total} vs DC ${dc})`,
-      details: { roll, modifier: conSaveBonus, total, dc, success, type: "concentration" },
-    });
+      setResult({ roll, total, dc, success });
 
-    // If failed, remove the effect
-    if (!success) {
-      await supabase
-        .from("effects")
-        .delete()
-        .eq("id", effectId);
-
-      toast({
-        title: "Concentration Lost!",
-        description: `${characterName} rolled ${roll}+${conSaveBonus}=${total} vs DC ${dc}`,
-        variant: "destructive",
+      // Log to combat log
+      await supabase.from('combat_log').insert({
+        encounter_id: encounterId,
+        round: 0,
+        action_type: 'concentration_check',
+        message: `${characterName} ${success ? 'maintains' : 'loses'} concentration on ${concentrationSpell}`,
+        details: {
+          roll,
+          modifier: saveBonus,
+          total,
+          dc,
+          damage: damageTaken,
+          success,
+        },
       });
-    } else {
-      toast({
-        title: "Concentration Maintained",
-        description: `${characterName} rolled ${roll}+${conSaveBonus}=${total} vs DC ${dc}`,
-      });
+
+      if (!success) {
+        // Break concentration - delete all concentration effects for this character
+        await supabase
+          .from('effects')
+          .delete()
+          .eq('concentrating_character_id', characterId)
+          .eq('requires_concentration', true);
+
+        toast.error(`${characterName} loses concentration on ${concentrationSpell}`);
+      } else {
+        toast.success(`${characterName} maintains concentration on ${concentrationSpell}`);
+      }
+
+      // Auto-close after showing result
+      setTimeout(() => {
+        onOpenChange(false);
+        setResult(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error rolling concentration save:', error);
+      toast.error("Failed to roll concentration save");
+    } finally {
+      setRolling(false);
     }
-
-    setRolling(false);
-    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Concentration Check</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Focus className="w-5 h-5" />
+            Concentration Check
+          </DialogTitle>
           <DialogDescription>
-            {characterName} must make a Constitution saving throw to maintain concentration.
+            {characterName} took {damageTaken} damage while concentrating
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg text-center">
-            <div className="text-sm text-muted-foreground">DC to Maintain</div>
-            <div className="text-3xl font-bold">{dc}</div>
-            <div className="text-sm text-muted-foreground mt-2">
-              Constitution Save: +{conSaveBonus}
+          {/* Spell Info */}
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              <div className="font-semibold">Concentrating On:</div>
+              <div className="text-sm">{concentrationSpell}</div>
+            </AlertDescription>
+          </Alert>
+
+          {/* DC Calculation */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Damage Taken:</span>
+              <span className="font-semibold">{damageTaken}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Required DC:</span>
+              <Badge variant="secondary" className="font-semibold">
+                {dc} (10 or half damage)
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Your Save Bonus:</span>
+              <span className="font-semibold">+{saveBonus}</span>
             </div>
           </div>
 
-          <Button
-            onClick={rollConcentrationSave}
-            disabled={rolling}
-            className="w-full"
-            size="lg"
-          >
-            <Dices className="w-4 h-4 mr-2" />
-            Roll Concentration Save
-          </Button>
+          {/* Result Display */}
+          {result && (
+            <Alert variant={result.success ? "default" : "destructive"}>
+              <Dices className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-semibold mb-1">
+                  {result.success ? "✓ Success!" : "✗ Failed!"}
+                </div>
+                <div className="text-sm">
+                  Rolled {result.roll} + {saveBonus} = {result.total} vs DC {result.dc}
+                </div>
+                {result.success ? (
+                  <div className="text-sm mt-1">Concentration maintained</div>
+                ) : (
+                  <div className="text-sm mt-1">Concentration broken</div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Warning */}
+          {!result && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                <strong>RAW:</strong> When you take damage while concentrating on a spell, you must make a Constitution saving throw to maintain concentration. The DC equals 10 or half the damage you took, whichever number is higher.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Roll Button */}
+          {!result && (
+            <Button
+              onClick={rollSave}
+              disabled={rolling}
+              className="w-full"
+              size="lg"
+            >
+              <Dices className="w-4 h-4 mr-2" />
+              Roll Constitution Save
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default ConcentrationSaveDialog;
+}

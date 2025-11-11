@@ -163,30 +163,88 @@ export const REALTIME_EVENTS: EventMapping[] = [
  * Build feature inventory by analyzing patterns
  */
 export function buildFeatureInventory(): AuditInventory {
-  const features: FeatureMapping[] = CORE_FEATURES.map(feature => ({
-    featureId: feature.id,
-    name: feature.name,
-    routes: APP_ROUTES.filter(route => 
+  const features: FeatureMapping[] = CORE_FEATURES.map(feature => {
+    // Match routes
+    const matchedRoutes = APP_ROUTES.filter(route => 
       feature.patterns.some(pattern => 
         route.component.toLowerCase().match(pattern.replace('.*', '.*'))
       )
-    ),
-    components: [], // Would be populated by file scanning
-    hooks: [], // Would be populated by file scanning
-    events: REALTIME_EVENTS.filter(event =>
-      feature.patterns.some(pattern =>
-        event.name.toLowerCase().match(pattern.replace('.*', '.*'))
-      )
-    ),
-    menuPaths: [], // Would be populated by menu scanning
-    visibility: ['both'],
-  }));
+    );
+
+    // Identify key components by pattern
+    const components: string[] = [];
+    const hooks: string[] = [];
+    const menuPaths: string[] = [];
+    
+    // Map known components and hooks based on patterns
+    feature.patterns.forEach(pattern => {
+      if (pattern.includes('initiative')) {
+        components.push('InitiativeTracker', 'EncounterControls');
+        hooks.push('useEncounter', 'useCombatActions');
+        menuPaths.push('DM Screen → Initiative Panel', 'Player View → Combat');
+      }
+      if (pattern.includes('hp') || pattern.includes('damage') || pattern.includes('healing')) {
+        components.push('QuickHPControls', 'DamageInput', 'DeathSaveTracker');
+        hooks.push('useCombatActions');
+        menuPaths.push('DM Screen → Initiative', 'Player View → Character Sheet');
+      }
+      if (pattern.includes('condition')) {
+        components.push('ConditionsManager', 'QuickConditionsPopover');
+        menuPaths.push('DM Screen → Combat', 'Player View → Effects');
+      }
+      if (pattern.includes('concentration')) {
+        components.push('ConcentrationTracker', 'ConcentrationSaveDialog');
+        menuPaths.push('DM Screen → Spells', 'Player View → Spells');
+      }
+      if (pattern.includes('spell') || pattern.includes('resource')) {
+        components.push('SpellSlotTracker', 'ResourceTracker', 'RestManager');
+        hooks.push('useCharacterResources');
+        menuPaths.push('Campaign Hub → Characters', 'Player View → Resources');
+      }
+      if (pattern.includes('inventory') || pattern.includes('item')) {
+        components.push('ItemCard', 'PlayerInventory', 'DMItemVault');
+        menuPaths.push('Campaign Hub → Inventory', 'Player Home → Inventory');
+      }
+      if (pattern.includes('quest')) {
+        components.push('QuestLog', 'PlayerQuestTracker');
+        menuPaths.push('Campaign Hub → Quests', 'Player Home → Quests');
+      }
+      if (pattern.includes('encounter') || pattern.includes('monster')) {
+        components.push('MonsterRoster', 'MonsterLibraryDialog');
+        menuPaths.push('Campaign Hub → Bestiary', 'DM Screen → Add Monsters');
+      }
+      if (pattern.includes('presence') || pattern.includes('campaign.*code')) {
+        components.push('PlayerPresence', 'PresenceBar');
+        hooks.push('usePresence');
+        menuPaths.push('All Views → Header');
+      }
+      if (pattern.includes('handout') || pattern.includes('note')) {
+        components.push('HandoutViewer', 'NotesBoard');
+        menuPaths.push('Campaign Hub → Notes', 'Player Home → Journal');
+      }
+    });
+
+    return {
+      featureId: feature.id,
+      name: feature.name,
+      routes: matchedRoutes,
+      components: [...new Set(components)],
+      hooks: [...new Set(hooks)],
+      events: REALTIME_EVENTS.filter(event =>
+        feature.patterns.some(pattern =>
+          event.name.toLowerCase().match(pattern.replace('.*', '.*'))
+        )
+      ),
+      menuPaths: [...new Set(menuPaths)],
+      visibility: ['both'],
+    };
+  });
 
   return {
     routes: APP_ROUTES,
     features,
     events: REALTIME_EVENTS,
     orphanedComponents: [],
-    unlinkedFeatures: [],
+    unlinkedFeatures: features.filter(f => f.routes.length === 0 && f.menuPaths.length === 0).map(f => f.featureId),
   };
 }

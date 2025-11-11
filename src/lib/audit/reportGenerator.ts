@@ -68,65 +68,108 @@ export function generateMarkdownReport(
   const avgLatency = dynamicResults
     .filter(r => r.result === 'PASS')
     .reduce((sum, r) => sum + r.latencyMs, 0) / (passedScenarios || 1);
+  
+  const maxLatency = dynamicResults.length > 0 ? Math.max(...dynamicResults.map(r => r.latencyMs)) : 0;
+  const minLatency = dynamicResults.length > 0 ? Math.min(...dynamicResults.map(r => r.latencyMs)) : 0;
+  
+  const coveragePercent = (totalScenarios - skippedScenarios) > 0 
+    ? ((passedScenarios / (totalScenarios - skippedScenarios)) * 100).toFixed(1) 
+    : '0.0';
 
-  let report = `# Quest Weaver - 5e Feature Audit Report
+  let report = `# Quest Weaver 5e Feature Audit Report
 
 **Generated:** ${new Date().toISOString()}  
-**Audit Type:** Full Static + Dynamic  
-**Demo Mode:** The Reckoning Campaign
+**Audit Type:** Full System Audit (Static + Dynamic)  
+**Test Environment:** Demo Mode (*The Reckoning*)  
+**Average Sync Latency:** ${avgLatency.toFixed(0)}ms
 
 ---
 
 ## Executive Summary
 
+### Coverage Metrics
+- **Total Features Audited:** ${inventory.features.length}
+- **Routes Mapped:** ${inventory.routes.length}
+- **Realtime Events Tracked:** ${inventory.events.length}
+- **Dynamic Scenarios Executed:** ${totalScenarios}
+
 ### Test Results
-- **Total Scenarios:** ${totalScenarios}
+- **Pass Rate:** ${coveragePercent}% (${passedScenarios}/${totalScenarios - skippedScenarios})
 - **Passed:** ${passedScenarios} ✅
 - **Failed:** ${failedScenarios} ❌
 - **Skipped:** ${skippedScenarios} ⏭️
 - **Average Latency:** ${avgLatency.toFixed(0)}ms
-- **Success Rate:** ${((passedScenarios / (totalScenarios - skippedScenarios)) * 100).toFixed(1)}%
+- **Max Latency:** ${maxLatency}ms
+- **Min Latency:** ${minLatency}ms
+
+### Actions Taken
+- **Additions Implemented:** ${additions.length}
+- **Backlog Items:** ${backlog.length} (${backlog.filter(b => b.priority === 'P0').length} P0, ${backlog.filter(b => b.priority === 'P1').length} P1, ${backlog.filter(b => b.priority === 'P2').length} P2)
 
 ### Key Findings
-${failedScenarios > 0 ? `
-⚠️ **${failedScenarios} critical sync failures detected** - DM actions may not propagate to Player View
-` : '✅ All DM↔Player sync tests passed'}
+
+${failedScenarios === 0 
+  ? '✅ All dynamic DM↔Player sync tests passed successfully.'
+  : `⚠️ ${failedScenarios} scenario(s) failed synchronization tests - DM actions may not propagate to Player View.`}
+
+${inventory.unlinkedFeatures.length > 0
+  ? `⚠️ ${inventory.unlinkedFeatures.length} feature(s) have no menu or route links: ${inventory.unlinkedFeatures.join(', ')}`
+  : '✅ All features are properly linked and discoverable.'}
 
 ${additions.length > 0 ? `
-🔧 **${additions.length} auto-fixes applied** - Missing nav links and event subscriptions added
+🔧 ${additions.length} auto-fixes applied - Missing nav links and event subscriptions added.
 ` : ''}
 
 ${backlog.length > 0 ? `
-📋 **${backlog.length} features flagged for backlog** - See Backlog section for prioritized improvements
+📋 ${backlog.length} features flagged for backlog - See Backlog section for prioritized improvements.
 ` : ''}
 
 ---
 
 ## Feature Coverage Matrix
 
-| Feature | Campaign Manager | DM Screen | Player View | Menu Path(s) | Sync Status | Result |
-|---------|------------------|-----------|-------------|--------------|-------------|--------|
+| Feature | Components | Hooks | Routes | Menu Paths | Sync Events | Status |
+|---|---|---|---|---|---|---|
 `;
 
   // Add feature matrix rows
   inventory.features.forEach(feature => {
-    const dmRoutes = feature.routes.filter(r => r.access === 'dm' || r.access === 'both' as any);
-    const playerRoutes = feature.routes.filter(r => r.access === 'player' || r.access === 'both' as any);
+    const hasComponents = feature.components.length > 0;
+    const hasHooks = feature.hooks.length > 0;
+    const hasRoutes = feature.routes.length > 0;
+    const hasMenus = feature.menuPaths.length > 0;
     const hasEvents = feature.events.length > 0;
+    const status = (hasComponents && hasRoutes && hasMenus) ? '✅ Full' : 
+                   hasComponents ? '⚠️ Partial' : '❌ Missing';
     
-    const result = dmRoutes.length > 0 && playerRoutes.length > 0 && hasEvents ? 'PASS' : 
-                   dmRoutes.length > 0 || playerRoutes.length > 0 ? 'PARTIAL' : 'MISSING';
+    const componentsDisplay = feature.components.length > 0 
+      ? feature.components.slice(0, 2).join(', ') + (feature.components.length > 2 ? '...' : '')
+      : '-';
+    const hooksDisplay = feature.hooks.length > 0 ? feature.hooks.join(', ') : '-';
+    const menusDisplay = feature.menuPaths.length > 0 
+      ? feature.menuPaths.slice(0, 2).join('; ') + (feature.menuPaths.length > 2 ? '...' : '')
+      : '-';
     
-    report += `| ${feature.name} | ${dmRoutes.length > 0 ? '✓' : '✗'} | ${dmRoutes.length > 0 ? '✓' : '✗'} | ${playerRoutes.length > 0 ? '✓' : '✗'} | ${feature.routes.map(r => r.path).join(', ') || 'None'} | ${hasEvents ? 'Real-time' : 'None'} | ${result} |\n`;
+    report += `| **${feature.name}** | ${componentsDisplay} | ${hooksDisplay} | ${feature.routes.length} | ${menusDisplay} | ${hasEvents ? feature.events.length : '-'} | ${status} |\n`;
   });
 
   report += `\n---
 
-## Dynamic Test Results
+## Dynamic Test Results (DM↔Player Sync)
 
-### Scenario Breakdown
+### Summary Table
 
+| # | Scenario | Event | Latency | Result | Details |
+|---|---|---|---:|---|---|
 `;
+
+  dynamicResults.forEach((result, idx) => {
+    const icon = result.result === 'PASS' ? '✅' : result.result === 'SKIP' ? '⏭️' : '❌';
+    const details = result.details || result.observed;
+    report += `| ${idx + 1} | **${result.scenarioId}** | \`${result.event}\` | ${result.latencyMs}ms | ${icon} ${result.result} | ${details} |\n`;
+  });
+
+  report += `\n### Detailed Breakdown\n`;
 
   dynamicResults.forEach(result => {
     const icon = result.result === 'PASS' ? '✅' : result.result === 'FAIL' ? '❌' : '⏭️';

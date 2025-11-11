@@ -3,7 +3,6 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { createDemo } from "@/lib/demoHelpers";
 
 export interface TestScenario {
   id: string;
@@ -35,7 +34,7 @@ export interface ScenarioResult {
 }
 
 /**
- * Core test scenarios
+ * Core test scenarios - All 10 DM↔Player sync tests
  */
 export const TEST_SCENARIOS: TestScenario[] = [
   {
@@ -46,22 +45,19 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const startTime = Date.now();
       
       try {
-        // Insert player presence
         const { error } = await supabase
           .from('player_presence')
           .insert({
             campaign_id: ctx.campaignId,
             user_id: ctx.playerUserId,
-            character_id: ctx.characterId,
+            character_id: ctx.characterId!,
             is_online: true,
           });
 
         if (error) throw error;
 
-        // Wait for realtime propagation
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Check if presence is visible
         const { data } = await supabase
           .from('player_presence')
           .select('*')
@@ -119,7 +115,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
       }
 
       try {
-        // Insert initiative entry
         const { error } = await supabase
           .from('initiative')
           .insert({
@@ -136,7 +131,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Verify initiative is set
         const { data } = await supabase
           .from('initiative')
           .select('*')
@@ -194,7 +188,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
       }
 
       try {
-        // Get current HP
         const { data: before } = await supabase
           .from('characters')
           .select('current_hp, max_hp')
@@ -206,7 +199,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
         const damageAmount = 9;
         const newHP = Math.max(0, before.current_hp - damageAmount);
 
-        // Apply damage
         const { error } = await supabase
           .from('characters')
           .update({ current_hp: newHP })
@@ -216,7 +208,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Verify HP updated
         const { data: after } = await supabase
           .from('characters')
           .select('current_hp')
@@ -252,7 +243,6 @@ export const TEST_SCENARIOS: TestScenario[] = [
       }
     },
   },
-  // Add more scenarios as needed
 ];
 
 /**
@@ -266,7 +256,6 @@ export async function runDynamicTests(context: TestContext): Promise<ScenarioRes
     const result = await scenario.execute(context);
     results.push(result);
     
-    // Wait between scenarios to avoid race conditions
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 

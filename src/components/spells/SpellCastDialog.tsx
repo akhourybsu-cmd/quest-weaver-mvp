@@ -133,6 +133,14 @@ const SpellCastDialog = ({
 
     if (!character) return;
 
+    // Check for War Caster feat
+    const { data: feats } = await supabase
+      .from('character_feats')
+      .select('feat_id, feats(name)')
+      .eq('character_id', characterId);
+    
+    const hasWarCaster = feats?.some((f: any) => f.feats?.name === 'War Caster') || false;
+
     // Get turn state if in combat
     let turnState = { hasLeveledSpellThisTurn: false, leveledSpellWasBonusAction: false };
     if (encounterId) {
@@ -180,13 +188,15 @@ const SpellCastDialog = ({
       hasFocus,
       hasComponentPouch,
       hasFreeSomaticHand: true, // TODO: Track hand state
+      hasWarCaster,
       inventory: [], // TODO: Implement inventory checking
       goldGp,
+      characterId,
     };
 
     const components: SpellComponents = spell.components || { verbal: false, somatic: false, material: false };
     
-    const result = validateSpellCast(
+    const result = await validateSpellCast(
       {
         level: selectedSlotLevel,
         casting_time: spell.casting_time || '1 action',

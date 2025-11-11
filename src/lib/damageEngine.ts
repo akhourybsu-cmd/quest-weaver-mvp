@@ -42,10 +42,17 @@ export function applyDamage(
   character: Character,
   baseDamage: number,
   damageType: DamageType,
-  isConcentrating: boolean = false
+  isConcentrating: boolean = false,
+  isCriticalHit: boolean = false
 ): DamageResult {
   const steps: string[] = [];
   let damage = baseDamage;
+  
+  // Note: Critical hits double DICE, not the final damage
+  // This is handled in the attack roll phase, not here
+  if (isCriticalHit) {
+    steps.push(`CRITICAL HIT! (dice were doubled in attack roll)`);
+  }
   
   steps.push(`Base damage: ${baseDamage} ${damageType}`);
 

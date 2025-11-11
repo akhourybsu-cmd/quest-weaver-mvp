@@ -1275,6 +1275,7 @@ export type Database = {
           details: Json | null
           encounter_id: string | null
           id: string
+          is_critical_hit: boolean | null
           is_visible_to_players: boolean | null
           message: string
           round: number
@@ -1287,6 +1288,7 @@ export type Database = {
           details?: Json | null
           encounter_id?: string | null
           id?: string
+          is_critical_hit?: boolean | null
           is_visible_to_players?: boolean | null
           message: string
           round: number
@@ -1299,6 +1301,7 @@ export type Database = {
           details?: Json | null
           encounter_id?: string | null
           id?: string
+          is_critical_hit?: boolean | null
           is_visible_to_players?: boolean | null
           message?: string
           round?: number
@@ -1313,6 +1316,50 @@ export type Database = {
           },
           {
             foreignKeyName: "combat_log_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_modifiers: {
+        Row: {
+          actor_id: string
+          actor_type: string
+          created_at: string
+          encounter_id: string
+          expires_at: string
+          id: string
+          modifier_type: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          actor_id: string
+          actor_type?: string
+          created_at?: string
+          encounter_id: string
+          expires_at?: string
+          id?: string
+          modifier_type: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string
+          actor_type?: string
+          created_at?: string
+          encounter_id?: string
+          expires_at?: string
+          id?: string
+          modifier_type?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_modifiers_encounter_id_fkey"
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"

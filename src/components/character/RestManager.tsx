@@ -27,12 +27,43 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
   const handleShortRest = async () => {
     setLoading(true);
     try {
-      // Short rest resets short rest resources but doesn't auto-heal
-      // Players must use hit dice for healing
+      // Fetch current character data including resources
+      const { data: charData, error: fetchError } = await supabase
+        .from('characters')
+        .select('resources')
+        .eq('id', characterId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Restore all resources with recharge: 'short'
+      const resources = (charData?.resources as Record<string, any>) || {};
+      const updatedResources = { ...resources };
+      
+      Object.entries(updatedResources).forEach(([key, value]: [string, any]) => {
+        if (value && typeof value === 'object' && value.recharge === 'short') {
+          updatedResources[key] = {
+            ...value,
+            current: value.max || 0,
+          };
+        }
+      });
+
+      // Update character with restored resources
+      const { error: updateError } = await supabase
+        .from('characters')
+        .update({ resources: updatedResources })
+        .eq('id', characterId);
+
+      if (updateError) throw updateError;
+
+      const restoredCount = Object.values(updatedResources).filter(
+        (r: any) => r?.recharge === 'short'
+      ).length;
       
       toast({
         title: "Short Rest Complete",
-        description: "Short rest abilities restored. Use hit dice to regain HP.",
+        description: `${restoredCount} resource(s) restored. Use hit dice to regain HP.`,
       });
     } catch (error) {
       console.error('Error during short rest:', error);
@@ -49,12 +80,37 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
   const handleLongRest = async () => {
     setLoading(true);
     try {
+      // Fetch current character data including resources
+      const { data: charData, error: fetchError } = await supabase
+        .from('characters')
+        .select('resources')
+        .eq('id', characterId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       // Calculate hit dice restoration (half, minimum 1)
       const hdRestored = Math.max(1, Math.floor(character.hit_dice_total / 2));
       const newHitDice = Math.min(
         character.hit_dice_current + hdRestored,
         character.hit_dice_total
       );
+
+      // Restore all resources with recharge: 'short' or 'long'
+      // This includes spell slots, class features, etc.
+      const resources = (charData?.resources as Record<string, any>) || {};
+      const updatedResources = { ...resources };
+      
+      Object.entries(updatedResources).forEach(([key, value]: [string, any]) => {
+        if (value && typeof value === 'object') {
+          if (value.recharge === 'short' || value.recharge === 'long') {
+            updatedResources[key] = {
+              ...value,
+              current: value.max || 0,
+            };
+          }
+        }
+      });
 
       const { error } = await supabase
         .from('characters')
@@ -64,14 +120,19 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
           death_save_success: 0,
           death_save_fail: 0,
           hit_dice_current: newHitDice,
+          resources: updatedResources,
         })
         .eq('id', characterId);
 
       if (error) throw error;
 
+      const restoredCount = Object.values(updatedResources).filter(
+        (r: any) => r?.recharge === 'short' || r?.recharge === 'long'
+      ).length;
+
       toast({
         title: "Long Rest Complete",
-        description: `HP fully restored. Regained ${hdRestored} hit dice.`,
+        description: `HP fully restored. Regained ${hdRestored} hit dice and ${restoredCount} resource(s).`,
       });
     } catch (error) {
       console.error('Error during long rest:', error);

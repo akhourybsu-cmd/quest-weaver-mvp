@@ -25,6 +25,7 @@ import Notes from "./pages/Notes";
 import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
 import { PlayerHome } from "./components/permissions/PlayerHome";
+import AuditHarness from "./pages/dev/AuditHarness";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => {
               <Route path="/lore" element={<Lore />} />
               <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
               <Route path="/campaign/:campaignId/character/:characterId" element={<CharacterSheetPage />} />
+              <Route path="/dev/audit" element={<AuditHarness />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

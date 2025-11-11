@@ -18,10 +18,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Sparkles, Zap, AlertCircle } from "lucide-react";
+import { Sparkles, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAvailableSlotLevels, scaleSpellEffect, type SpellScaling } from "@/lib/spellScaling";
+import { validateSpellCast, type ValidationResult, type SpellComponents } from "@/lib/spellCastValidator";
 
 interface SpellSlot {
   id: string;
@@ -33,17 +34,21 @@ interface SpellSlot {
 
 interface SpellCastDialogProps {
   characterId: string;
+  encounterId?: string;
   spell: {
     id: string;
     name: string;
     level: number;
     school: string;
     description: string;
-    damage?: string; // e.g., "3d6"
-    healing?: string; // e.g., "1d8"
+    damage?: string;
+    healing?: string;
     scaling_type?: string;
     scaling_value?: string;
     scaling_description?: string;
+    casting_time?: string;
+    concentration?: boolean;
+    components?: any;
   };
   onCast: (slotLevel: number, scalingInfo?: string) => void;
   children: React.ReactNode;
@@ -51,6 +56,7 @@ interface SpellCastDialogProps {
 
 const SpellCastDialog = ({
   characterId,
+  encounterId,
   spell,
   onCast,
   children,
@@ -59,13 +65,15 @@ const SpellCastDialog = ({
   const [spellSlots, setSpellSlots] = useState<SpellSlot[]>([]);
   const [selectedSlotLevel, setSelectedSlotLevel] = useState<number>(spell.level);
   const [loading, setLoading] = useState(false);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       loadSpellSlots();
+      validateCasting();
     }
-  }, [open, characterId]);
+  }, [open, characterId, selectedSlotLevel]);
 
   useEffect(() => {
     // Subscribe to realtime slot updates
@@ -110,6 +118,87 @@ const SpellCastDialog = ({
     }
   };
 
+  const validateCasting = async () => {
+    if (spell.level === 0) {
+      setValidation({ canCast: true, blockers: [], warnings: [], willBreakConcentration: false });
+      return;
+    }
+
+    // Get character data for validation
+    const { data: character } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('id', characterId)
+      .single();
+
+    if (!character) return;
+
+    // Get turn state if in combat
+    let turnState = { hasLeveledSpellThisTurn: false, leveledSpellWasBonusAction: false };
+    if (encounterId) {
+      const { data: initiative } = await supabase
+        .from('initiative')
+        .select('*')
+        .eq('encounter_id', encounterId)
+        .eq('combatant_id', characterId)
+        .single();
+      
+      if (initiative) {
+        turnState = {
+          hasLeveledSpellThisTurn: initiative.has_leveled_spell_this_turn || false,
+          leveledSpellWasBonusAction: initiative.leveled_spell_was_bonus_action || false,
+        };
+      }
+    }
+
+    // TODO: Implement inventory checking when we have proper item tracking
+    const hasFocus = true; // Assume has focus for now
+    const hasComponentPouch = true; // Assume has component pouch for now
+
+    // Get concentration status
+    const { data: effects } = await supabase
+      .from('effects')
+      .select('*')
+      .eq('concentrating_character_id', characterId)
+      .eq('requires_concentration', true);
+
+    const concentrating = (effects?.length || 0) > 0;
+    const concentrationSpell = effects?.[0]?.name;
+
+    // Get gold from resources
+    const resources = character.resources as any;
+    const goldGp = typeof resources === 'object' && resources !== null ? (resources.gold_gp || 0) : 0;
+
+    const context = {
+      actionUsed: character.action_used || false,
+      bonusActionUsed: character.bonus_action_used || false,
+      reactionUsed: character.reaction_used || false,
+      concentrating,
+      concentrationSpell,
+      hasLeveledSpellThisTurn: turnState.hasLeveledSpellThisTurn,
+      leveledSpellWasBonusAction: turnState.leveledSpellWasBonusAction,
+      hasFocus,
+      hasComponentPouch,
+      hasFreeSomaticHand: true, // TODO: Track hand state
+      inventory: [], // TODO: Implement inventory checking
+      goldGp,
+    };
+
+    const components: SpellComponents = spell.components || { verbal: false, somatic: false, material: false };
+    
+    const result = validateSpellCast(
+      {
+        level: selectedSlotLevel,
+        casting_time: spell.casting_time || '1 action',
+        components,
+        concentration: spell.concentration || false,
+      },
+      context
+    );
+
+    setValidation(result);
+  };
+
   const getAvailableSlots = (level: number): number => {
     const slot = spellSlots.find(s => s.spell_level === level);
     if (!slot) return 0;
@@ -122,6 +211,15 @@ const SpellCastDialog = ({
   };
 
   const handleCast = async () => {
+    if (validation && !validation.canCast) {
+      toast({
+        title: "Cannot cast spell",
+        description: validation.blockers[0],
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!hasAvailableSlot(selectedSlotLevel)) {
       toast({
         title: "No spell slots available",
@@ -145,6 +243,44 @@ const SpellCastDialog = ({
         .eq('id', slot.id);
 
       if (slotError) throw slotError;
+
+      // Update turn state if in combat
+      if (encounterId) {
+        const isBonusAction = spell.casting_time?.toLowerCase().includes('bonus action');
+        await supabase
+          .from('initiative')
+          .update({
+            has_leveled_spell_this_turn: true,
+            leveled_spell_was_bonus_action: isBonusAction,
+          })
+          .eq('encounter_id', encounterId)
+          .eq('combatant_id', characterId);
+      }
+
+      // Deduct consumed material costs
+      if (spell.components?.material && spell.components?.consumed && spell.components?.material_cost) {
+        const cost = spell.components.material_cost;
+        const { data: character } = await supabase
+          .from('characters')
+          .select('resources')
+          .eq('id', characterId)
+          .single();
+
+        if (character && character.resources) {
+          const resources = character.resources as any;
+          const currentGold = typeof resources === 'object' && resources !== null ? (resources.gold_gp || 0) : 0;
+          
+          await supabase
+            .from('characters')
+            .update({
+              resources: {
+                ...(typeof resources === 'object' ? resources : {}),
+                gold_gp: currentGold - cost,
+              },
+            })
+            .eq('id', characterId);
+        }
+      }
 
       // Log the spell cast
       await supabase.from('spell_casting_history').insert({
@@ -243,6 +379,29 @@ const SpellCastDialog = ({
             {spell.description}
           </div>
 
+          {/* Validation Results */}
+          {validation && validation.blockers.length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {validation.blockers.map((blocker, i) => (
+                  <div key={i}>{blocker}</div>
+                ))}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {validation && validation.warnings.length > 0 && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>
+                {validation.warnings.map((warning, i) => (
+                  <div key={i}>{warning}</div>
+                ))}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Slot Level Selection */}
           <div className="space-y-2">
             <Label>Cast Using Spell Slot Level</Label>
@@ -312,7 +471,7 @@ const SpellCastDialog = ({
           {/* Cast Button */}
           <Button
             onClick={handleCast}
-            disabled={loading || availableLevels.length === 0}
+            disabled={loading || availableLevels.length === 0 || (validation && !validation.canCast)}
             className="w-full"
           >
             <Sparkles className="w-4 h-4 mr-2" />

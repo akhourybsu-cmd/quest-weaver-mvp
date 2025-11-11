@@ -24,6 +24,7 @@ export interface CastingContext {
   hasComponentPouch: boolean;
   hasFreeSomaticHand: boolean;
   inventory: { name: string; quantity: number; value_gp?: number }[];
+  goldGp: number;
 }
 
 export interface ValidationResult {
@@ -103,26 +104,24 @@ export function validateSpellCast(
     if (cost === 0) {
       // Non-costly material: need focus or component pouch
       if (!context.hasFocus && !context.hasComponentPouch) {
-        blockers.push('You need a focus or component pouch for material components');
+        blockers.push('You need a spellcasting focus or component pouch for material components');
       }
     } else {
-      // Costly material: must have specific item
+      // Costly material: must have specific item or enough gold
       const description = spell.components.material_description || '';
       
-      // Try to find matching material in inventory
-      const hasComponent = context.inventory.some(item => {
-        const matchesDescription = description.toLowerCase().includes(item.name.toLowerCase());
-        const hasEnoughValue = (item.value_gp || 0) >= cost;
-        const hasQuantity = item.quantity > 0;
-        return matchesDescription && hasEnoughValue && hasQuantity;
-      });
-
-      if (!hasComponent) {
+      // Check if we have enough gold to cover the cost
+      if (context.goldGp < cost) {
         blockers.push(
-          `Missing costly material component: ${description} (worth ${cost} gp)${spell.components.consumed ? ' - consumed' : ''}`
+          `Insufficient funds for material component: ${description} (need ${cost} gp, have ${context.goldGp} gp)${spell.components.consumed ? ' - consumed' : ''}`
         );
-      } else if (spell.components.consumed) {
-        warnings.push(`This spell will consume: ${description} (${cost} gp)`);
+      } else {
+        // Check if material is consumed
+        if (spell.components.consumed) {
+          warnings.push(`This spell will consume ${cost} gp worth of materials: ${description}`);
+        } else {
+          warnings.push(`Requires ${cost} gp worth of materials: ${description} (not consumed)`);
+        }
       }
     }
   }

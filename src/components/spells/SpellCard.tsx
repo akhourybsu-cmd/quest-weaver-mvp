@@ -24,6 +24,7 @@ interface SpellCardProps {
     scaling_description?: string;
   };
   characterId?: string;
+  encounterId?: string;
   onCast?: (slotLevel: number, scalingInfo?: string) => void;
   canCast?: boolean;
   showCastButton?: boolean;
@@ -32,6 +33,7 @@ interface SpellCardProps {
 const SpellCard = ({
   spell,
   characterId,
+  encounterId,
   onCast,
   canCast = false,
   showCastButton = false,
@@ -71,6 +73,7 @@ const SpellCard = ({
           {showCastButton && canCast && characterId && onCast && (
             <SpellCastDialog
               characterId={characterId}
+              encounterId={encounterId}
               spell={spell}
               onCast={onCast}
             >

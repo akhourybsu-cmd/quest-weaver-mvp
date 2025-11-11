@@ -2024,9 +2024,11 @@ export type Database = {
           created_at: string | null
           dex_modifier: number | null
           encounter_id: string | null
+          has_leveled_spell_this_turn: boolean | null
           id: string
           initiative_roll: number
           is_current_turn: boolean | null
+          leveled_spell_was_bonus_action: boolean | null
           passive_perception: number | null
         }
         Insert: {
@@ -2035,9 +2037,11 @@ export type Database = {
           created_at?: string | null
           dex_modifier?: number | null
           encounter_id?: string | null
+          has_leveled_spell_this_turn?: boolean | null
           id?: string
           initiative_roll: number
           is_current_turn?: boolean | null
+          leveled_spell_was_bonus_action?: boolean | null
           passive_perception?: number | null
         }
         Update: {
@@ -2046,9 +2050,11 @@ export type Database = {
           created_at?: string | null
           dex_modifier?: number | null
           encounter_id?: string | null
+          has_leveled_spell_this_turn?: boolean | null
           id?: string
           initiative_roll?: number
           is_current_turn?: boolean | null
+          leveled_spell_was_bonus_action?: boolean | null
           passive_perception?: number | null
         }
         Relationships: [
@@ -2099,6 +2105,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_component_pouch: boolean | null
+          is_focus: boolean | null
           name: string
           properties: Json | null
           rarity: string | null
@@ -2112,6 +2120,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_component_pouch?: boolean | null
+          is_focus?: boolean | null
           name: string
           properties?: Json | null
           rarity?: string | null
@@ -2125,6 +2135,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_component_pouch?: boolean | null
+          is_focus?: boolean | null
           name?: string
           properties?: Json | null
           rarity?: string | null

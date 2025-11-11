@@ -1,0 +1,159 @@
+import { useState, ReactNode } from "react";
+import { Search, Plus, Archive, Command as CommandIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+
+interface Campaign {
+  id: string;
+  name: string;
+  system: string;
+  playerCount: number;
+  sessionCount: number;
+}
+
+interface CampaignManagerLayoutProps {
+  campaigns: Campaign[];
+  activeCampaignId: string | null;
+  onCampaignSelect: (id: string) => void;
+  onNewCampaign: () => void;
+  onImport: () => void;
+  onArchive: () => void;
+  children: ReactNode;
+  inspectorContent?: ReactNode;
+  inspectorOpen?: boolean;
+  onInspectorClose?: () => void;
+}
+
+export function CampaignManagerLayout({
+  campaigns,
+  activeCampaignId,
+  onCampaignSelect,
+  onNewCampaign,
+  onImport,
+  onArchive,
+  children,
+  inspectorContent,
+  inspectorOpen = false,
+  onInspectorClose,
+}: CampaignManagerLayoutProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [leftRailCollapsed, setLeftRailCollapsed] = useState(false);
+
+  const filteredCampaigns = campaigns.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-screen w-full bg-obsidian text-ink overflow-hidden">
+      {/* Left Rail - Campaign Switcher */}
+      <aside
+        className={cn(
+          "border-r border-brass/20 bg-obsidian/95 backdrop-blur-sm transition-all duration-200",
+          leftRailCollapsed ? "w-16" : "w-[280px]"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-4 border-b border-brass/20">
+            {!leftRailCollapsed && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-arcanePurple to-dragonRed">
+                    <CommandIcon className="w-4 h-4 text-ink" />
+                  </div>
+                  <span className="font-cinzel text-lg font-semibold text-ink">Quest Weaver</span>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brass" />
+                  <Input
+                    placeholder="Search campaigns..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-obsidian/50 border-brass/30 text-ink placeholder:text-brass/50"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Campaign List */}
+          <ScrollArea className="flex-1">
+            <div className="p-2">
+              {filteredCampaigns.map((campaign) => (
+                <button
+                  key={campaign.id}
+                  onClick={() => onCampaignSelect(campaign.id)}
+                  className={cn(
+                    "w-full p-3 mb-1 rounded-lg text-left transition-all hover:bg-brass/10",
+                    activeCampaignId === campaign.id
+                      ? "bg-arcanePurple/20 border border-arcanePurple/40"
+                      : "border border-transparent"
+                  )}
+                >
+                  {!leftRailCollapsed && (
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-8 h-8 rounded bg-gradient-to-br from-brass/20 to-brass/10 flex items-center justify-center text-xs font-cinzel font-bold text-brass">
+                          {campaign.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-ink truncate">{campaign.name}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs border-brass/30 text-brass">
+                          {campaign.system}
+                        </Badge>
+                        <span className="text-xs text-brass/70">{campaign.playerCount} players</span>
+                      </div>
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Quick Actions */}
+          {!leftRailCollapsed && (
+            <>
+              <Separator className="bg-brass/20" />
+              <div className="p-3 space-y-2">
+                <Button onClick={onNewCampaign} className="w-full justify-start" variant="ghost" size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Campaign
+                </Button>
+                <Button onClick={onImport} className="w-full justify-start" variant="ghost" size="sm">
+                  <Archive className="w-4 h-4 mr-2" />
+                  Import
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Workspace */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {children}
+      </main>
+
+      {/* Inspector Panel */}
+      <Sheet open={inspectorOpen} onOpenChange={onInspectorClose}>
+        <SheetContent side="right" className="w-[360px] sm:w-[400px] bg-obsidian border-brass/20">
+          {inspectorContent}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

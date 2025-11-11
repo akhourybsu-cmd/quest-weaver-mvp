@@ -1,111 +1,108 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Sword, Users, Plus, LogIn, Scroll, LogOut, Copy, PlayCircle, UserCircle, Trash2, Sparkles, Map, Clock, FileText, MoreVertical, Package, Library, Database } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import CharacterWizard from "@/components/character/CharacterWizard";
-import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
-import { SeedCombatButton } from "@/components/dev/SeedCombatButton";
-import { SRDImportButton } from "@/components/admin/SRDImportButton";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { Badge } from "@/components/ui/badge";
-import RestManager from "@/components/character/RestManager";
-import { ViewResourcesDialog } from "@/components/combat/ViewResourcesDialog";
-import { calculateCharacterResources } from "@/lib/resourceCalculator";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Play,
+  Shield,
+  Users,
+  MoreVertical,
+  Settings,
+  Copy,
+  FileDown,
+  Sword,
+  Scroll,
+  Calendar,
+  MapPin,
+  Crown,
+  Package,
+  Flame,
+  BookOpen,
+  Clock,
+  FileText,
+} from "lucide-react";
+import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
+import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
+import { OverviewTab } from "@/components/campaign/tabs/OverviewTab";
+import { QuestsTab } from "@/components/campaign/tabs/QuestsTab";
+import { InspectorPanel } from "@/components/campaign/InspectorPanel";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Campaign {
   id: string;
   name: string;
   code: string;
-  player_count: number;
-}
-
-interface Character {
-  id: string;
-  name: string;
-  class: string;
-  level: number;
-  campaign_id: string | null;
-  campaign_name?: string;
-  creation_status?: 'draft' | 'complete';
+  dm_user_id: string;
 }
 
 const CampaignHub = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin } = useIsAdmin();
-  const [campaignCode, setCampaignCode] = useState("");
-  const [campaignName, setCampaignName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showCharacterCreation, setShowCharacterCreation] = useState(false);
-  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
-  const [joinedCampaignId, setJoinedCampaignId] = useState<string | null>(null);
-  const [myCampaigns, setMyCampaigns] = useState<Campaign[]>([]);
-  const [myCharacters, setMyCharacters] = useState<Character[]>([]);
-  const [loadingCampaigns, setLoadingCampaigns] = useState(true);
-  const [loadingCharacters, setLoadingCharacters] = useState(true);
-  const [deletingCampaign, setDeletingCampaign] = useState<Campaign | null>(null);
-  const [expandedCharacters, setExpandedCharacters] = useState<Set<string>>(new Set());
-  const [editCharacterId, setEditCharacterId] = useState<string | null>(null);
-  const [deletingCharacter, setDeletingCharacter] = useState<Character | null>(null);
+  const [searchParams] = useSearchParams();
+  const campaignIdParam = searchParams.get("campaign");
+
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [loading, setLoading] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<any>(null);
+
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
   useEffect(() => {
-    fetchMyCampaigns();
-    fetchMyCharacters();
+    fetchCampaigns();
   }, []);
 
-  const fetchMyCampaigns = async () => {
-    setLoadingCampaigns(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  useEffect(() => {
+    if (campaignIdParam && campaigns.length > 0) {
+      const campaign = campaigns.find((c) => c.id === campaignIdParam);
+      if (campaign) {
+        setActiveCampaign(campaign);
+      }
+    } else if (campaigns.length > 0 && !activeCampaign) {
+      setActiveCampaign(campaigns[0]);
+    }
+  }, [campaignIdParam, campaigns]);
 
-      const { data: campaigns, error } = await supabase
+  const fetchCampaigns = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
+      const { data, error } = await supabase
         .from("campaigns")
-        .select("id, name, code")
+        .select("*")
         .eq("dm_user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
-      // Fetch player count for each campaign
-      const campaignsWithCounts = await Promise.all(
-        (campaigns || []).map(async (campaign) => {
-          const { count } = await supabase
-            .from("characters")
-            .select("*", { count: "exact", head: true })
-            .eq("campaign_id", campaign.id);
-
-          return {
-            ...campaign,
-            player_count: count || 0,
-          };
-        })
-      );
-
-      setMyCampaigns(campaignsWithCounts);
+      setCampaigns(data || []);
     } catch (error: any) {
       toast({
         title: "Error loading campaigns",
@@ -113,216 +110,46 @@ const CampaignHub = () => {
         variant: "destructive",
       });
     } finally {
-      setLoadingCampaigns(false);
+      setLoading(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleCampaignSelect = (id: string) => {
+    const campaign = campaigns.find((c) => c.id === id);
+    if (campaign) {
+      setActiveCampaign(campaign);
+      navigate(`/campaign-hub?campaign=${id}`);
+    }
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    toast({
-      title: "Code copied!",
-      description: `Campaign code ${code} copied to clipboard`,
-    });
-  };
+  const handleNewCampaign = async () => {
+    const name = prompt("Enter campaign name:");
+    if (!name) return;
 
-  const fetchMyCharacters = async () => {
-    setLoadingCharacters(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
-
-      const { data: characters, error } = await supabase
-        .from("characters")
-        .select("id, name, class, level, campaign_id, current_hp, max_hp, resources, creation_status")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Auto-populate resources and fetch campaign names
-      const charactersWithCampaigns = await Promise.all(
-        (characters || []).map(async (character) => {
-          // Auto-populate resources if missing or empty
-          const currentResources = (character.resources as any) || {};
-          const hasResources = currentResources.spellSlots?.length > 0 || currentResources.classResources?.length > 0;
-          
-          if (!hasResources && character.creation_status === 'complete') {
-            const autoResources = calculateCharacterResources(character.class, character.level);
-            await supabase
-              .from("characters")
-              .update({ resources: autoResources as any })
-              .eq("id", character.id);
-          }
-
-          if (character.campaign_id) {
-            const { data: campaign } = await supabase
-              .from("campaigns")
-              .select("name")
-              .eq("id", character.campaign_id)
-              .single();
-
-            return {
-              ...character,
-              campaign_name: campaign?.name,
-            };
-          }
-          return character;
-        })
-      );
-
-      setMyCharacters(charactersWithCampaigns.map(char => ({
-        ...char,
-        creation_status: (char.creation_status as 'draft' | 'complete') || 'complete'
-      })));
-    } catch (error: any) {
-      toast({
-        title: "Error loading characters",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingCharacters(false);
-    }
-  };
-
-  const handleContinueCampaign = (campaignId: string) => {
-    navigate(`/session/dm?campaign=${campaignId}`);
-  };
-
-  const handleDeleteCampaign = async () => {
-    if (!deletingCampaign) return;
-
-    try {
-      // First, unassign all characters from this campaign
-      const { error: characterError } = await supabase
-        .from("characters")
-        .update({ campaign_id: null })
-        .eq("campaign_id", deletingCampaign.id);
-
-      if (characterError) throw characterError;
-
-      // Then delete the campaign
-      const { error } = await supabase
-        .from("campaigns")
-        .delete()
-        .eq("id", deletingCampaign.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Campaign deleted",
-        description: `${deletingCampaign.name} has been removed and characters have been unassigned`,
-      });
-
-      setDeletingCampaign(null);
-      await Promise.all([fetchMyCampaigns(), fetchMyCharacters()]);
-    } catch (error: any) {
-      toast({
-        title: "Error deleting campaign",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteCharacter = async () => {
-    if (!deletingCharacter) return;
-
-    try {
-      const { error } = await supabase
-        .from("characters")
-        .delete()
-        .eq("id", deletingCharacter.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Character deleted",
-        description: `${deletingCharacter.name} has been permanently removed`,
-      });
-
-      setDeletingCharacter(null);
-      await fetchMyCharacters();
-    } catch (error: any) {
-      toast({
-        title: "Error deleting character",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCreateCampaign = async () => {
-    if (!campaignName.trim()) return;
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase
         .from("campaigns")
-        .insert({
-          code,
-          name: campaignName,
-          dm_user_id: user.id,
-        })
+        .insert({ code, name, dm_user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
+
       toast({
         title: "Campaign created!",
         description: `Campaign code: ${code}`,
       });
-      fetchMyCampaigns(); // Refresh the list
-      navigate(`/session/dm?campaign=${data.id}`);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleJoinCampaign = async () => {
-    if (!campaignCode.trim()) return;
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Find campaign by code
-      const { data: campaign, error: campaignError } = await supabase
-        .from("campaigns")
-        .select("id, code")
-        .eq("code", campaignCode.toUpperCase())
-        .single();
-
-      if (campaignError) throw new Error("Campaign not found");
-
-      // Check if user already has a character in this campaign
-      const { data: existingCharacter } = await supabase
-        .from("characters")
-        .select("id")
-        .eq("campaign_id", campaign.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingCharacter) {
-        // User already has a character, go directly to session
-        navigate(`/session/player?campaign=${campaign.code}`);
-      } else {
-        // Show character selection dialog
-        setJoinedCampaignId(campaign.id);
-        setShowCharacterSelection(true);
+      await fetchCampaigns();
+      if (data) {
+        setActiveCampaign(data);
+        navigate(`/campaign-hub?campaign=${data.id}`);
       }
     } catch (error: any) {
       toast({
@@ -330,554 +157,383 @@ const CampaignHub = () => {
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleCharacterCreated = async () => {
-    setShowCharacterCreation(false);
-    setEditCharacterId(null);
-    await fetchMyCharacters();
-  };
-
-  const handleCharacterSelected = async () => {
-    setShowCharacterSelection(false);
-    
-    // Get the campaign code to redirect
-    if (joinedCampaignId) {
-      const { data: campaign } = await supabase
-        .from("campaigns")
-        .select("code")
-        .eq("id", joinedCampaignId)
-        .single();
-
-      if (campaign) {
-        navigate(`/session/player?campaign=${campaign.code}`);
-      }
+  const handleStartSession = () => {
+    if (activeCampaign) {
+      navigate(`/session/dm?campaign=${activeCampaign.id}`);
     }
   };
 
-  const handleCancelSelection = () => {
-    setShowCharacterSelection(false);
-    setJoinedCampaignId(null);
+  const handleOpenDMScreen = () => {
+    if (activeCampaign) {
+      navigate(`/session/dm?campaign=${activeCampaign.id}`);
+    }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleSignOut}
-        className="absolute top-4 right-4"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        Sign Out
-      </Button>
-      <div className="w-full max-w-4xl space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Scroll className="w-12 h-12 text-primary" />
-            <h1 className="text-5xl font-bold tracking-tight text-foreground">
-              Campaign Manager
-            </h1>
-          </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Run immersive D&D 5E sessions with real-time sync, minimal screen time, and powerful DM tools
-          </p>
-        </div>
+  const handleInvitePlayers = () => {
+    if (activeCampaign) {
+      navigator.clipboard.writeText(activeCampaign.code);
+      toast({
+        title: "Join code copied!",
+        description: `Share ${activeCampaign.code} with your players`,
+      });
+    }
+  };
 
-        {/* Main Card */}
-        <Card className="shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">Choose Your Role</CardTitle>
-            <CardDescription className="text-base">
-              Start a new campaign as DM or join an existing one as a player
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="dm" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="dm" className="text-base">
-                  <Sword className="w-4 h-4 mr-2" />
-                  Dungeon Master
-                </TabsTrigger>
-                <TabsTrigger value="player" className="text-base">
-                  <Users className="w-4 h-4 mr-2" />
-                  Player
-                </TabsTrigger>
-              </TabsList>
+  const handleQuestSelect = (quest: any) => {
+    setSelectedEntity({ type: "quest", data: quest });
+    setInspectorOpen(true);
+  };
 
-              {/* DM Tab */}
-              <TabsContent value="dm" className="space-y-6">
-                {/* Existing Campaigns */}
-                {loadingCampaigns ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Loading your campaigns...
-                  </div>
-                ) : myCampaigns.length > 0 ? (
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-lg">Your Campaigns</h3>
-                    <div className="space-y-2">
-                      {myCampaigns.map((campaign) => (
-                        <Card key={campaign.id} className="shadow-sm">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">{campaign.name}</h4>
-                                <div className="flex items-center gap-3 mt-1">
-                                  <button
-                                    onClick={() => handleCopyCode(campaign.code)}
-                                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                  >
-                                    <span className="font-mono font-bold">{campaign.code}</span>
-                                    <Copy className="w-3 h-3" />
-                                  </button>
-                                  <Badge variant="secondary" className="text-xs">
-                                    <Users className="w-3 h-3 mr-1" />
-                                    {campaign.player_count} {campaign.player_count === 1 ? 'player' : 'players'}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  onClick={() => handleContinueCampaign(campaign.id)}
-                                  size="sm"
-                                >
-                                  <PlayCircle className="w-4 h-4 mr-2" />
-                                  Continue
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline">
-                                      <MoreVertical className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem 
-                                      onClick={() => navigate(`/world-map?campaign=${campaign.id}&dm=true`)}
-                                    >
-                                      <Map className="w-4 h-4 mr-2" />
-                                      World Map
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => navigate(`/timeline?campaign=${campaign.id}&dm=true`)}
-                                    >
-                                      <Clock className="w-4 h-4 mr-2" />
-                                      Timeline
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => navigate(`/notes?campaign=${campaign.id}&dm=true`)}
-                                    >
-                                      <FileText className="w-4 h-4 mr-2" />
-                                      Notes & NPCs
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => navigate(`/inventory?campaign=${campaign.id}`)}
-                                    >
-                                      <Package className="w-4 h-4 mr-2" />
-                                      Party Inventory
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => navigate(`/lore?campaign=${campaign.id}&dm=true`)}
-                                    >
-                                      <Library className="w-4 h-4 mr-2" />
-                                      Lore
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Button
-                                  onClick={() => setDeletingCampaign(campaign)}
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Or create new
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+  const handleQuickAdd = (type: string) => {
+    if (type === "quest") {
+      setActiveTab("quests");
+    }
+  };
 
-                {/* Create New Campaign */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="campaign-name" className="text-base">
-                      Campaign Name
-                    </Label>
-                    <Input
-                      id="campaign-name"
-                      placeholder="The Lost Mines of Phandelver"
-                      value={campaignName}
-                      onChange={(e) => setCampaignName(e.target.value)}
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleCreateCampaign}
-                    disabled={loading || !campaignName.trim()}
-                    className="w-full h-12 text-base"
-                    size="lg"
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    {loading ? "Creating..." : "Create Campaign"}
-                  </Button>
-                </div>
+  const commandActions = [
+    {
+      id: "create-quest",
+      label: "Create Quest",
+      icon: <Scroll className="w-4 h-4" />,
+      group: "Create",
+      onSelect: () => console.log("Create quest"),
+    },
+    {
+      id: "create-npc",
+      label: "Create NPC",
+      icon: <Users className="w-4 h-4" />,
+      group: "Create",
+      onSelect: () => console.log("Create NPC"),
+    },
+    {
+      id: "create-location",
+      label: "Create Location",
+      icon: <MapPin className="w-4 h-4" />,
+      group: "Create",
+      onSelect: () => console.log("Create location"),
+    },
+    {
+      id: "create-item",
+      label: "Create Item",
+      icon: <Package className="w-4 h-4" />,
+      group: "Create",
+      onSelect: () => console.log("Create item"),
+    },
+    {
+      id: "nav-quests",
+      label: "Go to Quests",
+      icon: <Scroll className="w-4 h-4" />,
+      group: "Navigate",
+      onSelect: () => setActiveTab("quests"),
+    },
+    {
+      id: "nav-overview",
+      label: "Go to Overview",
+      icon: <Shield className="w-4 h-4" />,
+      group: "Navigate",
+      onSelect: () => setActiveTab("overview"),
+    },
+  ];
 
-                <div className="bg-accent rounded-lg p-4 space-y-2">
-                  <h3 className="font-semibold text-accent-foreground">DM Features</h3>
-                  <ul className="text-sm text-accent-foreground space-y-1 list-disc list-inside">
-                    <li>Run combat with initiative tracking</li>
-                    <li>Manage party HP, conditions, and resources</li>
-                    <li>Reveal handouts and control visibility</li>
-                    <li>Access full SRD monster library</li>
-                    <li>Session journal and notes</li>
-                  </ul>
-                </div>
-              </TabsContent>
+  const formattedCampaigns = campaigns.map((c) => ({
+    id: c.id,
+    name: c.name,
+    system: "5e",
+    playerCount: 4,
+    sessionCount: 12,
+  }));
 
-              {/* Player Tab */}
-              <TabsContent value="player" className="space-y-6">
-                {/* My Characters */}
-                {loadingCharacters ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Loading your characters...
-                  </div>
-                ) : myCharacters.length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">My Characters</h3>
-                      <Button
-                        onClick={() => setShowCharacterCreation(true)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Character
-                      </Button>
-                    </div>
-                     <div className="space-y-2">
-                      {myCharacters.map((character) => {
-                        const isExpanded = expandedCharacters.has(character.id);
-                        return (
-                        <Card key={character.id} className="shadow-sm">
-                          <Collapsible
-                            open={isExpanded}
-                            onOpenChange={(open) => {
-                              const newExpanded = new Set(expandedCharacters);
-                              if (open) {
-                                newExpanded.add(character.id);
-                              } else {
-                                newExpanded.delete(character.id);
-                              }
-                              setExpandedCharacters(newExpanded);
-                            }}
-                          >
-                            <CollapsibleTrigger asChild>
-                              <CardContent className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                    <UserCircle className="w-5 h-5 text-primary" />
-                                  </div>
-                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <h4 className="font-semibold truncate">{character.name}</h4>
-                                      {character.creation_status === 'draft' && (
-                                        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-                                          Incomplete
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                      <Badge variant="secondary" className="text-xs">
-                                        Level {character.level} {character.class}
-                                      </Badge>
-                                      {character.campaign_name && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {character.campaign_name}
-                                        </Badge>
-                                      )}
-                                      {!character.campaign_id && (
-                                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                                          Unassigned
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                    <Button variant="ghost" size="sm">
-                                      <Sparkles className="w-4 h-4" />
-                                    </Button>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm">
-                                          <MoreVertical className="w-4 h-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          className="text-destructive"
-                                          onClick={() => setDeletingCharacter(character)}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete Character
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <CardContent className="pt-0 pb-4 space-y-3 border-t">
-                                <div className="flex gap-2 pt-3">
-                                  {character.creation_status === 'draft' ? (
-                                    <Button 
-                                      variant="outline" 
-                                      className="flex-1"
-                                      onClick={() => {
-                                        setEditCharacterId(character.id);
-                                        setShowCharacterCreation(true);
-                                      }}
-                                    >
-                                      Continue Creation
-                                    </Button>
-                                   ) : (
-                                    <>
-                                      <RestManager 
-                                        characterId={character.id}
-                                        character={{
-                                          hit_dice_current: (character as any).hit_dice_current || character.level,
-                                          hit_dice_total: (character as any).hit_dice_total || character.level,
-                                          hit_die: (character as any).hit_die || 'd8',
-                                          current_hp: (character as any).current_hp || 1,
-                                          max_hp: (character as any).max_hp || 1,
-                                          level: character.level,
-                                          con_save: (character as any).con_save || 0,
-                                        }} 
-                                      />
-                                      <ViewResourcesDialog
-                                        className={character.class}
-                                        level={character.level}
-                                        characterName={character.name}
-                                      />
-                                    </>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </Card>
-                      )})}
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Join a campaign
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-6 space-y-3">
-                    <p className="text-muted-foreground text-sm">
-                      You don't have any characters yet
-                    </p>
-                    <Button
-                      onClick={() => setShowCharacterCreation(true)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Character
-                    </Button>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Or join directly
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Join Campaign */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="campaign-code" className="text-base">
-                      Campaign Code
-                    </Label>
-                    <Input
-                      id="campaign-code"
-                      placeholder="ABC123"
-                      value={campaignCode}
-                      onChange={(e) => setCampaignCode(e.target.value.toUpperCase())}
-                      className="h-12 text-base uppercase"
-                      maxLength={6}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleJoinCampaign}
-                    disabled={loading || !campaignCode.trim()}
-                    className="w-full h-12 text-base"
-                    size="lg"
-                  >
-                    <LogIn className="w-5 h-5 mr-2" />
-                    {loading ? "Joining..." : "Join Campaign"}
-                  </Button>
-                </div>
-
-                <div className="bg-accent rounded-lg p-4 space-y-2">
-                  <h3 className="font-semibold text-accent-foreground">Player Features</h3>
-                  <ul className="text-sm text-accent-foreground space-y-1 list-disc list-inside">
-                    <li>Manage your character sheet</li>
-                    <li>Roll dice with advantage/disadvantage</li>
-                    <li>Track HP, spell slots, and resources</li>
-                    <li>Take notes during sessions</li>
-                    <li>View shared handouts and quest log</li>
-                  </ul>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Quick Feature Highlights */}
-        <div className="grid md:grid-cols-3 gap-4 text-center">
-          <Card className="shadow-md">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Sword className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">Real-Time Sync</h3>
-              <p className="text-sm text-muted-foreground">
-                All players see updates instantly, even offline
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-secondary" />
-              </div>
-              <h3 className="font-semibold mb-2">Heads-Up Play</h3>
-              <p className="text-sm text-muted-foreground">
-                Common actions in ≤2 taps, focus on the table
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-status-buff/10 flex items-center justify-center mx-auto mb-3">
-                <Scroll className="w-6 h-6 text-status-buff" />
-              </div>
-              <h3 className="font-semibold mb-2">SRD Complete</h3>
-              <p className="text-sm text-muted-foreground">
-                Full 5E rules reference at your fingertips
-              </p>
-            </CardContent>
-          </Card>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-obsidian text-ink">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-arcanePurple border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-lg font-cinzel">Loading campaigns...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Character Creation Wizard */}
-      <CharacterWizard
-        open={showCharacterCreation}
-        campaignId={null}
-        editCharacterId={editCharacterId}
-        onComplete={handleCharacterCreated}
-      />
-
-      {/* Character Selection Dialog */}
-      {joinedCampaignId && (
-        <CharacterSelectionDialog
-          open={showCharacterSelection}
-          campaignId={joinedCampaignId}
-          onComplete={handleCharacterSelected}
-          onCancel={handleCancelSelection}
-        />
-      )}
-
-      {/* Delete Campaign Confirmation */}
-      <AlertDialog open={!!deletingCampaign} onOpenChange={(open) => !open && setDeletingCampaign(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <strong>{deletingCampaign?.name}</strong> and all associated data including:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>All encounters and combat data</li>
-                <li>Maps, handouts, and notes</li>
-                <li>Quest logs and loot</li>
-              </ul>
-              <p className="mt-3 text-muted-foreground">
-                Characters assigned to this campaign will be unassigned and returned to your character list.
-              </p>
-              <p className="mt-2 font-semibold">This action cannot be undone.</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteCampaign}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Campaign
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Character Confirmation */}
-      <AlertDialog open={!!deletingCharacter} onOpenChange={(open) => !open && setDeletingCharacter(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <strong>{deletingCharacter?.name}</strong> and remove them from all campaigns. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteCharacter}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Character
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Admin Tools - Only show for admin users */}
-      {isAdmin && (
-        <div className="space-y-4">
-          <SeedCombatButton />
-          <SRDImportButton />
+  if (campaigns.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-obsidian text-ink p-4">
+        <div className="text-center max-w-md space-y-4">
+          <Sword className="w-16 h-16 text-arcanePurple mx-auto" />
+          <h1 className="text-3xl font-cinzel font-bold">No Campaigns Yet</h1>
+          <p className="text-brass">Create your first campaign to begin your adventure</p>
+          <Button onClick={handleNewCampaign} size="lg" className="mt-4">
+            Create Campaign
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <CampaignManagerLayout
+        campaigns={formattedCampaigns}
+        activeCampaignId={activeCampaign?.id || null}
+        onCampaignSelect={handleCampaignSelect}
+        onNewCampaign={handleNewCampaign}
+        onImport={() => console.log("Import")}
+        onArchive={() => console.log("Archive")}
+        inspectorOpen={inspectorOpen}
+        onInspectorClose={() => setInspectorOpen(false)}
+        inspectorContent={
+          selectedEntity?.type === "quest" ? (
+            <InspectorPanel
+              title={selectedEntity.data.title}
+              description={selectedEntity.data.arc}
+              onClose={() => setInspectorOpen(false)}
+              actions={
+                <>
+                  <Button variant="outline">Cancel</Button>
+                  <Button>Save Changes</Button>
+                </>
+              }
+            >
+              <div className="space-y-4">
+                <div>
+                  <Label>Status</Label>
+                  <Badge className="mt-1 capitalize">{selectedEntity.data.status}</Badge>
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea
+                    defaultValue="A mysterious tome has gone missing from the Grand Library..."
+                    rows={4}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Objectives</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedEntity.data.objectives.map((obj: any) => (
+                      <div key={obj.id} className="flex items-center gap-2 text-sm">
+                        <input type="checkbox" checked={obj.complete} readOnly />
+                        <span className={obj.complete ? "line-through text-muted-foreground" : ""}>
+                          {obj.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>NPCs</Label>
+                  <div className="mt-2 space-y-1">
+                    {selectedEntity.data.npcs.map((npc: string) => (
+                      <div key={npc} className="text-sm flex items-center gap-2">
+                        <Users className="w-3 h-3 text-brass" />
+                        {npc}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>Rewards</Label>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <div>{selectedEntity.data.rewards.xp} XP</div>
+                    <div>{selectedEntity.data.rewards.gp} GP</div>
+                    {selectedEntity.data.rewards.items.map((item: string) => (
+                      <div key={item}>• {item}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </InspectorPanel>
+          ) : null
+        }
+      >
+        {/* Header Bar */}
+        <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/" className="text-brass hover:text-ink">
+                    Home
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-brass/50" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-ink">Campaign Manager</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+
+            <div className="flex items-center gap-2">
+              <Button onClick={handleStartSession} size="sm">
+                <Play className="w-4 h-4 mr-2" />
+                Start Session
+              </Button>
+              <Button onClick={handleOpenDMScreen} variant="outline" size="sm">
+                <Shield className="w-4 h-4 mr-2" />
+                DM Screen
+              </Button>
+              <Button onClick={handleInvitePlayers} variant="outline" size="sm">
+                <Users className="w-4 h-4 mr-2" />
+                Invite
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleInvitePlayers()}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Join Code
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Export Campaign
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-cinzel font-bold text-ink">{activeCampaign?.name}</h1>
+            <Badge variant="outline" className="border-brass/30 text-brass">
+              5e
+            </Badge>
+            <Badge variant="outline" className="border-brass/30 text-brass">
+              Milestone
+            </Badge>
+            <Badge variant="outline" className="border-brass/30 text-brass">
+              12 Sessions
+            </Badge>
+            <Badge variant="outline" className="border-brass/30 text-brass">
+              <Users className="w-3 h-3 mr-1" />4 Players
+            </Badge>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1">
+              <Avatar className="w-7 h-7 border border-brass/30">
+                <AvatarFallback className="text-xs bg-arcanePurple/20 text-ink">DM</AvatarFallback>
+              </Avatar>
+              <Avatar className="w-7 h-7 border border-green-500/50">
+                <AvatarFallback className="text-xs bg-green-500/20 text-ink">P1</AvatarFallback>
+              </Avatar>
+              <Avatar className="w-7 h-7 border border-green-500/50">
+                <AvatarFallback className="text-xs bg-green-500/20 text-ink">P2</AvatarFallback>
+              </Avatar>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-brass hover:text-ink"
+              onClick={() => setPaletteOpen(true)}
+            >
+              <Sword className="w-4 h-4 mr-1" />
+              Quick Command
+              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-brass/10 border border-brass/20 rounded">
+                ⌘K
+              </kbd>
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="border-b border-brass/20 px-6 bg-obsidian/50 sticky top-0 z-10">
+              <TabsList className="bg-transparent border-0 h-auto p-0">
+                <TabsTrigger
+                  value="overview"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="quests"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Quests
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sessions"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Sessions
+                </TabsTrigger>
+                <TabsTrigger
+                  value="npcs"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  NPCs
+                </TabsTrigger>
+                <TabsTrigger
+                  value="locations"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Locations
+                </TabsTrigger>
+                <TabsTrigger
+                  value="bestiary"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Bestiary
+                </TabsTrigger>
+                <TabsTrigger
+                  value="items"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Item Vault
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Notes
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 p-6">
+              <TabsContent value="overview" className="mt-0 h-full">
+                <OverviewTab onQuickAdd={handleQuickAdd} />
+              </TabsContent>
+              <TabsContent value="quests" className="mt-0 h-full">
+                <QuestsTab onQuestSelect={handleQuestSelect} />
+              </TabsContent>
+              <TabsContent value="sessions" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">Sessions tab - Coming soon</div>
+              </TabsContent>
+              <TabsContent value="npcs" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">NPCs tab - Coming soon</div>
+              </TabsContent>
+              <TabsContent value="locations" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">Locations tab - Coming soon</div>
+              </TabsContent>
+              <TabsContent value="bestiary" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">Bestiary tab - Coming soon</div>
+              </TabsContent>
+              <TabsContent value="items" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">Item Vault tab - Coming soon</div>
+              </TabsContent>
+              <TabsContent value="notes" className="mt-0 h-full">
+                <div className="text-center py-12 text-brass">Notes tab - Coming soon</div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
+      </CampaignManagerLayout>
+
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} actions={commandActions} />
+    </>
   );
 };
 

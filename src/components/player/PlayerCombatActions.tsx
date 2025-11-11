@@ -15,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import GrappleShoveMenu from "@/components/combat/GrappleShoveMenu";
+import EscapeGrappleButton from "@/components/combat/EscapeGrappleButton";
 
 interface PlayerCombatActionsProps {
   characterId: string;
@@ -31,10 +33,16 @@ export function PlayerCombatActions({
   const [bonusActionUsed, setBonusActionUsed] = useState(false);
   const [reactionUsed, setReactionUsed] = useState(false);
   const [showEndTurnDialog, setShowEndTurnDialog] = useState(false);
+  const [character, setCharacter] = useState<any>(null);
+  const [targets, setTargets] = useState<any[]>([]);
+  const [grappleCondition, setGrappleCondition] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchActionEconomy();
+    fetchCharacterData();
+    fetchTargets();
+    fetchGrappleCondition();
 
     const channel = supabase
       .channel(`player-actions:${characterId}`)
@@ -50,10 +58,25 @@ export function PlayerCombatActions({
       )
       .subscribe();
 
+    const conditionsChannel = supabase
+      .channel(`grapple-check:${characterId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'character_conditions',
+          filter: `character_id=eq.${characterId}`,
+        },
+        () => fetchGrappleCondition()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(conditionsChannel);
     };
-  }, [characterId]);
+  }, [characterId, encounterId]);
 
   const fetchActionEconomy = async () => {
     const { data } = await supabase
@@ -67,6 +90,88 @@ export function PlayerCombatActions({
       setBonusActionUsed(data.bonus_action_used || false);
       setReactionUsed(data.reaction_used || false);
     }
+  };
+
+  const fetchCharacterData = async () => {
+    const { data } = await supabase
+      .from("characters")
+      .select("id, name, str_save, dex_save, proficiency_bonus")
+      .eq("id", characterId)
+      .single();
+
+    if (data) {
+      // Calculate Athletics and Acrobatics bonuses
+      // Athletics = STR + proficiency, Acrobatics = DEX + proficiency
+      const athleticsBonus = data.str_save || 0;
+      const acrobaticsBonus = data.dex_save || 0;
+      
+      setCharacter({
+        ...data,
+        athleticsBonus,
+        acrobaticsBonus,
+      });
+    }
+  };
+
+  const fetchTargets = async () => {
+    // Fetch all combatants in the encounter
+    const { data: initData } = await supabase
+      .from("initiative")
+      .select("combatant_id, combatant_type")
+      .eq("encounter_id", encounterId);
+
+    if (!initData) return;
+
+    const targetList = await Promise.all(
+      initData
+        .filter(i => !(i.combatant_type === 'character' && i.combatant_id === characterId))
+        .map(async (init) => {
+          if (init.combatant_type === 'character') {
+            const { data } = await supabase
+              .from('characters')
+              .select('id, name, str_save, dex_save')
+              .eq('id', init.combatant_id)
+              .single();
+
+            return data ? {
+              id: data.id,
+              type: 'character' as const,
+              name: data.name,
+              athleticsBonus: data.str_save || 0,
+              acrobaticsBonus: data.dex_save || 0,
+            } : null;
+          } else {
+            const { data } = await supabase
+              .from('encounter_monsters')
+              .select('id, display_name')
+              .eq('id', init.combatant_id)
+              .single();
+
+            // Estimate monster skill bonuses (simplified)
+            return data ? {
+              id: data.id,
+              type: 'monster' as const,
+              name: data.display_name,
+              athleticsBonus: 2,
+              acrobaticsBonus: 2,
+            } : null;
+          }
+        })
+    );
+
+    setTargets(targetList.filter(Boolean) as any[]);
+  };
+
+  const fetchGrappleCondition = async () => {
+    const { data } = await supabase
+      .from("character_conditions")
+      .select("id, condition")
+      .eq("character_id", characterId)
+      .eq("encounter_id", encounterId)
+      .eq("condition", "grappled")
+      .maybeSingle();
+
+    setGrappleCondition(data);
   };
 
   const handleEndTurn = async () => {
@@ -142,6 +247,35 @@ export function PlayerCombatActions({
               <ActionChip used={reactionUsed} label="R" fullLabel="Reaction" />
             </div>
           </div>
+
+          {/* Combat Actions */}
+          {character && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Combat Options:</p>
+              <div className="flex flex-wrap gap-2">
+                <GrappleShoveMenu
+                  attackerId={character.id}
+                  attackerType="character"
+                  attackerName={character.name}
+                  attackerAthleticsBonus={character.athleticsBonus}
+                  targets={targets}
+                  encounterId={encounterId}
+                  disabled={actionUsed}
+                />
+                {grappleCondition && (
+                  <EscapeGrappleButton
+                    characterId={character.id}
+                    characterName={character.name}
+                    athleticsBonus={character.athleticsBonus}
+                    acrobaticsBonus={character.acrobaticsBonus}
+                    encounterId={encounterId}
+                    grapplerDC={15} // Simplified DC
+                    conditionId={grappleCondition.id}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           <Button
             onClick={() => setShowEndTurnDialog(true)}

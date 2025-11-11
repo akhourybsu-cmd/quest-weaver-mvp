@@ -47,6 +47,27 @@ export const SpellSlotTracker = ({
 
   useEffect(() => {
     loadSpellSlots();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('spell-slots-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'character_spell_slots',
+          filter: `character_id=eq.${characterId}`,
+        },
+        () => {
+          loadSpellSlots();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [characterId]);
 
   const loadSpellSlots = async () => {

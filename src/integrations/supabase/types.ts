@@ -1386,6 +1386,9 @@ export type Database = {
           range: string
           ritual: boolean | null
           save_type: string | null
+          scaling_description: string | null
+          scaling_type: string | null
+          scaling_value: string | null
           school: string
           updated_at: string | null
         }
@@ -1407,6 +1410,9 @@ export type Database = {
           range: string
           ritual?: boolean | null
           save_type?: string | null
+          scaling_description?: string | null
+          scaling_type?: string | null
+          scaling_value?: string | null
           school: string
           updated_at?: string | null
         }
@@ -1428,6 +1434,9 @@ export type Database = {
           range?: string
           ritual?: boolean | null
           save_type?: string | null
+          scaling_description?: string | null
+          scaling_type?: string | null
+          scaling_value?: string | null
           school?: string
           updated_at?: string | null
         }
@@ -4014,6 +4023,9 @@ export type Database = {
           name: string
           range: string
           ritual: boolean | null
+          scaling_description: string | null
+          scaling_type: string | null
+          scaling_value: string | null
           school: string
         }
         Insert: {
@@ -4031,6 +4043,9 @@ export type Database = {
           name: string
           range: string
           ritual?: boolean | null
+          scaling_description?: string | null
+          scaling_type?: string | null
+          scaling_value?: string | null
           school: string
         }
         Update: {
@@ -4048,6 +4063,9 @@ export type Database = {
           name?: string
           range?: string
           ritual?: boolean | null
+          scaling_description?: string | null
+          scaling_type?: string | null
+          scaling_value?: string | null
           school?: string
         }
         Relationships: []

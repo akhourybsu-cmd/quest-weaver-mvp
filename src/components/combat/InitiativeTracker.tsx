@@ -19,6 +19,7 @@ import { ResourceChips } from "@/components/combat/ResourceChips";
 import { InspirationToggle } from "@/components/combat/InspirationToggle";
 import { QuickHPControls } from "@/components/combat/QuickHPControls";
 import { CombatSummary } from "@/components/combat/CombatSummary";
+import CombatModifierManager from "@/components/combat/CombatModifierManager";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -559,6 +560,13 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <CombatModifierManager
+                        encounterId={encounterId}
+                        actorId={entry.combatant_id}
+                        actorType={entry.combatant_type}
+                        actorName={entry.combatant_name || "Unknown"}
+                        isDM={true}
+                      />
                       {entry.combatant_type === 'character' && (
                         <QuickConditionsPopover
                           characterId={entry.combatant_id}

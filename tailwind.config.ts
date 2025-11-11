@@ -55,11 +55,25 @@ export default {
           debuff: "hsl(var(--debuff-violet))",
           warning: "hsl(var(--warning-amber))",
         },
+        brand: {
+          obsidian: "hsl(var(--obsidian))",
+          arcanePurple: "hsl(var(--arcane-purple))",
+          dragonRed: "hsl(var(--dragon-red))",
+          parchment: "hsl(var(--parchment))",
+          brass: "hsl(var(--brass))",
+          ink: "hsl(var(--ink))",
+        },
+      },
+      fontFamily: {
+        cinzel: ["Cinzel", "serif"],
+        inter: ["Inter", "system-ui", "sans-serif"],
+        cormorant: ["Cormorant Garamond", "serif"],
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
+        xl: "var(--shadow-xl)",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -127,14 +127,26 @@ const Index = () => {
     "Player sync",
   ];
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background font-inter">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-brand-brass/20 shadow-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <nav className={`sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b transition-all duration-200 ${
+        isScrolled ? 'border-brand-brass/30 shadow-lg' : 'border-brand-brass/20 shadow-sm'
+      }`}>
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center">
               <Dice6 className="w-8 h-8 text-brand-brass" />
               <Scroll className="w-4 h-4 text-brand-arcanePurple absolute -bottom-1 -right-1" />
             </div>
@@ -142,34 +154,61 @@ const Index = () => {
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm hover:text-brand-arcanePurple transition-colors">
+          <div className="hidden md:flex items-center gap-1">
+            <a 
+              href="#features" 
+              className="px-3 py-2 text-sm font-medium hover:text-brand-arcanePurple transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-brand-arcanePurple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+            >
               Features
             </a>
-            <a href="#demo" className="text-sm hover:text-brand-arcanePurple transition-colors">
-              Demo
-            </a>
-            <a href="#benefits" className="text-sm hover:text-brand-arcanePurple transition-colors">
+            <a 
+              href="#benefits" 
+              className="px-3 py-2 text-sm font-medium hover:text-brand-arcanePurple transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-brand-arcanePurple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+            >
               Benefits
             </a>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/campaign-hub")}>
+            <a 
+              href="#demo" 
+              className="px-3 py-2 text-sm font-medium hover:text-brand-arcanePurple transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-brand-arcanePurple focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+            >
+              Demo
+            </a>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/campaign-hub")}
+              className="mx-2"
+            >
               Campaign Hub
             </Button>
           </div>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button onClick={() => navigate("/session-dm")} className="group">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleTryDemo}
+              className="text-sm"
+            >
+              Try Demo
+            </Button>
+            <Button 
+              onClick={() => navigate("/session-dm")} 
+              size="default"
+              className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+            >
               Start a Session
-              <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
 
           {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 hover:bg-accent rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -178,22 +217,58 @@ const Index = () => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-brand-brass/20 bg-card">
-            <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
-              <a href="#features" className="text-sm hover:text-brand-arcanePurple transition-colors py-2">
+            <div className="container mx-auto px-6 py-4 flex flex-col gap-2">
+              <a 
+                href="#features" 
+                className="text-sm font-medium hover:text-brand-arcanePurple transition-colors py-2.5 px-3 rounded-md hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Features
               </a>
-              <a href="#demo" className="text-sm hover:text-brand-arcanePurple transition-colors py-2">
-                Demo
-              </a>
-              <a href="#benefits" className="text-sm hover:text-brand-arcanePurple transition-colors py-2">
+              <a 
+                href="#benefits" 
+                className="text-sm font-medium hover:text-brand-arcanePurple transition-colors py-2.5 px-3 rounded-md hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Benefits
               </a>
+              <a 
+                href="#demo" 
+                className="text-sm font-medium hover:text-brand-arcanePurple transition-colors py-2.5 px-3 rounded-md hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Demo
+              </a>
               <Separator className="my-2" />
-              <Button onClick={() => navigate("/session-dm")} className="w-full">
-                Start a Session
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  handleTryDemo();
+                  setMobileMenuOpen(false);
+                }} 
+                className="w-full justify-start"
+              >
+                Try Demo
               </Button>
-              <Button variant="outline" onClick={() => navigate("/campaign-hub")} className="w-full">
+              <Button 
+                onClick={() => {
+                  navigate("/campaign-hub");
+                  setMobileMenuOpen(false);
+                }} 
+                variant="outline"
+                className="w-full justify-start"
+              >
                 Campaign Hub
+              </Button>
+              <Button 
+                onClick={() => {
+                  navigate("/session-dm");
+                  setMobileMenuOpen(false);
+                }} 
+                className="w-full mt-2"
+              >
+                Start a Session
+                <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>

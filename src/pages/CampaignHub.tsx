@@ -1,3 +1,40 @@
+/**
+ * CAMPAIGN MANAGER - ASSET INTEGRATION SUMMARY
+ * 
+ * This Campaign Manager route integrates existing components and assets across all tabs:
+ * 
+ * ASSET PLACEMENT:
+ * ✓ Overview Tab: Uses lucide-react icons (Clock, Scroll, Users, TrendingUp, MapPin, Package)
+ * ✓ Quests Tab: Custom QuestsTab component with Kanban/List views, Badge components, Progress bars
+ * ✓ Sessions Tab: Calendar/Clock/MapPin icons, date formatting with date-fns
+ * ✓ NPCs Tab: Integrates EnhancedNPCDirectory component from /components/npcs
+ * ✓ Locations Tab: MapPin/Users/Flag icons, terrain-based color system
+ * ✓ Factions Tab: Integrates FactionDirectory component from /components/factions  
+ * ✓ Bestiary Tab: Flame/Heart/Shield icons, CR slider, type/environment filters
+ * ✓ Item Vault Tab: Integrates DMItemVault component from /components/inventory
+ * ✓ Timeline Tab: Calendar/Sword/Scroll/Users/Crown icons, vertical timeline with date-fns
+ * ✓ Notes Tab: Integrates NotesBoard component from /components/notes
+ * 
+ * DESIGN SYSTEM:
+ * - All cards use: rounded-2xl, shadow-xl, border-brass/20, bg-card/50
+ * - Typography: Cinzel for headings (font-cinzel), Inter for UI (default)
+ * - Colors: obsidian (bg), arcanePurple (accents), brass (borders), dragonRed (alerts), ink (text)
+ * - Icons: lucide-react only, tinted with brass/arcanePurple/dragonRed per context
+ * 
+ * COMPONENT REUSE:
+ * - shadcn/ui: Card, Button, Badge, Input, ScrollArea, Tabs, Slider, Select, Separator
+ * - Existing features: EnhancedNPCDirectory, FactionDirectory, DMItemVault, NotesBoard
+ * - Date handling: date-fns for consistent formatting
+ * 
+ * ADDING NEW ASSETS:
+ * - Images: Place in /public or /src/assets, reference with import or public path
+ * - Icons: Use lucide-react icons only for consistency
+ * - Components: Create in /components/campaign/tabs or reuse existing
+ * - Styling: Always use semantic tokens (--brass, --arcanePurple, etc.) from index.css
+ * 
+ * NO ORPHANED ASSETS: All existing campaign-related components are now integrated into tabs.
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +80,14 @@ import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayo
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
 import { OverviewTab } from "@/components/campaign/tabs/OverviewTab";
 import { QuestsTab } from "@/components/campaign/tabs/QuestsTab";
+import { SessionsTab } from "@/components/campaign/tabs/SessionsTab";
+import { NPCsTab } from "@/components/campaign/tabs/NPCsTab";
+import { LocationsTab } from "@/components/campaign/tabs/LocationsTab";
+import { FactionsTab } from "@/components/campaign/tabs/FactionsTab";
+import { BestiaryTab } from "@/components/campaign/tabs/BestiaryTab";
+import { ItemVaultTab } from "@/components/campaign/tabs/ItemVaultTab";
+import { NotesTab } from "@/components/campaign/tabs/NotesTab";
+import { TimelineTab } from "@/components/campaign/tabs/TimelineTab";
 import { InspectorPanel } from "@/components/campaign/InspectorPanel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -482,6 +527,12 @@ const CampaignHub = () => {
                   Locations
                 </TabsTrigger>
                 <TabsTrigger
+                  value="factions"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Factions
+                </TabsTrigger>
+                <TabsTrigger
                   value="bestiary"
                   className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
                 >
@@ -492,6 +543,12 @@ const CampaignHub = () => {
                   className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
                 >
                   Item Vault
+                </TabsTrigger>
+                <TabsTrigger
+                  value="timeline"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Timeline
                 </TabsTrigger>
                 <TabsTrigger
                   value="notes"
@@ -510,22 +567,28 @@ const CampaignHub = () => {
                 <QuestsTab onQuestSelect={handleQuestSelect} />
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">Sessions tab - Coming soon</div>
+                <SessionsTab />
               </TabsContent>
               <TabsContent value="npcs" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">NPCs tab - Coming soon</div>
+                {activeCampaign && <NPCsTab campaignId={activeCampaign.id} />}
               </TabsContent>
               <TabsContent value="locations" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">Locations tab - Coming soon</div>
+                <LocationsTab />
+              </TabsContent>
+              <TabsContent value="factions" className="mt-0 h-full">
+                {activeCampaign && <FactionsTab campaignId={activeCampaign.id} />}
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">Bestiary tab - Coming soon</div>
+                <BestiaryTab />
               </TabsContent>
               <TabsContent value="items" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">Item Vault tab - Coming soon</div>
+                {activeCampaign && <ItemVaultTab campaignId={activeCampaign.id} />}
+              </TabsContent>
+              <TabsContent value="timeline" className="mt-0 h-full">
+                <TimelineTab />
               </TabsContent>
               <TabsContent value="notes" className="mt-0 h-full">
-                <div className="text-center py-12 text-brass">Notes tab - Coming soon</div>
+                {activeCampaign && <NotesTab campaignId={activeCampaign.id} />}
               </TabsContent>
             </div>
           </Tabs>

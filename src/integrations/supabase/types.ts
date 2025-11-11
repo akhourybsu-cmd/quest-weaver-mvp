@@ -2339,6 +2339,74 @@ export type Database = {
           },
         ]
       }
+      item_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          template_data: Json
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          template_data: Json
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          template_data?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      item_versions: {
+        Row: {
+          changelog: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          item_id: string
+          properties: Json
+          version_number: string
+        }
+        Insert: {
+          changelog?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id: string
+          properties: Json
+          version_number: string
+        }
+        Update: {
+          changelog?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          properties?: Json
+          version_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_versions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           campaign_id: string

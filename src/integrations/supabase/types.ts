@@ -281,6 +281,61 @@ export type Database = {
           },
         ]
       }
+      character_class_levels: {
+        Row: {
+          character_id: string | null
+          class_id: string | null
+          created_at: string | null
+          hit_dice_remaining: number
+          hp_gained: number
+          id: string
+          level: number
+          subclass_id: string | null
+        }
+        Insert: {
+          character_id?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          hit_dice_remaining?: number
+          hp_gained?: number
+          id?: string
+          level: number
+          subclass_id?: string | null
+        }
+        Update: {
+          character_id?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          hit_dice_remaining?: number
+          hp_gained?: number
+          id?: string
+          level?: number
+          subclass_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_class_levels_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_class_levels_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_class_levels_subclass_id_fkey"
+            columns: ["subclass_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subclasses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_classes: {
         Row: {
           character_id: string
@@ -483,6 +538,47 @@ export type Database = {
           },
         ]
       }
+      character_feature_choices: {
+        Row: {
+          character_id: string | null
+          choice_key: string
+          created_at: string | null
+          feature_id: string | null
+          feature_type: string
+          id: string
+          level_gained: number
+          value_json: Json
+        }
+        Insert: {
+          character_id?: string | null
+          choice_key: string
+          created_at?: string | null
+          feature_id?: string | null
+          feature_type: string
+          id?: string
+          level_gained: number
+          value_json: Json
+        }
+        Update: {
+          character_id?: string | null
+          choice_key?: string
+          created_at?: string | null
+          feature_id?: string | null
+          feature_type?: string
+          id?: string
+          level_gained?: number
+          value_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_feature_choices_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_features: {
         Row: {
           character_id: string
@@ -629,6 +725,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "character_proficiencies_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_resources: {
+        Row: {
+          character_id: string | null
+          created_at: string | null
+          current_value: number
+          id: string
+          label: string
+          max_formula: string | null
+          max_value: number
+          metadata_json: Json | null
+          recharge: string
+          resource_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string | null
+          current_value?: number
+          id?: string
+          label: string
+          max_formula?: string | null
+          max_value?: number
+          metadata_json?: Json | null
+          recharge: string
+          resource_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string | null
+          current_value?: number
+          id?: string
+          label?: string
+          max_formula?: string | null
+          max_value?: number
+          metadata_json?: Json | null
+          recharge?: string
+          resource_key?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_resources_character_id_fkey"
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "characters"
@@ -803,6 +949,50 @@ export type Database = {
             columns: ["spell_id"]
             isOneToOne: false
             referencedRelation: "srd_spells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_spells_known: {
+        Row: {
+          character_id: string | null
+          created_at: string | null
+          id: string
+          is_always_prepared: boolean | null
+          is_prepared: boolean | null
+          learned_at_level: number
+          source: string
+          spell_id: string | null
+          spell_type: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_always_prepared?: boolean | null
+          is_prepared?: boolean | null
+          learned_at_level: number
+          source: string
+          spell_id?: string | null
+          spell_type: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_always_prepared?: boolean | null
+          is_prepared?: boolean | null
+          learned_at_level?: number
+          source?: string
+          spell_id?: string | null
+          spell_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_spells_known_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
             referencedColumns: ["id"]
           },
         ]
@@ -1025,6 +1215,53 @@ export type Database = {
             columns: ["subclass_id"]
             isOneToOne: false
             referencedRelation: "srd_subclasses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_features: {
+        Row: {
+          choices_json: Json | null
+          class_id: string | null
+          created_at: string | null
+          description: string | null
+          grants_json: Json | null
+          id: string
+          level: number
+          name: string
+          rules_json: Json | null
+          tags: string[] | null
+        }
+        Insert: {
+          choices_json?: Json | null
+          class_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          grants_json?: Json | null
+          id?: string
+          level: number
+          name: string
+          rules_json?: Json | null
+          tags?: string[] | null
+        }
+        Update: {
+          choices_json?: Json | null
+          class_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          grants_json?: Json | null
+          id?: string
+          level?: number
+          name?: string
+          rules_json?: Json | null
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_features_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "srd_classes"
             referencedColumns: ["id"]
           },
         ]
@@ -1487,6 +1724,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feats: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          name: string
+          prerequisites_json: Json | null
+          rules_json: Json | null
+          source: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          name: string
+          prerequisites_json?: Json | null
+          rules_json?: Json | null
+          source?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          name?: string
+          prerequisites_json?: Json | null
+          rules_json?: Json | null
+          source?: string | null
+          tags?: string[] | null
+        }
+        Relationships: []
       }
       fog_regions: {
         Row: {
@@ -3905,6 +4175,53 @@ export type Database = {
           weight?: number | null
         }
         Relationships: []
+      }
+      subclass_features: {
+        Row: {
+          choices_json: Json | null
+          created_at: string | null
+          description: string | null
+          grants_json: Json | null
+          id: string
+          level: number
+          name: string
+          rules_json: Json | null
+          subclass_id: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          choices_json?: Json | null
+          created_at?: string | null
+          description?: string | null
+          grants_json?: Json | null
+          id?: string
+          level: number
+          name: string
+          rules_json?: Json | null
+          subclass_id?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          choices_json?: Json | null
+          created_at?: string | null
+          description?: string | null
+          grants_json?: Json | null
+          id?: string
+          level?: number
+          name?: string
+          rules_json?: Json | null
+          subclass_id?: string | null
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subclass_features_subclass_id_fkey"
+            columns: ["subclass_id"]
+            isOneToOne: false
+            referencedRelation: "srd_subclasses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tokens: {
         Row: {

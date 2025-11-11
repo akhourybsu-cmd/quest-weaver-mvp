@@ -4,7 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { seedDevelopmentCombat, cleanupSeedData } from "@/data/seedCombatData";
-import { Sprout, Trash2 } from "lucide-react";
+import { Sprout, Trash2, Boxes } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RulesEngineSeeder } from "./RulesEngineSeeder";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,6 +102,21 @@ export const SeedCombatButton = () => {
 
   return (
     <div className="fixed bottom-4 right-4 flex gap-2 z-50">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="shadow-lg">
+            <Boxes className="w-4 h-4 mr-2" />
+            Rules Engine
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Phase 0: Rules Engine Seeder</DialogTitle>
+          </DialogHeader>
+          <RulesEngineSeeder />
+        </DialogContent>
+      </Dialog>
+
       <Button
         onClick={handleSeed}
         disabled={isSeeding}

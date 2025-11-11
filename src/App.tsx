@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { CampaignProvider } from "@/contexts/CampaignContext";
+import { TenantProvider } from "@/contexts/TenantContext";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import Auth from "./components/Auth";
 import Index from "./pages/Index";
@@ -75,11 +76,15 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <CampaignProvider>
-            <Routes>
+          <TenantProvider>
+            <CampaignProvider>
+              <Routes>
               <Route path="/" element={<Index />} />
-        <Route path="/campaign-hub" element={<CampaignHub />} />
-        <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
+              <Route path="/campaign-hub" element={<CampaignHub />} />
+              <Route path="/campaigns/:campaignId" element={<CampaignHub />} />
+              <Route path="/campaigns/:campaignId/dm/:sessionId?" element={<SessionDM />} />
+              <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
+              <Route path="/demo/:demoId/dm/:sessionId?" element={<SessionDM />} />
               <Route path="/session/dm" element={<SessionDM />} />
               <Route path="/session/player" element={<SessionPlayer />} />
               <Route path="/session/spectator" element={<SessionSpectator />} />
@@ -102,8 +107,9 @@ const App = () => {
               <Route path="/join/:code" element={<JoinCode />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </CampaignProvider>
+              </Routes>
+            </CampaignProvider>
+          </TenantProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

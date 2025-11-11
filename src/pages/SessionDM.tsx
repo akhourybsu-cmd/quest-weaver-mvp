@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCombatActions } from "@/hooks/useCombatActions";
+import { useTenant } from "@/contexts/TenantContext";
 import BottomNav from "@/components/BottomNav";
 import PlayerPresence from "@/components/presence/PlayerPresence";
 import { TurnIndicator } from "@/components/presence/TurnIndicator";
@@ -17,7 +18,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText, FileText, Book, Package, Flag, UserCircle, FileImage } from "lucide-react";
+import { 
+  Heart, Shield, Eye, Plus, Swords, Map, Users, ScrollText, 
+  FileText, Book, Package, Flag, UserCircle, FileImage, ArrowLeft 
+} from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import CombatLog from "@/components/combat/CombatLog";
 import ConcentrationTracker from "@/components/combat/ConcentrationTracker";
 import ConditionsManager from "@/components/combat/ConditionsManager";
@@ -64,12 +76,14 @@ interface Encounter {
 }
 
 const SessionDM = () => {
-  const [searchParams] = useSearchParams();
+  const params = useParams<{ campaignId?: string; sessionId?: string; demoId?: string }>();
   const navigate = useNavigate();
-  const campaignId = searchParams.get("campaign");
+  const { campaignId: tenantCampaignId, isDemo, demoId } = useTenant();
+  const campaignId = params.campaignId || tenantCampaignId;
   const { toast } = useToast();
   const { applyDamage: applyDamageAction, applyHealing } = useCombatActions();
 
+  const [campaignName, setCampaignName] = useState<string>("");
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,8 +143,23 @@ const SessionDM = () => {
   }, [campaignId, navigate]);
 
   const fetchCampaignData = async () => {
-    await Promise.all([fetchCharacters(), fetchActiveEncounter()]);
+    await Promise.all([fetchCampaign(), fetchCharacters(), fetchActiveEncounter()]);
     setLoading(false);
+  };
+
+  const fetchCampaign = async () => {
+    const { data, error } = await supabase
+      .from("campaigns")
+      .select("name")
+      .eq("id", campaignId)
+      .single();
+
+    if (error) {
+      console.error("Error loading campaign:", error);
+      return;
+    }
+
+    setCampaignName(data?.name || "");
   };
 
   const fetchCharacters = async () => {
@@ -313,18 +342,44 @@ const SessionDM = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm" role="banner">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold truncate">DM Screen</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground" aria-live="polite">
-                {activeEncounter ? `Round ${activeEncounter.current_round}` : "No active encounter"}
-              </p>
+    <div className="min-h-screen pb-20 bg-background">
+      {/* Header with Breadcrumbs */}
+      <header className="bg-card/50 backdrop-blur border-b border-brass/20 sticky top-0 z-40 shadow-sm" role="banner">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(isDemo ? `/demo/${demoId}/campaign` : `/campaign-hub?campaign=${campaignId}`)}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Campaign
+              </Button>
+              
+              <div className="hidden md:block">
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href={isDemo ? `/demo/${demoId}/campaign` : "/campaign-hub"}>
+                        {isDemo ? "Demo" : "Campaigns"}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="font-cinzel">{campaignName || "DM Screen"}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+
+            <div className="flex items-center gap-2">
               <DMQuickstart />
               {campaignId && <NeedRulingIndicator campaignId={campaignId} />}
               {activeEncounter && (
@@ -336,10 +391,21 @@ const SessionDM = () => {
               )}
               {!activeEncounter && (
                 <Button onClick={createEncounter} size="sm">
-                  <Swords className="w-4 h-4 sm:mr-2" aria-hidden="true" />
-                  <span className="hidden sm:inline">Start Combat</span>
+                  <Swords className="w-4 h-4 mr-2" aria-hidden="true" />
+                  Start Combat
                 </Button>
               )}
+              <Badge variant="outline" className="hidden sm:flex gap-1">
+                <Swords className="w-3 h-3" />
+                {activeEncounter ? `Round ${activeEncounter.current_round}` : "No Active Encounter"}
+              </Badge>
+              <Button
+                onClick={() => navigate(isDemo ? `/demo/${demoId}/campaign` : `/campaign-hub?campaign=${campaignId}`)}
+                variant="outline"
+                size="sm"
+              >
+                End Session
+              </Button>
             </div>
           </div>
         </div>

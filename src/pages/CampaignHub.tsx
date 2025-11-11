@@ -78,6 +78,7 @@ import {
 } from "lucide-react";
 import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
+import { NewCampaignDialog } from "@/components/campaign/NewCampaignDialog";
 import { OverviewTab } from "@/components/campaign/tabs/OverviewTab";
 import { QuestsTab } from "@/components/campaign/tabs/QuestsTab";
 import { SessionsTab } from "@/components/campaign/tabs/SessionsTab";
@@ -112,6 +113,7 @@ const CampaignHub = () => {
   const [loading, setLoading] = useState(true);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
+  const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
@@ -167,53 +169,19 @@ const CampaignHub = () => {
     }
   };
 
-  const handleNewCampaign = async () => {
-    const name = prompt("Enter campaign name:");
-    if (!name) return;
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const { data, error } = await supabase
-        .from("campaigns")
-        .insert({ code, name, dm_user_id: user.id })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "Campaign created!",
-        description: `Campaign code: ${code}`,
-      });
-
-      await fetchCampaigns();
-      if (data) {
-        setActiveCampaign(data);
-        navigate(`/campaign-hub?campaign=${data.id}`);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handleNewCampaign = () => {
+    setShowNewCampaignDialog(true);
   };
 
   const handleStartSession = () => {
     if (activeCampaign) {
-      navigate(`/session/dm?campaign=${activeCampaign.id}`);
+      navigate(`/campaigns/${activeCampaign.id}/dm`);
     }
   };
 
   const handleOpenDMScreen = () => {
     if (activeCampaign) {
-      navigate(`/session/dm?campaign=${activeCampaign.id}`);
+      navigate(`/campaigns/${activeCampaign.id}/dm`);
     }
   };
 
@@ -596,6 +564,12 @@ const CampaignHub = () => {
       </CampaignManagerLayout>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} actions={commandActions} />
+      
+      <NewCampaignDialog 
+        open={showNewCampaignDialog} 
+        onOpenChange={setShowNewCampaignDialog}
+        onSuccess={fetchCampaigns}
+      />
     </>
   );
 };

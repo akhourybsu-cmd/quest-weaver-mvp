@@ -65,13 +65,13 @@ export const RulesEngineSeeder = () => {
       let featCount = 0;
       for (const feat of FEAT_SEEDS) {
         const { error } = await supabase
-          .from('feats')
+          .from('srd_feats')
           .upsert({
             name: feat.name,
             description: feat.description,
-            rules_json: feat.rules_json,
-            prerequisites_json: feat.prerequisites_json,
-            tags: feat.tags
+            prerequisites: feat.prerequisites_json || {},
+            ability_increases: feat.ability_increases || [],
+            grants: feat.rules_json || {}
           }, {
             onConflict: 'name',
             ignoreDuplicates: false
@@ -113,8 +113,8 @@ export const RulesEngineSeeder = () => {
         .select('id, class_id, level, name, tags');
 
       const { data: feats, error: featsError } = await supabase
-        .from('feats')
-        .select('id, name, tags');
+        .from('srd_feats')
+        .select('id, name, description');
 
       if (featError || featsError) {
         throw featError || featsError;

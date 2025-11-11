@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { applyFeature } from "@/lib/rules/rulesEngine";
 
 interface LevelUpWizardProps {
   open: boolean;
@@ -157,6 +158,24 @@ export const LevelUpWizard = ({
           });
 
         if (featError) throw featError;
+
+        // Load feat data and apply its rules
+        const { data: featData, error: featLoadError } = await supabase
+          .from("srd_feats")
+          .select("*")
+          .eq("id", selectedFeat)
+          .single();
+
+        if (!featLoadError && featData) {
+          // Apply feat rules through the rules engine
+          await applyFeature({
+            characterId,
+            featureId: featData.id,
+            featureType: 'feat',
+            rules: (featData.grants || {}) as any,
+            level: newLevel
+          });
+        }
       }
 
       // Apply ability increases

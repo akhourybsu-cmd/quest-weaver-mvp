@@ -3762,31 +3762,31 @@ export type Database = {
       }
       srd_feats: {
         Row: {
+          ability_increases: Json | null
           created_at: string | null
           description: string | null
-          document: string | null
+          grants: Json | null
           id: string
           name: string
-          prerequisite: string | null
-          slug: string | null
+          prerequisites: Json | null
         }
         Insert: {
+          ability_increases?: Json | null
           created_at?: string | null
           description?: string | null
-          document?: string | null
+          grants?: Json | null
           id?: string
           name: string
-          prerequisite?: string | null
-          slug?: string | null
+          prerequisites?: Json | null
         }
         Update: {
+          ability_increases?: Json | null
           created_at?: string | null
           description?: string | null
-          document?: string | null
+          grants?: Json | null
           id?: string
           name?: string
-          prerequisite?: string | null
-          slug?: string | null
+          prerequisites?: Json | null
         }
         Relationships: []
       }

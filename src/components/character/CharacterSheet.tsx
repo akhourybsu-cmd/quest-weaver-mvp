@@ -32,6 +32,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [attacks, setAttacks] = useState<any[]>([]);
   const [spells, setSpells] = useState<any[]>([]);
+  const [feats, setFeats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSpellPreparation, setShowSpellPreparation] = useState(false);
   const [showCustomSpell, setShowCustomSpell] = useState(false);
@@ -119,6 +120,14 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         .select("*, spell:srd_spells(*)")
         .eq("character_id", characterId);
       setSpells(spellsData || []);
+
+      // Load feats
+      const { data: featsData } = await supabase
+        .from("character_feats")
+        .select("*, feat:srd_feats(*)")
+        .eq("character_id", characterId)
+        .order("level_gained");
+      setFeats(featsData || []);
 
     } catch (error) {
       console.error("Error loading character:", error);
@@ -265,7 +274,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             </TabsContent>
 
             <TabsContent value="features" className="mt-0">
-              <FeaturesTab features={features} />
+              <FeaturesTab features={features} feats={feats} />
             </TabsContent>
 
             {spells.length > 0 && (
@@ -556,7 +565,7 @@ const CombatTab = ({ character, attacks, equipment }: any) => {
   );
 };
 
-const FeaturesTab = ({ features }: any) => {
+const FeaturesTab = ({ features, feats }: any) => {
   const groupedFeatures = features.reduce((acc: any, feature: any) => {
     if (!acc[feature.source]) {
       acc[feature.source] = [];
@@ -567,13 +576,43 @@ const FeaturesTab = ({ features }: any) => {
 
   return (
     <div className="space-y-6">
-      {Object.entries(groupedFeatures).map(([source, feats]: [string, any]) => (
+      {/* Feats Section */}
+      {feats && feats.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Feats
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {feats.map((characterFeat: any) => (
+              <div key={characterFeat.id} className="border-l-2 border-accent pl-3 py-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-medium">{characterFeat.feat?.name || "Unknown Feat"}</h4>
+                  <Badge variant="outline" className="text-xs">
+                    Level {characterFeat.level_gained}
+                  </Badge>
+                </div>
+                {characterFeat.feat?.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {characterFeat.feat.description}
+                  </p>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Class Features Section */}
+      {Object.entries(groupedFeatures).map(([source, sourceFeatures]: [string, any]) => (
         <Card key={source}>
           <CardHeader>
             <CardTitle className="capitalize">{source} Features</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {feats.map((feature: any) => (
+            {sourceFeatures.map((feature: any) => (
               <div key={feature.id} className="border-l-2 border-primary pl-3 py-2">
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="font-medium">{feature.name}</h4>
@@ -587,10 +626,11 @@ const FeaturesTab = ({ features }: any) => {
           </CardContent>
         </Card>
       ))}
-      {features.length === 0 && (
+      
+      {features.length === 0 && (!feats || feats.length === 0) && (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">No features recorded</p>
+            <p className="text-sm text-muted-foreground">No features or feats recorded</p>
           </CardContent>
         </Card>
       )}

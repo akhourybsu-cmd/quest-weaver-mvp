@@ -352,6 +352,7 @@ export const FEAT_SEEDS = [
     name: 'Alert',
     description: 'You gain a +5 bonus to initiative and can\'t be surprised while conscious.',
     rules_json: {},
+    ability_increases: [],
     prerequisites_json: {},
     tags: ['combat', 'initiative']
   },
@@ -361,6 +362,7 @@ export const FEAT_SEEDS = [
     rules_json: {
       grantAbilityBonus: { choice: 1 } // Player chooses STR or DEX
     },
+    ability_increases: [{ ability: 'str', increase: 1, choice: true }, { ability: 'dex', increase: 1, choice: true }],
     prerequisites_json: {},
     tags: ['half-asi', 'mobility']
   },
@@ -368,6 +370,7 @@ export const FEAT_SEEDS = [
     name: 'Tough',
     description: 'Your HP maximum increases by an amount equal to twice your level.',
     rules_json: {},
+    ability_increases: [],
     prerequisites_json: {},
     tags: ['defense', 'hp']
   },
@@ -375,6 +378,7 @@ export const FEAT_SEEDS = [
     name: 'War Caster',
     description: 'Advantage on CON saves to maintain concentration. Cast spells as opportunity attacks. Somatic components with hands full.',
     rules_json: {},
+    ability_increases: [],
     prerequisites_json: {
       spellcasting: true
     },
@@ -391,6 +395,7 @@ export const FEAT_SEEDS = [
         recharge: 'long'
       }
     },
+    ability_increases: [],
     prerequisites_json: {},
     tags: ['luck', 'reroll']
   },
@@ -400,6 +405,7 @@ export const FEAT_SEEDS = [
     rules_json: {
       grantAbilityBonus: { choice: 1 }
     },
+    ability_increases: [{ ability: 'any', increase: 1, choice: true }],
     prerequisites_json: {},
     tags: ['half-asi', 'saves']
   },

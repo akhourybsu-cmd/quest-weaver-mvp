@@ -50,6 +50,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [autoAddVenues, setAutoAddVenues] = useState(false);
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
+  const [relatedNotes, setRelatedNotes] = useState<any[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -69,6 +70,8 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         
         // Load related quests
         loadRelatedQuests(locationToEdit.id);
+        // Load related notes
+        loadRelatedNotes(locationToEdit.id);
       } else if (parentLocationId) {
         // Pre-fill parent location when creating sub-location
         setParentLocation(parentLocationId);
@@ -106,6 +109,32 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       .eq("location_id", locationId);
     
     if (data) setRelatedQuests(data);
+  };
+
+  const loadRelatedNotes = async (locationId: string) => {
+    // Get notes linked to this location
+    const { data: links } = await supabase
+      .from("note_links")
+      .select("note_id")
+      .eq("link_type", "LOCATION")
+      .eq("link_id", locationId);
+
+    if (!links || links.length === 0) {
+      setRelatedNotes([]);
+      return;
+    }
+
+    const noteIds = links.map(l => l.note_id);
+
+    // Fetch the actual notes
+    const { data: notes } = await supabase
+      .from("session_notes")
+      .select("id, title, visibility, is_pinned, updated_at, tags")
+      .in("id", noteIds)
+      .eq("campaign_id", campaignId)
+      .order("updated_at", { ascending: false });
+
+    setRelatedNotes(notes || []);
   };
 
   const addTag = () => {
@@ -505,6 +534,48 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                           </Badge>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {isEditing && relatedNotes.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Referenced in Notes</Label>
+                    <div className="border border-brass/30 rounded-md p-3 space-y-2">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {relatedNotes.length} {relatedNotes.length === 1 ? 'note' : 'notes'} mentioning this location
+                      </div>
+                      {relatedNotes.map((note) => {
+                        const visibilityConfig: Record<string, any> = {
+                          DM_ONLY: { label: "DM", className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400" },
+                          SHARED: { label: "Shared", className: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-400" },
+                          PRIVATE: { label: "Private", className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400" },
+                        };
+                        const visConfig = visibilityConfig[note.visibility];
+
+                        return (
+                          <div key={note.id} className="flex items-start justify-between gap-2 py-1.5 text-sm">
+                            <div className="flex-1">
+                              <div className="font-medium">{note.title}</div>
+                              {note.tags && note.tags.length > 0 && (
+                                <div className="flex gap-1 mt-1">
+                                  {note.tags.slice(0, 2).map((tag: string) => (
+                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {note.tags.length > 2 && (
+                                    <Badge variant="secondary" className="text-xs">+{note.tags.length - 2}</Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <Badge variant="outline" className={`text-xs shrink-0 ${visConfig.className}`}>
+                              {visConfig.label}
+                            </Badge>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Scroll, Users, MapPin, Trophy, Eye, EyeOff, Plus, Loader2 } from "lucide-react";
+import { Scroll, Users, MapPin, Trophy, Eye, EyeOff, Plus, Loader2, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import QuestDialog from "@/components/quests/QuestDialog";
 
@@ -28,6 +28,7 @@ interface Quest {
   steps?: any[];
   npc?: { id: string; name: string; };
   location?: { id: string; name: string; location_type?: string; };
+  noteCount?: number;
   [key: string]: any;
 }
 
@@ -83,6 +84,25 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
 
         if (error) throw error;
 
+        // Get note counts for each quest
+        const questIds = (data || []).map((q: any) => q.id);
+        let noteCounts: Record<string, number> = {};
+
+        if (questIds.length > 0) {
+          const { data: noteLinks } = await supabase
+            .from('note_links')
+            .select('link_id')
+            .eq('link_type', 'QUEST')
+            .in('link_id', questIds);
+
+          if (noteLinks) {
+            noteCounts = noteLinks.reduce((acc: Record<string, number>, link: any) => {
+              acc[link.link_id] = (acc[link.link_id] || 0) + 1;
+              return acc;
+            }, {});
+          }
+        }
+
         // Map database quests to component format
         const mappedQuests: Quest[] = (data || []).map((q: any) => ({
           id: q.id,
@@ -103,6 +123,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
           dmNotes: q.dm_notes,
           npc: q.npc,
           location: q.location,
+          noteCount: noteCounts[q.id] || 0,
           steps: (q.quest_steps || [])
             .sort((a: any, b: any) => a.step_order - b.step_order)
             .map((s: any) => ({
@@ -202,6 +223,13 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             <div className="flex items-center gap-1.5 text-xs">
               <MapPin className="w-3 h-3 text-brass" />
               <span className="text-muted-foreground">{quest.location.name}</span>
+            </div>
+          )}
+
+          {quest.noteCount && quest.noteCount > 0 && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <ScrollText className="w-3 h-3 text-arcanePurple" />
+              <span className="text-muted-foreground">{quest.noteCount} {quest.noteCount === 1 ? 'note' : 'notes'}</span>
             </div>
           )}
 

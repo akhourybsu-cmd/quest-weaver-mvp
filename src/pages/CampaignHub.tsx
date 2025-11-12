@@ -91,6 +91,7 @@ import { LocationsTab } from "@/components/campaign/tabs/LocationsTab";
 import { FactionsTab } from "@/components/campaign/tabs/FactionsTab";
 import { BestiaryTab } from "@/components/campaign/tabs/BestiaryTab";
 import { ItemVaultTab } from "@/components/campaign/tabs/ItemVaultTab";
+import { EncountersTab } from "@/components/campaign/tabs/EncountersTab";
 import { NotesTab } from "@/components/campaign/tabs/NotesTab";
 import { TimelineTab } from "@/components/campaign/tabs/TimelineTab";
 import { InspectorPanel } from "@/components/campaign/InspectorPanel";
@@ -825,6 +826,12 @@ const CampaignHub = () => {
                   Bestiary
                 </TabsTrigger>
                 <TabsTrigger
+                  value="encounters"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Encounters
+                </TabsTrigger>
+                <TabsTrigger
                   value="items"
                   className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
                 >
@@ -917,6 +924,19 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
                 <BestiaryTab />
+              </TabsContent>
+              <TabsContent value="encounters" className="mt-0 h-full">
+                {activeCampaign ? (
+                  <EncountersTab 
+                    campaignId={activeCampaign.id}
+                    liveSessionId={liveSession?.id}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="items" className="mt-0 h-full">
                 {activeCampaign ? (

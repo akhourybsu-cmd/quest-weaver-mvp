@@ -5,11 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, MapPin, Plus, Send, FileText, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, Clock, MapPin, Plus, Send, FileText, Users, Package } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
+import { SessionPackBuilder } from "../SessionPackBuilder";
 
 interface SessionsTabProps {
   campaignId: string;
@@ -27,7 +29,8 @@ interface Session {
 export function SessionsTab({ campaignId }: SessionsTabProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [packOpen, setPackOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [packBuilderOpen, setPackBuilderOpen] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -70,6 +73,11 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
   const upcomingSessions = sessions.filter((s) => s.status === 'scheduled');
   const pastSessions = sessions.filter((s) => s.status === 'ended');
 
+  const openPackBuilder = (session: Session) => {
+    setSelectedSession(session);
+    setPackBuilderOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Session Pack Builder */}
@@ -78,46 +86,10 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="font-cinzel">Session Pack Builder</CardTitle>
-              <CardDescription>Assemble content for tonight's session</CardDescription>
+              <CardDescription>Build content packs for upcoming sessions</CardDescription>
             </div>
-            <Button onClick={() => setPackOpen(!packOpen)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Build Pack
-            </Button>
           </div>
         </CardHeader>
-        {packOpen && (
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Selected Quests</h4>
-                <div className="text-sm text-muted-foreground">No quests added yet</div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Selected Encounters</h4>
-                <div className="text-sm text-muted-foreground">No encounters added yet</div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">NPC Briefs</h4>
-                <div className="text-sm text-muted-foreground">No NPCs added yet</div>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Handouts</h4>
-                <div className="text-sm text-muted-foreground">No handouts added yet</div>
-              </div>
-            </div>
-            <Separator className="my-4 bg-brass/20" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setPackOpen(false)}>
-                Cancel
-              </Button>
-              <Button>
-                <Send className="w-4 h-4 mr-2" />
-                Send to DM Screen
-              </Button>
-            </div>
-          </CardContent>
-        )}
       </Card>
 
       {/* Upcoming Sessions */}
@@ -146,7 +118,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
               {upcomingSessions.map((session) => (
                 <Card key={session.id} className="bg-background/50 border-brass/10">
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
+                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <h4 className="font-medium font-cinzel">
                           {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Scheduled Session'}
@@ -161,8 +133,9 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
                           </Badge>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        Edit
+                      <Button size="sm" variant="outline" onClick={() => openPackBuilder(session)}>
+                        <Package className="w-4 h-4 mr-2" />
+                        Build Pack
                       </Button>
                     </div>
                   </CardContent>
@@ -232,6 +205,22 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Session Pack Builder Dialog */}
+      <Dialog open={packBuilderOpen} onOpenChange={setPackBuilderOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Session Pack Builder</DialogTitle>
+          </DialogHeader>
+          {selectedSession && (
+            <SessionPackBuilder
+              campaignId={campaignId}
+              sessionId={selectedSession.id}
+              sessionName={selectedSession.started_at ? format(new Date(selectedSession.started_at), "MMM d, yyyy") : "Upcoming Session"}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

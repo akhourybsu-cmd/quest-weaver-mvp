@@ -3959,6 +3959,93 @@ export type Database = {
           },
         ]
       }
+      session_encounters: {
+        Row: {
+          added_at: string | null
+          completed: boolean | null
+          display_order: number | null
+          encounter_id: string
+          id: string
+          launched: boolean | null
+          notes: string | null
+          session_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          completed?: boolean | null
+          display_order?: number | null
+          encounter_id: string
+          id?: string
+          launched?: boolean | null
+          notes?: string | null
+          session_id: string
+        }
+        Update: {
+          added_at?: string | null
+          completed?: boolean | null
+          display_order?: number | null
+          encounter_id?: string
+          id?: string
+          launched?: boolean | null
+          notes?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_encounters_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_encounters_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_handouts: {
+        Row: {
+          added_at: string | null
+          handout_id: string
+          id: string
+          revealed_in_session: boolean | null
+          session_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          handout_id: string
+          id?: string
+          revealed_in_session?: boolean | null
+          session_id: string
+        }
+        Update: {
+          added_at?: string | null
+          handout_id?: string
+          id?: string
+          revealed_in_session?: boolean | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_handouts_handout_id_fkey"
+            columns: ["handout_id"]
+            isOneToOne: false
+            referencedRelation: "handouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_handouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_highlights: {
         Row: {
           campaign_id: string
@@ -3997,6 +4084,45 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_locations: {
+        Row: {
+          added_at: string | null
+          id: string
+          location_id: string
+          session_id: string
+          visited_in_session: boolean | null
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          location_id: string
+          session_id: string
+          visited_in_session?: boolean | null
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          location_id?: string
+          session_id?: string
+          visited_in_session?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_locations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_locations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -4057,6 +4183,100 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_npcs: {
+        Row: {
+          added_at: string | null
+          appeared_in_session: boolean | null
+          id: string
+          notes: string | null
+          npc_id: string
+          session_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          appeared_in_session?: boolean | null
+          id?: string
+          notes?: string | null
+          npc_id: string
+          session_id: string
+        }
+        Update: {
+          added_at?: string | null
+          appeared_in_session?: boolean | null
+          id?: string
+          notes?: string | null
+          npc_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_npcs_npc_id_fkey"
+            columns: ["npc_id"]
+            isOneToOne: false
+            referencedRelation: "npcs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_npcs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_quests: {
+        Row: {
+          added_at: string | null
+          carry_over_from_session_id: string | null
+          completed_in_session: boolean | null
+          id: string
+          notes: string | null
+          quest_id: string
+          session_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          carry_over_from_session_id?: string | null
+          completed_in_session?: boolean | null
+          id?: string
+          notes?: string | null
+          quest_id: string
+          session_id: string
+        }
+        Update: {
+          added_at?: string | null
+          carry_over_from_session_id?: string | null
+          completed_in_session?: boolean | null
+          id?: string
+          notes?: string | null
+          quest_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_quests_carry_over_from_session_id_fkey"
+            columns: ["carry_over_from_session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quests_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_quests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
             referencedColumns: ["id"]
           },
         ]

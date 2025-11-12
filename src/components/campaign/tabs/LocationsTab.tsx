@@ -121,6 +121,17 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Helper to get parent name
+  const getParentName = (parentId: string | null) => {
+    if (!parentId) return null;
+    return locations.find(loc => loc.id === parentId)?.name;
+  };
+
+  // Get child count for each location
+  const getChildCount = (locationId: string) => {
+    return locations.filter(loc => loc.parent_location_id === locationId).length;
+  };
+
   // Get child locations of selected location for tree view
   const childLocations = selectedLocation
     ? locations.filter((loc) => loc.parent_location_id === selectedLocation.id)
@@ -196,59 +207,76 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
               )}
               <ScrollArea className="h-[calc(100vh-350px)]">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
-                  {displayLocations.map((location) => (
-                    <Card
-                      key={location.id}
-                      className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-                      onClick={() => {
-                        setLocationToEdit(location);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
-                            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+                  {displayLocations.map((location) => {
+                    const parentName = getParentName(location.parent_location_id);
+                    const childCount = getChildCount(location.id);
+                    
+                    return (
+                      <Card
+                        key={location.id}
+                        className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+                        onClick={() => {
+                          setLocationToEdit(location);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+                                {parentName && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    in {parentName}
+                                  </p>
+                                )}
+                              </div>
+                              {childCount > 0 && (
+                                <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
+                                  {childCount} sub
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocationToDelete(location);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setLocationToDelete(location);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        {location.location_type && (
-                          <CardDescription className="text-xs">{location.location_type}</CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {location.description || 'No description'}
-                        </p>
+                          {location.location_type && (
+                            <CardDescription className="text-xs">{location.location_type}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {location.description || 'No description'}
+                          </p>
 
-                        {location.tags && location.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {location.tags.slice(0, 3).map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className={terrainColors[tag] || "border-brass/30"}
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {location.tags && location.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {location.tags.slice(0, 3).map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="outline"
+                                  className={terrainColors[tag] || "border-brass/30"}
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </div>
@@ -269,59 +297,76 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-              {displayLocations.map((location) => (
-                <Card
-                  key={location.id}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-                  onClick={() => {
-                    setLocationToEdit(location);
-                    setDialogOpen(true);
-                  }}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
-                        <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+              {displayLocations.map((location) => {
+                const parentName = getParentName(location.parent_location_id);
+                const childCount = getChildCount(location.id);
+                
+                return (
+                  <Card
+                    key={location.id}
+                    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+                    onClick={() => {
+                      setLocationToEdit(location);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+                            {parentName && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                in {parentName}
+                              </p>
+                            )}
+                          </div>
+                          {childCount > 0 && (
+                            <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
+                              {childCount} sub
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocationToDelete(location);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setLocationToDelete(location);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {location.location_type && (
-                      <CardDescription className="text-xs">{location.location_type}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {location.description || 'No description'}
-                    </p>
+                      {location.location_type && (
+                        <CardDescription className="text-xs">{location.location_type}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {location.description || 'No description'}
+                      </p>
 
-                    {location.tags && location.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {location.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className={terrainColors[tag] || "border-brass/30"}
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {location.tags && location.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {location.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className={terrainColors[tag] || "border-brass/30"}
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </ScrollArea>
         )}

@@ -877,7 +877,13 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 h-full">
-                <SessionsTab />
+                {activeCampaign ? (
+                  <SessionsTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="npcs" className="mt-0 h-full">
                 {activeCampaign ? (
@@ -891,7 +897,13 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="locations" className="mt-0 h-full">
-                <LocationsTab />
+                {activeCampaign ? (
+                  <LocationsTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="factions" className="mt-0 h-full">
                 {activeCampaign ? (
@@ -919,7 +931,13 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="timeline" className="mt-0 h-full">
-                <TimelineTab />
+                {activeCampaign ? (
+                  <TimelineTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="notes" className="mt-0 h-full">
                 {activeCampaign && currentUserId ? (

@@ -1,45 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, MapPin, Plus, Send, FileText, Users } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { resilientChannel } from "@/lib/realtime";
+import { toast } from "sonner";
+
+interface SessionsTabProps {
+  campaignId: string;
+}
 
 interface Session {
   id: string;
-  title: string;
-  date: Date;
-  location: string;
-  notes?: string;
-  status: "upcoming" | "past";
+  started_at: string | null;
+  ended_at: string | null;
+  session_notes: string | null;
+  dm_notes: string | null;
+  status: string;
 }
 
-const mockSessions: Session[] = [
-  {
-    id: "1",
-    title: "Session 13: Into the Shadowfell",
-    date: new Date(2025, 11, 15, 19, 0),
-    location: "Online",
-    status: "upcoming",
-  },
-  {
-    id: "2",
-    title: "Session 12: The Vault of Secrets",
-    date: new Date(2025, 10, 8, 19, 0),
-    location: "Online",
-    notes: "Party discovered the ancient artifact",
-    status: "past",
-  },
-];
-
-export function SessionsTab() {
-  const [sessions] = useState<Session[]>(mockSessions);
+export function SessionsTab({ campaignId }: SessionsTabProps) {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
   const [packOpen, setPackOpen] = useState(false);
 
-  const upcomingSessions = sessions.filter((s) => s.status === "upcoming");
-  const pastSessions = sessions.filter((s) => s.status === "past");
+  useEffect(() => {
+    fetchSessions();
+
+    const channel = resilientChannel(supabase, `sessions:${campaignId}`);
+    channel
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'campaign_sessions',
+        filter: `campaign_id=eq.${campaignId}`
+      }, () => {
+        fetchSessions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [campaignId]);
+
+  const fetchSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_sessions')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSessions(data || []);
+    } catch (error: any) {
+      console.error('Error fetching sessions:', error);
+      toast.error('Failed to load sessions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const upcomingSessions = sessions.filter((s) => s.status === 'scheduled');
+  const pastSessions = sessions.filter((s) => s.status === 'ended');
 
   return (
     <div className="space-y-6">
@@ -103,7 +132,12 @@ export function SessionsTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {upcomingSessions.length === 0 ? (
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          ) : upcomingSessions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               No upcoming sessions scheduled
             </p>
@@ -114,20 +148,17 @@ export function SessionsTab() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
-                        <h4 className="font-medium font-cinzel">{session.title}</h4>
+                        <h4 className="font-medium font-cinzel">
+                          {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Scheduled Session'}
+                        </h4>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-arcanePurple" />
-                            {format(session.date, "MMM d, yyyy")}
+                            {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'TBD'}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-arcanePurple" />
-                            {format(session.date, "h:mm a")}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-arcanePurple" />
-                            {session.location}
-                          </div>
+                          <Badge variant="outline" className="border-brass/30">
+                            {session.status}
+                          </Badge>
                         </div>
                       </div>
                       <Button size="sm" variant="outline">
@@ -149,40 +180,56 @@ export function SessionsTab() {
           <CardDescription>Past sessions and notes</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px] pr-4">
+          {loading ? (
             <div className="space-y-3">
-              {pastSessions.map((session) => (
-                <Card key={session.id} className="bg-background/50 border-brass/10">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
-                        <h4 className="font-medium font-cinzel">{session.title}</h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-brass" />
-                            {format(session.date, "MMM d, yyyy")}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-brass" />
-                            {session.location}
-                          </div>
-                        </div>
-                        {session.notes && (
-                          <div className="flex items-start gap-2 mt-2">
-                            <FileText className="w-3 h-3 text-brass mt-0.5" />
-                            <p className="text-sm text-muted-foreground">{session.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                      <Button size="sm" variant="ghost">
-                        View Log
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
             </div>
-          </ScrollArea>
+          ) : pastSessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No past sessions yet
+            </p>
+          ) : (
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-3">
+                {pastSessions.map((session) => (
+                  <Card key={session.id} className="bg-background/50 border-brass/10">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <h4 className="font-medium font-cinzel">
+                            {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Past Session'}
+                          </h4>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-brass" />
+                              {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Unknown date'}
+                            </div>
+                            {session.ended_at && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-brass" />
+                                {format(new Date(session.ended_at), "h:mm a")}
+                              </div>
+                            )}
+                          </div>
+                          {session.session_notes && (
+                            <div className="flex items-start gap-2 mt-2">
+                              <FileText className="w-3 h-3 text-brass mt-0.5" />
+                              <p className="text-sm text-muted-foreground">{session.session_notes}</p>
+                            </div>
+                          )}
+                        </div>
+                        <Button size="sm" variant="ghost">
+                          View Log
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </CardContent>
       </Card>
     </div>

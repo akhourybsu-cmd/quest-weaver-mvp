@@ -220,17 +220,25 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
 
   if (quests.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Scroll className="w-16 h-16 text-brass/50 mb-4" />
-        <h3 className="text-xl font-cinzel font-bold mb-2">No Quests Yet</h3>
-        <p className="text-muted-foreground text-center max-w-md mb-6">
-          Create your first quest to start building your campaign's narrative.
-        </p>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Quest
-        </Button>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center h-64">
+          <Scroll className="w-16 h-16 text-brass/50 mb-4" />
+          <h3 className="text-xl font-cinzel font-bold mb-2">No Quests Yet</h3>
+          <p className="text-muted-foreground text-center max-w-md mb-6">
+            Create your first quest to start building your campaign's narrative.
+          </p>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Quest
+          </Button>
+        </div>
+        <QuestDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          campaignId={campaignId}
+          questToEdit={questToEdit}
+        />
+      </>
     );
   }
 

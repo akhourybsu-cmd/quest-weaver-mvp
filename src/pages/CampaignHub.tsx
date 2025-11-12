@@ -81,6 +81,7 @@ import {
 } from "lucide-react";
 import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
+import { QuickCaptureModal } from "@/components/notes/QuickCaptureModal";
 import { NewCampaignDialog } from "@/components/campaign/NewCampaignDialog";
 import { OverviewTab } from "@/components/campaign/tabs/OverviewTabUpdated";
 import { QuestsTab } from "@/components/campaign/tabs/QuestsTabUpdated";
@@ -946,6 +947,14 @@ const CampaignHub = () => {
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} actions={commandActions} />
       
+      {activeCampaign && currentUserId && (
+        <QuickCaptureModal 
+          campaignId={activeCampaign.id}
+          userId={currentUserId}
+          isDM={true}
+        />
+      )}
+
       <NewCampaignDialog 
         open={showNewCampaignDialog} 
         onOpenChange={setShowNewCampaignDialog}

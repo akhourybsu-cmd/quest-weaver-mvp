@@ -161,16 +161,44 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
 
       toast.success(`${name} has been updated.`);
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("locations")
-        .insert(locationData);
+        .insert(locationData)
+        .select();
 
       if (error) {
         toast.error(`Failed to create location: ${error.message}`);
         return;
       }
 
-      toast.success(`${name} has been created.`);
+      // Auto-add city venues if requested
+      if (autoAddVenues && (locationType === "City" || locationType === "Town")) {
+        const parentId = data?.[0]?.id;
+        if (parentId) {
+          const venues = CITY_VENUE_TEMPLATE.map((venue) => ({
+            campaign_id: campaignId,
+            name: venue.name,
+            location_type: venue.type,
+            parent_location_id: parentId,
+            description: `A ${venue.type} in ${name}`,
+            tags: [],
+            details: LOCATION_SCHEMAS[venue.type].template,
+          }));
+
+          const { error: venueError } = await supabase
+            .from("locations")
+            .insert(venues);
+
+          if (venueError) {
+            console.error("Error creating venues:", venueError);
+            toast.warning(`${name} created but failed to add venues`);
+          } else {
+            toast.success(`${name} created with ${venues.length} venues`);
+          }
+        }
+      } else {
+        toast.success(`${name} has been created.`);
+      }
     }
 
     resetForm();

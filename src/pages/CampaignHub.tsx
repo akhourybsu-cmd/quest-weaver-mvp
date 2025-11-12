@@ -638,7 +638,7 @@ const CampaignHub = () => {
             </Breadcrumb>
 
             <div className="flex items-center gap-3">
-              <SessionControl campaignId={activeCampaign.id} />
+              {activeCampaign && <SessionControl campaignId={activeCampaign.id} />}
               <Button onClick={handleInvitePlayers} variant="outline" size="sm">
                 <Users className="w-4 h-4 mr-2" />
                 Invite

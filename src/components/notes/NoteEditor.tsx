@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import NoteLinkSelector from "./NoteLinkSelector";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const PREDEFINED_TAGS = [
   { name: "NPC", icon: Target, color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400" },
@@ -25,6 +28,73 @@ const PREDEFINED_TAGS = [
   { name: "Downtime", icon: Clock, color: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400" },
   { name: "GM Thought", icon: Brain, color: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400" },
 ];
+
+const NOTE_TEMPLATES = {
+  combat: {
+    name: "Combat Note",
+    content: `## Combat Notes
+
+**Round 1:**
+- 
+
+**Key Moments:**
+- 
+
+**Tactics Used:**
+- 
+
+**Outcome:**
+- `
+  },
+  npc: {
+    name: "NPC Dialogue",
+    content: `## NPC Dialogue: [Name]
+
+**Says:**
+- 
+
+**Reveals:**
+- 
+
+**Wants:**
+- 
+
+**Reaction:**
+- `
+  },
+  clue: {
+    name: "Clue",
+    content: `## Clue Found
+
+**Location:**
+- 
+
+**Description:**
+- 
+
+**Significance:**
+- 
+
+**Leads To:**
+- `
+  },
+  location: {
+    name: "Location",
+    content: `## Location: [Name]
+
+**Description:**
+- 
+
+**Points of Interest:**
+- 
+
+**NPCs Present:**
+- 
+
+**Hooks:**
+- `
+  }
+};
 
 // Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
@@ -84,6 +154,8 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Array<{ id: string; title: string; session_number: number }>>([]);
   const [showAddToSession, setShowAddToSession] = useState(false);
+  const [editorView, setEditorView] = useState<"write" | "preview">("write");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -317,6 +389,24 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setTags(tags.filter((t) => t !== tag));
   };
 
+  const insertMarkdown = (before: string, after: string = "") => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    const newContent = content.substring(0, start) + before + selectedText + after + content.substring(end);
+    setContent(newContent);
+    
+    // Set cursor position after inserted text
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+    }, 0);
+  };
+
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     const newCursorPosition = e.target.selectionStart;
@@ -335,15 +425,27 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         setShowMentions(true);
         loadMentionOptions(textAfterAt);
         
-        // Position the mention dropdown
+        // Position dropdown near cursor (improved positioning)
         const textarea = e.target;
-        const { top, left } = textarea.getBoundingClientRect();
-        setMentionPosition({ top: top - 200, left: left + 10 });
+        const rect = textarea.getBoundingClientRect();
+        setMentionPosition({ top: rect.bottom + 5, left: rect.left + 10 });
         return;
       }
     }
     
     setShowMentions(false);
+  };
+
+  const applyTemplate = (templateKey: keyof typeof NOTE_TEMPLATES) => {
+    const template = NOTE_TEMPLATES[templateKey];
+    setContent(template.content);
+    if (!tags.includes(template.name.split(" ")[0])) {
+      setTags([...tags, template.name.split(" ")[0]]);
+    }
+    toast({
+      title: "Template applied",
+      description: `${template.name} template inserted`,
+    });
   };
 
   const handleMentionSelect = (option: { id: string; name: string; type: string }) => {
@@ -552,35 +654,161 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             </div>
           </div>
 
-          <div className="relative">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
-              className="min-h-[300px] font-mono"
-            />
-            
-            {showMentions && mentionOptions.length > 0 && (
-              <div 
-                className="absolute z-50 w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
-                style={{ top: mentionPosition.top, left: mentionPosition.left }}
-              >
-                {mentionOptions.map((option) => (
-                  <button
-                    key={`${option.type}-${option.id}`}
-                    onClick={() => handleMentionSelect(option)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2"
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Content</Label>
+              <Select onValueChange={(v) => applyTemplate(v as keyof typeof NOTE_TEMPLATES)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Insert template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="combat">Combat Note</SelectItem>
+                  <SelectItem value="npc">NPC Dialogue</SelectItem>
+                  <SelectItem value="clue">Clue</SelectItem>
+                  <SelectItem value="location">Location</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Tabs value={editorView} onValueChange={(v) => setEditorView(v as "write" | "preview")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="write">Write</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="write" className="relative mt-2 space-y-2">
+                {/* Markdown Toolbar */}
+                <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("**", "**")}
+                    title="Bold"
                   >
-                    <Badge variant="outline" className="text-xs">
-                      {option.type}
-                    </Badge>
-                    <span>{option.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+                    <Bold className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("*", "*")}
+                    title="Italic"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("# ")}
+                    title="Heading 1"
+                  >
+                    <Heading1 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("## ")}
+                    title="Heading 2"
+                  >
+                    <Heading2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("### ")}
+                    title="Heading 3"
+                  >
+                    <Heading3 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("- ")}
+                    title="Bullet List"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("1. ")}
+                    title="Numbered List"
+                  >
+                    <ListOrdered className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("`", "`")}
+                    title="Code"
+                  >
+                    <Code className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => insertMarkdown("\n---\n")}
+                    title="Horizontal Rule"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <Textarea
+                  ref={textareaRef}
+                  id="content"
+                  value={content}
+                  onChange={handleContentChange}
+                  placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
+                  className="min-h-[300px] font-mono"
+                />
+                
+                {showMentions && mentionOptions.length > 0 && (
+                  <div 
+                    className="fixed z-[100] w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
+                    style={{ top: mentionPosition.top, left: mentionPosition.left }}
+                  >
+                    {mentionOptions.map((option) => (
+                      <button
+                        key={`${option.type}-${option.id}`}
+                        onClick={() => handleMentionSelect(option)}
+                        className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 text-sm"
+                      >
+                        <Badge variant="outline" className="text-xs">
+                          {option.type}
+                        </Badge>
+                        <span>{option.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="preview" className="mt-2">
+                <div className="min-h-[300px] p-4 border rounded-md bg-muted/10 prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {content || "*No content to preview*"}
+                  </ReactMarkdown>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
 

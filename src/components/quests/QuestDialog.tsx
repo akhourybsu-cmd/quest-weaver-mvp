@@ -39,7 +39,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [giver, setGiver] = useState("");
   const [questType, setQuestType] = useState("side_quest");
   const [questStatus, setQuestStatus] = useState("not_started");
-  const [difficulty, setDifficulty] = useState<string>("");
+  const [difficulty, setDifficulty] = useState<string>("none");
   const [locations, setLocations] = useState<string[]>([]);
   const [locationInput, setLocationInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -51,7 +51,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [characters, setCharacters] = useState<any[]>([]);
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [factions, setFactions] = useState<any[]>([]);
-  const [selectedFaction, setSelectedFaction] = useState<string>("");
+  const [selectedFaction, setSelectedFaction] = useState<string>("none");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
@@ -65,14 +65,14 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         setGiver(questToEdit.questGiver || "");
         setQuestType(questToEdit.questType || "side_quest");
         setQuestStatus(questToEdit.status || "not_started");
-        setDifficulty(questToEdit.difficulty || "");
+        setDifficulty(questToEdit.difficulty || "none");
         setLocations(questToEdit.locations || []);
         setTags(questToEdit.tags || []);
         setRewardXP(questToEdit.rewardXP?.toString() || "");
         setRewardGP(questToEdit.rewardGP?.toString() || "");
         setDmNotes(questToEdit.dmNotes || "");
         setSelectedCharacters(questToEdit.assignedTo || []);
-        setSelectedFaction(questToEdit.factionId || "");
+        setSelectedFaction(questToEdit.factionId || "none");
         setSteps(questToEdit.steps?.map((s: any) => ({
           id: s.id,
           description: s.description,
@@ -160,13 +160,13 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           quest_giver: giver,
           quest_type: questType,
           status: questStatus,
-          difficulty: difficulty || null,
+          difficulty: difficulty !== "none" ? difficulty : null,
           locations,
           tags,
           reward_xp: rewardXP ? parseInt(rewardXP) : 0,
           reward_gp: rewardGP ? parseFloat(rewardGP) : 0,
           assigned_to: selectedCharacters,
-          faction_id: selectedFaction || null,
+          faction_id: selectedFaction !== "none" ? selectedFaction : null,
           dm_notes: dmNotes || null,
         })
         .eq("id", questToEdit.id);
@@ -210,13 +210,13 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           description,
           quest_giver: giver,
           quest_type: questType,
-          difficulty: difficulty || null,
+          difficulty: difficulty !== "none" ? difficulty : null,
           locations,
           tags,
           reward_xp: rewardXP ? parseInt(rewardXP) : 0,
           reward_gp: rewardGP ? parseFloat(rewardGP) : 0,
           assigned_to: selectedCharacters,
-          faction_id: selectedFaction || null,
+          faction_id: selectedFaction !== "none" ? selectedFaction : null,
           dm_notes: dmNotes || null,
           status: 'not_started',
         })
@@ -258,14 +258,14 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
     setGiver("");
     setQuestType("side_quest");
     setQuestStatus("not_started");
-    setDifficulty("");
+    setDifficulty("none");
     setLocations([]);
     setTags([]);
     setRewardXP("");
     setRewardGP("");
     setDmNotes("");
     setSelectedCharacters([]);
-    setSelectedFaction("");
+    setSelectedFaction("none");
     setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
     onOpenChange(false);
   };
@@ -295,14 +295,14 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
       setGiver("");
       setQuestType("side_quest");
       setQuestStatus("not_started");
-      setDifficulty("");
+      setDifficulty("none");
       setLocations([]);
       setTags([]);
       setRewardXP("");
       setRewardGP("");
       setDmNotes("");
       setSelectedCharacters([]);
-      setSelectedFaction("");
+      setSelectedFaction("none");
       setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
       onOpenChange(false);
     } catch (error: any) {
@@ -406,6 +406,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                       <SelectValue placeholder="Optional" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="easy">Easy</SelectItem>
                       <SelectItem value="moderate">Moderate</SelectItem>
                       <SelectItem value="hard">Hard</SelectItem>
@@ -607,7 +608,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {factions.map(faction => (
                         <SelectItem key={faction.id} value={faction.id}>
                           {faction.name}

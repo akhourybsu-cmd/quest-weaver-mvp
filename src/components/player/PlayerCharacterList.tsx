@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Loader2, Shield, Heart, Zap } from 'lucide-react';
+import { Plus, Loader2, Shield, Heart, Zap, Link2 } from 'lucide-react';
 import CharacterWizard from '@/components/character/CharacterWizard';
+import { JoinCampaignDialog } from './JoinCampaignDialog';
 
 interface Character {
   id: string;
@@ -19,6 +20,10 @@ interface Character {
   portrait_url?: string;
   creation_status: string;
   campaign_id?: string;
+  campaign?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface PlayerCharacterListProps {
@@ -29,6 +34,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,7 +48,10 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
       const { data, error } = await supabase
         .from('characters')
-        .select('*')
+        .select(`
+          *,
+          campaign:campaigns(id, name)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -120,11 +129,32 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <span>Level {character.level} {character.class}</span>
                     </CardDescription>
-                    {character.creation_status === 'draft' && (
-                      <Badge variant="outline" className="mt-2">
-                        Draft
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {character.creation_status === 'draft' && (
+                        <Badge variant="outline">
+                          Draft
+                        </Badge>
+                      )}
+                      {character.campaign && (
+                        <Badge variant="secondary" className="bg-brass/20 text-brass border-brass/30">
+                          {character.campaign.name}
+                        </Badge>
+                      )}
+                      {!character.campaign && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setJoinCampaignOpen(true);
+                          }}
+                        >
+                          <Link2 className="w-3 h-3 mr-1" />
+                          Link to Campaign
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -156,6 +186,15 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
           setWizardOpen(false);
           loadCharacters();
         }}
+      />
+
+      <JoinCampaignDialog
+        open={joinCampaignOpen}
+        onClose={() => {
+          setJoinCampaignOpen(false);
+          loadCharacters();
+        }}
+        playerId={playerId}
       />
     </div>
   );

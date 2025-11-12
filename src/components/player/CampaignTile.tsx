@@ -3,9 +3,12 @@ import { PlayerCampaignLink, CampaignStatus } from '@/types/player';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Swords, Link2Off, Pin, PinOff } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Swords, Link2Off, Pin, PinOff, User } from 'lucide-react';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import CharacterSelectionDialog from '@/components/character/CharacterSelectionDialog';
 
 interface CampaignTileProps {
   link: PlayerCampaignLink;
@@ -18,9 +21,12 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   const { getCampaignStatus, togglePin, updateLastJoined } = usePlayerLinks(playerId);
   const [status, setStatus] = useState<CampaignStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [character, setCharacter] = useState<any>(null);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
 
   useEffect(() => {
     loadStatus();
+    loadCharacter();
   }, [link.campaign_id]);
 
   const loadStatus = async () => {
@@ -28,6 +34,25 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
     const campaignStatus = await getCampaignStatus(link.campaign_id);
     setStatus(campaignStatus);
     setLoading(false);
+  };
+
+  const loadCharacter = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('characters')
+        .select('id, name, class, level, portrait_url')
+        .eq('campaign_id', link.campaign_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setCharacter(data);
+    } catch (error) {
+      console.error('Error loading character:', error);
+    }
   };
 
   const handleJoinSession = async () => {
@@ -85,15 +110,58 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
           {getStatusBadge()}
         </div>
         
+        {character ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50 border border-border">
+            <Avatar className="w-10 h-10 border-2 border-brass/30">
+              <AvatarImage src={character.portrait_url} />
+              <AvatarFallback className="bg-brass/10 text-brass font-cinzel">
+                {character.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{character.name}</p>
+              <p className="text-xs text-muted-foreground">
+                Level {character.level} {character.class}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCharacterSelect(true)}
+            >
+              Change
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowCharacterSelect(true)}
+          >
+            <User className="w-4 h-4 mr-2" />
+            Select Character
+          </Button>
+        )}
+        
         <Button 
           className="w-full" 
           onClick={handleJoinSession}
-          disabled={loading || !status}
+          disabled={loading || !status || !character}
         >
           <Swords className="w-4 h-4 mr-2" />
           Join Session
         </Button>
       </CardContent>
+      
+      <CharacterSelectionDialog
+        open={showCharacterSelect}
+        campaignId={link.campaign_id}
+        onComplete={() => {
+          setShowCharacterSelect(false);
+          loadCharacter();
+        }}
+        onCancel={() => setShowCharacterSelect(false)}
+      />
     </Card>
   );
 };

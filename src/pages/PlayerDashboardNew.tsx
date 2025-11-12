@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerNavigation } from '@/components/player/PlayerNavigation';
 import { PlayerCharacterList } from '@/components/player/PlayerCharacterList';
 import { CampaignTile } from '@/components/player/CampaignTile';
+import { JoinCampaignDialog } from '@/components/player/JoinCampaignDialog';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Shield, Users } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2, Shield, Users, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PlayerDashboardNew = () => {
   const { player, loading: playerLoading } = usePlayer();
-  const { links, loading: linksLoading } = usePlayerLinks(player?.id);
+  const { links, loading: linksLoading, refreshLinks } = usePlayerLinks(player?.id);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 
   if (playerLoading) {
     return (
@@ -57,11 +61,17 @@ const PlayerDashboardNew = () => {
 
             <TabsContent value="campaigns">
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-cinzel font-bold text-foreground">My Campaigns</h2>
-                  <p className="text-muted-foreground mt-1">
-                    Your active and pinned adventures
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-cinzel font-bold text-foreground">My Campaigns</h2>
+                    <p className="text-muted-foreground mt-1">
+                      Your active and pinned adventures
+                    </p>
+                  </div>
+                  <Button onClick={() => setJoinDialogOpen(true)} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Join Campaign
+                  </Button>
                 </div>
 
                 {linksLoading ? (
@@ -76,6 +86,12 @@ const PlayerDashboardNew = () => {
                         Join a campaign using a code from your Dungeon Master
                       </CardDescription>
                     </CardHeader>
+                    <CardContent>
+                      <Button onClick={() => setJoinDialogOpen(true)} size="lg" className="gap-2">
+                        <Plus className="w-5 h-5" />
+                        Join Your First Campaign
+                      </Button>
+                    </CardContent>
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -84,7 +100,7 @@ const PlayerDashboardNew = () => {
                         key={link.id}
                         link={link}
                         playerId={player.id}
-                        onUnlink={() => {}}
+                        onUnlink={refreshLinks}
                       />
                     ))}
                   </div>
@@ -94,6 +110,15 @@ const PlayerDashboardNew = () => {
           </Tabs>
         </div>
       </div>
+
+      <JoinCampaignDialog
+        open={joinDialogOpen}
+        onClose={() => {
+          setJoinDialogOpen(false);
+          refreshLinks();
+        }}
+        playerId={player.id}
+      />
     </div>
   );
 };

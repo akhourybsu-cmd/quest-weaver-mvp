@@ -216,7 +216,8 @@ const CampaignHub = () => {
       const { count } = await supabase
         .from("campaign_sessions")
         .select("*", { count: "exact", head: true })
-        .eq("campaign_id", activeCampaign.id);
+        .eq("campaign_id", activeCampaign.id)
+        .eq("status", "ended");
 
       setSessionCount(count || 0);
     } catch (error) {

@@ -636,16 +636,16 @@ const CampaignHub = () => {
               </BreadcrumbList>
             </Breadcrumb>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {liveSession && (
-                <>
+                <div className="flex items-center gap-3 px-4 py-2 rounded-lg border border-brass/20 bg-background/50 backdrop-blur-sm animate-fade-in">
                   {liveSession.status === 'live' && (
-                    <Badge variant="outline" className="border-red-500/50 text-red-500 animate-pulse">
+                    <Badge variant="outline" className="border-red-500/50 text-red-500 bg-red-500/10 animate-pulse text-base px-3 py-1">
                       🔴 Session Live
                     </Badge>
                   )}
                   {liveSession.status === 'paused' && (
-                    <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">
+                    <Badge variant="outline" className="border-yellow-500/50 text-yellow-500 bg-yellow-500/10 text-base px-3 py-1">
                       ⏸️ Session Paused
                     </Badge>
                   )}
@@ -655,27 +655,56 @@ const CampaignHub = () => {
                     pausedDuration={liveSession.paused_duration_seconds}
                     status={liveSession.status}
                   />
+                  <div className="w-px h-6 bg-border/50" />
                   {liveSession.status === 'live' && (
-                    <Button onClick={handlePauseSession} variant="outline" size="sm">
+                    <Button 
+                      onClick={handlePauseSession} 
+                      variant="outline" 
+                      size="default"
+                      className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400"
+                    >
                       <Pause className="w-4 h-4 mr-2" />
                       Pause
                     </Button>
                   )}
                   {liveSession.status === 'paused' && (
-                    <Button onClick={handleResumeSession} variant="outline" size="sm">
+                    <Button 
+                      onClick={handleResumeSession} 
+                      variant="outline" 
+                      size="default"
+                      className="border-green-500/50 text-green-500 hover:bg-green-500/10 hover:text-green-400"
+                    >
                       <Play className="w-4 h-4 mr-2" />
                       Resume
                     </Button>
                   )}
-                  <Button onClick={handleEndSession} variant="destructive" size="sm">
+                  <Button 
+                    onClick={handleEndSession} 
+                    variant="destructive" 
+                    size="default"
+                  >
                     End Session
                   </Button>
-                </>
+                </div>
               )}
               {!liveSession && (
-                <Button onClick={handleStartSession} size="sm" disabled={loading}>
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Session
+                <Button 
+                  onClick={handleStartSession} 
+                  size="default" 
+                  disabled={loading}
+                  className="animate-scale-in"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 mr-2 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Session
+                    </>
+                  )}
                 </Button>
               )}
               <Button onClick={handleInvitePlayers} variant="outline" size="sm">

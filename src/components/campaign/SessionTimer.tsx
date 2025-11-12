@@ -46,9 +46,9 @@ export function SessionTimer({ startedAt, pausedAt, pausedDuration = 0, status }
     : `${seconds}s`;
 
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Clock className="w-4 h-4" />
-      <span>{timeString}</span>
+    <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+      <Clock className="w-5 h-5 text-brass" />
+      <span className="tabular-nums">{timeString}</span>
     </div>
   );
 }

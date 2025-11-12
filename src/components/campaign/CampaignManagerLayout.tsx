@@ -28,8 +28,6 @@ interface Campaign {
   id: string;
   name: string;
   system: string;
-  playerCount: number;
-  sessionCount: number;
 }
 
 interface CampaignManagerLayoutProps {
@@ -155,7 +153,6 @@ export function CampaignManagerLayout({
                         <Badge variant="outline" className="text-xs border-brass/30 text-brass">
                           {campaign.system}
                         </Badge>
-                        <span className="text-xs text-brass/70">{campaign.playerCount} players</span>
                       </div>
                     </>
                   )}

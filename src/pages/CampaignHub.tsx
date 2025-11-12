@@ -513,8 +513,6 @@ const CampaignHub = () => {
     id: c.id,
     name: c.name,
     system: "5e",
-    playerCount: 4,
-    sessionCount: 12,
   }));
 
   if (loading) {

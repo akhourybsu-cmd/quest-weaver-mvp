@@ -37,6 +37,8 @@ export type WizardDraft = {
   bonds?: string;
   flaws?: string;
   notes?: string;
+  portraitUrl?: string;
+  portraitBlob?: Blob;
   
   // Player choices
   choices: {

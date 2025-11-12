@@ -3,8 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
+import { PortraitCropper } from "@/components/character/PortraitCropper";
+import { User } from "lucide-react";
 
 const ALIGNMENTS = [
   "Lawful Good",
@@ -25,6 +28,19 @@ const StepDescription = () => {
     setDraft({ ...draft, [field]: value });
   };
 
+  const handlePortraitCropped = (blob: Blob, url: string) => {
+    setDraft({ ...draft, portraitBlob: blob, portraitUrl: url });
+  };
+
+  const getInitials = () => {
+    return draft.name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -33,6 +49,25 @@ const StepDescription = () => {
           Add personality and physical details to bring your character to life. All fields are optional.
         </p>
       </div>
+
+      {/* Portrait Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-4">
+            <Label className="text-base font-semibold">Character Portrait</Label>
+            <Avatar className="w-32 h-32 border-4 border-border shadow-xl">
+              {draft.portraitUrl ? (
+                <AvatarImage src={draft.portraitUrl} alt={draft.name} />
+              ) : (
+                <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                  {draft.name ? getInitials() : <User className="w-12 h-12" />}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <PortraitCropper onImageCropped={handlePortraitCropped} />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="pt-6 space-y-4">

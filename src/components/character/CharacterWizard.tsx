@@ -308,10 +308,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       if (!user) return;
 
       // Serialize the full wizard state to preserve all selections
+      // Exclude portraitBlob as it can't be serialized
+      const { portraitBlob, ...draftWithoutBlob } = draft;
+      
       const wizardState = {
         currentStep,
         draft: {
-          ...draft,
+          ...draftWithoutBlob,
           // Convert Sets to arrays for JSON serialization
           grants: {
             ...draft.grants,
@@ -488,6 +491,30 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (!characterId) throw new Error("Unable to create character");
 
+      // Upload portrait if one was selected
+      let portraitUrl: string | null = null;
+      if (draft.portraitBlob) {
+        const fileExt = 'jpg';
+        const fileName = `${user.id}/${characterId}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('portraits')
+          .upload(fileName, draft.portraitBlob, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error("Error uploading portrait:", uploadError);
+          // Don't fail character creation if portrait upload fails
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('portraits')
+            .getPublicUrl(fileName);
+          portraitUrl = publicUrl;
+        }
+      }
+
       // Update main character record
       const { error: charError } = await supabase
         .from("characters")
@@ -509,6 +536,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           skin: draft.skin || null,
           hair: draft.hair || null,
           notes: draft.notes || null,
+          portrait_url: portraitUrl,
         })
         .eq("id", characterId);
 

@@ -201,8 +201,15 @@ const Index = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate("/campaign-hub")}
+              onClick={() => navigate("/player")}
               className="mx-2"
+            >
+              Player Hub
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/campaign-hub")}
             >
               Campaign Hub
             </Button>
@@ -274,6 +281,16 @@ const Index = () => {
                 className="w-full justify-start"
               >
                 Try Demo
+              </Button>
+              <Button 
+                onClick={() => {
+                  navigate("/player");
+                  setMobileMenuOpen(false);
+                }} 
+                variant="outline"
+                className="w-full justify-start"
+              >
+                Player Hub
               </Button>
               <Button 
                 onClick={() => {

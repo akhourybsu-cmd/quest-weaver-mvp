@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Minus } from "lucide-react";
+import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Minus, Eye, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 import NoteLinkSelector from "./NoteLinkSelector";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import ReactMarkdown from "react-markdown";
@@ -155,6 +156,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [sessions, setSessions] = useState<Array<{ id: string; title: string; session_number: number }>>([]);
   const [showAddToSession, setShowAddToSession] = useState(false);
   const [editorView, setEditorView] = useState<"write" | "preview">("write");
+  const [playerPreviewOpen, setPlayerPreviewOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
@@ -503,6 +505,21 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     }
   };
 
+  const handleCopyAsHandout = () => {
+    const handoutText = `# ${title}\n\n${content}`;
+    navigator.clipboard.writeText(handoutText);
+    toast({
+      title: 'Copied to clipboard',
+      description: 'Note content has been copied as a handout.',
+    });
+  };
+
+  const getPlayerPreviewContent = () => {
+    // For now, just show the content as-is
+    // In the future, could filter out DM-only sections
+    return content;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -849,6 +866,24 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                     <FolderPlus className="w-4 h-4 mr-2" />
                     Add to Pack
                   </Button>
+                  {visibility === 'SHARED' && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setPlayerPreviewOpen(true)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview as Player
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCopyAsHandout}
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy as Handout
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
               <Button variant="outline" onClick={performSave} disabled={isSaving || !title.trim()}>
@@ -875,6 +910,46 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Player Preview Dialog */}
+      <AlertDialog open={playerPreviewOpen} onOpenChange={setPlayerPreviewOpen}>
+        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-cinzel text-2xl flex items-center gap-2">
+              <Eye className="w-5 h-5 text-brass" />
+              Player Preview
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This is how players will see this shared note
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-4 space-y-4">
+            <div>
+              <h3 className="text-xl font-cinzel font-semibold">{title}</h3>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Separator />
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {getPlayerPreviewContent()}
+              </ReactMarkdown>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setPlayerPreviewOpen(false)}>
+              Close
+            </Button>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 

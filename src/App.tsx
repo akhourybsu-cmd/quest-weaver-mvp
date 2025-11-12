@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PlayerNotes from "@/pages/PlayerNotes";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { CampaignProvider } from "@/contexts/CampaignContext";
@@ -101,6 +102,7 @@ const App = () => {
           <Route path="/player/:playerId" element={<PlayerDashboardNew />} />
           <Route path="/player/:playerId/characters" element={<PlayerDashboardNew />} />
           <Route path="/player/:playerId/characters/:characterId" element={<CharacterSheetPage />} />
+          <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
               <Route path="/player/:playerId/settings" element={<PlayerDashboardNew />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain } from "lucide-react";
+import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import NoteLinkSelector from "./NoteLinkSelector";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 const PREDEFINED_TAGS = [
   { name: "NPC", icon: Target, color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400" },
@@ -82,6 +83,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [cursorPosition, setCursorPosition] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Array<{ id: string; title: string; session_number: number }>>([]);
+  const [showAddToSession, setShowAddToSession] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -603,14 +605,23 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             </div>
             <div className="flex gap-2">
               {note && (
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="mr-auto"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="mr-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddToSession(true)}
+                  >
+                    <FolderPlus className="w-4 h-4 mr-2" />
+                    Add to Pack
+                  </Button>
+                </>
               )}
               <Button variant="outline" onClick={performSave} disabled={isSaving || !title.trim()}>
                 <Save className="w-4 h-4 mr-2" />
@@ -638,6 +649,17 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {note && (
+        <AddItemToSessionDialog
+          open={showAddToSession}
+          onOpenChange={setShowAddToSession}
+          campaignId={campaignId}
+          itemType="note"
+          itemId={note.id}
+          itemName={note.title}
+        />
+      )}
     </Dialog>
   );
 };

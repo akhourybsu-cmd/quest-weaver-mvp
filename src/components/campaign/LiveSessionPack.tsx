@@ -12,6 +12,7 @@ import {
   FileText,
   MapPin,
   Package,
+  ScrollText,
   Play,
   CheckCircle2,
   SkipForward,
@@ -23,7 +24,7 @@ import { cn } from "@/lib/utils";
 
 interface PackCard {
   id: string;
-  type: "quest" | "encounter" | "npc" | "handout" | "location" | "item";
+  type: "quest" | "encounter" | "npc" | "handout" | "location" | "item" | "note";
   refId: string;
   title: string;
   status: "planned" | "in_progress" | "done" | "skipped" | "blocked";
@@ -46,6 +47,7 @@ const iconMap = {
   handout: FileText,
   location: MapPin,
   item: Package,
+  note: ScrollText,
 };
 
 const statusColors = {
@@ -72,6 +74,7 @@ export function LiveSessionPack({ sessionId, campaignId }: LiveSessionPackProps)
       "session_handouts",
       "session_locations",
       "session_items",
+      "session_pack_notes",
     ].map((table) =>
       supabase
         .channel(`${table}:${sessionId}`)
@@ -232,6 +235,29 @@ export function LiveSessionPack({ sessionId, campaignId }: LiveSessionPackProps)
             startedAt: i.started_at,
             completedAt: i.completed_at,
             plannedOrder: i.planned_order || 0,
+          }))
+        );
+      }
+
+      // Load notes
+      const { data: notes } = await supabase
+        .from("session_pack_notes")
+        .select("*, session_notes(id, title)")
+        .eq("session_id", sessionId);
+
+      if (notes) {
+        allCards.push(
+          ...notes.map((n: any) => ({
+            id: n.id,
+            type: "note" as const,
+            refId: n.note_id,
+            title: n.session_notes?.title || "Untitled Note",
+            status: n.status || "planned",
+            section: n.section || "mid",
+            gmNotes: n.gm_notes,
+            startedAt: n.started_at,
+            completedAt: n.completed_at,
+            plannedOrder: n.planned_order || 0,
           }))
         );
       }

@@ -4490,6 +4490,66 @@ export type Database = {
           },
         ]
       }
+      session_pack_notes: {
+        Row: {
+          added_at: string | null
+          completed_at: string | null
+          expected_duration_min: number | null
+          gm_notes: string | null
+          id: string
+          note_id: string
+          planned_order: number | null
+          player_share: boolean | null
+          section: string | null
+          session_id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
+          id?: string
+          note_id: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
+          session_id: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
+          id?: string
+          note_id?: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
+          session_id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_pack_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "session_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_pack_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_quests: {
         Row: {
           added_at: string | null

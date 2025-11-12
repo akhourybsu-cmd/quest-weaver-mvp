@@ -24,7 +24,7 @@ interface AddItemToSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
-  itemType: "quest" | "encounter" | "npc" | "handout" | "location" | "item";
+  itemType: "quest" | "encounter" | "npc" | "handout" | "location" | "item" | "note";
   itemId: string;
   itemName: string;
 }
@@ -36,6 +36,7 @@ const tableMap = {
   handout: "session_handouts",
   location: "session_locations",
   item: "session_items",
+  note: "session_pack_notes",
 };
 
 const idMap = {
@@ -45,6 +46,7 @@ const idMap = {
   handout: "handout_id",
   location: "location_id",
   item: "item_id",
+  note: "note_id",
 };
 
 export function AddItemToSessionDialog({

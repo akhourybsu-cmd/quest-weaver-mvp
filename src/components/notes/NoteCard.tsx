@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pin, Lock, Users, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Pin, Lock, Users, Eye, FolderPlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 interface Note {
   id: string;
@@ -19,9 +22,11 @@ interface NoteCardProps {
   onClick: () => void;
   isDM: boolean;
   isOwner: boolean;
+  campaignId: string;
 }
 
-const NoteCard = ({ note, onClick, isDM, isOwner }: NoteCardProps) => {
+const NoteCard = ({ note, onClick, isDM, isOwner, campaignId }: NoteCardProps) => {
+  const [showAddToSession, setShowAddToSession] = useState(false);
   const visibilityConfig = {
     DM_ONLY: { 
       icon: Eye, 
@@ -66,22 +71,38 @@ const NoteCard = ({ note, onClick, isDM, isOwner }: NoteCardProps) => {
   };
 
   return (
-    <Card
-      className="cursor-pointer hover:border-primary/50 transition-all duration-200 bg-card/80 backdrop-blur-sm"
-      onClick={onClick}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg flex items-center gap-2 font-semibold">
-            {note.is_pinned && <Pin className="w-4 h-4 text-amber-600 fill-amber-500" />}
-            {note.title}
-          </CardTitle>
-          <Badge variant="outline" className={`${config.className} rounded-full px-3 py-0.5 text-xs font-medium`}>
-            <VisibilityIcon className="w-3 h-3 mr-1.5" />
-            {config.label}
-          </Badge>
-        </div>
-      </CardHeader>
+    <>
+      <Card
+        className="cursor-pointer hover:border-primary/50 transition-all duration-200 bg-card/80 backdrop-blur-sm"
+        onClick={onClick}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 font-semibold">
+              {note.is_pinned && <Pin className="w-4 h-4 text-amber-600 fill-amber-500" />}
+              {note.title}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {isDM && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAddToSession(true);
+                  }}
+                >
+                  <FolderPlus className="w-4 h-4" />
+                </Button>
+              )}
+              <Badge variant="outline" className={`${config.className} rounded-full px-3 py-0.5 text-xs font-medium`}>
+                <VisibilityIcon className="w-3 h-3 mr-1.5" />
+                {config.label}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
 
       <CardContent className="space-y-3">
         {preview && (
@@ -111,6 +132,16 @@ const NoteCard = ({ note, onClick, isDM, isOwner }: NoteCardProps) => {
         </div>
       </CardContent>
     </Card>
+
+    <AddItemToSessionDialog
+      open={showAddToSession}
+      onOpenChange={setShowAddToSession}
+      campaignId={campaignId}
+      itemType="note"
+      itemId={note.id}
+      itemName={note.title}
+    />
+  </>
   );
 };
 

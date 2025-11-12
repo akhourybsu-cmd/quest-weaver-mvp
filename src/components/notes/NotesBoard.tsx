@@ -221,6 +221,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                           onClick={() => handleEditNote(note)}
                           isDM={isDM}
                           isOwner={note.author_id === userId}
+                          campaignId={campaignId}
                         />
                       ))}
                     </div>
@@ -257,6 +258,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                                 onClick={() => handleEditNote(note)}
                                 isDM={isDM}
                                 isOwner={note.author_id === userId}
+                                campaignId={campaignId}
                               />
                             ))}
                           </div>

@@ -26,4 +26,5 @@ export interface CampaignStatus {
   name: string;
   hasLiveSession: boolean;
   sessionId?: string;
+  sessionStatus?: 'live' | 'paused' | 'ended';
 }

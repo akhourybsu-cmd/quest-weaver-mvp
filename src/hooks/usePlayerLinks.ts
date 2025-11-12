@@ -162,23 +162,38 @@ export const usePlayerLinks = (playerId?: string) => {
 
   const getCampaignStatus = useCallback(async (campaignId: string): Promise<CampaignStatus | null> => {
     try {
+      // First get campaign with live_session_id
       const { data: campaign } = await supabase
         .from('campaigns')
-        .select('live_session_id, name, campaign_sessions(id, status)')
+        .select('live_session_id, name')
         .eq('id', campaignId)
         .maybeSingle();
 
       if (!campaign) return null;
 
+      // If there's a live session, fetch it
+      let sessionData = null;
+      if (campaign.live_session_id) {
+        const { data } = await supabase
+          .from('campaign_sessions')
+          .select('id, status')
+          .eq('id', campaign.live_session_id)
+          .maybeSingle();
+        
+        sessionData = data;
+      }
+
       const hasLiveSession = 
         !!campaign.live_session_id && 
-        campaign.campaign_sessions?.status === 'live';
+        sessionData &&
+        ['live', 'paused'].includes(sessionData.status);
 
       return {
         campaignId,
         name: campaign.name,
         hasLiveSession,
-        sessionId: campaign.campaign_sessions?.id,
+        sessionId: sessionData?.id,
+        sessionStatus: sessionData?.status,
       };
     } catch (error) {
       console.error('Failed to get campaign status:', error);

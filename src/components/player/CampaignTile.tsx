@@ -8,6 +8,7 @@ import { Swords, Link2Off, Pin, PinOff, User } from 'lucide-react';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { resilientChannel } from '@/lib/realtime';
 import CharacterSelectionDialog from '@/components/character/CharacterSelectionDialog';
 
 interface CampaignTileProps {
@@ -27,6 +28,34 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   useEffect(() => {
     loadStatus();
     loadCharacter();
+  }, [link.campaign_id]);
+
+  // Real-time subscription for campaign and session updates
+  useEffect(() => {
+    const channel = resilientChannel(supabase, `campaign:${link.campaign_id}`);
+    
+    channel
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'campaigns',
+        filter: `id=eq.${link.campaign_id}`
+      }, () => {
+        loadStatus(); // Refresh when campaign.live_session_id changes
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'campaign_sessions',
+        filter: `campaign_id=eq.${link.campaign_id}`
+      }, () => {
+        loadStatus(); // Refresh when session status changes
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [link.campaign_id]);
 
   const loadStatus = async () => {
@@ -68,8 +97,15 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   const getStatusBadge = () => {
     if (loading) return <Badge variant="outline">Loading...</Badge>;
     if (!status) return <Badge variant="outline">Offline</Badge>;
-    if (status.hasLiveSession) return <Badge className="bg-primary">Live</Badge>;
-    return <Badge variant="outline">Waiting</Badge>;
+    
+    if (status.hasLiveSession) {
+      if (status.sessionStatus === 'paused') {
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">⏸️ Paused</Badge>;
+      }
+      return <Badge className="bg-green-500 hover:bg-green-600">🔴 Live</Badge>;
+    }
+    
+    return <Badge variant="outline">Offline</Badge>;
   };
 
   return (

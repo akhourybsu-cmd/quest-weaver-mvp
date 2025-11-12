@@ -3325,13 +3325,16 @@ export type Database = {
       }
       npcs: {
         Row: {
+          alignment: string | null
           attitude: string | null
           campaign_id: string
           created_at: string | null
           description: string | null
           faction_id: string | null
+          first_appearance_session_id: string | null
           gm_notes: string | null
           id: string
+          is_pinned: boolean | null
           location: string | null
           location_id: string | null
           name: string
@@ -3342,17 +3345,21 @@ export type Database = {
           role_title: string | null
           secrets: string | null
           statblock_ref: string | null
+          status: string | null
           tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          alignment?: string | null
           attitude?: string | null
           campaign_id: string
           created_at?: string | null
           description?: string | null
           faction_id?: string | null
+          first_appearance_session_id?: string | null
           gm_notes?: string | null
           id?: string
+          is_pinned?: boolean | null
           location?: string | null
           location_id?: string | null
           name: string
@@ -3363,17 +3370,21 @@ export type Database = {
           role_title?: string | null
           secrets?: string | null
           statblock_ref?: string | null
+          status?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          alignment?: string | null
           attitude?: string | null
           campaign_id?: string
           created_at?: string | null
           description?: string | null
           faction_id?: string | null
+          first_appearance_session_id?: string | null
           gm_notes?: string | null
           id?: string
+          is_pinned?: boolean | null
           location?: string | null
           location_id?: string | null
           name?: string
@@ -3384,6 +3395,7 @@ export type Database = {
           role_title?: string | null
           secrets?: string | null
           statblock_ref?: string | null
+          status?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -3400,6 +3412,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_first_appearance_session_id_fkey"
+            columns: ["first_appearance_session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
             referencedColumns: ["id"]
           },
           {

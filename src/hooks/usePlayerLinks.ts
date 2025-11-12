@@ -164,24 +164,21 @@ export const usePlayerLinks = (playerId?: string) => {
     try {
       const { data: campaign } = await supabase
         .from('campaigns')
-        .select('id, name')
+        .select('live_session_id, name, campaign_sessions(id, status)')
         .eq('id', campaignId)
         .maybeSingle();
 
       if (!campaign) return null;
 
-      const { data: encounter } = await supabase
-        .from('encounters')
-        .select('id')
-        .eq('campaign_id', campaignId)
-        .in('status', ['active', 'paused'])
-        .maybeSingle();
+      const hasLiveSession = 
+        !!campaign.live_session_id && 
+        campaign.campaign_sessions?.status === 'live';
 
       return {
-        campaignId: campaign.id,
+        campaignId,
         name: campaign.name,
-        hasLiveSession: !!encounter,
-        sessionId: encounter?.id,
+        hasLiveSession,
+        sessionId: campaign.campaign_sessions?.id,
       };
     } catch (error) {
       console.error('Failed to get campaign status:', error);

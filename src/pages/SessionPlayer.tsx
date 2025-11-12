@@ -124,6 +124,20 @@ const SessionPlayer = () => {
 
     setCampaignId(campaigns[0].id);
 
+    // Validate that session is live before proceeding
+    const { data: campaignData } = await supabase
+      .from('campaigns')
+      .select('live_session_id, campaign_sessions(status)')
+      .eq('id', campaigns[0].id)
+      .single();
+
+    if (!campaignData?.live_session_id || 
+        !['live', 'paused'].includes(campaignData.campaign_sessions?.status)) {
+      // No active session - redirect to waiting room
+      navigate(`/player/waiting?campaign=${campaignCode}`);
+      return;
+    }
+
     // Check for active encounter
     const { data: encounter } = await supabase
       .from("encounters")

@@ -128,6 +128,29 @@ const CampaignHub = () => {
     }
   }, [activeCampaign]);
 
+  useEffect(() => {
+    if (!activeCampaign) return;
+
+    // Subscribe to real-time campaign updates for session changes
+    const channel = supabase
+      .channel('campaign-session-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'campaigns',
+          filter: `id=eq.${activeCampaign.id}`,
+        },
+        () => fetchLiveSession()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeCampaign]);
+
   const fetchLiveSession = async () => {
     if (!activeCampaign) return;
 
@@ -197,9 +220,47 @@ const CampaignHub = () => {
     setShowNewCampaignDialog(true);
   };
 
-  const handleStartSession = () => {
-    if (activeCampaign) {
+  const handleStartSession = async () => {
+    if (!activeCampaign) return;
+    
+    setLoading(true);
+    try {
+      // Create session record
+      const { data: session, error: sessionError } = await supabase
+        .from('campaign_sessions')
+        .insert({
+          campaign_id: activeCampaign.id,
+          status: 'live',
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (sessionError) throw sessionError;
+      
+      // Update campaign with live_session_id
+      const { error: campaignError } = await supabase
+        .from('campaigns')
+        .update({ live_session_id: session.id })
+        .eq('id', activeCampaign.id);
+      
+      if (campaignError) throw campaignError;
+      
+      toast({
+        title: 'Session started!',
+        description: 'Players can now join',
+      });
+      
+      // Navigate to SessionDM
       navigate(`/campaigns/${activeCampaign.id}/dm`);
+    } catch (error: any) {
+      toast({
+        title: 'Failed to start session',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

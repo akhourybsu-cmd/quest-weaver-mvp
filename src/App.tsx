@@ -29,6 +29,7 @@ import { PlayerHome } from "./components/permissions/PlayerHome";
 import AuditHarness from "./pages/dev/AuditHarness";
 import PlayerHub from "@/pages/PlayerHub";
 import PlayerDashboardNew from "@/pages/PlayerDashboardNew";
+import { PlayerWaitingRoom } from "@/components/player/PlayerWaitingRoom";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => {
               <Route path="/session/dm" element={<SessionDM />} />
               <Route path="/session/player" element={<SessionPlayer />} />
               <Route path="/session/spectator" element={<SessionSpectator />} />
+              <Route path="/player/waiting" element={<PlayerWaitingRoom />} />
               <Route path="/player-home" element={<PlayerHome />} />
               <Route path="/map" element={<CombatMap />} />
               <Route path="/world-map" element={<WorldMap />} />

@@ -29,6 +29,7 @@ import { EncounterControls } from '@/components/combat/EncounterControls';
 import { PartyRestManager } from '@/components/combat/PartyRestManager';
 import { ReadiedActionsList } from '@/components/combat/ReadiedActionsList';
 import HandoutViewer from '@/components/handouts/HandoutViewer';
+import { LiveSessionPack } from '@/components/campaign/LiveSessionPack';
 
 interface Character {
   id: string;

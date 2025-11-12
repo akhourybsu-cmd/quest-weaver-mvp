@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X, Coins, Award, Package, Trash2 } from "lucide-react";
+import { Plus, X, Coins, Award, Package, Trash2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 interface QuestDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [factions, setFactions] = useState<any[]>([]);
   const [selectedFaction, setSelectedFaction] = useState<string>("none");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -641,8 +643,14 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
               </Button>
-            )}
+              )}
             <div className="flex gap-2 ml-auto">
+              {isEditing && (
+                <Button variant="outline" onClick={() => setShowAddToSessionDialog(true)}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Add to Session
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
@@ -670,6 +678,17 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isEditing && questToEdit && (
+        <AddItemToSessionDialog
+          open={showAddToSessionDialog}
+          onOpenChange={setShowAddToSessionDialog}
+          campaignId={campaignId}
+          itemType="quest"
+          itemId={questToEdit.id}
+          itemName={title}
+        />
+      )}
     </Dialog>
   );
 };

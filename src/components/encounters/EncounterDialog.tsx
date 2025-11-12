@@ -32,9 +32,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, X, Loader2 } from "lucide-react";
+import { Trash2, X, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import MonsterLibraryDialog from "@/components/monsters/MonsterLibraryDialog";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 interface EncounterDialogProps {
   open: boolean;
@@ -77,6 +78,7 @@ export function EncounterDialog({
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
 
   const isEditing = !!encounterId;
 
@@ -435,6 +437,12 @@ export function EncounterDialog({
               )}
             </div>
             <div className="flex gap-2">
+              {isEditing && (
+                <Button variant="outline" onClick={() => setShowAddToSessionDialog(true)} disabled={saving}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Add to Session
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
                 Cancel
               </Button>
@@ -481,6 +489,17 @@ export function EncounterDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isEditing && encounterId && (
+        <AddItemToSessionDialog
+          open={showAddToSessionDialog}
+          onOpenChange={setShowAddToSessionDialog}
+          campaignId={campaignId}
+          itemType="encounter"
+          itemId={encounterId}
+          itemName={name}
+        />
+      )}
     </>
   );
 }

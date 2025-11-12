@@ -24,9 +24,11 @@ import {
   Pencil,
   Trash2,
   Play,
-  XCircle
+  XCircle,
+  Calendar,
 } from "lucide-react";
 import QuestDialog from "./QuestDialog";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 interface QuestStep {
   id: string;
@@ -90,6 +92,8 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
+  const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -389,6 +393,17 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => {
+                              setSelectedQuest(quest);
+                              setShowAddToSessionDialog(true);
+                            }}
+                            title="Add to Session Pack"
+                          >
+                            <Calendar className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleEditQuest(quest)}
                             title="Edit Quest"
                           >
@@ -539,12 +554,25 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
       </CardContent>
 
       {isDM && (
-        <QuestDialog
-          open={dialogOpen}
-          onOpenChange={handleCloseDialog}
-          campaignId={campaignId}
-          questToEdit={questToEdit}
-        />
+        <>
+          <QuestDialog
+            open={dialogOpen}
+            onOpenChange={handleCloseDialog}
+            campaignId={campaignId}
+            questToEdit={questToEdit}
+          />
+          
+          {selectedQuest && (
+            <AddItemToSessionDialog
+              open={showAddToSessionDialog}
+              onOpenChange={setShowAddToSessionDialog}
+              campaignId={campaignId}
+              itemType="quest"
+              itemId={selectedQuest.id}
+              itemName={selectedQuest.title}
+            />
+          )}
+        </>
       )}
     </Card>
   );

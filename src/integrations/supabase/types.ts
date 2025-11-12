@@ -3994,32 +3994,56 @@ export type Database = {
         Row: {
           added_at: string | null
           completed: boolean | null
+          completed_at: string | null
           display_order: number | null
           encounter_id: string
+          expected_duration_min: number | null
+          gm_notes: string | null
           id: string
           launched: boolean | null
           notes: string | null
+          planned_order: number | null
+          player_share: boolean | null
+          section: string | null
           session_id: string
+          started_at: string | null
+          status: string | null
         }
         Insert: {
           added_at?: string | null
           completed?: boolean | null
+          completed_at?: string | null
           display_order?: number | null
           encounter_id: string
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           launched?: boolean | null
           notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id: string
+          started_at?: string | null
+          status?: string | null
         }
         Update: {
           added_at?: string | null
           completed?: boolean | null
+          completed_at?: string | null
           display_order?: number | null
           encounter_id?: string
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           launched?: boolean | null
           notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id?: string
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -4041,24 +4065,48 @@ export type Database = {
       session_handouts: {
         Row: {
           added_at: string | null
+          completed_at: string | null
+          expected_duration_min: number | null
+          gm_notes: string | null
           handout_id: string
           id: string
+          planned_order: number | null
+          player_share: boolean | null
           revealed_in_session: boolean | null
+          section: string | null
           session_id: string
+          started_at: string | null
+          status: string | null
         }
         Insert: {
           added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           handout_id: string
           id?: string
+          planned_order?: number | null
+          player_share?: boolean | null
           revealed_in_session?: boolean | null
+          section?: string | null
           session_id: string
+          started_at?: string | null
+          status?: string | null
         }
         Update: {
           added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           handout_id?: string
           id?: string
+          planned_order?: number | null
+          player_share?: boolean | null
           revealed_in_session?: boolean | null
+          section?: string | null
           session_id?: string
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -4119,26 +4167,116 @@ export type Database = {
           },
         ]
       }
+      session_items: {
+        Row: {
+          added_at: string | null
+          completed_at: string | null
+          distributed: boolean | null
+          expected_duration_min: number | null
+          gm_notes: string | null
+          id: string
+          item_id: string
+          notes: string | null
+          planned_order: number | null
+          player_share: boolean | null
+          section: string | null
+          session_id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          completed_at?: string | null
+          distributed?: boolean | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
+          id?: string
+          item_id: string
+          notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
+          session_id: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          completed_at?: string | null
+          distributed?: boolean | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
+          id?: string
+          item_id?: string
+          notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
+          session_id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_locations: {
         Row: {
           added_at: string | null
+          completed_at: string | null
+          expected_duration_min: number | null
+          gm_notes: string | null
           id: string
           location_id: string
+          planned_order: number | null
+          player_share: boolean | null
+          section: string | null
           session_id: string
+          started_at: string | null
+          status: string | null
           visited_in_session: boolean | null
         }
         Insert: {
           added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           location_id: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id: string
+          started_at?: string | null
+          status?: string | null
           visited_in_session?: boolean | null
         }
         Update: {
           added_at?: string | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           location_id?: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id?: string
+          started_at?: string | null
+          status?: string | null
           visited_in_session?: boolean | null
         }
         Relationships: [
@@ -4151,6 +4289,44 @@ export type Database = {
           },
           {
             foreignKeyName: "session_locations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_log: {
+        Row: {
+          card_id: string | null
+          card_type: string | null
+          created_at: string | null
+          event: string
+          id: string
+          payload: Json | null
+          session_id: string
+        }
+        Insert: {
+          card_id?: string | null
+          card_type?: string | null
+          created_at?: string | null
+          event: string
+          id?: string
+          payload?: Json | null
+          session_id: string
+        }
+        Update: {
+          card_id?: string | null
+          card_type?: string | null
+          created_at?: string | null
+          event?: string
+          id?: string
+          payload?: Json | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_log_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "campaign_sessions"
@@ -4222,26 +4398,50 @@ export type Database = {
         Row: {
           added_at: string | null
           appeared_in_session: boolean | null
+          completed_at: string | null
+          expected_duration_min: number | null
+          gm_notes: string | null
           id: string
           notes: string | null
           npc_id: string
+          planned_order: number | null
+          player_share: boolean | null
+          section: string | null
           session_id: string
+          started_at: string | null
+          status: string | null
         }
         Insert: {
           added_at?: string | null
           appeared_in_session?: boolean | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           notes?: string | null
           npc_id: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id: string
+          started_at?: string | null
+          status?: string | null
         }
         Update: {
           added_at?: string | null
           appeared_in_session?: boolean | null
+          completed_at?: string | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           notes?: string | null
           npc_id?: string
+          planned_order?: number | null
+          player_share?: boolean | null
+          section?: string | null
           session_id?: string
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -4264,29 +4464,53 @@ export type Database = {
         Row: {
           added_at: string | null
           carry_over_from_session_id: string | null
+          completed_at: string | null
           completed_in_session: boolean | null
+          expected_duration_min: number | null
+          gm_notes: string | null
           id: string
           notes: string | null
+          planned_order: number | null
+          player_share: boolean | null
           quest_id: string
+          section: string | null
           session_id: string
+          started_at: string | null
+          status: string | null
         }
         Insert: {
           added_at?: string | null
           carry_over_from_session_id?: string | null
+          completed_at?: string | null
           completed_in_session?: boolean | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
           quest_id: string
+          section?: string | null
           session_id: string
+          started_at?: string | null
+          status?: string | null
         }
         Update: {
           added_at?: string | null
           carry_over_from_session_id?: string | null
+          completed_at?: string | null
           completed_in_session?: boolean | null
+          expected_duration_min?: number | null
+          gm_notes?: string | null
           id?: string
           notes?: string | null
+          planned_order?: number | null
+          player_share?: boolean | null
           quest_id?: string
+          section?: string | null
           session_id?: string
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {

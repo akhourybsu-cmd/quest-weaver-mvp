@@ -5,14 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Scroll, Users, Plus, TrendingUp, MapPin, Package, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { useTenant } from "@/contexts/TenantContext";
 
 interface OverviewTabProps {
+  campaignId: string;
   onQuickAdd: (type: string) => void;
 }
 
-export function OverviewTab({ onQuickAdd }: OverviewTabProps) {
-  const { campaignId } = useTenant();
+export function OverviewTab({ campaignId, onQuickAdd }: OverviewTabProps) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeQuests: 0,
@@ -22,47 +21,41 @@ export function OverviewTab({ onQuickAdd }: OverviewTabProps) {
   });
 
   useEffect(() => {
-    if (!campaignId) return;
-
     const fetchStats = async () => {
       setLoading(true);
       try {
-        // Count active quests
-        const { count: activeQuestsCount } = await supabase
-          .from('quests')
-          .select('*', { count: 'exact', head: true })
-          .eq('campaign_id', campaignId)
-          .in('status', ['hook', 'active']);
-
-        // Count completed quests
-        const { count: completedQuestsCount } = await supabase
-          .from('quests')
-          .select('*', { count: 'exact', head: true })
-          .eq('campaign_id', campaignId)
-          .eq('status', 'complete');
-
-        // Count party members
-        const { count: partyCount } = await supabase
-          .from('characters')
-          .select('*', { count: 'exact', head: true })
-          .eq('campaign_id', campaignId)
-          .not('user_id', 'is', null);
-
-        // Get next session
-        const { data: nextSession } = await supabase
-          .from('campaign_sessions')
-          .select('started_at')
-          .eq('campaign_id', campaignId)
-          .eq('status', 'live')
-          .order('started_at', { ascending: true })
-          .limit(1)
-          .single();
+        // Run all queries in parallel for faster loading
+        const [activeQuests, completedQuests, partyMembers, nextSession] = await Promise.all([
+          supabase
+            .from('quests')
+            .select('*', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .in('status', ['hook', 'active']),
+          supabase
+            .from('quests')
+            .select('*', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .eq('status', 'complete'),
+          supabase
+            .from('characters')
+            .select('*', { count: 'exact', head: true })
+            .eq('campaign_id', campaignId)
+            .not('user_id', 'is', null),
+          supabase
+            .from('campaign_sessions')
+            .select('started_at')
+            .eq('campaign_id', campaignId)
+            .eq('status', 'live')
+            .order('started_at', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+        ]);
 
         setStats({
-          activeQuests: activeQuestsCount || 0,
-          completedQuests: completedQuestsCount || 0,
-          partyMembers: partyCount || 0,
-          nextSession: nextSession?.started_at || null,
+          activeQuests: activeQuests.count || 0,
+          completedQuests: completedQuests.count || 0,
+          partyMembers: partyMembers.count || 0,
+          nextSession: nextSession.data?.started_at || null,
         });
       } catch (error) {
         console.error('Failed to fetch campaign stats:', error);

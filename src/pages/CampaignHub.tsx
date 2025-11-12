@@ -668,7 +668,14 @@ const CampaignHub = () => {
 
             <div className="flex-1 p-6">
               <TabsContent value="overview" className="mt-0 h-full">
-                <OverviewTab onQuickAdd={handleQuickAdd} />
+                {activeCampaign ? (
+                  <OverviewTab campaignId={activeCampaign.id} onQuickAdd={handleQuickAdd} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="quests" className="mt-0 h-full">
                 {activeCampaign ? (

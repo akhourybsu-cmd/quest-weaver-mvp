@@ -1,23 +1,16 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerNavigation } from '@/components/player/PlayerNavigation';
 import { PlayerCharacterList } from '@/components/player/PlayerCharacterList';
 import { CampaignTile } from '@/components/player/CampaignTile';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Shield, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const PlayerDashboardNew = () => {
-  const { playerId } = useParams<{ playerId: string }>();
-  const { getPlayer, loading: playerLoading } = usePlayer();
-  const { links, loading: linksLoading } = usePlayerLinks(playerId);
-
-  if (!playerId) {
-    return <Navigate to="/player" replace />;
-  }
-
-  const player = getPlayer(playerId);
+  const { player, loading: playerLoading } = usePlayer();
+  const { links, loading: linksLoading } = usePlayerLinks(player?.id);
 
   if (playerLoading) {
     return (
@@ -28,12 +21,12 @@ const PlayerDashboardNew = () => {
   }
 
   if (!player) {
-    return <Navigate to="/player" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex">
-      <PlayerNavigation playerId={playerId} />
+      <PlayerNavigation playerId={player.id} />
       
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-8">
@@ -59,7 +52,7 @@ const PlayerDashboardNew = () => {
             </TabsList>
 
             <TabsContent value="characters">
-              <PlayerCharacterList playerId={playerId} />
+              <PlayerCharacterList playerId={player.id} />
             </TabsContent>
 
             <TabsContent value="campaigns">
@@ -90,7 +83,7 @@ const PlayerDashboardNew = () => {
                       <CampaignTile
                         key={link.id}
                         link={link}
-                        playerId={playerId}
+                        playerId={player.id}
                         onUnlink={() => {}}
                       />
                     ))}

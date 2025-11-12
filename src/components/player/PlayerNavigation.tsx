@@ -18,8 +18,7 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
   const [isDM, setIsDM] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { getPlayer } = usePlayer();
-  const player = getPlayer(playerId);
+  const { player } = usePlayer();
 
   useEffect(() => {
     const checkIfDM = async () => {
@@ -75,7 +74,7 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
         {!collapsed && player && (
           <div className="flex items-center gap-3 flex-1">
             <Avatar className="w-10 h-10 border-2 border-brass/30">
-              <AvatarImage src={player.avatarUrl} />
+              <AvatarImage src={player.avatar_url} />
               <AvatarFallback style={{ backgroundColor: player.color }}>
                 {player.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>

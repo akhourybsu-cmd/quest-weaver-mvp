@@ -33,9 +33,9 @@ export const PlayerCard = ({ player, onSelect, onDelete }: PlayerCardProps) => {
               background: `linear-gradient(135deg, ${player.color}20, ${player.color}40)`,
             }}
           >
-            {player.avatarUrl ? (
-              <img src={player.avatarUrl} alt={player.name} className="w-full h-full rounded-full object-cover" />
-            ) : (
+          {player.avatar_url ? (
+            <img src={player.avatar_url} alt={player.name} className="w-full h-full rounded-full object-cover" />
+          ) : (
               <span style={{ color: player.color }}>
                 {player.name.charAt(0).toUpperCase()}
               </span>

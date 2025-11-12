@@ -1,91 +1,95 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Player } from '@/types/player';
-import { nanoid } from 'nanoid';
-
-const STORAGE_KEY = 'qw:players';
-const LAST_PLAYER_KEY = 'qw:lastPlayerId';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const usePlayer = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    loadPlayers();
+    loadOrCreatePlayer();
   }, []);
 
-  const loadPlayers = () => {
+  const loadOrCreatePlayer = async () => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setPlayers(JSON.parse(stored));
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to load players:', error);
+
+      // Check if player profile exists
+      const { data: existingPlayer, error: fetchError } = await supabase
+        .from('players')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existingPlayer) {
+        setPlayer(existingPlayer as Player);
+      } else {
+        // Auto-create player profile from user metadata
+        const { data: newPlayer, error: createError } = await supabase
+          .from('players')
+          .insert({
+            user_id: user.id,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player',
+            color: '#8B7355',
+            avatar_url: user.user_metadata?.avatar_url,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setPlayer(newPlayer as Player);
+      }
+    } catch (error: any) {
+      console.error('Failed to load player:', error);
+      toast({
+        title: 'Error loading player profile',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const savePlayers = useCallback((updatedPlayers: Player[]) => {
+  const updatePlayer = useCallback(async (updates: Partial<Player>) => {
+    if (!player) return;
+
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPlayers));
-      setPlayers(updatedPlayers);
-    } catch (error) {
-      console.error('Failed to save players:', error);
+      const { error } = await supabase
+        .from('players')
+        .update(updates)
+        .eq('id', player.id);
+
+      if (error) throw error;
+
+      setPlayer({ ...player, ...updates });
+      toast({
+        title: 'Profile updated',
+        description: 'Your player profile has been updated',
+      });
+    } catch (error: any) {
+      console.error('Failed to update player:', error);
+      toast({
+        title: 'Error updating profile',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
-  }, []);
-
-  const createPlayer = useCallback((name: string, color: string, avatarUrl?: string): Player => {
-    const newPlayer: Player = {
-      id: nanoid(),
-      name,
-      color,
-      avatarUrl,
-      deviceIds: [navigator.userAgent],
-      createdAt: Date.now(),
-    };
-    const updated = [...players, newPlayer];
-    savePlayers(updated);
-    localStorage.setItem(LAST_PLAYER_KEY, newPlayer.id);
-    return newPlayer;
-  }, [players, savePlayers]);
-
-  const getPlayer = useCallback((playerId: string): Player | undefined => {
-    return players.find(p => p.id === playerId);
-  }, [players]);
-
-  const updatePlayer = useCallback((playerId: string, updates: Partial<Player>) => {
-    const updated = players.map(p => 
-      p.id === playerId ? { ...p, ...updates } : p
-    );
-    savePlayers(updated);
-  }, [players, savePlayers]);
-
-  const deletePlayer = useCallback((playerId: string) => {
-    const updated = players.filter(p => p.id !== playerId);
-    savePlayers(updated);
-    const lastPlayer = localStorage.getItem(LAST_PLAYER_KEY);
-    if (lastPlayer === playerId) {
-      localStorage.removeItem(LAST_PLAYER_KEY);
-    }
-  }, [players, savePlayers]);
-
-  const getLastPlayerId = useCallback(() => {
-    return localStorage.getItem(LAST_PLAYER_KEY);
-  }, []);
-
-  const setLastPlayerId = useCallback((playerId: string) => {
-    localStorage.setItem(LAST_PLAYER_KEY, playerId);
-  }, []);
+  }, [player, toast]);
 
   return {
-    players,
+    player,
     loading,
-    createPlayer,
-    getPlayer,
     updatePlayer,
-    deletePlayer,
-    getLastPlayerId,
-    setLastPlayerId,
+    refreshPlayer: loadOrCreatePlayer,
   };
 };

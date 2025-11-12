@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Scroll, Users, MapPin, Trophy, Eye, EyeOff, Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import QuestDialog from "@/components/quests/QuestDialog";
 
 interface Quest {
   id: string;
@@ -29,6 +30,8 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [questToEdit, setQuestToEdit] = useState<Quest | undefined>(undefined);
 
   useEffect(() => {
 
@@ -87,6 +90,15 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
     failed: quests.filter((q) => q.status === "failed"),
   };
 
+  const handleQuestClick = (quest: Quest) => {
+    if (onQuestSelect) {
+      onQuestSelect(quest);
+    } else {
+      setQuestToEdit(quest);
+      setDialogOpen(true);
+    }
+  };
+
   const QuestCard = ({ quest }: { quest: Quest }) => {
     const objectives = quest.objectives || [];
     const completedObjectives = objectives.filter((o: any) => o.complete).length;
@@ -95,7 +107,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
     return (
       <Card
         className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-        onClick={() => onQuestSelect?.(quest)}
+        onClick={() => handleQuestClick(quest)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
@@ -177,7 +189,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
         <p className="text-muted-foreground text-center max-w-md mb-6">
           Create your first quest to start building your campaign's narrative.
         </p>
-        <Button>
+        <Button onClick={() => setDialogOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Create Quest
         </Button>
@@ -194,7 +206,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             <TabsTrigger value="list">List View</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button>
+        <Button onClick={() => { setQuestToEdit(undefined); setDialogOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" />
           New Quest
         </Button>
@@ -264,7 +276,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             <Card
               key={quest.id}
               className="cursor-pointer hover:bg-accent/5 transition-colors border-brass/20"
-              onClick={() => onQuestSelect?.(quest)}
+              onClick={() => handleQuestClick(quest)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -297,6 +309,13 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
           ))}
         </div>
       )}
+
+      <QuestDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        campaignId={campaignId}
+        questToEdit={questToEdit}
+      />
     </div>
   );
 }

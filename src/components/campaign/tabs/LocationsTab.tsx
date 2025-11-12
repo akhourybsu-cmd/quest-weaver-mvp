@@ -19,6 +19,7 @@ import { MapPin, Plus, Search, Map, Users, Flag, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
+import LocationDialog from "@/components/locations/LocationDialog";
 
 interface LocationsTabProps {
   campaignId: string;
@@ -50,6 +51,8 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [locationToEdit, setLocationToEdit] = useState<Location | undefined>(undefined);
 
   useEffect(() => {
     fetchLocations();
@@ -127,7 +130,7 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
               className="pl-9 bg-background/50 border-brass/30"
             />
           </div>
-          <Button>
+          <Button onClick={() => { setLocationToEdit(undefined); setDialogOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             New Location
           </Button>
@@ -160,6 +163,10 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
                 <Card
                   key={location.id}
                   className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+                  onClick={() => {
+                    setLocationToEdit(location);
+                    setDialogOpen(true);
+                  }}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
@@ -226,6 +233,13 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LocationDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        campaignId={campaignId}
+        locationToEdit={locationToEdit}
+      />
     </>
   );
 }

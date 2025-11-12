@@ -43,13 +43,6 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [tagInput, setTagInput] = useState("");
   const [coordX, setCoordX] = useState("");
   const [coordY, setCoordY] = useState("");
-  const [terrain, setTerrain] = useState("");
-  const [population, setPopulation] = useState("");
-  const [government, setGovernment] = useState("");
-  const [climate, setClimate] = useState("");
-  const [resources, setResources] = useState("");
-  const [notableFeatures, setNotableFeatures] = useState("");
-  const [history, setHistory] = useState("");
   const [locations, setLocations] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [details, setDetails] = useState<Record<string, any>>({});
@@ -70,19 +63,25 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setDetails(locationDetails);
         setCoordX(locationDetails.coord_x?.toString() || "");
         setCoordY(locationDetails.coord_y?.toString() || "");
-        setTerrain(locationDetails.terrain || "");
-        setPopulation(locationDetails.population?.toString() || "");
-        setGovernment(locationDetails.government || "");
-        setClimate(locationDetails.climate || "");
-        setResources(locationDetails.resources || "");
-        setNotableFeatures(locationDetails.notable_features || "");
-        setHistory(locationDetails.history || "");
       } else if (parentLocationId) {
         // Pre-fill parent location when creating sub-location
         setParentLocation(parentLocationId);
       }
     }
   }, [open, locationToEdit, parentLocationId]);
+
+  // Auto-populate template when type changes (only for new locations)
+  useEffect(() => {
+    if (locationType && LOCATION_SCHEMAS[locationType as LocationType] && !isEditing) {
+      const schema = LOCATION_SCHEMAS[locationType as LocationType];
+      if (schema.template) {
+        setDetails(prevDetails => ({
+          ...schema.template,
+          ...prevDetails, // Preserve any manually entered values
+        }));
+      }
+    }
+  }, [locationType, isEditing]);
 
   const loadLocations = async () => {
     const { data } = await supabase
@@ -113,13 +112,6 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setTags([]);
     setCoordX("");
     setCoordY("");
-    setTerrain("");
-    setPopulation("");
-    setGovernment("");
-    setClimate("");
-    setResources("");
-    setNotableFeatures("");
-    setHistory("");
     setDetails({});
     setAutoAddVenues(false);
   };
@@ -130,18 +122,11 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       return;
     }
 
-    // Merge base fields with dynamic fields in details object
+    // Merge universal coordinates with type-specific dynamic fields
     const mergedDetails = {
       ...details,
       coord_x: coordX ? parseFloat(coordX) : null,
       coord_y: coordY ? parseFloat(coordY) : null,
-      terrain: terrain || null,
-      population: population ? parseInt(population) : null,
-      government: government || null,
-      climate: climate || null,
-      resources: resources || null,
-      notable_features: notableFeatures || null,
-      history: history || null,
     };
 
     const locationData = {
@@ -267,18 +252,99 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                       <SelectTrigger className="border-brass/30">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-96">
+                        {/* Settlements */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Settlements</div>
+                        <SelectItem value="Continent">Continent</SelectItem>
+                        <SelectItem value="Region">Region</SelectItem>
+                        <SelectItem value="Nation">Nation</SelectItem>
+                        <SelectItem value="Province">Province</SelectItem>
                         <SelectItem value="City">City</SelectItem>
                         <SelectItem value="Town">Town</SelectItem>
                         <SelectItem value="Village">Village</SelectItem>
+                        <SelectItem value="Hamlet">Hamlet</SelectItem>
+                        <SelectItem value="District">District</SelectItem>
+                        
+                        {/* Venues - Commerce */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Commerce</div>
+                        <SelectItem value="Inn">Inn</SelectItem>
+                        <SelectItem value="Tavern">Tavern</SelectItem>
+                        <SelectItem value="Blacksmith">Blacksmith</SelectItem>
+                        <SelectItem value="Armorer">Armorer</SelectItem>
+                        <SelectItem value="Fletcher">Fletcher</SelectItem>
+                        <SelectItem value="Alchemist">Alchemist</SelectItem>
+                        <SelectItem value="Apothecary">Apothecary</SelectItem>
+                        <SelectItem value="MagicShop">Magic Shop</SelectItem>
+                        <SelectItem value="GeneralStore">General Store</SelectItem>
+                        <SelectItem value="MarketStall">Market Stall</SelectItem>
+                        
+                        {/* Services */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Services</div>
+                        <SelectItem value="Library">Library</SelectItem>
+                        <SelectItem value="Scribe">Scribe</SelectItem>
+                        <SelectItem value="University">University</SelectItem>
+                        <SelectItem value="WizardTower">Wizard Tower</SelectItem>
+                        <SelectItem value="TempleShrine">Temple/Shrine</SelectItem>
+                        <SelectItem value="HealerClinic">Healer Clinic</SelectItem>
+                        <SelectItem value="Stable">Stable</SelectItem>
+                        <SelectItem value="Bank">Bank</SelectItem>
+                        
+                        {/* Guilds */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Guilds</div>
+                        <SelectItem value="AdventurersGuild">Adventurers Guild</SelectItem>
+                        <SelectItem value="ThievesGuild">Thieves Guild</SelectItem>
+                        <SelectItem value="MagesGuild">Mages Guild</SelectItem>
+                        <SelectItem value="MerchantsGuild">Merchants Guild</SelectItem>
+                        
+                        {/* Military */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Military</div>
+                        <SelectItem value="Guardhouse">Guardhouse</SelectItem>
+                        <SelectItem value="Barracks">Barracks</SelectItem>
+                        <SelectItem value="Garrison">Garrison</SelectItem>
+                        <SelectItem value="Gatehouse">Gatehouse</SelectItem>
+                        <SelectItem value="Prison">Prison</SelectItem>
+                        
+                        {/* Infrastructure */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Infrastructure</div>
+                        <SelectItem value="Dockyard">Dockyard</SelectItem>
+                        <SelectItem value="Warehouse">Warehouse</SelectItem>
+                        <SelectItem value="TeleportCircle">Teleport Circle</SelectItem>
+                        <SelectItem value="Portal">Portal</SelectItem>
+                        
+                        {/* Entertainment */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Entertainment</div>
+                        <SelectItem value="Theatre">Theatre</SelectItem>
+                        <SelectItem value="Arena">Arena</SelectItem>
+                        <SelectItem value="Bathhouse">Bathhouse</SelectItem>
+                        <SelectItem value="Brothel">Brothel</SelectItem>
+                        
+                        {/* Sites & Dungeons */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Sites & Dungeons</div>
                         <SelectItem value="Dungeon">Dungeon</SelectItem>
+                        <SelectItem value="Fortress">Fortress</SelectItem>
+                        <SelectItem value="Temple">Temple</SelectItem>
+                        <SelectItem value="Tower">Tower</SelectItem>
+                        <SelectItem value="Ruin">Ruin</SelectItem>
+                        <SelectItem value="Cave">Cave</SelectItem>
+                        <SelectItem value="Sewer">Sewer</SelectItem>
+                        <SelectItem value="Catacombs">Catacombs</SelectItem>
+                        <SelectItem value="Cemetery">Cemetery</SelectItem>
+                        
+                        {/* Geographic */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Geographic</div>
                         <SelectItem value="Wilderness">Wilderness</SelectItem>
-                        <SelectItem value="Mountain">Mountain</SelectItem>
                         <SelectItem value="Forest">Forest</SelectItem>
+                        <SelectItem value="Mountains">Mountains</SelectItem>
                         <SelectItem value="Desert">Desert</SelectItem>
-                        <SelectItem value="Coastal">Coastal</SelectItem>
-                        <SelectItem value="Underground">Underground</SelectItem>
-                        <SelectItem value="Planar">Planar</SelectItem>
+                        <SelectItem value="Swamp">Swamp</SelectItem>
+                        <SelectItem value="River">River</SelectItem>
+                        <SelectItem value="Coast">Coast</SelectItem>
+                        
+                        {/* Landmarks */}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Landmarks</div>
+                        <SelectItem value="Landmark">Landmark</SelectItem>
+                        <SelectItem value="Monument">Monument</SelectItem>
+                        
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -383,85 +449,29 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="terrain">Terrain</Label>
-                    <Input
-                      id="terrain"
-                      value={terrain}
-                      onChange={(e) => setTerrain(e.target.value)}
-                      placeholder="Coastal plains"
-                      className="border-brass/30"
+                {/* Type-Specific Dynamic Fields */}
+                {LOCATION_SCHEMAS[locationType as LocationType] && 
+                 LOCATION_SCHEMAS[locationType as LocationType].fields.length > 0 && (
+                  <div className="pt-4 border-t border-brass/30">
+                    <h4 className="text-sm font-semibold mb-4 text-foreground">
+                      {locationType}-Specific Information
+                    </h4>
+                    <DynamicLocationFields
+                      locationType={locationType as LocationType}
+                      details={details}
+                      onDetailsChange={setDetails}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="climate">Climate</Label>
-                    <Input
-                      id="climate"
-                      value={climate}
-                      onChange={(e) => setClimate(e.target.value)}
-                      placeholder="Temperate"
-                      className="border-brass/30"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="population">Population</Label>
-                    <Input
-                      id="population"
-                      type="number"
-                      value={population}
-                      onChange={(e) => setPopulation(e.target.value)}
-                      placeholder="50000"
-                      className="border-brass/30"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="government">Government</Label>
-                    <Input
-                      id="government"
-                      value={government}
-                      onChange={(e) => setGovernment(e.target.value)}
-                      placeholder="Merchant Council"
-                      className="border-brass/30"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="resources">Resources</Label>
-                  <Textarea
-                    id="resources"
-                    value={resources}
-                    onChange={(e) => setResources(e.target.value)}
-                    placeholder="Fish, timber, iron ore..."
-                    rows={3}
-                    className="border-brass/30"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notable-features">Notable Features</Label>
-                  <Textarea
-                    id="notable-features"
-                    value={notableFeatures}
-                    onChange={(e) => setNotableFeatures(e.target.value)}
-                    placeholder="The Grand Harbor, Castle Waterdeep..."
-                    rows={3}
-                    className="border-brass/30"
-                  />
-                </div>
+                )}
               </TabsContent>
 
               <TabsContent value="lore" className="space-y-4 px-1">
                 <div className="space-y-2">
-                  <Label htmlFor="history">History & Lore</Label>
+                  <Label htmlFor="lore">History & Lore</Label>
                   <Textarea
-                    id="history"
-                    value={history}
-                    onChange={(e) => setHistory(e.target.value)}
+                    id="lore"
+                    value={details.lore || ""}
+                    onChange={(e) => setDetails({ ...details, lore: e.target.value })}
                     placeholder="Founded centuries ago by..."
                     rows={12}
                     className="border-brass/30"

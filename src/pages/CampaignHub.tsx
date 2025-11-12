@@ -95,6 +95,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LiveSessionTab } from "@/components/campaign/tabs/LiveSessionTab";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Campaign {
   id: string;
@@ -676,25 +677,57 @@ const CampaignHub = () => {
                 <SessionsTab />
               </TabsContent>
               <TabsContent value="npcs" className="mt-0 h-full">
-                {activeCampaign && <NPCsTab campaignId={activeCampaign.id} />}
+                {activeCampaign ? (
+                  <NPCsTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="locations" className="mt-0 h-full">
                 <LocationsTab />
               </TabsContent>
               <TabsContent value="factions" className="mt-0 h-full">
-                {activeCampaign && <FactionsTab campaignId={activeCampaign.id} />}
+                {activeCampaign ? (
+                  <FactionsTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
                 <BestiaryTab />
               </TabsContent>
               <TabsContent value="items" className="mt-0 h-full">
-                {activeCampaign && <ItemVaultTab campaignId={activeCampaign.id} />}
+                {activeCampaign ? (
+                  <ItemVaultTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="timeline" className="mt-0 h-full">
                 <TimelineTab />
               </TabsContent>
               <TabsContent value="notes" className="mt-0 h-full">
-                {activeCampaign && <NotesTab campaignId={activeCampaign.id} />}
+                {activeCampaign && currentUserId ? (
+                  <NotesTab campaignId={activeCampaign.id} userId={currentUserId} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               {liveSession && activeCampaign && currentUserId && (
                 <TabsContent value="session" className="mt-0 h-full">

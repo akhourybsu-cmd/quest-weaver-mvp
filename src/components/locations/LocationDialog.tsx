@@ -31,7 +31,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [locationType, setLocationType] = useState("City");
-  const [parentLocationId, setParentLocationId] = useState("");
+  const [parentLocationId, setParentLocationId] = useState("none");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [coordX, setCoordX] = useState("");
@@ -53,7 +53,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
         setName(locationToEdit.name || "");
         setDescription(locationToEdit.description || "");
         setLocationType(locationToEdit.location_type || "City");
-        setParentLocationId(locationToEdit.parent_location_id || "");
+        setParentLocationId(locationToEdit.parent_location_id || "none");
         setTags(locationToEdit.tags || []);
         setCoordX(locationToEdit.coord_x?.toString() || "");
         setCoordY(locationToEdit.coord_y?.toString() || "");
@@ -93,7 +93,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
     setName("");
     setDescription("");
     setLocationType("City");
-    setParentLocationId("");
+    setParentLocationId("none");
     setTags([]);
     setCoordX("");
     setCoordY("");
@@ -117,7 +117,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       name,
       description: description || null,
       location_type: locationType,
-      parent_location_id: parentLocationId || null,
+      parent_location_id: parentLocationId !== "none" ? parentLocationId : null,
       tags,
       coord_x: coordX ? parseFloat(coordX) : null,
       coord_y: coordY ? parseFloat(coordY) : null,
@@ -252,7 +252,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
                       <SelectValue placeholder="None (Top Level)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (Top Level)</SelectItem>
+                      <SelectItem value="none">None (Top Level)</SelectItem>
                       {locations
                         .filter(loc => !isEditing || loc.id !== locationToEdit.id)
                         .map(loc => (

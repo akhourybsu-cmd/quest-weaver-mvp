@@ -94,6 +94,7 @@ import { InspectorPanel } from "@/components/campaign/InspectorPanel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LiveSessionTab } from "@/components/campaign/tabs/LiveSessionTab";
 
 interface Campaign {
   id: string;
@@ -116,10 +117,19 @@ const CampaignHub = () => {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
   const [liveSession, setLiveSession] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
   useEffect(() => {
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    
+    initUser();
     fetchCampaigns();
     
     // Check for live session when active campaign changes
@@ -160,7 +170,7 @@ const CampaignHub = () => {
       .eq('id', activeCampaign.id)
       .single();
 
-    if (data?.live_session_id && data.campaign_sessions) {
+    if (data?.live_session_id && data.campaign_sessions && ['live', 'paused'].includes(data.campaign_sessions.status)) {
       setLiveSession(data.campaign_sessions);
       setActiveTab('session');
     } else {
@@ -251,8 +261,9 @@ const CampaignHub = () => {
         description: 'Players can now join',
       });
       
-      // Navigate to SessionDM
-      navigate(`/campaigns/${activeCampaign.id}/dm`);
+      // Switch to session tab
+      setActiveTab('session');
+      await fetchLiveSession();
     } catch (error: any) {
       toast({
         title: 'Failed to start session',
@@ -264,9 +275,35 @@ const CampaignHub = () => {
     }
   };
 
-  const handleOpenDMScreen = () => {
-    if (activeCampaign) {
-      navigate(`/campaigns/${activeCampaign.id}/dm`);
+  const handleEndSession = async () => {
+    if (!activeCampaign || !liveSession) return;
+
+    try {
+      // Update session status
+      await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'ended',
+          ended_at: new Date().toISOString(),
+        })
+        .eq('id', liveSession.id);
+
+      // Clear campaign's live_session_id
+      await supabase.from('campaigns').update({ live_session_id: null }).eq('id', activeCampaign.id);
+
+      toast({
+        title: 'Session ended',
+        description: 'Players have been notified',
+      });
+      
+      setLiveSession(null);
+      setActiveTab('overview');
+    } catch (error: any) {
+      toast({
+        title: 'Error ending session',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -464,14 +501,22 @@ const CampaignHub = () => {
             </Breadcrumb>
 
             <div className="flex items-center gap-2">
-              <Button onClick={handleStartSession} size="sm">
-                <Play className="w-4 h-4 mr-2" />
-                Start Session
-              </Button>
-              <Button onClick={handleOpenDMScreen} variant="outline" size="sm">
-                <Shield className="w-4 h-4 mr-2" />
-                DM Screen
-              </Button>
+              {liveSession && (
+                <>
+                  <Badge variant="outline" className="border-red-500/50 text-red-500">
+                    🔴 Session Live
+                  </Badge>
+                  <Button onClick={handleEndSession} variant="destructive" size="sm">
+                    End Session
+                  </Button>
+                </>
+              )}
+              {!liveSession && (
+                <Button onClick={handleStartSession} size="sm" disabled={loading}>
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Session
+                </Button>
+              )}
               <Button onClick={handleInvitePlayers} variant="outline" size="sm">
                 <Users className="w-4 h-4 mr-2" />
                 Invite
@@ -609,6 +654,14 @@ const CampaignHub = () => {
                 >
                   Notes
                 </TabsTrigger>
+                {liveSession && (
+                  <TabsTrigger
+                    value="session"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 text-red-500 font-semibold"
+                  >
+                    🔴 Live Session
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -643,6 +696,15 @@ const CampaignHub = () => {
               <TabsContent value="notes" className="mt-0 h-full">
                 {activeCampaign && <NotesTab campaignId={activeCampaign.id} />}
               </TabsContent>
+              {liveSession && activeCampaign && currentUserId && (
+                <TabsContent value="session" className="mt-0 h-full">
+                  <LiveSessionTab
+                    campaignId={activeCampaign.id}
+                    sessionId={liveSession.id}
+                    currentUserId={currentUserId}
+                  />
+                </TabsContent>
+              )}
             </div>
           </Tabs>
         </div>

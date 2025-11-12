@@ -11,14 +11,20 @@ import QuestDialog from "@/components/quests/QuestDialog";
 interface Quest {
   id: string;
   title: string;
-  arc?: string | null;
+  description?: string;
+  questGiver?: string;
+  questType?: string;
   status: string;
-  objectives?: any[];
-  npcs?: string[];
+  difficulty?: string;
   locations?: string[];
-  rewards?: { xp?: number; gp?: number; items?: string[] };
-  visibility?: string;
-  [key: string]: any; // Allow additional properties from database
+  tags?: string[];
+  rewardXP?: number;
+  rewardGP?: number;
+  assignedTo?: string[];
+  factionId?: string;
+  dmNotes?: string;
+  steps?: any[];
+  [key: string]: any;
 }
 
 interface QuestsTabProps {
@@ -40,7 +46,30 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
       try {
         const { data, error } = await supabase
           .from('quests')
-          .select('*')
+          .select(`
+            id,
+            title,
+            description,
+            quest_giver,
+            quest_type,
+            status,
+            difficulty,
+            locations,
+            tags,
+            reward_xp,
+            reward_gp,
+            assigned_to,
+            faction_id,
+            dm_notes,
+            quest_steps (
+              id,
+              description,
+              objective_type,
+              progress_current,
+              progress_max,
+              step_order
+            )
+          `)
           .eq('campaign_id', campaignId)
           .order('created_at', { ascending: false });
 
@@ -50,13 +79,27 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
         const mappedQuests: Quest[] = (data || []).map((q: any) => ({
           id: q.id,
           title: q.title || 'Untitled Quest',
-          arc: q.arc,
-          status: q.status || 'hook',
-          objectives: q.objectives || [],
-          npcs: q.npcs || [],
+          description: q.description,
+          questGiver: q.quest_giver,
+          questType: q.quest_type || 'side_quest',
+          status: q.status || 'not_started',
+          difficulty: q.difficulty,
           locations: q.locations || [],
-          rewards: q.rewards || { xp: 0, gp: 0, items: [] },
-          visibility: q.visibility || 'dm',
+          tags: q.tags || [],
+          rewardXP: q.reward_xp || 0,
+          rewardGP: q.reward_gp || 0,
+          assignedTo: q.assigned_to || [],
+          factionId: q.faction_id,
+          dmNotes: q.dm_notes,
+          steps: (q.quest_steps || [])
+            .sort((a: any, b: any) => a.step_order - b.step_order)
+            .map((s: any) => ({
+              id: s.id,
+              description: s.description,
+              objectiveType: s.objective_type,
+              progressMax: s.progress_max,
+              progressCurrent: s.progress_current,
+            })),
         }));
 
         setQuests(mappedQuests);
@@ -84,9 +127,9 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
   }, [campaignId]);
 
   const questsByStatus = {
-    hook: quests.filter((q) => q.status === "hook"),
-    active: quests.filter((q) => q.status === "active"),
-    complete: quests.filter((q) => q.status === "complete"),
+    not_started: quests.filter((q) => q.status === "not_started"),
+    in_progress: quests.filter((q) => q.status === "in_progress"),
+    completed: quests.filter((q) => q.status === "completed"),
     failed: quests.filter((q) => q.status === "failed"),
   };
 
@@ -100,8 +143,8 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
   };
 
   const QuestCard = ({ quest }: { quest: Quest }) => {
-    const objectives = quest.objectives || [];
-    const completedObjectives = objectives.filter((o: any) => o.complete).length;
+    const objectives = quest.steps || [];
+    const completedObjectives = objectives.filter((o: any) => o.progressCurrent >= o.progressMax).length;
     const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
 
     return (
@@ -136,10 +179,10 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             </div>
           )}
 
-          {quest.npcs && quest.npcs.length > 0 && (
+          {quest.assignedTo && quest.assignedTo.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs">
               <Users className="w-3 h-3 text-brass" />
-              <span className="text-muted-foreground">{quest.npcs.length} NPCs</span>
+              <span className="text-muted-foreground">{quest.assignedTo.length} Assigned</span>
             </div>
           )}
 
@@ -151,20 +194,14 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
           )}
 
           <div className="flex flex-wrap gap-1">
-            {quest.rewards?.xp > 0 && (
+            {quest.rewardXP > 0 && (
               <Badge variant="outline" className="text-xs border-brass/30">
-                {quest.rewards.xp} XP
+                {quest.rewardXP} XP
               </Badge>
             )}
-            {quest.rewards?.gp > 0 && (
+            {quest.rewardGP > 0 && (
               <Badge variant="outline" className="text-xs border-brass/30">
-                {quest.rewards.gp} GP
-              </Badge>
-            )}
-            {quest.rewards?.items && quest.rewards.items.length > 0 && (
-              <Badge variant="outline" className="text-xs border-brass/30">
-                <Trophy className="w-3 h-3 mr-1" />
-                {quest.rewards.items.length}
+                {quest.rewardGP} GP
               </Badge>
             )}
           </div>
@@ -216,12 +253,12 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-brass">Hook</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.hook.length} quests</p>
+              <h3 className="font-cinzel font-semibold text-brass">Not Started</h3>
+              <p className="text-xs text-muted-foreground">{questsByStatus.not_started.length} quests</p>
             </div>
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-3">
-                {questsByStatus.hook.map((quest) => (
+                {questsByStatus.not_started.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
               </div>
@@ -230,12 +267,12 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
 
           <div>
             <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-arcanePurple">Active</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.active.length} quests</p>
+              <h3 className="font-cinzel font-semibold text-arcanePurple">In Progress</h3>
+              <p className="text-xs text-muted-foreground">{questsByStatus.in_progress.length} quests</p>
             </div>
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-3">
-                {questsByStatus.active.map((quest) => (
+                {questsByStatus.in_progress.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
               </div>
@@ -244,12 +281,12 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
 
           <div>
             <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-green-500">Complete</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.complete.length} quests</p>
+              <h3 className="font-cinzel font-semibold text-green-500">Completed</h3>
+              <p className="text-xs text-muted-foreground">{questsByStatus.completed.length} quests</p>
             </div>
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-3">
-                {questsByStatus.complete.map((quest) => (
+                {questsByStatus.completed.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
               </div>
@@ -290,17 +327,17 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
                   <div className="flex items-center gap-3">
                     <Badge
                       variant={
-                        quest.status === "active"
+                        quest.status === "in_progress"
                           ? "default"
-                          : quest.status === "complete"
+                          : quest.status === "completed"
                           ? "outline"
                           : "secondary"
                       }
                     >
-                      {quest.status}
+                      {quest.status.replace('_', ' ')}
                     </Badge>
                     <div className="text-sm text-muted-foreground">
-                      {quest.objectives?.filter((o: any) => o.complete).length || 0}/{quest.objectives?.length || 0}
+                      {quest.steps?.filter((s: any) => s.progressCurrent >= s.progressMax).length || 0}/{quest.steps?.length || 0}
                     </div>
                   </div>
                 </div>

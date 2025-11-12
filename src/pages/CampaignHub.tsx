@@ -671,7 +671,15 @@ const CampaignHub = () => {
                 <OverviewTab onQuickAdd={handleQuickAdd} />
               </TabsContent>
               <TabsContent value="quests" className="mt-0 h-full">
-                <QuestsTab onQuestSelect={handleQuestSelect} />
+                {activeCampaign ? (
+                  <QuestsTab campaignId={activeCampaign.id} onQuestSelect={handleQuestSelect} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 h-full">
                 <SessionsTab />

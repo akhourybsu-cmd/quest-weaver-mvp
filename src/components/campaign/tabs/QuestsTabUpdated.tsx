@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Scroll, Users, MapPin, Trophy, Eye, EyeOff, Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTenant } from "@/contexts/TenantContext";
 
 interface Quest {
   id: string;
@@ -22,17 +21,16 @@ interface Quest {
 }
 
 interface QuestsTabProps {
-  onQuestSelect: (quest: Quest) => void;
+  campaignId: string;
+  onQuestSelect?: (quest: Quest) => void;
 }
 
-export function QuestsTab({ onQuestSelect }: QuestsTabProps) {
-  const { campaignId } = useTenant();
+export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!campaignId) return;
 
     const fetchQuests = async () => {
       setLoading(true);
@@ -97,7 +95,7 @@ export function QuestsTab({ onQuestSelect }: QuestsTabProps) {
     return (
       <Card
         className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-        onClick={() => onQuestSelect(quest)}
+        onClick={() => onQuestSelect?.(quest)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
@@ -266,7 +264,7 @@ export function QuestsTab({ onQuestSelect }: QuestsTabProps) {
             <Card
               key={quest.id}
               className="cursor-pointer hover:bg-accent/5 transition-colors border-brass/20"
-              onClick={() => onQuestSelect(quest)}
+              onClick={() => onQuestSelect?.(quest)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">

@@ -10,11 +10,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy, Send } from "lucide-react";
+import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy, Send, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EnhancedItemEditor from "./EnhancedItemEditor";
 import ItemAssignDialog from "./ItemAssignDialog";
 import ItemDeleteDialog from "./ItemDeleteDialog";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface DMItemVaultProps {
@@ -43,6 +44,8 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   const [assigningItem, setAssigningItem] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingItem, setDeletingItem] = useState<{ id: string; name: string } | null>(null);
+  const [addToSessionDialogOpen, setAddToSessionDialogOpen] = useState(false);
+  const [addingItem, setAddingItem] = useState<any>(null);
 
   useEffect(() => {
     loadItems();
@@ -228,6 +231,10 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setAddingItem(item); setAddToSessionDialogOpen(true); }}>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Add to Session Pack
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setAssigningItem(item); setAssignDialogOpen(true); }}>
                         <Send className="w-4 h-4 mr-2" />
                         Assign to Player/Party
@@ -335,6 +342,17 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
         itemName={deletingItem?.name || ""}
         onConfirm={handleDeleteConfirm}
       />
+
+      {addingItem && (
+        <AddItemToSessionDialog
+          open={addToSessionDialogOpen}
+          onOpenChange={setAddToSessionDialogOpen}
+          campaignId={campaignId}
+          itemType="item"
+          itemId={addingItem.id}
+          itemName={addingItem.name}
+        />
+      )}
     </div>
   );
 };

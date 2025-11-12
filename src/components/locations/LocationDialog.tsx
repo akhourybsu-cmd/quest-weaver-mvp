@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [details, setDetails] = useState<Record<string, any>>({});
   const [autoAddVenues, setAutoAddVenues] = useState(false);
+  const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -484,13 +486,23 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
           <DialogFooter className="flex items-center justify-between">
             <div>
               {isEditing && (
-                <Button
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddToSessionDialog(true)}
+                    className="mr-2"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Add to Session Pack
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                </>
               )}
             </div>
             <div className="flex gap-2">
@@ -510,17 +522,28 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Location</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{name}"? This action cannot be undone.
+              Are you sure you want to delete this location? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {locationToEdit && (
+        <AddItemToSessionDialog
+          open={showAddToSessionDialog}
+          onOpenChange={setShowAddToSessionDialog}
+          campaignId={campaignId}
+          itemType="location"
+          itemId={locationToEdit.id}
+          itemName={locationToEdit.name}
+        />
+      )}
     </>
   );
 };

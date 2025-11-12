@@ -18,21 +18,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 
 interface HandoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
+  handoutToEdit?: any;
 }
 
-const HandoutDialog = ({ open, onOpenChange, campaignId }: HandoutDialogProps) => {
+const HandoutDialog = ({ open, onOpenChange, campaignId, handoutToEdit }: HandoutDialogProps) => {
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState("text");
   const [contentText, setContentText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const { toast } = useToast();
 
   const handleAdd = async () => {
@@ -150,18 +153,37 @@ const HandoutDialog = ({ open, onOpenChange, campaignId }: HandoutDialogProps) =
             </div>
           )}
 
-          <Button onClick={handleAdd} disabled={uploading} className="w-full">
-            {uploading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Handout"
+          <div className="flex gap-2">
+            {handoutToEdit && (
+              <Button variant="outline" onClick={() => setShowAddToSessionDialog(true)} className="flex-1">
+                <Calendar className="w-4 h-4 mr-2" />
+                Add to Session Pack
+              </Button>
             )}
-          </Button>
+            <Button onClick={handleAdd} disabled={uploading} className="flex-1">
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Handout"
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
+
+      {handoutToEdit && (
+        <AddItemToSessionDialog
+          open={showAddToSessionDialog}
+          onOpenChange={setShowAddToSessionDialog}
+          campaignId={campaignId}
+          itemType="handout"
+          itemId={handoutToEdit.id}
+          itemName={handoutToEdit.title}
+        />
+      )}
     </Dialog>
   );
 };

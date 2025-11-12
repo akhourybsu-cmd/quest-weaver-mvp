@@ -512,7 +512,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
 
         {/* Handouts Tab */}
         <TabsContent value="handouts">
-          <HandoutViewer campaignId={campaignId} isDM={true} />
+          <LiveSessionPack campaignId={campaignId} sessionId={sessionId} />
         </TabsContent>
       </Tabs>
     </div>

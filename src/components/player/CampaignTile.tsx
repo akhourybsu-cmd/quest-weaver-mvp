@@ -59,9 +59,9 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
     await updateLastJoined(link.id);
     
     if (status?.hasLiveSession && status.sessionId) {
-      navigate(`/session-player?campaign=${link.join_code}`);
+      navigate(`/session/player?campaign=${link.join_code}`);
     } else {
-      navigate(`/player/${playerId}/waiting?campaign=${link.campaign_id}`);
+      navigate(`/player/waiting?campaign=${link.join_code}`);
     }
   };
 

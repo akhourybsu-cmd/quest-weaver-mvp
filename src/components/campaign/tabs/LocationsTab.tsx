@@ -58,6 +58,7 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
   const [locationToEdit, setLocationToEdit] = useState<Location | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "tree">("grid");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [parentLocationId, setParentLocationId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLocations();
@@ -143,6 +144,20 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
     setSelectedLocation(location);
   };
 
+  const handleAddSubLocation = (parentId: string) => {
+    setParentLocationId(parentId);
+    setLocationToEdit(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setLocationToEdit(undefined);
+      setParentLocationId(null);
+    }
+  };
+
   return (
     <>
       <div className="space-y-4">
@@ -165,7 +180,7 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
             {viewMode === "grid" ? <List className="w-4 h-4 mr-2" /> : <Grid3x3 className="w-4 h-4 mr-2" />}
             {viewMode === "grid" ? "Tree" : "Grid"}
           </Button>
-          <Button onClick={() => { setLocationToEdit(undefined); setDialogOpen(true); }}>
+          <Button onClick={() => { setLocationToEdit(undefined); setParentLocationId(null); setDialogOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             New Location
           </Button>
@@ -238,18 +253,32 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
                                 </Badge>
                               )}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLocationToDelete(location);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddSubLocation(location.id);
+                                }}
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Sub
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLocationToDelete(location);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                           {location.location_type && (
                             <CardDescription className="text-xs">{location.location_type}</CardDescription>
@@ -328,18 +357,32 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
                             </Badge>
                           )}
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLocationToDelete(location);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddSubLocation(location.id);
+                            }}
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Sub
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocationToDelete(location);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       {location.location_type && (
                         <CardDescription className="text-xs">{location.location_type}</CardDescription>
@@ -391,9 +434,10 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
 
       <LocationDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogClose}
         campaignId={campaignId}
         locationToEdit={locationToEdit}
+        parentLocationId={parentLocationId}
       />
     </>
   );

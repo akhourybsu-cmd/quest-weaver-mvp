@@ -30,14 +30,15 @@ interface LocationDialogProps {
   onOpenChange: (open: boolean) => void;
   campaignId: string;
   locationToEdit?: any;
+  parentLocationId?: string | null;
 }
 
-const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: LocationDialogProps) => {
+const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parentLocationId }: LocationDialogProps) => {
   const isEditing = !!locationToEdit;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [locationType, setLocationType] = useState("City");
-  const [parentLocationId, setParentLocationId] = useState("none");
+  const [parentLocation, setParentLocation] = useState("none");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [coordX, setCoordX] = useState("");
@@ -61,7 +62,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
         setName(locationToEdit.name || "");
         setDescription(locationToEdit.description || "");
         setLocationType(locationToEdit.location_type || "City");
-        setParentLocationId(locationToEdit.parent_location_id || "none");
+        setParentLocation(locationToEdit.parent_location_id || "none");
         setTags(locationToEdit.tags || []);
         
         // Load from details object if it exists
@@ -76,9 +77,12 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
         setResources(locationDetails.resources || "");
         setNotableFeatures(locationDetails.notable_features || "");
         setHistory(locationDetails.history || "");
+      } else if (parentLocationId) {
+        // Pre-fill parent location when creating sub-location
+        setParentLocation(parentLocationId);
       }
     }
-  }, [open, locationToEdit]);
+  }, [open, locationToEdit, parentLocationId]);
 
   const loadLocations = async () => {
     const { data } = await supabase
@@ -105,7 +109,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
     setName("");
     setDescription("");
     setLocationType("City");
-    setParentLocationId("none");
+    setParentLocation("none");
     setTags([]);
     setCoordX("");
     setCoordY("");
@@ -116,6 +120,8 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
     setResources("");
     setNotableFeatures("");
     setHistory("");
+    setDetails({});
+    setAutoAddVenues(false);
   };
 
   const handleSubmit = async () => {
@@ -143,7 +149,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       name,
       description: description || null,
       location_type: locationType,
-      parent_location_id: parentLocationId !== "none" ? parentLocationId : null,
+      parent_location_id: parentLocation !== "none" ? parentLocation : null,
       tags,
       details: mergedDetails,
     };
@@ -293,7 +299,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
 
                 <div className="space-y-2">
                   <Label htmlFor="parent-location">Parent Location</Label>
-                  <Select value={parentLocationId} onValueChange={setParentLocationId}>
+                  <Select value={parentLocation} onValueChange={setParentLocation}>
                     <SelectTrigger className="border-brass/30">
                       <SelectValue placeholder="None (Top Level)" />
                     </SelectTrigger>

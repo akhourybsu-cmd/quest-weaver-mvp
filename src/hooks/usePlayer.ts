@@ -22,16 +22,16 @@ export const usePlayer = () => {
       }
 
       // Check if player profile exists
-      const { data: existingPlayer, error: fetchError } = await supabase
+      const { data: existingPlayers, error: fetchError } = await supabase
         .from('players')
         .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('user_id', user.id);
 
       if (fetchError) throw fetchError;
 
-      if (existingPlayer) {
-        setPlayer(existingPlayer as Player);
+      // Handle multiple players - take the first one
+      if (existingPlayers && existingPlayers.length > 0) {
+        setPlayer(existingPlayers[0] as Player);
       } else {
         // Auto-create player profile from user metadata
         const { data: newPlayer, error: createError } = await supabase
@@ -45,8 +45,23 @@ export const usePlayer = () => {
           .select()
           .single();
 
-        if (createError) throw createError;
-        setPlayer(newPlayer as Player);
+        if (createError) {
+          // If insert fails due to unique constraint, try fetching again
+          const { data: retryPlayer } = await supabase
+            .from('players')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single();
+          
+          if (retryPlayer) {
+            setPlayer(retryPlayer as Player);
+          } else {
+            throw createError;
+          }
+        } else {
+          setPlayer(newPlayer as Player);
+        }
       }
     } catch (error: any) {
       console.error('Failed to load player:', error);

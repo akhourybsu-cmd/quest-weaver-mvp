@@ -1926,6 +1926,8 @@ export type Database = {
           campaign_id: string | null
           created_at: string | null
           current_round: number | null
+          description: string | null
+          difficulty: string | null
           id: string
           is_active: boolean | null
           name: string | null
@@ -1936,6 +1938,8 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string | null
           current_round?: number | null
+          description?: string | null
+          difficulty?: string | null
           id?: string
           is_active?: boolean | null
           name?: string | null
@@ -1946,6 +1950,8 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string | null
           current_round?: number | null
+          description?: string | null
+          difficulty?: string | null
           id?: string
           is_active?: boolean | null
           name?: string | null

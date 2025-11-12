@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Swords, Play, Calendar } from "lucide-react";
+import { Plus, Swords, Play, Calendar, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { EncounterDialog } from "@/components/encounters/EncounterDialog";
 
 interface EncountersTabProps {
   campaignId: string;
@@ -28,6 +29,8 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "prepared" | "active" | "completed">("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -99,28 +102,14 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
     }
   };
 
-  const handleCreateEncounter = async () => {
-    try {
-      const { data: newEncounter, error } = await supabase
-        .from("encounters")
-        .insert({
-          campaign_id: campaignId,
-          name: "New Encounter",
-          description: "",
-          difficulty: "medium",
-          is_active: false,
-        })
-        .select()
-        .single();
+  const handleCreateEncounter = () => {
+    setSelectedEncounterId(null);
+    setDialogOpen(true);
+  };
 
-      if (error) throw error;
-
-      toast.success("Encounter created");
-      fetchEncounters();
-    } catch (error: any) {
-      console.error("Error creating encounter:", error);
-      toast.error("Failed to create encounter");
-    }
+  const handleEditEncounter = (encounterId: string) => {
+    setSelectedEncounterId(encounterId);
+    setDialogOpen(true);
   };
 
   const filteredEncounters = encounters.filter((enc) => {
@@ -212,7 +201,11 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
           </Card>
         ) : (
           filteredEncounters.map((encounter) => (
-            <Card key={encounter.id}>
+            <Card 
+              key={encounter.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleEditEncounter(encounter.id)}
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -230,7 +223,7 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
                       {encounter.description || "No description"}
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {liveSessionId && !encounter.is_active && (
                       <Button size="sm" variant="outline">
                         <Play className="w-4 h-4 mr-2" />
@@ -240,9 +233,9 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => navigate(`/session-dm?campaign=${campaignId}`)}
+                      onClick={() => handleEditEncounter(encounter.id)}
                     >
-                      Edit
+                      <Pencil className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -264,6 +257,14 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
           ))
         )}
       </div>
+
+      <EncounterDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        campaignId={campaignId}
+        encounterId={selectedEncounterId}
+        onSuccess={fetchEncounters}
+      />
     </div>
   );
 }

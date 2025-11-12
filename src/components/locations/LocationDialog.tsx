@@ -49,6 +49,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [details, setDetails] = useState<Record<string, any>>({});
   const [autoAddVenues, setAutoAddVenues] = useState(false);
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
+  const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -65,6 +66,9 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setDetails(locationDetails);
         setCoordX(locationDetails.coord_x?.toString() || "");
         setCoordY(locationDetails.coord_y?.toString() || "");
+        
+        // Load related quests
+        loadRelatedQuests(locationToEdit.id);
       } else if (parentLocationId) {
         // Pre-fill parent location when creating sub-location
         setParentLocation(parentLocationId);
@@ -93,6 +97,15 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       .order("name");
     
     if (data) setLocations(data);
+  };
+
+  const loadRelatedQuests = async (locationId: string) => {
+    const { data } = await supabase
+      .from("quests")
+      .select("id, title, status")
+      .eq("location_id", locationId);
+    
+    if (data) setRelatedQuests(data);
   };
 
   const addTag = () => {
@@ -479,6 +492,22 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                     className="border-brass/30"
                   />
                 </div>
+                
+                {isEditing && relatedQuests.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Related Quests</Label>
+                    <div className="border border-brass/30 rounded-md p-3 space-y-2">
+                      {relatedQuests.map((quest) => (
+                        <div key={quest.id} className="flex items-center justify-between text-sm">
+                          <span>{quest.title}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {quest.status?.replace('_', ' ') || 'active'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </ScrollArea>
           </Tabs>

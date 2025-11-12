@@ -38,6 +38,8 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [giver, setGiver] = useState("");
+  const [questGiverId, setQuestGiverId] = useState<string>("none");
+  const [primaryLocationId, setPrimaryLocationId] = useState<string>("none");
   const [questType, setQuestType] = useState("side_quest");
   const [questStatus, setQuestStatus] = useState("not_started");
   const [difficulty, setDifficulty] = useState<string>("none");
@@ -53,6 +55,8 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [factions, setFactions] = useState<any[]>([]);
   const [selectedFaction, setSelectedFaction] = useState<string>("none");
+  const [npcs, setNpcs] = useState<any[]>([]);
+  const [locationsList, setLocationsList] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const { toast } = useToast();
@@ -64,7 +68,9 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         // Populate form with existing quest data
         setTitle(questToEdit.title || "");
         setDescription(questToEdit.description || "");
-        setGiver(questToEdit.questGiver || "");
+        setGiver(questToEdit.legacyQuestGiver || questToEdit.questGiver || "");
+        setQuestGiverId(questToEdit.questGiverId || "none");
+        setPrimaryLocationId(questToEdit.locationId || "none");
         setQuestType(questToEdit.questType || "side_quest");
         setQuestStatus(questToEdit.status || "not_started");
         setDifficulty(questToEdit.difficulty || "none");
@@ -96,8 +102,22 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
       .select("id, name")
       .eq("campaign_id", campaignId);
     
+    const { data: npcData } = await supabase
+      .from("npcs")
+      .select("id, name")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    
+    const { data: locData } = await supabase
+      .from("locations")
+      .select("id, name, location_type")
+      .eq("campaign_id", campaignId)
+      .order("name");
+    
     if (chars) setCharacters(chars);
     if (facts) setFactions(facts);
+    if (npcData) setNpcs(npcData);
+    if (locData) setLocationsList(locData);
   };
 
   const handleAddStep = () => {
@@ -159,7 +179,9 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         .update({
           title,
           description,
-          quest_giver: giver,
+          legacy_quest_giver: giver || null,
+          quest_giver_id: questGiverId !== "none" ? questGiverId : null,
+          location_id: primaryLocationId !== "none" ? primaryLocationId : null,
           quest_type: questType,
           status: questStatus,
           difficulty: difficulty !== "none" ? difficulty : null,
@@ -210,7 +232,9 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           campaign_id: campaignId,
           title,
           description,
-          quest_giver: giver,
+          legacy_quest_giver: giver || null,
+          quest_giver_id: questGiverId !== "none" ? questGiverId : null,
+          location_id: primaryLocationId !== "none" ? primaryLocationId : null,
           quest_type: questType,
           difficulty: difficulty !== "none" ? difficulty : null,
           locations,
@@ -258,6 +282,8 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
     setTitle("");
     setDescription("");
     setGiver("");
+    setQuestGiverId("none");
+    setPrimaryLocationId("none");
     setQuestType("side_quest");
     setQuestStatus("not_started");
     setDifficulty("none");
@@ -295,6 +321,8 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
       setTitle("");
       setDescription("");
       setGiver("");
+      setQuestGiverId("none");
+      setPrimaryLocationId("none");
       setQuestType("side_quest");
       setQuestStatus("not_started");
       setDifficulty("none");
@@ -393,13 +421,28 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="giver">Quest Giver</Label>
-                  <Input
-                    id="giver"
-                    value={giver}
-                    onChange={(e) => setGiver(e.target.value)}
-                    placeholder="Lord Harrington"
-                  />
+                  <Label htmlFor="quest-giver">Quest Giver</Label>
+                  <Select value={questGiverId} onValueChange={setQuestGiverId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select NPC..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {npcs.map(npc => (
+                        <SelectItem key={npc.id} value={npc.id}>
+                          {npc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {questGiverId === "none" && (
+                    <Input
+                      value={giver}
+                      onChange={(e) => setGiver(e.target.value)}
+                      placeholder="Or enter custom name..."
+                      className="mt-2"
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="difficulty">Difficulty</Label>
@@ -416,6 +459,24 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="primary-location">Primary Location</Label>
+                <Select value={primaryLocationId} onValueChange={setPrimaryLocationId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {locationsList.map(loc => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                        {loc.location_type && ` (${loc.location_type.replace(/_/g, ' ')})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

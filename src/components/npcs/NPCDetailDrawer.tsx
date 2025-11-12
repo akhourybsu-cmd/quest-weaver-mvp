@@ -129,18 +129,29 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadRelatedQuests = async () => {
+    // Find quests where this NPC is the quest giver
+    const { data: givenQuests } = await supabase
+      .from("quests")
+      .select("id, title, status")
+      .eq("quest_giver_id", npc.id);
+
     // Find quests that have steps linked to this NPC
-    const { data } = await supabase
+    const { data: stepQuests } = await supabase
       .from("quest_steps")
       .select("quest_id, quests(id, title, status)")
       .eq("npc_id", npc.id);
 
-    if (data) {
-      const uniqueQuests = Array.from(
-        new Map(data.map(item => [item.quests?.id, item.quests])).values()
-      ).filter(Boolean);
-      setRelatedQuests(uniqueQuests);
-    }
+    // Combine and deduplicate
+    const allQuests = [
+      ...(givenQuests || []),
+      ...((stepQuests || []).map(sq => sq.quests).filter(Boolean))
+    ];
+    
+    const uniqueQuests = Array.from(
+      new Map(allQuests.map(item => [item?.id, item])).values()
+    ).filter(Boolean);
+    
+    setRelatedQuests(uniqueQuests);
   };
 
   const loadLocation = async () => {

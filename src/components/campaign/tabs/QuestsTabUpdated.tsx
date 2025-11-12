@@ -12,7 +12,9 @@ interface Quest {
   id: string;
   title: string;
   description?: string;
-  questGiver?: string;
+  legacyQuestGiver?: string;
+  questGiverId?: string;
+  locationId?: string;
   questType?: string;
   status: string;
   difficulty?: string;
@@ -24,6 +26,8 @@ interface Quest {
   factionId?: string;
   dmNotes?: string;
   steps?: any[];
+  npc?: { id: string; name: string; };
+  location?: { id: string; name: string; location_type?: string; };
   [key: string]: any;
 }
 
@@ -50,7 +54,9 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             id,
             title,
             description,
-            quest_giver,
+            legacy_quest_giver,
+            quest_giver_id,
+            location_id,
             quest_type,
             status,
             difficulty,
@@ -68,7 +74,9 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
               progress_current,
               progress_max,
               step_order
-            )
+            ),
+            npc:quest_giver_id(id, name),
+            location:location_id(id, name, location_type)
           `)
           .eq('campaign_id', campaignId)
           .order('created_at', { ascending: false });
@@ -80,7 +88,9 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
           id: q.id,
           title: q.title || 'Untitled Quest',
           description: q.description,
-          questGiver: q.quest_giver,
+          legacyQuestGiver: q.legacy_quest_giver,
+          questGiverId: q.quest_giver_id,
+          locationId: q.location_id,
           questType: q.quest_type || 'side_quest',
           status: q.status || 'not_started',
           difficulty: q.difficulty,
@@ -91,6 +101,8 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
           assignedTo: q.assigned_to || [],
           factionId: q.faction_id,
           dmNotes: q.dm_notes,
+          npc: q.npc,
+          location: q.location,
           steps: (q.quest_steps || [])
             .sort((a: any, b: any) => a.step_order - b.step_order)
             .map((s: any) => ({
@@ -179,17 +191,17 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
             </div>
           )}
 
-          {quest.assignedTo && quest.assignedTo.length > 0 && (
+          {(quest.npc || quest.legacyQuestGiver) && (
             <div className="flex items-center gap-1.5 text-xs">
               <Users className="w-3 h-3 text-brass" />
-              <span className="text-muted-foreground">{quest.assignedTo.length} Assigned</span>
+              <span className="text-muted-foreground">{quest.npc?.name || quest.legacyQuestGiver}</span>
             </div>
           )}
 
-          {quest.locations && quest.locations.length > 0 && (
+          {quest.location && (
             <div className="flex items-center gap-1.5 text-xs">
               <MapPin className="w-3 h-3 text-brass" />
-              <span className="text-muted-foreground">{quest.locations.length} Locations</span>
+              <span className="text-muted-foreground">{quest.location.name}</span>
             </div>
           )}
 

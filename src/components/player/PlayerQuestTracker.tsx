@@ -11,7 +11,9 @@ interface Quest {
   title: string;
   description: string;
   is_completed: boolean;
-  quest_giver: string;
+  legacy_quest_giver: string;
+  quest_giver_id?: string;
+  location_id?: string;
   status: string;
   difficulty?: string;
   locations: string[];
@@ -19,6 +21,8 @@ interface Quest {
   reward_xp: number;
   reward_gp: number;
   steps: any[];
+  npc?: { id: string; name: string; };
+  location?: { id: string; name: string; };
 }
 
 interface PlayerQuestTrackerProps {
@@ -55,7 +59,9 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
       .from("quests")
       .select(`
         *,
-        quest_steps(id, description, is_completed, progress_current, progress_max, step_order)
+        quest_steps(id, description, is_completed, progress_current, progress_max, step_order),
+        npc:quest_giver_id(id, name),
+        location:location_id(id, name)
       `)
       .eq("campaign_id", campaignId)
       .order("status", { ascending: false })
@@ -108,9 +114,9 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                             <Badge variant="outline" className="text-xs">{quest.difficulty}</Badge>
                           )}
                         </div>
-                        {quest.quest_giver && (
+                        {(quest.npc?.name || quest.legacy_quest_giver) && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <User className="w-3 h-3" />{quest.quest_giver}
+                            <User className="w-3 h-3" />{quest.npc?.name || quest.legacy_quest_giver}
                           </p>
                         )}
                       </div>

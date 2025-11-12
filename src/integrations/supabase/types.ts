@@ -3662,6 +3662,7 @@ export type Database = {
           id: string
           is_completed: boolean | null
           location: string | null
+          location_id: string | null
           notes: string | null
           npc_id: string | null
           objective_type: string | null
@@ -3678,6 +3679,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           location?: string | null
+          location_id?: string | null
           notes?: string | null
           npc_id?: string | null
           objective_type?: string | null
@@ -3694,6 +3696,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           location?: string | null
+          location_id?: string | null
           notes?: string | null
           npc_id?: string | null
           objective_type?: string | null
@@ -3709,6 +3712,13 @@ export type Database = {
             columns: ["encounter_id"]
             isOneToOne: false
             referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
           {
@@ -3745,9 +3755,11 @@ export type Database = {
           faction_id: string | null
           id: string
           is_completed: boolean | null
+          legacy_quest_giver: string | null
+          location_id: string | null
           locations: string[] | null
           quest_chain_parent: string | null
-          quest_giver: string | null
+          quest_giver_id: string | null
           quest_type: string | null
           reward_gp: number | null
           reward_items: Json | null
@@ -3768,9 +3780,11 @@ export type Database = {
           faction_id?: string | null
           id?: string
           is_completed?: boolean | null
+          legacy_quest_giver?: string | null
+          location_id?: string | null
           locations?: string[] | null
           quest_chain_parent?: string | null
-          quest_giver?: string | null
+          quest_giver_id?: string | null
           quest_type?: string | null
           reward_gp?: number | null
           reward_items?: Json | null
@@ -3791,9 +3805,11 @@ export type Database = {
           faction_id?: string | null
           id?: string
           is_completed?: boolean | null
+          legacy_quest_giver?: string | null
+          location_id?: string | null
           locations?: string[] | null
           quest_chain_parent?: string | null
-          quest_giver?: string | null
+          quest_giver_id?: string | null
           quest_type?: string | null
           reward_gp?: number | null
           reward_items?: Json | null
@@ -3820,10 +3836,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quests_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "quests_quest_chain_parent_fkey"
             columns: ["quest_chain_parent"]
             isOneToOne: false
             referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_quest_giver_id_fkey"
+            columns: ["quest_giver_id"]
+            isOneToOne: false
+            referencedRelation: "npcs"
             referencedColumns: ["id"]
           },
         ]

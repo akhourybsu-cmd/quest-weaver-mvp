@@ -213,6 +213,54 @@ export type Database = {
           },
         ]
       }
+      campaign_sessions: {
+        Row: {
+          active_encounter_id: string | null
+          campaign_id: string
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          active_encounter_id?: string | null
+          campaign_id: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          active_encounter_id?: string | null
+          campaign_id?: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_sessions_active_encounter_id_fkey"
+            columns: ["active_encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_weather: {
         Row: {
           campaign_id: string
@@ -260,6 +308,7 @@ export type Database = {
           created_at: string | null
           dm_user_id: string
           id: string
+          live_session_id: string | null
           name: string
           updated_at: string | null
         }
@@ -268,6 +317,7 @@ export type Database = {
           created_at?: string | null
           dm_user_id: string
           id?: string
+          live_session_id?: string | null
           name: string
           updated_at?: string | null
         }
@@ -276,10 +326,19 @@ export type Database = {
           created_at?: string | null
           dm_user_id?: string
           id?: string
+          live_session_id?: string | null
           name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_live_session_id_fkey"
+            columns: ["live_session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       character_abilities: {
         Row: {

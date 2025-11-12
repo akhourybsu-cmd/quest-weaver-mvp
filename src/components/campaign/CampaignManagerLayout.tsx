@@ -1,5 +1,5 @@
-import { useState, ReactNode } from "react";
-import { Search, Plus, Archive, Command as CommandIcon } from "lucide-react";
+import { useState, ReactNode, useEffect } from "react";
+import { Search, Plus, Archive, Command as CommandIcon, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +13,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface Campaign {
   id: string;
@@ -47,8 +57,28 @@ export function CampaignManagerLayout({
   inspectorOpen = false,
   onInspectorClose,
 }: CampaignManagerLayoutProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [leftRailCollapsed, setLeftRailCollapsed] = useState(false);
+  const [leftRailCollapsed, setLeftRailCollapsed] = useState(() => {
+    const stored = localStorage.getItem('qw:sidebarCollapsed');
+    return stored ? JSON.parse(stored) : false;
+  });
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data?.user?.email || null);
+    });
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('qw:sidebarCollapsed', JSON.stringify(leftRailCollapsed));
+  }, [leftRailCollapsed]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   const filteredCampaigns = campaigns.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -66,24 +96,34 @@ export function CampaignManagerLayout({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-brass/20">
-            {!leftRailCollapsed && (
-              <>
-                <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              {!leftRailCollapsed && (
+                <div className="flex items-center gap-2">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-arcanePurple to-dragonRed">
                     <CommandIcon className="w-4 h-4 text-ink" />
                   </div>
                   <span className="font-cinzel text-lg font-semibold text-ink">Quest Weaver</span>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brass" />
-                  <Input
-                    placeholder="Search campaigns..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-obsidian/50 border-brass/30 text-ink placeholder:text-brass/50"
-                  />
-                </div>
-              </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLeftRailCollapsed(!leftRailCollapsed)}
+                className="shrink-0"
+              >
+                {leftRailCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            </div>
+            {!leftRailCollapsed && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brass" />
+                <Input
+                  placeholder="Search campaigns..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-obsidian/50 border-brass/30 text-ink placeholder:text-brass/50"
+                />
+              </div>
             )}
           </div>
 
@@ -125,20 +165,53 @@ export function CampaignManagerLayout({
           </ScrollArea>
 
           {/* Quick Actions */}
-          {!leftRailCollapsed && (
-            <>
-              <Separator className="bg-brass/20" />
-              <div className="p-3 space-y-2">
-                <Button onClick={onNewCampaign} className="w-full justify-start" variant="ghost" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Campaign
-                </Button>
-                <Button onClick={onImport} className="w-full justify-start" variant="ghost" size="sm">
-                  <Archive className="w-4 h-4 mr-2" />
-                  Import
-                </Button>
-              </div>
-            </>
+          <Separator className="bg-brass/20" />
+          {!leftRailCollapsed ? (
+            <div className="p-3 space-y-2">
+              <Button onClick={onNewCampaign} className="w-full justify-start" variant="ghost" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                New Campaign
+              </Button>
+              <Button onClick={onImport} className="w-full justify-start" variant="ghost" size="sm">
+                <Archive className="w-4 h-4 mr-2" />
+                Import
+              </Button>
+              <Separator className="bg-brass/20 my-2" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                    <User className="w-4 h-4 mr-2" />
+                    <span className="truncate">{userEmail || 'User'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            <div className="p-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-full">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{userEmail}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </aside>

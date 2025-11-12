@@ -79,8 +79,9 @@ import {
 import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
 import { NewCampaignDialog } from "@/components/campaign/NewCampaignDialog";
-import { OverviewTab } from "@/components/campaign/tabs/OverviewTab";
-import { QuestsTab } from "@/components/campaign/tabs/QuestsTab";
+import { OverviewTab } from "@/components/campaign/tabs/OverviewTabUpdated";
+import { QuestsTab } from "@/components/campaign/tabs/QuestsTabUpdated";
+import { SessionTab } from "@/components/campaign/tabs/SessionTab";
 import { SessionsTab } from "@/components/campaign/tabs/SessionsTab";
 import { NPCsTab } from "@/components/campaign/tabs/NPCsTab";
 import { LocationsTab } from "@/components/campaign/tabs/LocationsTab";
@@ -114,12 +115,35 @@ const CampaignHub = () => {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
+  const [liveSession, setLiveSession] = useState<any>(null);
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+    
+    // Check for live session when active campaign changes
+    if (activeCampaign) {
+      fetchLiveSession();
+    }
+  }, [activeCampaign]);
+
+  const fetchLiveSession = async () => {
+    if (!activeCampaign) return;
+
+    const { data } = await supabase
+      .from('campaigns')
+      .select('live_session_id, campaign_sessions(*)')
+      .eq('id', activeCampaign.id)
+      .single();
+
+    if (data?.live_session_id && data.campaign_sessions) {
+      setLiveSession(data.campaign_sessions);
+      setActiveTab('session');
+    } else {
+      setLiveSession(null);
+    }
+  };
 
   useEffect(() => {
     if (campaignIdParam && campaigns.length > 0) {

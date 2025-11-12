@@ -2595,6 +2595,7 @@ export type Database = {
           campaign_id: string
           created_at: string | null
           description: string | null
+          details: Json | null
           id: string
           location_type: string | null
           name: string
@@ -2606,6 +2607,7 @@ export type Database = {
           campaign_id: string
           created_at?: string | null
           description?: string | null
+          details?: Json | null
           id?: string
           location_type?: string | null
           name: string
@@ -2617,6 +2619,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string | null
           description?: string | null
+          details?: Json | null
           id?: string
           location_type?: string | null
           name?: string

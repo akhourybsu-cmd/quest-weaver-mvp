@@ -55,15 +55,18 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
         setLocationType(locationToEdit.location_type || "City");
         setParentLocationId(locationToEdit.parent_location_id || "none");
         setTags(locationToEdit.tags || []);
-        setCoordX(locationToEdit.coord_x?.toString() || "");
-        setCoordY(locationToEdit.coord_y?.toString() || "");
-        setTerrain(locationToEdit.terrain || "");
-        setPopulation(locationToEdit.population?.toString() || "");
-        setGovernment(locationToEdit.government || "");
-        setClimate(locationToEdit.climate || "");
-        setResources(locationToEdit.resources || "");
-        setNotableFeatures(locationToEdit.notable_features || "");
-        setHistory(locationToEdit.history || "");
+        
+        // Load from details object if it exists
+        const details = locationToEdit.details || {};
+        setCoordX(details.coord_x?.toString() || "");
+        setCoordY(details.coord_y?.toString() || "");
+        setTerrain(details.terrain || "");
+        setPopulation(details.population?.toString() || "");
+        setGovernment(details.government || "");
+        setClimate(details.climate || "");
+        setResources(details.resources || "");
+        setNotableFeatures(details.notable_features || "");
+        setHistory(details.history || "");
       }
     }
   }, [open, locationToEdit]);
@@ -112,13 +115,8 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       return;
     }
 
-    const locationData = {
-      campaign_id: campaignId,
-      name,
-      description: description || null,
-      location_type: locationType,
-      parent_location_id: parentLocationId !== "none" ? parentLocationId : null,
-      tags,
+    // Store extended fields in details object
+    const details = {
       coord_x: coordX ? parseFloat(coordX) : null,
       coord_y: coordY ? parseFloat(coordY) : null,
       terrain: terrain || null,
@@ -128,6 +126,16 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       resources: resources || null,
       notable_features: notableFeatures || null,
       history: history || null,
+    };
+
+    const locationData = {
+      campaign_id: campaignId,
+      name,
+      description: description || null,
+      location_type: locationType,
+      parent_location_id: parentLocationId !== "none" ? parentLocationId : null,
+      tags,
+      details,
     };
 
     if (isEditing) {

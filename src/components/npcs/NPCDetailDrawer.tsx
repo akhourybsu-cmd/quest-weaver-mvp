@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Users, Eye, EyeOff, ScrollText } from "lucide-react";
+import { Edit, Users, Eye, EyeOff, ScrollText, MapPin, BookOpen } from "lucide-react";
 
 interface NPC {
   id: string;
@@ -36,13 +36,17 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   const [appearances, setAppearances] = useState<any[]>([]);
   const [faction, setFaction] = useState<any>(null);
   const [linkedNotes, setLinkedNotes] = useState<any[]>([]);
+  const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
+  const [relatedLocation, setRelatedLocation] = useState<any>(null);
 
   useEffect(() => {
     if (open && npc) {
       loadRelationships();
       loadAppearances();
       loadLinkedNotes();
+      loadRelatedQuests();
       if (npc.faction_id) loadFaction();
+      if (npc.location_id) loadLocation();
     }
   }, [open, npc]);
 
@@ -124,6 +128,32 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
     setLinkedNotes(notes || []);
   };
 
+  const loadRelatedQuests = async () => {
+    // Find quests that have steps linked to this NPC
+    const { data } = await supabase
+      .from("quest_steps")
+      .select("quest_id, quests(id, title, status)")
+      .eq("npc_id", npc.id);
+
+    if (data) {
+      const uniqueQuests = Array.from(
+        new Map(data.map(item => [item.quests?.id, item.quests])).values()
+      ).filter(Boolean);
+      setRelatedQuests(uniqueQuests);
+    }
+  };
+
+  const loadLocation = async () => {
+    if (!npc.location_id) return;
+    const { data } = await supabase
+      .from("locations")
+      .select("id, name, location_type")
+      .eq("id", npc.location_id)
+      .single();
+
+    setRelatedLocation(data);
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
@@ -193,6 +223,52 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
                   )}
                 </CardContent>
               </Card>
+
+              {/* Related Content */}
+              {(relatedQuests.length > 0 || relatedLocation) && (
+                <Card>
+                  <CardContent className="pt-6 space-y-3">
+                    <h3 className="font-semibold mb-2">Related Content</h3>
+                    
+                    {relatedLocation && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">{relatedLocation.name}</p>
+                          {relatedLocation.location_type && (
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {relatedLocation.location_type.replace(/_/g, ' ')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {relatedQuests.length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <BookOpen className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium mb-1">
+                            Linked to {relatedQuests.length} {relatedQuests.length === 1 ? 'quest' : 'quests'}
+                          </p>
+                          <div className="space-y-1">
+                            {relatedQuests.map((quest: any) => (
+                              <div key={quest.id} className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {quest.status || 'active'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {quest.title}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Public Bio */}
               {npc.public_bio && (

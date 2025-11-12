@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +22,8 @@ interface NPC {
   secrets?: string;
   portrait_url?: string;
   tags: string[];
+  status?: string;
+  alignment?: string;
 }
 
 interface EnhancedNPCEditorProps {
@@ -41,6 +44,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
   const [portraitUrl, setPortraitUrl] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [status, setStatus] = useState("alive");
+  const [alignment, setAlignment] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
@@ -55,6 +60,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setSecrets(npc.secrets || "");
       setPortraitUrl(npc.portrait_url || "");
       setTags(npc.tags || []);
+      setStatus(npc.status || "alive");
+      setAlignment(npc.alignment || "");
     } else {
       setName("");
       setPronouns("");
@@ -64,6 +71,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setSecrets("");
       setPortraitUrl("");
       setTags([]);
+      setStatus("alive");
+      setAlignment("");
     }
   }, [npc, open]);
 
@@ -136,6 +145,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
         secrets: secrets.trim() || null,
         portrait_url: portraitUrl || null,
         tags,
+        status: status || "alive",
+        alignment: alignment.trim() || null,
       };
 
       if (npc) {
@@ -265,6 +276,43 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
               onChange={(e) => setRoleTitle(e.target.value)}
               placeholder="Innkeeper, Guard Captain, etc."
             />
+          </div>
+
+          {/* Status & Alignment */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alive">Alive</SelectItem>
+                  <SelectItem value="dead">Dead</SelectItem>
+                  <SelectItem value="missing">Missing</SelectItem>
+                  <SelectItem value="unknown">Unknown</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="alignment">Alignment</Label>
+              <Select value={alignment} onValueChange={setAlignment}>
+                <SelectTrigger id="alignment">
+                  <SelectValue placeholder="Select alignment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lawful-good">Lawful Good</SelectItem>
+                  <SelectItem value="neutral-good">Neutral Good</SelectItem>
+                  <SelectItem value="chaotic-good">Chaotic Good</SelectItem>
+                  <SelectItem value="lawful-neutral">Lawful Neutral</SelectItem>
+                  <SelectItem value="true-neutral">True Neutral</SelectItem>
+                  <SelectItem value="chaotic-neutral">Chaotic Neutral</SelectItem>
+                  <SelectItem value="lawful-evil">Lawful Evil</SelectItem>
+                  <SelectItem value="neutral-evil">Neutral Evil</SelectItem>
+                  <SelectItem value="chaotic-evil">Chaotic Evil</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Bio */}

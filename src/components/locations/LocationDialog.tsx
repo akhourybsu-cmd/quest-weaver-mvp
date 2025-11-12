@@ -1,23 +1,29 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, X, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { X, Plus, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { DynamicLocationFields } from "./DynamicLocationFields";
+import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locationSchemas";
 
 interface LocationDialogProps {
   open: boolean;
@@ -45,6 +51,8 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
   const [history, setHistory] = useState("");
   const [locations, setLocations] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [details, setDetails] = useState<Record<string, any>>({});
+  const [autoAddVenues, setAutoAddVenues] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -57,16 +65,17 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
         setTags(locationToEdit.tags || []);
         
         // Load from details object if it exists
-        const details = locationToEdit.details || {};
-        setCoordX(details.coord_x?.toString() || "");
-        setCoordY(details.coord_y?.toString() || "");
-        setTerrain(details.terrain || "");
-        setPopulation(details.population?.toString() || "");
-        setGovernment(details.government || "");
-        setClimate(details.climate || "");
-        setResources(details.resources || "");
-        setNotableFeatures(details.notable_features || "");
-        setHistory(details.history || "");
+        const locationDetails = locationToEdit.details || {};
+        setDetails(locationDetails);
+        setCoordX(locationDetails.coord_x?.toString() || "");
+        setCoordY(locationDetails.coord_y?.toString() || "");
+        setTerrain(locationDetails.terrain || "");
+        setPopulation(locationDetails.population?.toString() || "");
+        setGovernment(locationDetails.government || "");
+        setClimate(locationDetails.climate || "");
+        setResources(locationDetails.resources || "");
+        setNotableFeatures(locationDetails.notable_features || "");
+        setHistory(locationDetails.history || "");
       }
     }
   }, [open, locationToEdit]);
@@ -115,8 +124,9 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       return;
     }
 
-    // Store extended fields in details object
-    const details = {
+    // Merge base fields with dynamic fields in details object
+    const mergedDetails = {
+      ...details,
       coord_x: coordX ? parseFloat(coordX) : null,
       coord_y: coordY ? parseFloat(coordY) : null,
       terrain: terrain || null,
@@ -135,7 +145,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
       location_type: locationType,
       parent_location_id: parentLocationId !== "none" ? parentLocationId : null,
       tags,
-      details,
+      details: mergedDetails,
     };
 
     if (isEditing) {
@@ -268,9 +278,27 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit }: Loca
                         ))}
                     </SelectContent>
                   </Select>
-                </div>
+          </div>
 
-                <div className="space-y-2">
+          {!isEditing && (locationType === "City" || locationType === "Town") && (
+            <div className="space-y-2 p-4 border border-brass/30 rounded-md bg-accent/20">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="auto-add-venues" className="text-sm font-medium">
+                  Auto-add common venues
+                </Label>
+                <Switch
+                  id="auto-add-venues"
+                  checked={autoAddVenues}
+                  onCheckedChange={setAutoAddVenues}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Automatically create child locations: Inn, Tavern, Blacksmith, General Store, Temple, Library, Guardhouse, and Market
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
                   <Label>Tags</Label>
                   <div className="flex gap-2">
                     <Input

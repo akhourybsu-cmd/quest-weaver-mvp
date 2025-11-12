@@ -2600,6 +2600,7 @@ export type Database = {
           location_type: string | null
           name: string
           parent_location_id: string | null
+          path: string | null
           tags: string[] | null
           updated_at: string | null
         }
@@ -2612,6 +2613,7 @@ export type Database = {
           location_type?: string | null
           name: string
           parent_location_id?: string | null
+          path?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -2624,6 +2626,7 @@ export type Database = {
           location_type?: string | null
           name?: string
           parent_location_id?: string | null
+          path?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -5320,6 +5323,7 @@ export type Database = {
     Functions: {
       auth_role_in_campaign: { Args: { camp_id: string }; Returns: string }
       character_owned_by_user: { Args: { char_id: string }; Returns: boolean }
+      compute_location_path: { Args: { loc_id: string }; Returns: string }
       compute_save_prompt_targets: {
         Args: {
           _encounter_id: string

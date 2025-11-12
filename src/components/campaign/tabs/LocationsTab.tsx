@@ -15,11 +15,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Plus, Search, Map, Users, Flag, Trash2 } from "lucide-react";
+import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
 import LocationDialog from "@/components/locations/LocationDialog";
+import { LocationTreeView } from "@/components/locations/LocationTreeView";
 
 interface LocationsTabProps {
   campaignId: string;
@@ -32,6 +33,8 @@ interface Location {
   location_type: string | null;
   tags: string[];
   parent_location_id: string | null;
+  path: string | null;
+  details: any;
 }
 
 const terrainColors: Record<string, string> = {
@@ -53,6 +56,8 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState<Location | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<"grid" | "tree">("grid");
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
 
   useEffect(() => {
     fetchLocations();
@@ -116,6 +121,17 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Get child locations of selected location for tree view
+  const childLocations = selectedLocation
+    ? locations.filter((loc) => loc.parent_location_id === selectedLocation.id)
+    : locations.filter((loc) => !loc.parent_location_id); // Root locations if none selected
+
+  const displayLocations = viewMode === "tree" && selectedLocation ? childLocations : filteredLocations;
+
+  const handleLocationSelect = (location: Location) => {
+    setSelectedLocation(location);
+  };
+
   return (
     <>
       <div className="space-y-4">
@@ -130,20 +146,114 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
               className="pl-9 bg-background/50 border-brass/30"
             />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode(viewMode === "grid" ? "tree" : "grid")}
+          >
+            {viewMode === "grid" ? <List className="w-4 h-4 mr-2" /> : <Grid3x3 className="w-4 h-4 mr-2" />}
+            {viewMode === "grid" ? "Tree" : "Grid"}
+          </Button>
           <Button onClick={() => { setLocationToEdit(undefined); setDialogOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             New Location
           </Button>
         </div>
 
-        {/* Locations Grid */}
+        {/* Locations Display */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
           </div>
-        ) : filteredLocations.length === 0 ? (
+        ) : viewMode === "tree" ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-1 bg-card/50 border border-brass/20 rounded-lg p-2">
+              <LocationTreeView
+                locations={locations}
+                onLocationSelect={handleLocationSelect}
+                selectedLocationId={selectedLocation?.id}
+              />
+            </div>
+            <div className="md:col-span-2">
+              {selectedLocation && (
+                <div className="mb-4 p-3 bg-accent/20 border border-brass/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Viewing children of:</p>
+                      <p className="font-cinzel font-semibold">{selectedLocation.name}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedLocation(null)}
+                    >
+                      View All
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <ScrollArea className="h-[calc(100vh-350px)]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
+                  {displayLocations.map((location) => (
+                    <Card
+                      key={location.id}
+                      className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+                      onClick={() => {
+                        setLocationToEdit(location);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
+                            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="shrink-0 h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocationToDelete(location);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {location.location_type && (
+                          <CardDescription className="text-xs">{location.location_type}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {location.description || 'No description'}
+                        </p>
+
+                        {location.tags && location.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {location.tags.slice(0, 3).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className={terrainColors[tag] || "border-brass/30"}
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        ) : displayLocations.length === 0 ? (
           <Card className="bg-card/50 border-brass/20">
             <CardContent className="py-12">
               <div className="text-center space-y-2">
@@ -159,7 +269,7 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-              {filteredLocations.map((location) => (
+              {displayLocations.map((location) => (
                 <Card
                   key={location.id}
                   className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"

@@ -494,10 +494,12 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Upload portrait if one was selected
       let portraitUrl: string | null = null;
       if (draft.portraitBlob) {
+        console.log("Uploading portrait for user:", user.id, "character:", characterId);
         const fileExt = 'jpg';
         const fileName = `${user.id}/${characterId}.${fileExt}`;
+        console.log("Upload path:", fileName);
         
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('portraits')
           .upload(fileName, draft.portraitBlob, {
             cacheControl: '3600',
@@ -506,12 +508,19 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
         if (uploadError) {
           console.error("Error uploading portrait:", uploadError);
+          toast({
+            title: "Portrait upload failed",
+            description: uploadError.message || "Could not upload portrait image",
+            variant: "destructive"
+          });
           // Don't fail character creation if portrait upload fails
         } else {
+          console.log("Portrait uploaded successfully:", uploadData);
           const { data: { publicUrl } } = supabase.storage
             .from('portraits')
             .getPublicUrl(fileName);
           portraitUrl = publicUrl;
+          console.log("Portrait public URL:", portraitUrl);
         }
       }
 

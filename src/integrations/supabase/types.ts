@@ -218,8 +218,13 @@ export type Database = {
           active_encounter_id: string | null
           campaign_id: string
           created_at: string | null
+          dm_notes: string | null
           ended_at: string | null
           id: string
+          paused_at: string | null
+          paused_duration_seconds: number | null
+          player_attendance: Json | null
+          session_notes: string | null
           started_at: string | null
           status: string
           updated_at: string | null
@@ -228,8 +233,13 @@ export type Database = {
           active_encounter_id?: string | null
           campaign_id: string
           created_at?: string | null
+          dm_notes?: string | null
           ended_at?: string | null
           id?: string
+          paused_at?: string | null
+          paused_duration_seconds?: number | null
+          player_attendance?: Json | null
+          session_notes?: string | null
           started_at?: string | null
           status: string
           updated_at?: string | null
@@ -238,8 +248,13 @@ export type Database = {
           active_encounter_id?: string | null
           campaign_id?: string
           created_at?: string | null
+          dm_notes?: string | null
           ended_at?: string | null
           id?: string
+          paused_at?: string | null
+          paused_duration_seconds?: number | null
+          player_attendance?: Json | null
+          session_notes?: string | null
           started_at?: string | null
           status?: string
           updated_at?: string | null

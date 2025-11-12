@@ -56,6 +56,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Play,
@@ -75,6 +76,8 @@ import {
   BookOpen,
   Clock,
   FileText,
+  Pause,
+  Trash2,
 } from "lucide-react";
 import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
@@ -96,6 +99,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LiveSessionTab } from "@/components/campaign/tabs/LiveSessionTab";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DeleteCampaignDialog } from "@/components/campaign/DeleteCampaignDialog";
+import { SessionTimer } from "@/components/campaign/SessionTimer";
+import { resilientChannel } from "@/lib/realtime";
 
 interface Campaign {
   id: string;
@@ -119,6 +125,9 @@ const CampaignHub = () => {
   const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
   const [liveSession, setLiveSession] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [playerData, setPlayerData] = useState<{ count: number; players: any[] }>({ count: 0, players: [] });
+  const [sessionCount, setSessionCount] = useState(0);
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
@@ -142,25 +151,78 @@ const CampaignHub = () => {
   useEffect(() => {
     if (!activeCampaign) return;
 
-    // Subscribe to real-time campaign updates for session changes
-    const channel = supabase
-      .channel('campaign-session-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'campaigns',
-          filter: `id=eq.${activeCampaign.id}`,
-        },
-        () => fetchLiveSession()
-      )
+    // Fetch initial player data and session count
+    fetchPlayerData();
+    fetchSessionCount();
+
+    // Subscribe to real-time updates using resilient channel
+    const channel = resilientChannel(supabase, `campaign:${activeCampaign.id}`);
+    
+    channel
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'campaigns',
+        filter: `id=eq.${activeCampaign.id}`,
+      }, () => {
+        fetchLiveSession();
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'campaign_sessions',
+      }, () => {
+        fetchLiveSession();
+        fetchSessionCount();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'characters',
+        filter: `campaign_id=eq.${activeCampaign.id}`,
+      }, () => {
+        fetchPlayerData();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [activeCampaign]);
+
+  const fetchPlayerData = async () => {
+    if (!activeCampaign) return;
+
+    try {
+      const { data: characters, count } = await supabase
+        .from("characters")
+        .select("*, user_id", { count: "exact" })
+        .eq("campaign_id", activeCampaign.id)
+        .not("user_id", "is", null);
+
+      setPlayerData({
+        count: count || 0,
+        players: characters || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch player data:", error);
+    }
+  };
+
+  const fetchSessionCount = async () => {
+    if (!activeCampaign) return;
+
+    try {
+      const { count } = await supabase
+        .from("campaign_sessions")
+        .select("*", { count: "exact", head: true })
+        .eq("campaign_id", activeCampaign.id);
+
+      setSessionCount(count || 0);
+    } catch (error) {
+      console.error("Failed to fetch session count:", error);
+    }
+  };
 
   const fetchLiveSession = async () => {
     if (!activeCampaign) return;
@@ -173,7 +235,9 @@ const CampaignHub = () => {
 
     if (data?.live_session_id && data.campaign_sessions && ['live', 'paused'].includes(data.campaign_sessions.status)) {
       setLiveSession(data.campaign_sessions);
-      setActiveTab('session');
+      if (activeTab !== 'session') {
+        setActiveTab('session');
+      }
     } else {
       setLiveSession(null);
     }
@@ -276,16 +340,87 @@ const CampaignHub = () => {
     }
   };
 
+  const handlePauseSession = async () => {
+    if (!activeCampaign || !liveSession) return;
+
+    try {
+      await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'paused',
+          paused_at: new Date().toISOString(),
+        })
+        .eq('id', liveSession.id);
+
+      toast({
+        title: 'Session paused',
+        description: 'The session is now paused',
+      });
+
+      await fetchLiveSession();
+    } catch (error: any) {
+      toast({
+        title: 'Error pausing session',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleResumeSession = async () => {
+    if (!activeCampaign || !liveSession) return;
+
+    try {
+      // Calculate paused duration
+      const pausedAt = liveSession.paused_at ? new Date(liveSession.paused_at).getTime() : Date.now();
+      const now = Date.now();
+      const additionalPausedSeconds = Math.floor((now - pausedAt) / 1000);
+      const totalPausedSeconds = (liveSession.paused_duration_seconds || 0) + additionalPausedSeconds;
+
+      await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'live',
+          paused_at: null,
+          paused_duration_seconds: totalPausedSeconds,
+        })
+        .eq('id', liveSession.id);
+
+      toast({
+        title: 'Session resumed',
+        description: 'The session is now live again',
+      });
+
+      await fetchLiveSession();
+    } catch (error: any) {
+      toast({
+        title: 'Error resuming session',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleEndSession = async () => {
     if (!activeCampaign || !liveSession) return;
 
     try {
+      // Calculate final paused duration if currently paused
+      let finalPausedSeconds = liveSession.paused_duration_seconds || 0;
+      if (liveSession.status === 'paused' && liveSession.paused_at) {
+        const pausedAt = new Date(liveSession.paused_at).getTime();
+        const now = Date.now();
+        const additionalPausedSeconds = Math.floor((now - pausedAt) / 1000);
+        finalPausedSeconds += additionalPausedSeconds;
+      }
+
       // Update session status
       await supabase
         .from('campaign_sessions')
         .update({
           status: 'ended',
           ended_at: new Date().toISOString(),
+          paused_duration_seconds: finalPausedSeconds,
         })
         .eq('id', liveSession.id);
 
@@ -504,9 +639,34 @@ const CampaignHub = () => {
             <div className="flex items-center gap-2">
               {liveSession && (
                 <>
-                  <Badge variant="outline" className="border-red-500/50 text-red-500">
-                    🔴 Session Live
-                  </Badge>
+                  {liveSession.status === 'live' && (
+                    <Badge variant="outline" className="border-red-500/50 text-red-500 animate-pulse">
+                      🔴 Session Live
+                    </Badge>
+                  )}
+                  {liveSession.status === 'paused' && (
+                    <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">
+                      ⏸️ Session Paused
+                    </Badge>
+                  )}
+                  <SessionTimer
+                    startedAt={liveSession.started_at}
+                    pausedAt={liveSession.paused_at}
+                    pausedDuration={liveSession.paused_duration_seconds}
+                    status={liveSession.status}
+                  />
+                  {liveSession.status === 'live' && (
+                    <Button onClick={handlePauseSession} variant="outline" size="sm">
+                      <Pause className="w-4 h-4 mr-2" />
+                      Pause
+                    </Button>
+                  )}
+                  {liveSession.status === 'paused' && (
+                    <Button onClick={handleResumeSession} variant="outline" size="sm">
+                      <Play className="w-4 h-4 mr-2" />
+                      Resume
+                    </Button>
+                  )}
                   <Button onClick={handleEndSession} variant="destructive" size="sm">
                     End Session
                   </Button>
@@ -541,6 +701,14 @@ const CampaignHub = () => {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Campaign
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -555,22 +723,42 @@ const CampaignHub = () => {
               Milestone
             </Badge>
             <Badge variant="outline" className="border-brass/30 text-brass">
-              12 Sessions
+              {sessionCount} Session{sessionCount !== 1 ? 's' : ''}
             </Badge>
             <Badge variant="outline" className="border-brass/30 text-brass">
-              <Users className="w-3 h-3 mr-1" />4 Players
+              <Users className="w-3 h-3 mr-1" />
+              {playerData.count} Player{playerData.count !== 1 ? 's' : ''}
             </Badge>
             <div className="flex-1" />
             <div className="flex items-center gap-1">
               <Avatar className="w-7 h-7 border border-brass/30">
                 <AvatarFallback className="text-xs bg-arcanePurple/20 text-ink">DM</AvatarFallback>
               </Avatar>
-              <Avatar className="w-7 h-7 border border-green-500/50">
-                <AvatarFallback className="text-xs bg-green-500/20 text-ink">P1</AvatarFallback>
-              </Avatar>
-              <Avatar className="w-7 h-7 border border-green-500/50">
-                <AvatarFallback className="text-xs bg-green-500/20 text-ink">P2</AvatarFallback>
-              </Avatar>
+              {playerData.players.slice(0, 4).map((char, idx) => {
+                const initials = char.name
+                  .split(' ')
+                  .map((n: string) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                return (
+                  <Avatar key={char.id} className="w-7 h-7 border border-green-500/50">
+                    <AvatarFallback className="text-xs bg-green-500/20 text-ink">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                );
+              })}
+              {playerData.count > 4 && (
+                <Avatar className="w-7 h-7 border border-brass/30">
+                  <AvatarFallback className="text-xs bg-brass/20 text-ink">
+                    +{playerData.count - 4}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {playerData.count === 0 && (
+                <span className="text-sm text-muted-foreground ml-2">No players yet</span>
+              )}
             </div>
           </div>
 
@@ -764,6 +952,17 @@ const CampaignHub = () => {
         open={showNewCampaignDialog} 
         onOpenChange={setShowNewCampaignDialog}
         onSuccess={fetchCampaigns}
+      />
+
+      <DeleteCampaignDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        campaign={activeCampaign}
+        onSuccess={() => {
+          fetchCampaigns();
+          setActiveCampaign(null);
+          navigate('/campaign-hub');
+        }}
       />
     </>
   );

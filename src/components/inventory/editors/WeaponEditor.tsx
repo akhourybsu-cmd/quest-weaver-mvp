@@ -357,12 +357,12 @@ export const WeaponEditor = ({ open, onOpenChange, campaignId, existingItem, onS
 
             <div className="space-y-2">
               <Label>Rarity (Optional)</Label>
-              <Select value={rarity} onValueChange={setRarity}>
+              <Select value={rarity || "none"} onValueChange={(v) => setRarity(v === "none" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select rarity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="Common">Common</SelectItem>
                   <SelectItem value="Uncommon">Uncommon</SelectItem>
                   <SelectItem value="Rare">Rare</SelectItem>

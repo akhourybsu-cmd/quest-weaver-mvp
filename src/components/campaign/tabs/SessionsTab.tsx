@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
 import { SessionPackBuilder } from "../SessionPackBuilder";
+import { ScheduleSessionDialog } from "../ScheduleSessionDialog";
+import { SessionLogViewer } from "../SessionLogViewer";
 
 interface SessionsTabProps {
   campaignId: string;
@@ -31,6 +33,9 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [packBuilderOpen, setPackBuilderOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [logViewerOpen, setLogViewerOpen] = useState(false);
+  const [viewingSession, setViewingSession] = useState<Session | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -78,6 +83,11 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
     setPackBuilderOpen(true);
   };
 
+  const openLogViewer = (session: Session) => {
+    setViewingSession(session);
+    setLogViewerOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Session Pack Builder */}
@@ -97,7 +107,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="font-cinzel">Upcoming Sessions</CardTitle>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={() => setScheduleDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Schedule Session
             </Button>
@@ -193,7 +203,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
                             </div>
                           )}
                         </div>
-                        <Button size="sm" variant="ghost">
+                        <Button size="sm" variant="ghost" onClick={() => openLogViewer(session)}>
                           View Log
                         </Button>
                       </div>
@@ -221,6 +231,24 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Session Dialog */}
+      <ScheduleSessionDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        campaignId={campaignId}
+        onSuccess={fetchSessions}
+      />
+
+      {/* Session Log Viewer */}
+      {viewingSession && (
+        <SessionLogViewer
+          open={logViewerOpen}
+          onOpenChange={setLogViewerOpen}
+          sessionId={viewingSession.id}
+          sessionDate={viewingSession.started_at || viewingSession.ended_at || new Date().toISOString()}
+        />
+      )}
     </div>
   );
 }

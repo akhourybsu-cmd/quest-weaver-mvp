@@ -56,18 +56,6 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <Auth />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -77,35 +65,46 @@ const App = () => {
           <TenantProvider>
             <CampaignProvider>
               <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/campaign-hub" element={<CampaignHub />} />
-              <Route path="/campaigns/:campaignId" element={<CampaignHub />} />
-              <Route path="/campaigns/:campaignId/dm/:sessionId?" element={<SessionDM />} />
-              <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
-              <Route path="/demo/:demoId/dm/:sessionId?" element={<SessionDM />} />
-              <Route path="/session/dm" element={<SessionDM />} />
-              <Route path="/session/player" element={<SessionPlayer />} />
-              <Route path="/session/spectator" element={<SessionSpectator />} />
-              <Route path="/player/waiting" element={<PlayerWaitingRoom />} />
-              <Route path="/player-home" element={<PlayerHome />} />
-              <Route path="/map" element={<CombatMap />} />
-              <Route path="/world-map" element={<WorldMap />} />
-              <Route path="/timeline" element={<CampaignTimeline />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/notes" element={<Notes />} />
-              <Route path="/lore" element={<Lore />} />
-              <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
-              <Route path="/campaign/:campaignId/character/:characterId" element={<CharacterSheetPage />} />
-              <Route path="/dev/audit" element={<AuditHarness />} />
-              {/* Player Hub Routes */}
-          <Route path="/player" element={<PlayerHub />} />
-          <Route path="/player/:playerId" element={<PlayerDashboardNew />} />
-          <Route path="/player/:playerId/characters" element={<PlayerDashboardNew />} />
-          <Route path="/player/:playerId/characters/:characterId" element={<CharacterSheetPage />} />
-          <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
-              <Route path="/player/:playerId/settings" element={<PlayerDashboardNew />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+                {/* Public routes */}
+                <Route path="/" element={<Index session={session} />} />
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected routes */}
+                {loading ? (
+                  <Route path="*" element={
+                    <div className="min-h-screen flex items-center justify-center">
+                      <div className="text-lg">Loading...</div>
+                    </div>
+                  } />
+                ) : !session ? (
+                  <Route path="*" element={<Auth />} />
+                ) : (
+                  <>
+                    <Route path="/campaign-hub" element={<CampaignHub />} />
+                    <Route path="/campaigns/:campaignId" element={<CampaignHub />} />
+                    <Route path="/campaigns/:campaignId/dm/:sessionId?" element={<SessionDM />} />
+                    <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
+                    <Route path="/demo/:demoId/dm/:sessionId?" element={<SessionDM />} />
+                    <Route path="/session/dm" element={<SessionDM />} />
+                    <Route path="/session/player" element={<SessionPlayer />} />
+                    <Route path="/session/spectator" element={<SessionSpectator />} />
+                    <Route path="/player/waiting" element={<PlayerWaitingRoom />} />
+                    <Route path="/player-home" element={<PlayerHome />} />
+                    <Route path="/map" element={<CombatMap />} />
+                    <Route path="/world-map" element={<WorldMap />} />
+                    <Route path="/timeline" element={<CampaignTimeline />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/notes" element={<Notes />} />
+                    <Route path="/lore" element={<Lore />} />
+                    <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
+                    <Route path="/characters/:characterId" element={<CharacterSheetPage />} />
+                    <Route path="/player/:playerId" element={<PlayerDashboardNew />} />
+                    <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
+                    <Route path="/audit" element={<AuditHarness />} />
+                    <Route path="/player-hub" element={<PlayerHub />} />
+                    <Route path="*" element={<NotFound />} />
+                  </>
+                )}
               </Routes>
             </CampaignProvider>
           </TenantProvider>

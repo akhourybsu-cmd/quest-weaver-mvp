@@ -67,7 +67,7 @@ const Index = () => {
       return;
     }
     setJoinError("");
-    navigate("/session-player");
+    navigate(`/session/player?campaign=${joinCode}`);
   };
 
   const handleTryDemo = () => {

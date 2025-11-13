@@ -5,13 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Scroll, Users, Plus, TrendingUp, MapPin, Package, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface OverviewTabProps {
   campaignId: string;
+  campaignCode: string;
   onQuickAdd: (type: string) => void;
+  onReviewSessionPack?: () => void;
 }
 
-export function OverviewTab({ campaignId, onQuickAdd }: OverviewTabProps) {
+export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack }: OverviewTabProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeQuests: 0,
@@ -102,7 +106,13 @@ export function OverviewTab({ campaignId, onQuickAdd }: OverviewTabProps) {
             ) : (
               <div className="text-lg text-muted-foreground">No session scheduled</div>
             )}
-            <Button size="sm" className="mt-3 w-full" variant="outline" disabled={!stats.nextSession}>
+            <Button 
+              size="sm" 
+              className="mt-3 w-full" 
+              variant="outline" 
+              disabled={!stats.nextSession}
+              onClick={onReviewSessionPack}
+            >
               Review Session Pack
             </Button>
           </CardContent>
@@ -146,7 +156,18 @@ export function OverviewTab({ campaignId, onQuickAdd }: OverviewTabProps) {
             ) : (
               <div className="text-lg text-muted-foreground">No party members</div>
             )}
-            <Button size="sm" className="mt-3 w-full" variant="outline">
+            <Button 
+              size="sm" 
+              className="mt-3 w-full" 
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(campaignCode);
+                toast({
+                  title: "Join code copied!",
+                  description: `Share ${campaignCode} with your players`,
+                });
+              }}
+            >
               Invite Players
             </Button>
           </CardContent>
@@ -183,7 +204,16 @@ export function OverviewTab({ campaignId, onQuickAdd }: OverviewTabProps) {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Quest
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(campaignCode);
+                  toast({
+                    title: "Join code copied!",
+                    description: `Share ${campaignCode} with your players`,
+                  });
+                }}
+              >
                 <Users className="w-4 h-4 mr-2" />
                 Invite Players
               </Button>

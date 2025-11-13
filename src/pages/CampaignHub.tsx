@@ -474,28 +474,52 @@ const CampaignHub = () => {
       label: "Create Quest",
       icon: <Scroll className="w-4 h-4" />,
       group: "Create",
-      onSelect: () => console.log("Create quest"),
+      onSelect: () => {
+        setActiveTab("quests");
+        toast({
+          title: "Opening Quests",
+          description: "Navigate to the Quests tab to create a new quest",
+        });
+      },
     },
     {
       id: "create-npc",
       label: "Create NPC",
       icon: <Users className="w-4 h-4" />,
       group: "Create",
-      onSelect: () => console.log("Create NPC"),
+      onSelect: () => {
+        setActiveTab("npcs");
+        toast({
+          title: "Opening NPCs",
+          description: "Navigate to the NPCs tab to create a new NPC",
+        });
+      },
     },
     {
       id: "create-location",
       label: "Create Location",
       icon: <MapPin className="w-4 h-4" />,
       group: "Create",
-      onSelect: () => console.log("Create location"),
+      onSelect: () => {
+        setActiveTab("locations");
+        toast({
+          title: "Opening Locations",
+          description: "Navigate to the Locations tab to create a new location",
+        });
+      },
     },
     {
       id: "create-item",
       label: "Create Item",
       icon: <Package className="w-4 h-4" />,
       group: "Create",
-      onSelect: () => console.log("Create item"),
+      onSelect: () => {
+        setActiveTab("items");
+        toast({
+          title: "Opening Item Vault",
+          description: "Navigate to the Item Vault tab to create a new item",
+        });
+      },
     },
     {
       id: "nav-quests",
@@ -825,7 +849,12 @@ const CampaignHub = () => {
             <div className="flex-1 p-6">
               <TabsContent value="overview" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <OverviewTab campaignId={activeCampaign.id} onQuickAdd={handleQuickAdd} />
+                  <OverviewTab 
+                    campaignId={activeCampaign.id} 
+                    campaignCode={activeCampaign.code}
+                    onQuickAdd={handleQuickAdd}
+                    onReviewSessionPack={() => setActiveTab("sessions")}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />

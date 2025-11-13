@@ -23,41 +23,30 @@ import {
   X,
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
-import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 
-const Index = () => {
+interface IndexProps {
+  session: Session | null;
+}
+
+const Index = ({ session }: IndexProps) => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"dm" | "player">("dm");
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isAuthenticated = !!session;
 
   useEffect(() => {
     // Cleanup expired demos on load
     cleanupExpiredDemos();
-    
-    // Check authentication status
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const handleStartSession = () => {
     if (isAuthenticated) {
       navigate("/campaign-hub");
     } else {
-      // Scroll to top and let App.tsx handle showing Auth
-      window.scrollTo(0, 0);
-      // Trigger a page reload to show auth
-      window.location.href = "/campaign-hub";
+      navigate("/auth");
     }
   };
 
@@ -230,7 +219,7 @@ const Index = () => {
               size="default"
               className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
             >
-              Start a Session
+              {isAuthenticated ? "Campaign Hub" : "Sign Up"}
               <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
@@ -309,7 +298,7 @@ const Index = () => {
                 }} 
                 className="w-full mt-2"
               >
-                Start a Session
+                {isAuthenticated ? "Campaign Hub" : "Sign Up"}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -350,7 +339,11 @@ const Index = () => {
                   onClick={handleStartSession}
                   className="group shadow-lg hover:shadow-xl transition-all"
                 >
-                  {viewMode === "dm" ? "Start a Session" : "I'm a DM"}
+                  {isAuthenticated 
+                    ? "Go to Campaign Hub"
+                    : viewMode === "dm" 
+                    ? "Sign Up Free" 
+                    : "Sign Up to Play"}
                   <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
                 </Button>
                 {viewMode === "player" ? (

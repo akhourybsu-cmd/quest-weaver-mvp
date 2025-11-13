@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Search, MoreVertical, ArrowRight, Trash2, Copy, Send, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import EnhancedItemEditor from "./EnhancedItemEditor";
+import { WeaponEditor } from "./editors/WeaponEditor";
+import { ArmorEditor } from "./editors/ArmorEditor";
+import { MagicItemEditor } from "./editors/MagicItemEditor";
+import { ConsumableEditor } from "./editors/ConsumableEditor";
+import { BasicItemEditor } from "./editors/BasicItemEditor";
 import ItemAssignDialog from "./ItemAssignDialog";
 import ItemDeleteDialog from "./ItemDeleteDialog";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
@@ -36,7 +40,11 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [weaponEditorOpen, setWeaponEditorOpen] = useState(false);
+  const [armorEditorOpen, setArmorEditorOpen] = useState(false);
+  const [magicEditorOpen, setMagicEditorOpen] = useState(false);
+  const [consumableEditorOpen, setConsumableEditorOpen] = useState(false);
+  const [basicEditorOpen, setBasicEditorOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [filterRarity, setFilterRarity] = useState<string>("ALL");
@@ -159,6 +167,16 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
     return matchesSearch && matchesType && matchesRarity;
   });
 
+  const openEditorForItem = (item: any) => {
+    setEditingItem(item);
+    const type = item.type;
+    if (type === "WEAPON") setWeaponEditorOpen(true);
+    else if (type === "ARMOR") setArmorEditorOpen(true);
+    else if (type === "MAGIC") setMagicEditorOpen(true);
+    else if (type === "CONSUMABLE") setConsumableEditorOpen(true);
+    else setBasicEditorOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -171,10 +189,31 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
             className="pl-10"
           />
         </div>
-        <Button onClick={() => { setEditingItem(null); setEditorOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Item
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Item
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-background">
+            <DropdownMenuItem onClick={() => { setEditingItem(null); setWeaponEditorOpen(true); }}>
+              ⚔️ Create Weapon
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditingItem(null); setArmorEditorOpen(true); }}>
+              🛡️ Create Armor
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditingItem(null); setMagicEditorOpen(true); }}>
+              ✨ Create Magic Item
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditingItem(null); setConsumableEditorOpen(true); }}>
+              🧪 Create Consumable
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setEditingItem(null); setBasicEditorOpen(true); }}>
+              📦 Create Basic Item
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="flex gap-2">
@@ -239,7 +278,7 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
                         <Send className="w-4 h-4 mr-2" />
                         Assign to Player/Party
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setEditingItem(item); setEditorOpen(true); }}>
+                      <DropdownMenuItem onClick={() => openEditorForItem(item)}>
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDuplicate(item)}>
@@ -316,14 +355,63 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
         )}
       </ScrollArea>
 
-      <EnhancedItemEditor
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
+      <WeaponEditor
+        open={weaponEditorOpen}
+        onOpenChange={setWeaponEditorOpen}
         campaignId={campaignId}
         existingItem={editingItem}
         onSave={() => {
           loadItems();
           onRefresh();
+          setEditingItem(null);
+        }}
+      />
+
+      <ArmorEditor
+        open={armorEditorOpen}
+        onOpenChange={setArmorEditorOpen}
+        campaignId={campaignId}
+        existingItem={editingItem}
+        onSave={() => {
+          loadItems();
+          onRefresh();
+          setEditingItem(null);
+        }}
+      />
+
+      <MagicItemEditor
+        open={magicEditorOpen}
+        onOpenChange={setMagicEditorOpen}
+        campaignId={campaignId}
+        existingItem={editingItem}
+        onSave={() => {
+          loadItems();
+          onRefresh();
+          setEditingItem(null);
+        }}
+      />
+
+      <ConsumableEditor
+        open={consumableEditorOpen}
+        onOpenChange={setConsumableEditorOpen}
+        campaignId={campaignId}
+        existingItem={editingItem}
+        onSave={() => {
+          loadItems();
+          onRefresh();
+          setEditingItem(null);
+        }}
+      />
+
+      <BasicItemEditor
+        open={basicEditorOpen}
+        onOpenChange={setBasicEditorOpen}
+        campaignId={campaignId}
+        existingItem={editingItem}
+        onSave={() => {
+          loadItems();
+          onRefresh();
+          setEditingItem(null);
         }}
       />
 

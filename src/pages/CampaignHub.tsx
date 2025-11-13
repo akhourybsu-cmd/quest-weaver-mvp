@@ -119,6 +119,15 @@ const CampaignHub = () => {
   const [searchParams] = useSearchParams();
   const campaignIdParam = searchParams.get("campaign");
 
+  // Check if we're in demo mode (optional chaining in case not wrapped by DemoProvider)
+  let demoContext;
+  try {
+    demoContext = require("@/contexts/DemoContext").useDemo();
+  } catch {
+    demoContext = { isDemo: false, campaign: null };
+  }
+  const { isDemo, campaign: demoCampaign } = demoContext || { isDemo: false, campaign: null };
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -143,17 +152,44 @@ const CampaignHub = () => {
       }
     };
     
+    // Skip auth and database queries in demo mode
+    if (isDemo && demoCampaign) {
+      setCurrentUserId('demo-dm');
+      setActiveCampaign({
+        id: demoCampaign.id,
+        name: demoCampaign.name,
+        code: 'DEMO',
+        dm_user_id: 'demo-dm'
+      });
+      setCampaigns([{
+        id: demoCampaign.id,
+        name: demoCampaign.name,
+        code: 'DEMO',
+        dm_user_id: 'demo-dm'
+      }]);
+      setLoading(false);
+      return;
+    }
+    
     initUser();
     fetchCampaigns();
     
     // Check for live session when active campaign changes
-    if (activeCampaign) {
+    if (activeCampaign && !isDemo) {
       fetchLiveSession();
     }
-  }, [activeCampaign]);
+  }, [activeCampaign, isDemo, demoCampaign]);
 
   useEffect(() => {
     if (!activeCampaign) return;
+    
+    // Skip real-time subscriptions in demo mode
+    if (isDemo) {
+      // Set mock player data for demo
+      setPlayerData({ count: 4, players: [] });
+      setSessionCount(demoCampaign?.sessions.filter(s => s.status === 'past').length || 0);
+      return;
+    }
 
     // Fetch initial player data and session count
     fetchPlayerData();
@@ -193,7 +229,7 @@ const CampaignHub = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeCampaign]);
+  }, [activeCampaign, isDemo, demoCampaign]);
 
   const fetchPlayerData = async () => {
     if (!activeCampaign) return;
@@ -303,6 +339,16 @@ const CampaignHub = () => {
 
   const handleStartSession = async () => {
     if (!activeCampaign) return;
+    
+    // Demo mode: Show message
+    if (isDemo) {
+      toast({
+        title: 'Demo Mode',
+        description: 'Session management is disabled in demo mode. Sign up to use this feature!',
+        variant: 'default',
+      });
+      return;
+    }
     
     setLoading(true);
     try {
@@ -450,6 +496,15 @@ const CampaignHub = () => {
   };
 
   const handleInvitePlayers = () => {
+    if (isDemo) {
+      toast({
+        title: "Demo Mode",
+        description: "Player invites are disabled in demo mode. Sign up to invite players!",
+        variant: "default",
+      });
+      return;
+    }
+    
     if (activeCampaign) {
       navigator.clipboard.writeText(activeCampaign.code);
       toast({
@@ -857,6 +912,8 @@ const CampaignHub = () => {
                     onQuickAdd={handleQuickAdd}
                     onReviewSessionPack={() => setActiveTab("sessions")}
                     refreshTrigger={sessionRefreshTrigger}
+                    demoMode={isDemo}
+                    demoCampaign={demoCampaign}
                   />
                 ) : (
                   <div className="space-y-4">
@@ -867,7 +924,12 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="quests" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <QuestsTab campaignId={activeCampaign.id} onQuestSelect={handleQuestSelect} />
+                  <QuestsTab 
+                    campaignId={activeCampaign.id} 
+                    onQuestSelect={handleQuestSelect}
+                    demoMode={isDemo}
+                    demoCampaign={demoCampaign}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />
@@ -878,7 +940,9 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <SessionsTab campaignId={activeCampaign.id} />
+                  <SessionsTab 
+                    campaignId={activeCampaign.id}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />
@@ -887,7 +951,9 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="npcs" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <NPCsTab campaignId={activeCampaign.id} />
+                  <NPCsTab 
+                    campaignId={activeCampaign.id}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />
@@ -898,7 +964,11 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="locations" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <LocationsTab campaignId={activeCampaign.id} />
+                  <LocationsTab 
+                    campaignId={activeCampaign.id}
+                    demoMode={isDemo}
+                    demoCampaign={demoCampaign}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />
@@ -907,7 +977,9 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="factions" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <FactionsTab campaignId={activeCampaign.id} />
+                  <FactionsTab 
+                    campaignId={activeCampaign.id}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />
@@ -917,7 +989,10 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
-                <BestiaryTab />
+                <BestiaryTab 
+                  demoMode={isDemo}
+                  demoCampaign={demoCampaign}
+                />
               </TabsContent>
               <TabsContent value="encounters" className="mt-0 h-full">
                 {activeCampaign ? (
@@ -934,7 +1009,9 @@ const CampaignHub = () => {
               </TabsContent>
               <TabsContent value="items" className="mt-0 h-full">
                 {activeCampaign ? (
-                  <ItemVaultTab campaignId={activeCampaign.id} />
+                  <ItemVaultTab 
+                    campaignId={activeCampaign.id}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <Skeleton className="h-32 w-full" />

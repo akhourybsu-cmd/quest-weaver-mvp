@@ -22,8 +22,13 @@ import { toast } from "sonner";
 import LocationDialog from "@/components/locations/LocationDialog";
 import { LocationTreeView } from "@/components/locations/LocationTreeView";
 
+import { DemoCampaign } from "@/data/demoSeeds";
+import { adaptDemoLocations } from "@/lib/demoAdapters";
+
 interface LocationsTabProps {
   campaignId: string;
+  demoMode?: boolean;
+  demoCampaign?: DemoCampaign | null;
 }
 
 interface Location {
@@ -48,7 +53,7 @@ const terrainColors: Record<string, string> = {
   Wilderness: "bg-green-500/20 text-green-300 border-green-500/30",
 };
 
-export function LocationsTab({ campaignId }: LocationsTabProps) {
+export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTabProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +67,9 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
 
   useEffect(() => {
     fetchLocations();
+
+    // Skip real-time subscriptions in demo mode
+    if (demoMode) return;
 
     const channel = resilientChannel(supabase, `locations:${campaignId}`);
     channel
@@ -78,10 +86,19 @@ export function LocationsTab({ campaignId }: LocationsTabProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campaignId]);
+  }, [campaignId, demoMode]);
 
   const fetchLocations = async () => {
     try {
+      // Demo mode: Use static demo data
+      if (demoMode && demoCampaign) {
+        const adaptedLocations = adaptDemoLocations(demoCampaign);
+        setLocations(adaptedLocations as any);
+        setLoading(false);
+        return;
+      }
+
+      // Real mode: Fetch from Supabase
       const { data, error } = await supabase
         .from('locations')
         .select('*')

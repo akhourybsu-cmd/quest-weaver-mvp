@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function DemoBar() {
-  const { isDemo, timeRemaining, endDemo, resetDemo } = useDemo();
+  const { isDemo, timeRemaining, endDemo, resetDemo, campaign } = useDemo();
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
@@ -35,6 +35,11 @@ export function DemoBar() {
               <Eye className="w-3 h-3 mr-1" />
               Demo Mode
             </Badge>
+            {campaign && (
+              <span className="text-sm font-medium text-ink">
+                {campaign.name}
+              </span>
+            )}
             <div className="flex items-center gap-1.5 text-sm font-medium text-ink">
               <Clock className={`w-4 h-4 ${timeColor}`} />
               <span className={timeColor}>

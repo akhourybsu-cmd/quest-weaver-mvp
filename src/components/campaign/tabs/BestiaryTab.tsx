@@ -10,6 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Flame, Plus, Search, Heart, Shield, Pin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DemoCampaign } from "@/data/demoSeeds";
+import { adaptDemoMonsters } from "@/lib/demoAdapters";
+
+interface BestiaryTabProps {
+  demoMode?: boolean;
+  demoCampaign?: DemoCampaign | null;
+}
 
 interface Monster {
   id: string;
@@ -21,7 +28,7 @@ interface Monster {
   ac: number;
 }
 
-export function BestiaryTab() {
+export function BestiaryTab({ demoMode, demoCampaign }: BestiaryTabProps) {
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,10 +37,19 @@ export function BestiaryTab() {
 
   useEffect(() => {
     fetchMonsters();
-  }, []);
+  }, [demoMode, demoCampaign]);
 
   const fetchMonsters = async () => {
     try {
+      // Demo mode: Use static demo data
+      if (demoMode && demoCampaign) {
+        const adaptedMonsters = adaptDemoMonsters(demoCampaign);
+        setMonsters(adaptedMonsters as any);
+        setLoading(false);
+        return;
+      }
+
+      // Real mode: Fetch from Supabase
       const { data, error } = await supabase
         .from('monster_catalog')
         .select('id, name, cr, type, size, hp_avg, ac')

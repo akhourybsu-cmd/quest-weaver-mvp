@@ -7,15 +7,20 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+import { DemoCampaign } from "@/data/demoSeeds";
+import { getDemoCampaignStats } from "@/lib/demoAdapters";
+
 interface OverviewTabProps {
   campaignId: string;
   campaignCode: string;
   onQuickAdd: (type: string) => void;
   onReviewSessionPack?: () => void;
   refreshTrigger?: number;
+  demoMode?: boolean;
+  demoCampaign?: DemoCampaign | null;
 }
 
-export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack, refreshTrigger }: OverviewTabProps) {
+export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack, refreshTrigger, demoMode, demoCampaign }: OverviewTabProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -29,6 +34,15 @@ export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSess
     const fetchStats = async () => {
       setLoading(true);
       try {
+        // Demo mode: Use static demo data
+        if (demoMode && demoCampaign) {
+          const demoStats = getDemoCampaignStats(demoCampaign);
+          setStats(demoStats);
+          setLoading(false);
+          return;
+        }
+
+        // Real mode: Fetch from Supabase
         // Run all queries in parallel for faster loading
         const [activeQuests, completedQuests, partyMembers, nextSession] = await Promise.all([
           supabase
@@ -71,7 +85,7 @@ export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSess
     };
 
     fetchStats();
-  }, [campaignId, refreshTrigger]);
+  }, [campaignId, refreshTrigger, demoMode, demoCampaign]);
 
   if (loading) {
     return (

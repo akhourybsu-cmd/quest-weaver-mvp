@@ -32,12 +32,17 @@ interface Quest {
   [key: string]: any;
 }
 
+import { DemoCampaign } from "@/data/demoSeeds";
+import { adaptDemoQuests } from "@/lib/demoAdapters";
+
 interface QuestsTabProps {
   campaignId: string;
   onQuestSelect?: (quest: Quest) => void;
+  demoMode?: boolean;
+  demoCampaign?: DemoCampaign | null;
 }
 
-export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
+export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }: QuestsTabProps) {
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,15 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
     const fetchQuests = async () => {
       setLoading(true);
       try {
+        // Demo mode: Use static demo data
+        if (demoMode && demoCampaign) {
+          const adaptedQuests = adaptDemoQuests(demoCampaign);
+          setQuests(adaptedQuests as any);
+          setLoading(false);
+          return;
+        }
+
+        // Real mode: Fetch from Supabase
         const { data, error } = await supabase
           .from('quests')
           .select(`
@@ -145,6 +159,9 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
 
     fetchQuests();
 
+    // Skip real-time subscriptions in demo mode
+    if (demoMode) return;
+
     // Subscribe to realtime updates
     const channel = supabase
       .channel(`quests:${campaignId}`)
@@ -157,7 +174,7 @@ export function QuestsTab({ campaignId, onQuestSelect }: QuestsTabProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campaignId]);
+  }, [campaignId, demoMode, demoCampaign]);
 
   const questsByStatus = {
     not_started: quests.filter((q) => q.status === "not_started"),

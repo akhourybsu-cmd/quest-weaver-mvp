@@ -131,6 +131,7 @@ const CampaignHub = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [playerData, setPlayerData] = useState<{ count: number; players: any[] }>({ count: 0, players: [] });
   const [sessionCount, setSessionCount] = useState(0);
+  const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0);
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
@@ -171,12 +172,13 @@ const CampaignHub = () => {
         fetchLiveSession();
       })
       .on('postgres_changes', {
-        event: 'UPDATE',
+        event: '*',
         schema: 'public',
         table: 'campaign_sessions',
       }, () => {
         fetchLiveSession();
         fetchSessionCount();
+        setSessionRefreshTrigger(prev => prev + 1);
       })
       .on('postgres_changes', {
         event: '*',
@@ -854,6 +856,7 @@ const CampaignHub = () => {
                     campaignCode={activeCampaign.code}
                     onQuickAdd={handleQuickAdd}
                     onReviewSessionPack={() => setActiveTab("sessions")}
+                    refreshTrigger={sessionRefreshTrigger}
                   />
                 ) : (
                   <div className="space-y-4">

@@ -12,9 +12,10 @@ interface OverviewTabProps {
   campaignCode: string;
   onQuickAdd: (type: string) => void;
   onReviewSessionPack?: () => void;
+  refreshTrigger?: number;
 }
 
-export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack }: OverviewTabProps) {
+export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack, refreshTrigger }: OverviewTabProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -49,7 +50,8 @@ export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSess
             .from('campaign_sessions')
             .select('started_at')
             .eq('campaign_id', campaignId)
-            .eq('status', 'live')
+            .in('status', ['scheduled', 'live'])
+            .gt('started_at', new Date().toISOString())
             .order('started_at', { ascending: true })
             .limit(1)
             .maybeSingle()
@@ -69,7 +71,7 @@ export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSess
     };
 
     fetchStats();
-  }, [campaignId]);
+  }, [campaignId, refreshTrigger]);
 
   if (loading) {
     return (

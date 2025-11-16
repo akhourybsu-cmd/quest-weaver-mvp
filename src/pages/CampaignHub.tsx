@@ -544,7 +544,7 @@ const CampaignHub = () => {
     },
   ];
 
-  const formattedCampaigns = campaigns.map((c) => ({
+  const formattedCampaigns = (campaigns || []).map((c) => ({
     id: c.id,
     name: c.name,
     system: "5e",
@@ -616,7 +616,7 @@ const CampaignHub = () => {
                 <div>
                   <Label>Objectives</Label>
                   <div className="space-y-2 mt-2">
-                    {selectedEntity.data.objectives.map((obj: any) => (
+                    {(selectedEntity.data?.objectives || []).map((obj: any) => (
                       <div key={obj.id} className="flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={obj.complete} readOnly />
                         <span className={obj.complete ? "line-through text-muted-foreground" : ""}>
@@ -629,7 +629,7 @@ const CampaignHub = () => {
                 <div>
                   <Label>NPCs</Label>
                   <div className="mt-2 space-y-1">
-                    {selectedEntity.data.npcs.map((npc: string) => (
+                    {(selectedEntity.data?.npcs || []).map((npc: string) => (
                       <div key={npc} className="text-sm flex items-center gap-2">
                         <Users className="w-3 h-3 text-brass" />
                         {npc}
@@ -640,9 +640,9 @@ const CampaignHub = () => {
                 <div>
                   <Label>Rewards</Label>
                   <div className="mt-2 space-y-1 text-sm">
-                    <div>{selectedEntity.data.rewards.xp} XP</div>
-                    <div>{selectedEntity.data.rewards.gp} GP</div>
-                    {selectedEntity.data.rewards.items.map((item: string) => (
+                    <div>{selectedEntity.data?.rewards?.xp} XP</div>
+                    <div>{selectedEntity.data?.rewards?.gp} GP</div>
+                    {(selectedEntity.data?.rewards?.items || []).map((item: string) => (
                       <div key={item}>• {item}</div>
                     ))}
                   </div>
@@ -727,7 +727,7 @@ const CampaignHub = () => {
               <Avatar className="w-7 h-7 border border-brass/30">
                 <AvatarFallback className="text-xs bg-arcanePurple/20 text-ink">DM</AvatarFallback>
               </Avatar>
-              {playerData.players.slice(0, 4).map((char, idx) => {
+              {(playerData?.players || []).slice(0, 4).map((char, idx) => {
                 const initials = char.name
                   .split(' ')
                   .map((n: string) => n[0])

@@ -1,23 +1,20 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Scroll, Users, MapPin, Trophy, Plus, Loader2, ScrollText, 
-  MoreVertical, Pencil, Trash2, Play, CheckCircle2, XCircle,
-  Search, Award, Coins, Target, Sword, User, StickyNote, 
-  Minus, ChevronDown, ChevronUp, Eye, EyeOff
+  Scroll, Users, MapPin, Plus, Loader2, ScrollText,
+  Award, Coins, Target, Sword, User
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import QuestDialog from "@/components/quests/QuestDialog";
+import { QuestDetailDialog } from "@/components/quests/QuestDetailDialog";
+import { DemoCampaign } from "@/data/demoSeeds";
+import { adaptDemoQuests } from "@/lib/demoAdapters";
 
 interface Quest {
   id: string;
@@ -43,9 +40,6 @@ interface Quest {
   [key: string]: any;
 }
 
-import { DemoCampaign } from "@/data/demoSeeds";
-import { adaptDemoQuests } from "@/lib/demoAdapters";
-
 interface QuestsTabProps {
   campaignId: string;
   onQuestSelect?: (quest: Quest) => void;
@@ -54,131 +48,112 @@ interface QuestsTabProps {
 }
 
 export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }: QuestsTabProps) {
+  const { toast } = useToast();
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [questToEdit, setQuestToEdit] = useState<Quest | undefined>(undefined);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+
+  const fetchQuests = async () => {
+    setLoading(true);
+    try {
+      if (demoMode && demoCampaign) {
+        const adaptedQuests = adaptDemoQuests(demoCampaign);
+        setQuests(adaptedQuests as any);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('quests')
+        .select(`
+          id,
+          title,
+          description,
+          legacy_quest_giver,
+          quest_giver_id,
+          location_id,
+          quest_type,
+          status,
+          difficulty,
+          locations,
+          tags,
+          reward_xp,
+          reward_gp,
+          assigned_to,
+          faction_id,
+          dm_notes,
+          quest_steps (
+            id,
+            description,
+            objective_type,
+            progress_current,
+            progress_max,
+            step_order,
+            is_completed
+          ),
+          npc:quest_giver_id(id, name),
+          location:location_id(id, name, location_type)
+        `)
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Note counts removed for now
+
+      const transformedQuests = (data || []).map((quest: any) => ({
+        id: quest.id,
+        title: quest.title,
+        description: quest.description,
+        legacyQuestGiver: quest.legacy_quest_giver,
+        questGiverId: quest.quest_giver_id,
+        locationId: quest.location_id,
+        questType: quest.quest_type,
+        status: quest.status,
+        difficulty: quest.difficulty,
+        locations: quest.locations || [],
+        tags: quest.tags || [],
+        rewardXP: quest.reward_xp,
+        rewardGP: quest.reward_gp,
+        assignedTo: quest.assigned_to || [],
+        factionId: quest.faction_id,
+        dmNotes: quest.dm_notes,
+        steps: quest.quest_steps || [],
+        npc: quest.npc,
+        location: quest.location,
+        noteCount: 0,
+      }));
+
+      setQuests(transformedQuests);
+    } catch (err) {
+      console.error("Error fetching quests:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-
-    const fetchQuests = async () => {
-      setLoading(true);
-      try {
-        // Demo mode: Use static demo data
-        if (demoMode && demoCampaign) {
-          const adaptedQuests = adaptDemoQuests(demoCampaign);
-          setQuests(adaptedQuests as any);
-          setLoading(false);
-          return;
-        }
-
-        // Real mode: Fetch from Supabase
-        const { data, error } = await supabase
-          .from('quests')
-          .select(`
-            id,
-            title,
-            description,
-            legacy_quest_giver,
-            quest_giver_id,
-            location_id,
-            quest_type,
-            status,
-            difficulty,
-            locations,
-            tags,
-            reward_xp,
-            reward_gp,
-            assigned_to,
-            faction_id,
-            dm_notes,
-            quest_steps (
-              id,
-              description,
-              objective_type,
-              progress_current,
-              progress_max,
-              step_order
-            ),
-            npc:quest_giver_id(id, name),
-            location:location_id(id, name, location_type)
-          `)
-          .eq('campaign_id', campaignId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Get note counts for each quest
-        const questIds = (data || []).map((q: any) => q.id);
-        let noteCounts: Record<string, number> = {};
-
-        if (questIds.length > 0) {
-          const { data: noteLinks } = await supabase
-            .from('note_links')
-            .select('link_id')
-            .eq('link_type', 'QUEST')
-            .in('link_id', questIds);
-
-          if (noteLinks) {
-            noteCounts = noteLinks.reduce((acc: Record<string, number>, link: any) => {
-              acc[link.link_id] = (acc[link.link_id] || 0) + 1;
-              return acc;
-            }, {});
-          }
-        }
-
-        // Map database quests to component format
-        const mappedQuests: Quest[] = (data || []).map((q: any) => ({
-          id: q.id,
-          title: q.title || 'Untitled Quest',
-          description: q.description,
-          legacyQuestGiver: q.legacy_quest_giver,
-          questGiverId: q.quest_giver_id,
-          locationId: q.location_id,
-          questType: q.quest_type || 'side_quest',
-          status: q.status || 'not_started',
-          difficulty: q.difficulty,
-          locations: q.locations || [],
-          tags: q.tags || [],
-          rewardXP: q.reward_xp || 0,
-          rewardGP: q.reward_gp || 0,
-          assignedTo: q.assigned_to || [],
-          factionId: q.faction_id,
-          dmNotes: q.dm_notes,
-          npc: q.npc,
-          location: q.location,
-          noteCount: noteCounts[q.id] || 0,
-          steps: (q.quest_steps || [])
-            .sort((a: any, b: any) => a.step_order - b.step_order)
-            .map((s: any) => ({
-              id: s.id,
-              description: s.description,
-              objectiveType: s.objective_type,
-              progressMax: s.progress_max,
-              progressCurrent: s.progress_current,
-            })),
-        }));
-
-        setQuests(mappedQuests);
-      } catch (error) {
-        console.error('Failed to fetch quests:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchQuests();
 
-    // Skip real-time subscriptions in demo mode
     if (demoMode) return;
 
-    // Subscribe to realtime updates
     const channel = supabase
-      .channel(`quests:${campaignId}`)
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'quests', filter: `campaign_id=eq.${campaignId}` },
-        () => fetchQuests()
+      .channel('quests-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quests',
+          filter: `campaign_id=eq.${campaignId}`
+        },
+        () => {
+          fetchQuests();
+        }
       )
       .subscribe();
 
@@ -198,21 +173,45 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
     if (onQuestSelect) {
       onQuestSelect(quest);
     } else {
-      setQuestToEdit(quest);
+      setSelectedQuest(quest);
+      setDetailDialogOpen(true);
+    }
+  };
+
+  const handleEditQuest = () => {
+    if (selectedQuest) {
+      setDetailDialogOpen(false);
+      setQuestToEdit(selectedQuest);
       setDialogOpen(true);
     }
   };
 
-  const QuestCard = ({ quest }: { quest: Quest }) => {
-    const [expanded, setExpanded] = useState(false);
-    const objectives = quest.steps || [];
-    const completedObjectives = objectives.filter((o: any) => o.progressCurrent >= o.progressMax).length;
-    const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
+  const handleDeleteQuest = async () => {
+    if (!selectedQuest) return;
 
-    const handleExpandClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setExpanded(!expanded);
-    };
+    const { error } = await supabase
+      .from('quests')
+      .delete()
+      .eq('id', selectedQuest.id);
+
+    if (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete quest", 
+        variant: "destructive" 
+      });
+    } else {
+      toast({ title: "Success", description: "Quest deleted successfully" });
+      setDetailDialogOpen(false);
+      setSelectedQuest(null);
+      fetchQuests();
+    }
+  };
+
+  const QuestCard = ({ quest }: { quest: Quest }) => {
+    const objectives = quest.steps || [];
+    const completedObjectives = objectives.filter((o: any) => o.is_completed || o.isCompleted).length;
+    const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
 
     const getQuestTypeIcon = (type?: string) => {
       switch(type) {
@@ -226,232 +225,78 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
 
     const getDifficultyColor = (difficulty?: string) => {
       switch(difficulty) {
-        case 'easy': return 'text-green-500 border-green-500/30';
-        case 'moderate': return 'text-yellow-500 border-yellow-500/30';
-        case 'hard': return 'text-orange-500 border-orange-500/30';
-        case 'deadly': return 'text-red-500 border-red-500/30';
+        case 'easy': return 'text-buff-green border-buff-green/30';
+        case 'medium': return 'text-warning-amber border-warning-amber/30';
+        case 'hard': return 'text-destructive border-destructive/30';
+        case 'deadly': return 'text-dragon-red border-dragon-red/30';
         default: return 'text-muted-foreground border-brass/30';
       }
     };
 
     return (
       <Card
-        className="hover:shadow-lg transition-all bg-card border-brass/20"
-        onClick={() => !expanded && handleQuestClick(quest)}
+        className="hover:shadow-lg transition-all bg-card border-brass/20 cursor-pointer"
+        onClick={() => handleQuestClick(quest)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
-                {quest.visibility === "dm" ? (
-                  <EyeOff className="w-4 h-4 text-brass shrink-0" />
-                ) : (
-                  <Eye className="w-4 h-4 text-arcanePurple shrink-0" />
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
+              <div className="flex items-center gap-2 flex-wrap mt-2">
                 {quest.questType && (
                   <Badge variant="outline" className="text-xs border-brass/30">
                     {getQuestTypeIcon(quest.questType)}
                     <span className="ml-1">{quest.questType.replace('_', ' ')}</span>
                   </Badge>
                 )}
-                {quest.difficulty && (
+                {quest.difficulty && quest.difficulty !== 'none' && (
                   <Badge variant="outline" className={`text-xs ${getDifficultyColor(quest.difficulty)}`}>
                     {quest.difficulty}
                   </Badge>
                 )}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExpandClick}
-              className="h-8 w-8 p-0"
-            >
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Progress Bar */}
           {objectives.length > 0 && (
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span>Progress</span>
-                <span>{completedObjectives}/{objectives.length}</span>
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium">{completedObjectives}/{objectives.length}</span>
               </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-arcanePurple transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+              <Progress value={progress} className="h-1.5" />
             </div>
           )}
 
-          {/* Compact Info */}
-          {!expanded && (
-            <>
-              {(quest.npc || quest.legacyQuestGiver) && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Users className="w-3 h-3 text-brass" />
-                  <span className="text-muted-foreground">{quest.npc?.name || quest.legacyQuestGiver}</span>
-                </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {quest.npc && (
+              <span className="flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {quest.npc.name}
+              </span>
+            )}
+            {quest.location && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {quest.location.name}
+              </span>
+            )}
+          </div>
+
+          {(quest.rewardXP || quest.rewardGP) && (
+            <div className="flex items-center gap-3 text-xs">
+              {quest.rewardXP && (
+                <span className="flex items-center gap-1 text-warning-amber">
+                  <Award className="w-3 h-3" />
+                  {quest.rewardXP} XP
+                </span>
               )}
-
-              {quest.location && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <MapPin className="w-3 h-3 text-brass" />
-                  <span className="text-muted-foreground">{quest.location.name}</span>
-                </div>
-              )}
-
-              {quest.noteCount && quest.noteCount > 0 && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <ScrollText className="w-3 h-3 text-arcanePurple" />
-                  <span className="text-muted-foreground">{quest.noteCount} {quest.noteCount === 1 ? 'note' : 'notes'}</span>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-1">
-                {quest.rewardXP > 0 && (
-                  <Badge variant="outline" className="text-xs border-brass/30">
-                    <Award className="w-3 h-3 mr-1" />
-                    {quest.rewardXP} XP
-                  </Badge>
-                )}
-                {quest.rewardGP > 0 && (
-                  <Badge variant="outline" className="text-xs border-brass/30">
-                    <Coins className="w-3 h-3 mr-1" />
-                    {quest.rewardGP} GP
-                  </Badge>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Expanded View */}
-          {expanded && (
-            <div className="space-y-4 pt-2 border-t border-brass/20 bg-background/95 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
-              {/* Description */}
-              {quest.description && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground">{quest.description}</p>
-                </div>
-              )}
-
-              {/* Quest Giver & Location */}
-              <div className="grid grid-cols-2 gap-3">
-                {(quest.npc || quest.legacyQuestGiver) && (
-                  <div>
-                    <h4 className="text-xs font-semibold mb-1 text-brass">Quest Giver</h4>
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <Users className="w-3 h-3 text-brass" />
-                      <span>{quest.npc?.name || quest.legacyQuestGiver}</span>
-                    </div>
-                  </div>
-                )}
-
-                {quest.location && (
-                  <div>
-                    <h4 className="text-xs font-semibold mb-1 text-brass">Location</h4>
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <MapPin className="w-3 h-3 text-brass" />
-                      <span>{quest.location.name}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Quest Steps */}
-              {objectives.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Objectives</h4>
-                  <div className="space-y-2">
-                    {objectives.map((step: any, idx: number) => (
-                      <div key={step.id || idx} className="flex items-start gap-2 text-sm">
-                        <Checkbox
-                          checked={step.progressCurrent >= step.progressMax}
-                          className="mt-0.5"
-                          disabled
-                        />
-                        <div className="flex-1">
-                          <p className={step.progressCurrent >= step.progressMax ? 'line-through text-muted-foreground' : ''}>
-                            {step.description}
-                          </p>
-                          {step.objectiveType === 'counter' && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Progress: {step.progressCurrent}/{step.progressMax}
-                            </p>
-                          )}
-                        </div>
-                        {step.progressCurrent >= step.progressMax ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Rewards */}
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Rewards</h4>
-                <div className="flex flex-wrap gap-2">
-                  {quest.rewardXP > 0 && (
-                    <Badge variant="outline" className="border-brass/30">
-                      <Award className="w-3 h-3 mr-1" />
-                      {quest.rewardXP} XP
-                    </Badge>
-                  )}
-                  {quest.rewardGP > 0 && (
-                    <Badge variant="outline" className="border-brass/30">
-                      <Coins className="w-3 h-3 mr-1" />
-                      {quest.rewardGP} GP
-                    </Badge>
-                  )}
-                  {(!quest.rewardXP || quest.rewardXP === 0) && (!quest.rewardGP || quest.rewardGP === 0) && (
-                    <span className="text-sm text-muted-foreground">No rewards specified</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Tags */}
-              {quest.tags && quest.tags.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Tags</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {quest.tags.map((tag: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* DM Notes */}
-              {quest.dmNotes && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-1 flex items-center gap-1">
-                    <StickyNote className="w-3 h-3" />
-                    DM Notes
-                  </h4>
-                  <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">{quest.dmNotes}</p>
-                </div>
-              )}
-
-              {/* Notes Count */}
-              {quest.noteCount && quest.noteCount > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-arcanePurple">
-                  <ScrollText className="w-4 h-4" />
-                  <span>{quest.noteCount} linked {quest.noteCount === 1 ? 'note' : 'notes'}</span>
-                </div>
+              {quest.rewardGP && (
+                <span className="flex items-center gap-1 text-brass">
+                  <Coins className="w-3 h-3" />
+                  {quest.rewardGP} GP
+                </span>
               )}
             </div>
           )}
@@ -462,60 +307,57 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-arcanePurple" />
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (quests.length === 0) {
+  if (!loading && quests.length === 0) {
     return (
-      <>
-        <div className="flex flex-col items-center justify-center h-64">
-          <Scroll className="w-16 h-16 text-brass/50 mb-4" />
-          <h3 className="text-xl font-cinzel font-bold mb-2">No Quests Yet</h3>
-          <p className="text-muted-foreground text-center max-w-md mb-6">
-            Create your first quest to start building your campaign's narrative.
-          </p>
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <Scroll className="h-16 w-16 text-muted-foreground" />
+        <h3 className="text-xl font-semibold">No Quests Yet</h3>
+        <p className="text-muted-foreground text-center max-w-md">
+          Start your adventure by creating your first quest
+        </p>
+        {!demoMode && (
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create Quest
           </Button>
-        </div>
-        <QuestDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          campaignId={campaignId}
-          questToEdit={questToEdit}
-        />
-      </>
+        )}
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Tabs value={view} onValueChange={(v) => setView(v as "board" | "list")}>
-          <TabsList>
+        <Tabs value={view} onValueChange={(v) => setView(v as any)} className="w-[400px]">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="board">Board View</TabsTrigger>
             <TabsTrigger value="list">List View</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button onClick={() => { setQuestToEdit(undefined); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Quest
-        </Button>
+
+        {!demoMode && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Quest
+          </Button>
+        )}
       </div>
 
-      {view === "board" ? (
+      {view === "board" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-brass">Not Started</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.not_started.length} quests</p>
-            </div>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-3">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-secondary" />
+              Not Started ({questsByStatus.not_started.length})
+            </h3>
+            <ScrollArea className="h-[600px]">
+              <div className="space-y-3 pr-4">
                 {questsByStatus.not_started.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
@@ -523,13 +365,13 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             </ScrollArea>
           </div>
 
-          <div>
-            <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-arcanePurple">In Progress</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.in_progress.length} quests</p>
-            </div>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-3">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              In Progress ({questsByStatus.in_progress.length})
+            </h3>
+            <ScrollArea className="h-[600px]">
+              <div className="space-y-3 pr-4">
                 {questsByStatus.in_progress.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
@@ -537,13 +379,13 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             </ScrollArea>
           </div>
 
-          <div>
-            <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-green-500">Completed</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.completed.length} quests</p>
-            </div>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-3">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-buff-green" />
+              Completed ({questsByStatus.completed.length})
+            </h3>
+            <ScrollArea className="h-[600px]">
+              <div className="space-y-3 pr-4">
                 {questsByStatus.completed.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
@@ -551,13 +393,13 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             </ScrollArea>
           </div>
 
-          <div>
-            <div className="mb-3">
-              <h3 className="font-cinzel font-semibold text-dragonRed">Failed</h3>
-              <p className="text-xs text-muted-foreground">{questsByStatus.failed.length} quests</p>
-            </div>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-3">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive" />
+              Failed ({questsByStatus.failed.length})
+            </h3>
+            <ScrollArea className="h-[600px]">
+              <div className="space-y-3 pr-4">
                 {questsByStatus.failed.map((quest) => (
                   <QuestCard key={quest.id} quest={quest} />
                 ))}
@@ -565,44 +407,16 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             </ScrollArea>
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {quests.map((quest) => (
-            <Card
-              key={quest.id}
-              className="cursor-pointer hover:bg-accent/5 transition-colors border-brass/20"
-              onClick={() => handleQuestClick(quest)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <Scroll className="w-5 h-5 text-arcanePurple" />
-                    <div>
-                      <h4 className="font-medium font-cinzel">{quest.title}</h4>
-                      {quest.arc && <p className="text-sm text-muted-foreground">{quest.arc}</p>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant={
-                        quest.status === "in_progress"
-                          ? "default"
-                          : quest.status === "completed"
-                          ? "outline"
-                          : "secondary"
-                      }
-                    >
-                      {quest.status.replace('_', ' ')}
-                    </Badge>
-                    <div className="text-sm text-muted-foreground">
-                      {quest.steps?.filter((s: any) => s.progressCurrent >= s.progressMax).length || 0}/{quest.steps?.length || 0}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      )}
+
+      {view === "list" && (
+        <ScrollArea className="h-[600px]">
+          <div className="space-y-3">
+            {quests.map((quest) => (
+              <QuestCard key={quest.id} quest={quest} />
+            ))}
+          </div>
+        </ScrollArea>
       )}
 
       <QuestDialog
@@ -610,6 +424,15 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         onOpenChange={setDialogOpen}
         campaignId={campaignId}
         questToEdit={questToEdit}
+      />
+
+      <QuestDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        quest={selectedQuest}
+        onEdit={handleEditQuest}
+        onDelete={handleDeleteQuest}
+        demoMode={demoMode}
       />
     </div>
   );

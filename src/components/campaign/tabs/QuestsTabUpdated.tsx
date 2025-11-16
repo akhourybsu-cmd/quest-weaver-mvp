@@ -204,27 +204,78 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
   };
 
   const QuestCard = ({ quest }: { quest: Quest }) => {
+    const [expanded, setExpanded] = useState(false);
     const objectives = quest.steps || [];
     const completedObjectives = objectives.filter((o: any) => o.progressCurrent >= o.progressMax).length;
     const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
 
+    const handleExpandClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setExpanded(!expanded);
+    };
+
+    const getQuestTypeIcon = (type?: string) => {
+      switch(type) {
+        case 'main_quest': return <Sword className="w-3 h-3" />;
+        case 'side_quest': return <Target className="w-3 h-3" />;
+        case 'faction': return <Users className="w-3 h-3" />;
+        case 'personal': return <User className="w-3 h-3" />;
+        default: return <Scroll className="w-3 h-3" />;
+      }
+    };
+
+    const getDifficultyColor = (difficulty?: string) => {
+      switch(difficulty) {
+        case 'easy': return 'text-green-500 border-green-500/30';
+        case 'moderate': return 'text-yellow-500 border-yellow-500/30';
+        case 'hard': return 'text-orange-500 border-orange-500/30';
+        case 'deadly': return 'text-red-500 border-red-500/30';
+        default: return 'text-muted-foreground border-brass/30';
+      }
+    };
+
     return (
       <Card
-        className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-        onClick={() => handleQuestClick(quest)}
+        className="hover:shadow-lg transition-all bg-card border-brass/20"
+        onClick={() => !expanded && handleQuestClick(quest)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
-            {quest.visibility === "dm" ? (
-              <EyeOff className="w-4 h-4 text-brass shrink-0" />
-            ) : (
-              <Eye className="w-4 h-4 text-arcanePurple shrink-0" />
-            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
+                {quest.visibility === "dm" ? (
+                  <EyeOff className="w-4 h-4 text-brass shrink-0" />
+                ) : (
+                  <Eye className="w-4 h-4 text-arcanePurple shrink-0" />
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {quest.questType && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    {getQuestTypeIcon(quest.questType)}
+                    <span className="ml-1">{quest.questType.replace('_', ' ')}</span>
+                  </Badge>
+                )}
+                {quest.difficulty && (
+                  <Badge variant="outline" className={`text-xs ${getDifficultyColor(quest.difficulty)}`}>
+                    {quest.difficulty}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExpandClick}
+              className="h-8 w-8 p-0"
+            >
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
           </div>
-          {quest.arc && <CardDescription className="text-xs">{quest.arc}</CardDescription>}
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Progress Bar */}
           {objectives.length > 0 && (
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
@@ -240,39 +291,170 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             </div>
           )}
 
-          {(quest.npc || quest.legacyQuestGiver) && (
-            <div className="flex items-center gap-1.5 text-xs">
-              <Users className="w-3 h-3 text-brass" />
-              <span className="text-muted-foreground">{quest.npc?.name || quest.legacyQuestGiver}</span>
-            </div>
+          {/* Compact Info */}
+          {!expanded && (
+            <>
+              {(quest.npc || quest.legacyQuestGiver) && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Users className="w-3 h-3 text-brass" />
+                  <span className="text-muted-foreground">{quest.npc?.name || quest.legacyQuestGiver}</span>
+                </div>
+              )}
+
+              {quest.location && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <MapPin className="w-3 h-3 text-brass" />
+                  <span className="text-muted-foreground">{quest.location.name}</span>
+                </div>
+              )}
+
+              {quest.noteCount && quest.noteCount > 0 && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <ScrollText className="w-3 h-3 text-arcanePurple" />
+                  <span className="text-muted-foreground">{quest.noteCount} {quest.noteCount === 1 ? 'note' : 'notes'}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1">
+                {quest.rewardXP > 0 && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    <Award className="w-3 h-3 mr-1" />
+                    {quest.rewardXP} XP
+                  </Badge>
+                )}
+                {quest.rewardGP > 0 && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    <Coins className="w-3 h-3 mr-1" />
+                    {quest.rewardGP} GP
+                  </Badge>
+                )}
+              </div>
+            </>
           )}
 
-          {quest.location && (
-            <div className="flex items-center gap-1.5 text-xs">
-              <MapPin className="w-3 h-3 text-brass" />
-              <span className="text-muted-foreground">{quest.location.name}</span>
+          {/* Expanded View */}
+          {expanded && (
+            <div className="space-y-4 pt-2 border-t border-brass/20 bg-background/95 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+              {/* Description */}
+              {quest.description && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Description</h4>
+                  <p className="text-sm text-muted-foreground">{quest.description}</p>
+                </div>
+              )}
+
+              {/* Quest Giver & Location */}
+              <div className="grid grid-cols-2 gap-3">
+                {(quest.npc || quest.legacyQuestGiver) && (
+                  <div>
+                    <h4 className="text-xs font-semibold mb-1 text-brass">Quest Giver</h4>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Users className="w-3 h-3 text-brass" />
+                      <span>{quest.npc?.name || quest.legacyQuestGiver}</span>
+                    </div>
+                  </div>
+                )}
+
+                {quest.location && (
+                  <div>
+                    <h4 className="text-xs font-semibold mb-1 text-brass">Location</h4>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <MapPin className="w-3 h-3 text-brass" />
+                      <span>{quest.location.name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Quest Steps */}
+              {objectives.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Objectives</h4>
+                  <div className="space-y-2">
+                    {objectives.map((step: any, idx: number) => (
+                      <div key={step.id || idx} className="flex items-start gap-2 text-sm">
+                        <Checkbox
+                          checked={step.progressCurrent >= step.progressMax}
+                          className="mt-0.5"
+                          disabled
+                        />
+                        <div className="flex-1">
+                          <p className={step.progressCurrent >= step.progressMax ? 'line-through text-muted-foreground' : ''}>
+                            {step.description}
+                          </p>
+                          {step.objectiveType === 'counter' && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Progress: {step.progressCurrent}/{step.progressMax}
+                            </p>
+                          )}
+                        </div>
+                        {step.progressCurrent >= step.progressMax ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rewards */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Rewards</h4>
+                <div className="flex flex-wrap gap-2">
+                  {quest.rewardXP > 0 && (
+                    <Badge variant="outline" className="border-brass/30">
+                      <Award className="w-3 h-3 mr-1" />
+                      {quest.rewardXP} XP
+                    </Badge>
+                  )}
+                  {quest.rewardGP > 0 && (
+                    <Badge variant="outline" className="border-brass/30">
+                      <Coins className="w-3 h-3 mr-1" />
+                      {quest.rewardGP} GP
+                    </Badge>
+                  )}
+                  {(!quest.rewardXP || quest.rewardXP === 0) && (!quest.rewardGP || quest.rewardGP === 0) && (
+                    <span className="text-sm text-muted-foreground">No rewards specified</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Tags */}
+              {quest.tags && quest.tags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {quest.tags.map((tag: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DM Notes */}
+              {quest.dmNotes && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                    <StickyNote className="w-3 h-3" />
+                    DM Notes
+                  </h4>
+                  <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">{quest.dmNotes}</p>
+                </div>
+              )}
+
+              {/* Notes Count */}
+              {quest.noteCount && quest.noteCount > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-arcanePurple">
+                  <ScrollText className="w-4 h-4" />
+                  <span>{quest.noteCount} linked {quest.noteCount === 1 ? 'note' : 'notes'}</span>
+                </div>
+              )}
             </div>
           )}
-
-          {quest.noteCount && quest.noteCount > 0 && (
-            <div className="flex items-center gap-1.5 text-xs">
-              <ScrollText className="w-3 h-3 text-arcanePurple" />
-              <span className="text-muted-foreground">{quest.noteCount} {quest.noteCount === 1 ? 'note' : 'notes'}</span>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-1">
-            {quest.rewardXP > 0 && (
-              <Badge variant="outline" className="text-xs border-brass/30">
-                {quest.rewardXP} XP
-              </Badge>
-            )}
-            {quest.rewardGP > 0 && (
-              <Badge variant="outline" className="text-xs border-brass/30">
-                {quest.rewardGP} GP
-              </Badge>
-            )}
-          </div>
         </CardContent>
       </Card>
     );

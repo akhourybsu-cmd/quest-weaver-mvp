@@ -162,29 +162,52 @@ export function DemoQuestsTab({ campaign }: DemoQuestsTabProps) {
     const TypeIcon = typeIcons[quest.questType || 'miscellaneous'] || ScrollText;
     const progress = calculateQuestProgress(quest);
     const isExpanded = expandedQuests.has(quest.id);
+    const completedSteps = quest.steps?.filter((s: any) => s.completed || s.complete).length || 0;
+    const totalSteps = quest.steps?.length || 0;
+
+    const getQuestTypeIcon = (type?: string) => {
+      switch(type) {
+        case 'main_quest': return <Sword className="w-3 h-3" />;
+        case 'side_quest': return <Target className="w-3 h-3" />;
+        case 'faction': return <Users className="w-3 h-3" />;
+        case 'personal': return <User className="w-3 h-3" />;
+        default: return <Scroll className="w-3 h-3" />;
+      }
+    };
 
     return (
-      <Card className="bg-card/50 border-brass/20 hover:shadow-lg transition-all">
+      <Card className="hover:shadow-lg transition-all bg-card border-brass/20">
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <TypeIcon className="w-4 h-4 text-arcanePurple" />
-                <CardTitle className="font-cinzel text-lg">{quest.title}</CardTitle>
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
               </div>
-              <CardDescription className="line-clamp-2">{quest.description}</CardDescription>
+              <div className="flex items-center gap-2 flex-wrap">
+                {quest.questType && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    {getQuestTypeIcon(quest.questType)}
+                    <span className="ml-1">{quest.questType.replace('_', ' ')}</span>
+                  </Badge>
+                )}
+                {quest.difficulty && (
+                  <Badge variant="outline" className={`text-xs ${difficultyColors[quest.difficulty]}`}>
+                    {quest.difficulty}
+                  </Badge>
+                )}
+                <Badge variant="outline" className={statusColors[quest.status]}>
+                  {quest.status.replace('_', ' ')}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={statusColors[quest.status]}>
-                {quest.status.replace('_', ' ')}
-              </Badge>
+            <div className="flex items-center gap-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="bg-popover">
                   <DropdownMenuItem onClick={() => toast({ title: "Demo Mode", description: "Quest editing not available in demo", variant: "destructive" })}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit Quest
@@ -206,116 +229,203 @@ export function DemoQuestsTab({ campaign }: DemoQuestsTabProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Progress Bar */}
-          {quest.steps && quest.steps.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">
-                  {quest.steps.filter((s: any) => s.completed).length} / {quest.steps.length} complete
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
-
-          {/* Metadata */}
-          <div className="flex flex-wrap gap-2 text-sm">
-            {quest.difficulty && (
-              <Badge variant="outline" className={difficultyColors[quest.difficulty]}>
-                {quest.difficulty}
-              </Badge>
-            )}
-            {quest.npc && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <User className="w-3 h-3" />
-                <span>{quest.npc.name}</span>
-              </div>
-            )}
-            {quest.location && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="w-3 h-3" />
-                <span>{quest.location.name}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Rewards */}
-          {(quest.rewardXP || quest.rewardGP) && (
-            <div className="flex gap-3 text-sm">
-              {quest.rewardXP > 0 && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Award className="w-3 h-3" />
-                  <span>{quest.rewardXP} XP</span>
-                </div>
-              )}
-              {quest.rewardGP > 0 && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Coins className="w-3 h-3" />
-                  <span>{quest.rewardGP} GP</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Steps - Expandable */}
-          {quest.steps && quest.steps.length > 0 && (
-            <div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => toggleExpanded(quest.id)}
-                className="w-full justify-between"
+                className="h-8 w-8 p-0"
               >
-                <span className="text-sm font-medium">
-                  Quest Steps ({quest.steps.length})
-                </span>
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </Button>
-              
-              {isExpanded && (
-                <div className="mt-2 space-y-2">
-                  {quest.steps.map((step: any) => (
-                    <div key={step.id} className="flex items-start gap-2 p-2 rounded bg-background/50 border border-brass/10">
-                      <Checkbox
-                        checked={step.completed}
-                        onCheckedChange={() => handleStepToggle(quest.id, step.id)}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <p className={`text-sm ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {step.description}
-                        </p>
-                        {step.progressMax && step.progressMax > 1 && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-6 w-6"
-                              onClick={() => handleProgressUpdate(quest.id, step.id, -1)}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                              {step.progressCurrent || 0} / {step.progressMax}
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-6 w-6"
-                              onClick={() => handleProgressUpdate(quest.id, step.id, 1)}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Progress Bar */}
+          {totalSteps > 0 && (
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span>Progress</span>
+                <span>{completedSteps}/{totalSteps}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-arcanePurple transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Compact Info */}
+          {!isExpanded && (
+            <>
+              {quest.npc && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Users className="w-3 h-3 text-brass" />
+                  <span className="text-muted-foreground">{quest.npc.name}</span>
+                </div>
+              )}
+
+              {quest.location && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <MapPin className="w-3 h-3 text-brass" />
+                  <span className="text-muted-foreground">{quest.location.name}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1">
+                {quest.rewardXP > 0 && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    <Award className="w-3 h-3 mr-1" />
+                    {quest.rewardXP} XP
+                  </Badge>
+                )}
+                {quest.rewardGP > 0 && (
+                  <Badge variant="outline" className="text-xs border-brass/30">
+                    <Coins className="w-3 h-3 mr-1" />
+                    {quest.rewardGP} GP
+                  </Badge>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Expanded View */}
+          {isExpanded && (
+            <div className="space-y-4 pt-2 border-t border-brass/20 bg-background/95 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+              {/* Description */}
+              {quest.description && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Description</h4>
+                  <p className="text-sm text-muted-foreground">{quest.description}</p>
+                </div>
+              )}
+
+              {/* Quest Giver & Location */}
+              <div className="grid grid-cols-2 gap-3">
+                {quest.npc && (
+                  <div>
+                    <h4 className="text-xs font-semibold mb-1 text-brass">Quest Giver</h4>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Users className="w-3 h-3 text-brass" />
+                      <span>{quest.npc.name}</span>
+                    </div>
+                  </div>
+                )}
+
+                {quest.location && (
+                  <div>
+                    <h4 className="text-xs font-semibold mb-1 text-brass">Location</h4>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <MapPin className="w-3 h-3 text-brass" />
+                      <span>{quest.location.name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Quest Steps */}
+              {quest.steps && quest.steps.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Objectives</h4>
+                  <div className="space-y-2">
+                    {quest.steps.map((step: any, idx: number) => (
+                      <div key={step.id || idx} className="flex items-start gap-2 text-sm">
+                        <Checkbox
+                          checked={step.completed || step.complete}
+                          onCheckedChange={() => handleStepToggle(quest.id, step.id)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <p className={(step.completed || step.complete) ? 'line-through text-muted-foreground' : ''}>
+                            {step.description}
+                          </p>
+                          {step.progressMax && step.progressMax > 1 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProgressUpdate(quest.id, step.id, -1);
+                                }}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                {step.progressCurrent || 0}/{step.progressMax}
+                              </span>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleProgressUpdate(quest.id, step.id, 1);
+                                }}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        {(step.completed || step.complete) ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                         )}
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rewards */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Rewards</h4>
+                <div className="flex flex-wrap gap-2">
+                  {quest.rewardXP > 0 && (
+                    <Badge variant="outline" className="border-brass/30">
+                      <Award className="w-3 h-3 mr-1" />
+                      {quest.rewardXP} XP
+                    </Badge>
+                  )}
+                  {quest.rewardGP > 0 && (
+                    <Badge variant="outline" className="border-brass/30">
+                      <Coins className="w-3 h-3 mr-1" />
+                      {quest.rewardGP} GP
+                    </Badge>
+                  )}
+                  {(!quest.rewardXP || quest.rewardXP === 0) && (!quest.rewardGP || quest.rewardGP === 0) && (
+                    <span className="text-sm text-muted-foreground">No rewards specified</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Tags */}
+              {quest.tags && quest.tags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {quest.tags.map((tag: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DM Notes */}
+              {quest.dmNotes && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                    <StickyNote className="w-3 h-3" />
+                    DM Notes
+                  </h4>
+                  <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">{quest.dmNotes}</p>
                 </div>
               )}
             </div>

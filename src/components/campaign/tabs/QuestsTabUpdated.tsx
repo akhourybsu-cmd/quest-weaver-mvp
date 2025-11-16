@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Scroll, Users, MapPin, Plus, Loader2, ScrollText,
   Award, Coins, Target, Sword, User
@@ -56,6 +57,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
   const [questToEdit, setQuestToEdit] = useState<Quest | undefined>(undefined);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchQuests = async () => {
     setLoading(true);
@@ -186,7 +188,11 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
     }
   };
 
-  const handleDeleteQuest = async () => {
+  const handleDeleteQuest = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteQuest = async () => {
     if (!selectedQuest) return;
 
     const { error } = await supabase
@@ -202,6 +208,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
       });
     } else {
       toast({ title: "Success", description: "Quest deleted successfully" });
+      setDeleteDialogOpen(false);
       setDetailDialogOpen(false);
       setSelectedQuest(null);
       fetchQuests();
@@ -434,6 +441,23 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         onDelete={handleDeleteQuest}
         demoMode={demoMode}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Quest</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedQuest?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteQuest} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

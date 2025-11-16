@@ -75,8 +75,8 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
     }
   };
 
-  const upcomingSessions = sessions.filter((s) => s.status === 'scheduled');
-  const pastSessions = sessions.filter((s) => s.status === 'ended');
+  const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled') || [];
+  const pastSessions = sessions?.filter((s) => s.status === 'ended') || [];
 
   const openPackBuilder = (session: Session) => {
     setSelectedSession(session);

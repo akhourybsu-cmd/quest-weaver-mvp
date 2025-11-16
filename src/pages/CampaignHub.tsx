@@ -114,19 +114,15 @@ interface Campaign {
 }
 
 const CampaignHub = () => {
+  // Safeguard: This component should NEVER be used for demo routes
+  if (window.location.pathname.includes('/demo/')) {
+    throw new Error('CampaignHub should never be used for demo routes');
+  }
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const campaignIdParam = searchParams.get("campaign");
-
-  // Check if we're in demo mode (optional chaining in case not wrapped by DemoProvider)
-  let demoContext;
-  try {
-    demoContext = require("@/contexts/DemoContext").useDemo();
-  } catch {
-    demoContext = { isDemo: false, campaign: null };
-  }
-  const { isDemo, campaign: demoCampaign } = demoContext || { isDemo: false, campaign: null };
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
@@ -152,44 +148,17 @@ const CampaignHub = () => {
       }
     };
     
-    // Skip auth and database queries in demo mode
-    if (isDemo && demoCampaign) {
-      setCurrentUserId('demo-dm');
-      setActiveCampaign({
-        id: demoCampaign.id,
-        name: demoCampaign.name,
-        code: 'DEMO',
-        dm_user_id: 'demo-dm'
-      });
-      setCampaigns([{
-        id: demoCampaign.id,
-        name: demoCampaign.name,
-        code: 'DEMO',
-        dm_user_id: 'demo-dm'
-      }]);
-      setLoading(false);
-      return;
-    }
-    
     initUser();
     fetchCampaigns();
     
     // Check for live session when active campaign changes
-    if (activeCampaign && !isDemo) {
+    if (activeCampaign) {
       fetchLiveSession();
     }
-  }, [activeCampaign, isDemo, demoCampaign]);
+  }, [activeCampaign]);
 
   useEffect(() => {
     if (!activeCampaign) return;
-    
-    // Skip real-time subscriptions in demo mode
-    if (isDemo) {
-      // Set mock player data for demo
-      setPlayerData({ count: 4, players: [] });
-      setSessionCount(demoCampaign?.sessions.filter(s => s.status === 'past').length || 0);
-      return;
-    }
 
     // Fetch initial player data and session count
     fetchPlayerData();
@@ -229,7 +198,7 @@ const CampaignHub = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeCampaign, isDemo, demoCampaign]);
+  }, [activeCampaign]);
 
   const fetchPlayerData = async () => {
     if (!activeCampaign) return;
@@ -339,16 +308,6 @@ const CampaignHub = () => {
 
   const handleStartSession = async () => {
     if (!activeCampaign) return;
-    
-    // Demo mode: Show message
-    if (isDemo) {
-      toast({
-        title: 'Demo Mode',
-        description: 'Session management is disabled in demo mode. Sign up to use this feature!',
-        variant: 'default',
-      });
-      return;
-    }
     
     setLoading(true);
     try {
@@ -496,15 +455,6 @@ const CampaignHub = () => {
   };
 
   const handleInvitePlayers = () => {
-    if (isDemo) {
-      toast({
-        title: "Demo Mode",
-        description: "Player invites are disabled in demo mode. Sign up to invite players!",
-        variant: "default",
-      });
-      return;
-    }
-    
     if (activeCampaign) {
       navigator.clipboard.writeText(activeCampaign.code);
       toast({
@@ -912,8 +862,6 @@ const CampaignHub = () => {
                     onQuickAdd={handleQuickAdd}
                     onReviewSessionPack={() => setActiveTab("sessions")}
                     refreshTrigger={sessionRefreshTrigger}
-                    demoMode={isDemo}
-                    demoCampaign={demoCampaign}
                   />
                 ) : (
                   <div className="space-y-4">
@@ -927,8 +875,6 @@ const CampaignHub = () => {
                   <QuestsTab 
                     campaignId={activeCampaign.id} 
                     onQuestSelect={handleQuestSelect}
-                    demoMode={isDemo}
-                    demoCampaign={demoCampaign}
                   />
                 ) : (
                   <div className="space-y-4">
@@ -966,8 +912,6 @@ const CampaignHub = () => {
                 {activeCampaign ? (
                   <LocationsTab 
                     campaignId={activeCampaign.id}
-                    demoMode={isDemo}
-                    demoCampaign={demoCampaign}
                   />
                 ) : (
                   <div className="space-y-4">
@@ -989,10 +933,7 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
-                <BestiaryTab 
-                  demoMode={isDemo}
-                  demoCampaign={demoCampaign}
-                />
+                <BestiaryTab />
               </TabsContent>
               <TabsContent value="encounters" className="mt-0 h-full">
                 {activeCampaign ? (

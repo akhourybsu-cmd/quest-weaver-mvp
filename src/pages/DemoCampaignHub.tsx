@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { DemoProvider } from "@/contexts/DemoContext";
 import { DemoBar } from "@/components/demo/DemoBar";
-import CampaignHub from "./CampaignHub";
+import DemoCampaignManager from "./DemoCampaignManager";
 
 export default function DemoCampaignHub() {
   const { demoId } = useParams<{ demoId: string }>();
@@ -9,7 +9,7 @@ export default function DemoCampaignHub() {
   return (
     <DemoProvider demoId={demoId}>
       <DemoBar />
-      <CampaignHub />
+      <DemoCampaignManager />
     </DemoProvider>
   );
 }

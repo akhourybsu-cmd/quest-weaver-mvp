@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PlayerNotes from "@/pages/PlayerNotes";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -68,6 +68,7 @@ const App = () => {
                 {/* Public routes */}
                 <Route path="/" element={<Index session={session} />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/player" element={<Navigate to="/player-hub" replace />} />
                 
                 {/* Protected routes */}
                 {loading ? (

@@ -6,27 +6,35 @@
 import { DemoCampaign } from "@/data/demoSeeds";
 
 export function adaptDemoQuests(demoCampaign: DemoCampaign) {
-  return demoCampaign.quests.map(q => ({
-    id: q.id,
-    title: q.title,
-    arc: q.arc,
-    status: q.status === "hook" ? "not_started" : q.status === "complete" ? "completed" : "in_progress",
-    description: q.description,
-    visibility: q.visibility,
-    rewardXP: q.rewards.xp,
-    rewardGP: q.rewards.gp,
-    npc: q.npcs[0] ? demoCampaign.npcs.find(npc => npc.id === q.npcs[0]) : null,
-    location: q.locations[0] ? demoCampaign.locations.find(loc => loc.id === q.locations[0]) : null,
-    noteCount: 0,
-    steps: q.objectives.map((obj, idx) => ({
-      id: obj.id,
-      description: obj.text,
-      objectiveType: "standard",
-      progressMax: 1,
-      progressCurrent: obj.complete ? 1 : 0,
-      step_order: idx,
-    })),
-  }));
+  return demoCampaign.quests.map(q => {
+    const npcData = q.npcs[0] ? demoCampaign.npcs.find(npc => npc.id === q.npcs[0]) : null;
+    const locationData = q.locations[0] ? demoCampaign.locations.find(loc => loc.id === q.locations[0]) : null;
+    
+    return {
+      id: q.id,
+      title: q.title,
+      arc: q.arc,
+      status: q.status === "hook" ? "not_started" : q.status === "complete" ? "completed" : q.status === "failed" ? "failed" : "in_progress",
+      questType: 'side_quest', // Demo quests default to side quest
+      difficulty: 'moderate', // Demo quests default to moderate
+      description: q.description,
+      visibility: q.visibility,
+      rewardXP: q.rewards.xp,
+      rewardGP: q.rewards.gp,
+      npc: npcData ? { id: npcData.id, name: npcData.name } : null,
+      location: locationData ? { id: locationData.id, name: locationData.name } : null,
+      noteCount: 0,
+      steps: q.objectives.map((obj, idx) => ({
+        id: obj.id,
+        description: obj.text,
+        completed: obj.complete,
+        objectiveType: "standard",
+        progressMax: 1,
+        progressCurrent: obj.complete ? 1 : 0,
+        step_order: idx,
+      })),
+    };
+  });
 }
 
 export function adaptDemoNPCs(demoCampaign: DemoCampaign) {

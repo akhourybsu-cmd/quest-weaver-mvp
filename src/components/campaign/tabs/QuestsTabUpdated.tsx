@@ -4,7 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Scroll, Users, MapPin, Trophy, Eye, EyeOff, Plus, Loader2, ScrollText } from "lucide-react";
+import { 
+  Scroll, Users, MapPin, Trophy, Plus, Loader2, ScrollText, 
+  MoreVertical, Pencil, Trash2, Play, CheckCircle2, XCircle,
+  Search, Award, Coins, Target, Sword, User, StickyNote, 
+  Minus, ChevronDown, ChevronUp
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import QuestDialog from "@/components/quests/QuestDialog";
 

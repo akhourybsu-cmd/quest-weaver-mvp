@@ -8,7 +8,7 @@ import {
   Scroll, Users, MapPin, Trophy, Plus, Loader2, ScrollText, 
   MoreVertical, Pencil, Trash2, Play, CheckCircle2, XCircle,
   Search, Award, Coins, Target, Sword, User, StickyNote, 
-  Minus, ChevronDown, ChevronUp
+  Minus, ChevronDown, ChevronUp, Eye, EyeOff
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";

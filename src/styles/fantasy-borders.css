@@ -4,6 +4,7 @@
 .fantasy-border-ornaments {
   position: relative;
   border: 2px solid hsl(var(--brass));
+  background: hsl(var(--card));
   box-shadow: 
     0 0 0 1px hsl(var(--brass) / 0.3),
     inset 0 0 20px hsl(var(--brass) / 0.05),

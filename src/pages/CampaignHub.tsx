@@ -246,9 +246,7 @@ const CampaignHub = () => {
 
     if (data?.live_session_id && data.campaign_sessions && ['live', 'paused'].includes(data.campaign_sessions.status)) {
       setLiveSession(data.campaign_sessions);
-      if (activeTab !== 'session') {
-        setActiveTab('session');
-      }
+      // Removed automatic tab switch - user should manually navigate to session tab
     } else {
       setLiveSession(null);
     }

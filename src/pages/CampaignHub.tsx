@@ -462,10 +462,7 @@ const CampaignHub = () => {
     }
   };
 
-  const handleQuestSelect = (quest: any) => {
-    setSelectedEntity({ type: "quest", data: quest });
-    setInspectorOpen(true);
-  };
+  // Removed handleQuestSelect - quests now use QuestDetailDialog directly
 
   const handleQuickAdd = (type: string) => {
     if (type === "quest") {
@@ -585,70 +582,7 @@ const CampaignHub = () => {
         onArchive={() => console.log("Archive")}
         inspectorOpen={inspectorOpen}
         onInspectorClose={() => setInspectorOpen(false)}
-        inspectorContent={
-          selectedEntity?.type === "quest" ? (
-            <InspectorPanel
-              title={selectedEntity.data.title}
-              description={selectedEntity.data.arc}
-              onClose={() => setInspectorOpen(false)}
-              actions={
-                <>
-                  <Button variant="outline">Cancel</Button>
-                  <Button>Save Changes</Button>
-                </>
-              }
-            >
-              <div className="space-y-4">
-                <div>
-                  <Label>Status</Label>
-                  <Badge className="mt-1 capitalize">{selectedEntity.data.status}</Badge>
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <Textarea
-                    defaultValue="A mysterious tome has gone missing from the Grand Library..."
-                    rows={4}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Objectives</Label>
-                  <div className="space-y-2 mt-2">
-                    {(selectedEntity.data?.objectives || []).map((obj: any) => (
-                      <div key={obj.id} className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" checked={obj.complete} readOnly />
-                        <span className={obj.complete ? "line-through text-muted-foreground" : ""}>
-                          {obj.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>NPCs</Label>
-                  <div className="mt-2 space-y-1">
-                    {(selectedEntity.data?.npcs || []).map((npc: string) => (
-                      <div key={npc} className="text-sm flex items-center gap-2">
-                        <Users className="w-3 h-3 text-brass" />
-                        {npc}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>Rewards</Label>
-                  <div className="mt-2 space-y-1 text-sm">
-                    <div>{selectedEntity.data?.rewards?.xp} XP</div>
-                    <div>{selectedEntity.data?.rewards?.gp} GP</div>
-                    {(selectedEntity.data?.rewards?.items || []).map((item: string) => (
-                      <div key={item}>• {item}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </InspectorPanel>
-          ) : null
-        }
+        inspectorContent={null}
       >
         {/* Header Bar */}
         <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4">
@@ -871,8 +805,7 @@ const CampaignHub = () => {
               <TabsContent value="quests" className="mt-0 h-full">
                 {activeCampaign ? (
                   <QuestsTab 
-                    campaignId={activeCampaign.id} 
-                    onQuestSelect={handleQuestSelect}
+                    campaignId={activeCampaign.id}
                   />
                 ) : (
                   <div className="space-y-4">

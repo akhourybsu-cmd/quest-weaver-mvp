@@ -3,12 +3,13 @@
 /* Variant 1: Ornamental Corner Borders */
 .fantasy-border-ornaments {
   position: relative;
-  border: 2px solid hsl(var(--brass));
-  background: hsl(var(--card)) !important;
+  border: 2px solid hsl(var(--brass)) !important;
+  background-color: hsl(var(--card)) !important;
+  background-image: none !important;
   box-shadow: 
     0 0 0 1px hsl(var(--brass) / 0.3),
     inset 0 0 20px hsl(var(--brass) / 0.05),
-    var(--shadow-lg);
+    var(--shadow-lg) !important;
 }
 
 .fantasy-border-ornaments::before,

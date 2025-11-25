@@ -1,0 +1,17 @@
+{
+  "name": "Quest Weaver",
+  "short_name": "Quest Weaver",
+  "description": "A real-time D&D 5e companion that keeps initiative, loot, spells, and story in perfect sync.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#483D8B",
+  "theme_color": "#483D8B",
+  "icons": [
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

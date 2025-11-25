@@ -159,11 +159,8 @@ const Index = ({ session }: IndexProps) => {
       }`}>
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center">
-              <Dice6 className="w-8 h-8 text-brand-brass" />
-              <Scroll className="w-4 h-4 text-brand-arcanePurple absolute -bottom-1 -right-1" />
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Quest Weaver" className="w-10 h-10" />
             <span className="text-xl font-cinzel font-bold tracking-tight">Quest Weaver</span>
           </div>
 
@@ -631,7 +628,7 @@ const Index = ({ session }: IndexProps) => {
 
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Dice6 className="w-6 h-6 text-brand-brass" />
+                <img src="/logo.png" alt="Quest Weaver" className="w-8 h-8" />
                 <span className="font-cinzel font-bold">Quest Weaver</span>
               </div>
               <p className="text-xs text-muted-foreground">

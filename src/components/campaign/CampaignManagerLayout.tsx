@@ -105,9 +105,7 @@ export function CampaignManagerLayout({
         <div className="flex items-center justify-between mb-4">
           {(!leftRailCollapsed || inSheet) && (
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-arcanePurple to-dragonRed">
-                <CommandIcon className="w-4 h-4 text-ink" />
-              </div>
+              <img src="/logo.png" alt="Quest Weaver" className="w-8 h-8" />
               <span className="font-cinzel text-lg font-semibold text-ink">Quest Weaver</span>
             </div>
           )}
@@ -242,9 +240,7 @@ export function CampaignManagerLayout({
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-arcanePurple to-dragonRed shrink-0">
-              <CommandIcon className="w-3.5 h-3.5 text-ink" />
-            </div>
+            <img src="/logo.png" alt="Quest Weaver" className="w-7 h-7 shrink-0" />
             <span className="font-cinzel text-sm font-semibold text-ink truncate">
               {activeCampaign?.name || 'Quest Weaver'}
             </span>

@@ -361,7 +361,7 @@ const Index = ({ session }: IndexProps) => {
               {/* Join Code Input */}
               <div className="pt-4">
                 <p className="text-sm text-muted-foreground mb-2">Join with code</p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 max-w-full">
                   <Input
                     placeholder="Enter 6-8 char code"
                     value={joinCode}
@@ -369,9 +369,9 @@ const Index = ({ session }: IndexProps) => {
                       setJoinCode(e.target.value);
                       setJoinError("");
                     }}
-                    className={`max-w-xs ${joinError ? "border-destructive" : joinCode.length >= 6 ? "border-brand-arcanePurple" : ""}`}
+                    className={`flex-1 min-w-0 max-w-xs ${joinError ? "border-destructive" : joinCode.length >= 6 ? "border-brand-arcanePurple" : ""}`}
                   />
-                  <Button onClick={handleJoinCode} variant="secondary">
+                  <Button onClick={handleJoinCode} variant="secondary" className="shrink-0">
                     Join
                   </Button>
                 </div>
@@ -436,13 +436,13 @@ const Index = ({ session }: IndexProps) => {
             Everything you need at the table
           </h2>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {features.map((feature, idx) => {
               const Icon = feature.icon;
               return (
                 <Card
                   key={idx}
-                  className="relative p-6 rounded-2xl border-2 border-brand-brass/30 hover:border-brand-brass/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group"
+                  className="relative p-4 sm:p-6 rounded-2xl border-2 border-brand-brass/30 hover:border-brand-brass/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group min-w-0"
                 >
                   {/* Wax seal badge */}
                   <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-brand-arcanePurple border-2 border-brand-brass flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">

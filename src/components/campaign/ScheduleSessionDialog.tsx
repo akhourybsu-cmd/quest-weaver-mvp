@@ -6,11 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Loader2, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+interface PrepChecklistItem {
+  text: string;
+  completed: boolean;
+}
 
 interface ScheduleSessionDialogProps {
   open: boolean;
@@ -23,8 +29,22 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("18:00");
   const [sessionName, setSessionName] = useState("");
+  const [goals, setGoals] = useState("");
+  const [prepChecklist, setPrepChecklist] = useState<PrepChecklistItem[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const handleAddChecklistItem = () => {
+    if (newChecklistItem.trim()) {
+      setPrepChecklist([...prepChecklist, { text: newChecklistItem.trim(), completed: false }]);
+      setNewChecklistItem("");
+    }
+  };
+
+  const handleRemoveChecklistItem = (index: number) => {
+    setPrepChecklist(prepChecklist.filter((_, i) => i !== index));
+  };
 
   const handleSchedule = async () => {
     if (!date) {
@@ -41,12 +61,15 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
 
       const { error } = await supabase
         .from("campaign_sessions")
-        .insert({
+        .insert([{
           campaign_id: campaignId,
           status: "scheduled",
           started_at: scheduledDateTime.toISOString(),
           session_notes: description || null,
-        });
+          name: sessionName.trim() || null,
+          goals: goals.trim() || null,
+          prep_checklist: prepChecklist.length > 0 ? JSON.stringify(prepChecklist) : '[]',
+        }]);
 
       if (error) throw error;
 
@@ -58,6 +81,9 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
       setDate(undefined);
       setTime("18:00");
       setSessionName("");
+      setGoals("");
+      setPrepChecklist([]);
+      setNewChecklistItem("");
       setDescription("");
     } catch (error: any) {
       console.error("Error scheduling session:", error);
@@ -69,7 +95,7 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-cinzel">Schedule Session</DialogTitle>
           <DialogDescription>
@@ -78,6 +104,19 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="sessionName">Session Name (Optional)</Label>
+            <Input
+              id="sessionName"
+              value={sessionName}
+              onChange={(e) => setSessionName(e.target.value)}
+              placeholder="e.g., The Dragon's Lair, Session 12"
+            />
+            <p className="text-xs text-muted-foreground">
+              If left blank, the date will be displayed instead
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="date">Session Date</Label>
             <Popover>
@@ -113,6 +152,65 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, onSucces
               value={time}
               onChange={(e) => setTime(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="goals">Session Goals (Optional)</Label>
+            <Textarea
+              id="goals"
+              value={goals}
+              onChange={(e) => setGoals(e.target.value)}
+              placeholder="What do you want to accomplish this session?"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Prep Checklist (Optional)</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newChecklistItem}
+                onChange={(e) => setNewChecklistItem(e.target.value)}
+                placeholder="Add prep item..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddChecklistItem();
+                  }
+                }}
+              />
+              <Button type="button" size="icon" variant="outline" onClick={handleAddChecklistItem}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {prepChecklist.length > 0 && (
+              <div className="space-y-2 mt-2">
+                {prepChecklist.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                    <Checkbox
+                      checked={item.completed}
+                      onCheckedChange={(checked) => {
+                        const updated = [...prepChecklist];
+                        updated[index].completed = !!checked;
+                        setPrepChecklist(updated);
+                      }}
+                    />
+                    <span className={cn("flex-1 text-sm", item.completed && "line-through text-muted-foreground")}>
+                      {item.text}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => handleRemoveChecklistItem(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

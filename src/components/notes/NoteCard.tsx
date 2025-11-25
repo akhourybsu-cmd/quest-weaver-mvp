@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pin, Lock, Users, Eye, FolderPlus } from "lucide-react";
+import { Pin, Lock, Users, Eye, FolderPlus, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
@@ -15,6 +15,13 @@ interface Note {
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
+  session_id?: string | null;
+}
+
+interface Session {
+  id: string;
+  name: string | null;
+  started_at: string | null;
 }
 
 interface NoteCardProps {
@@ -23,9 +30,10 @@ interface NoteCardProps {
   isDM: boolean;
   isOwner: boolean;
   campaignId: string;
+  session?: Session | null;
 }
 
-const NoteCard = ({ note, onClick, isDM, isOwner, campaignId }: NoteCardProps) => {
+const NoteCard = ({ note, onClick, isDM, isOwner, campaignId, session }: NoteCardProps) => {
   const [showAddToSession, setShowAddToSession] = useState(false);
   const visibilityConfig = {
     DM_ONLY: { 
@@ -70,6 +78,19 @@ const NoteCard = ({ note, onClick, isDM, isOwner, campaignId }: NoteCardProps) =
     });
   };
 
+  // Get session display name
+  const getSessionDisplayName = () => {
+    if (!session) return null;
+    if (session.name) return session.name;
+    if (session.started_at) {
+      const date = new Date(session.started_at);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return 'Session';
+  };
+
+  const sessionDisplayName = getSessionDisplayName();
+
   return (
     <>
       <Card
@@ -105,6 +126,14 @@ const NoteCard = ({ note, onClick, isDM, isOwner, campaignId }: NoteCardProps) =
         </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Session pill */}
+        {sessionDisplayName && (
+          <Badge variant="secondary" className="text-xs rounded-full px-2.5 py-0.5 bg-arcanePurple/10 text-arcanePurple border-arcanePurple/20">
+            <Calendar className="w-3 h-3 mr-1" />
+            {sessionDisplayName}
+          </Badge>
+        )}
+
         {preview && (
           <p className="text-sm text-muted-foreground line-clamp-2">
             {renderContentWithMentions(preview)}

@@ -707,92 +707,94 @@ const CampaignHub = () => {
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="border-b border-brass/20 px-6 bg-obsidian sticky top-0 z-20">
-              <TabsList className="bg-transparent border-0 h-auto p-0">
-                <TabsTrigger
-                  value="overview"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger
-                  value="quests"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Quests
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sessions"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Sessions
-                </TabsTrigger>
-                <TabsTrigger
-                  value="npcs"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  NPCs
-                </TabsTrigger>
-                <TabsTrigger
-                  value="locations"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Locations
-                </TabsTrigger>
-                <TabsTrigger
-                  value="lore"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Lore
-                </TabsTrigger>
-                <TabsTrigger
-                  value="factions"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Factions
-                </TabsTrigger>
-                <TabsTrigger
-                  value="bestiary"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Bestiary
-                </TabsTrigger>
-                <TabsTrigger
-                  value="encounters"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Encounters
-                </TabsTrigger>
-                <TabsTrigger
-                  value="items"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Item Vault
-                </TabsTrigger>
-                <TabsTrigger
-                  value="timeline"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Timeline
-                </TabsTrigger>
-                <TabsTrigger
-                  value="notes"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
-                >
-                  Notes
-                </TabsTrigger>
-                {liveSession && (
+            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20">
+              <div className="overflow-x-auto scrollbar-hide">
+                <TabsList className="bg-transparent border-0 h-auto p-0 inline-flex min-w-max">
                   <TabsTrigger
-                    value="session"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 text-red-500 font-semibold"
+                    value="overview"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
                   >
-                    🔴 Live Session
+                    Overview
                   </TabsTrigger>
-                )}
-              </TabsList>
+                  <TabsTrigger
+                    value="quests"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Quests
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="sessions"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Sessions
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="npcs"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    NPCs
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="locations"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Locations
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="lore"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Lore
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="factions"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Factions
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="bestiary"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Bestiary
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="encounters"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Encounters
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="items"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Item Vault
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="timeline"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Timeline
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notes"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
+                  >
+                    Notes
+                  </TabsTrigger>
+                  {liveSession && (
+                    <TabsTrigger
+                      value="session"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap text-red-500 font-semibold"
+                    >
+                      🔴 Live Session
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
             </div>
 
-            <div className="flex-1 p-6">
+            <div className="flex-1 p-3 sm:p-4 md:p-6">
               <TabsContent value="overview" className="mt-0 h-full">
                 {activeCampaign ? (
                   <OverviewTab 

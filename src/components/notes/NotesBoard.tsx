@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Pin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Pin, Calendar } from "lucide-react";
 import NoteCard from "./NoteCard";
 import NoteEditor from "./NoteEditor";
 import { useToast } from "@/hooks/use-toast";
+import { resilientChannel } from "@/lib/realtime";
 
 interface Note {
   id: string;
@@ -25,9 +27,9 @@ interface Note {
 
 interface Session {
   id: string;
-  title: string;
-  session_number: number;
-  session_date: string;
+  name: string | null;
+  started_at: string | null;
+  status: string;
 }
 
 interface NotesBoardProps {
@@ -43,14 +45,14 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "mine" | "dm" | "shared" | "private" | "pinned">("all");
+  const [sessionFilter, setSessionFilter] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
     loadNotes();
     loadSessions();
 
-    const channel = supabase
-      .channel(`session_notes:${campaignId}`)
+    const channel = resilientChannel(supabase, `session_notes:${campaignId}`)
       .on(
         "postgres_changes",
         {
@@ -89,11 +91,12 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   };
 
   const loadSessions = async () => {
+    // Query campaign_sessions instead of sessions table
     const { data, error } = await supabase
-      .from("sessions")
-      .select("id, title, session_number, session_date")
+      .from("campaign_sessions")
+      .select("id, name, started_at, status")
       .eq("campaign_id", campaignId)
-      .order("session_number", { ascending: false });
+      .order("started_at", { ascending: false });
 
     if (error) {
       toast({
@@ -105,6 +108,23 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     }
 
     setSessions((data || []) as Session[]);
+  };
+
+  // Build session lookup map
+  const sessionMap = new Map(sessions.map(s => [s.id, s]));
+
+  // Get session display name
+  const getSessionDisplayName = (session: Session | undefined) => {
+    if (!session) return "No Session";
+    if (session.name) return session.name;
+    if (session.started_at) {
+      return new Date(session.started_at).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    return "Session";
   };
 
   const filteredNotes = notes.filter((note) => {
@@ -121,18 +141,30 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     // Apply tab filter
     switch (filter) {
       case "mine":
-        return note.author_id === userId;
+        if (note.author_id !== userId) return false;
+        break;
       case "dm":
-        return note.visibility === "DM_ONLY";
+        if (note.visibility !== "DM_ONLY") return false;
+        break;
       case "shared":
-        return note.visibility === "SHARED";
+        if (note.visibility !== "SHARED") return false;
+        break;
       case "private":
-        return note.visibility === "PRIVATE";
+        if (note.visibility !== "PRIVATE") return false;
+        break;
       case "pinned":
-        return note.is_pinned;
-      default:
-        return true;
+        if (!note.is_pinned) return false;
+        break;
     }
+
+    // Apply session filter
+    if (sessionFilter === "none") {
+      if (note.session_id !== null) return false;
+    } else if (sessionFilter !== "all") {
+      if (note.session_id !== sessionFilter) return false;
+    }
+
+    return true;
   });
 
   // Separate pinned and unpinned notes
@@ -160,18 +192,18 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   };
 
   return (
-    <Card className="border-border/50 shadow-sm">
+    <Card className="border-border/50 shadow-sm bg-card/50 border-brass/20">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Session Notes</CardTitle>
+          <CardTitle className="font-cinzel">Session Notes</CardTitle>
           <Button size="sm" onClick={handleNewNote}>
             <Plus className="w-4 h-4 mr-2" />
             New Note
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 mt-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 mt-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search notes, tags, NPCs..."
@@ -180,18 +212,39 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
               className="pl-9 rounded-lg"
             />
           </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={sessionFilter} onValueChange={setSessionFilter}>
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <Calendar className="w-3 h-3 mr-2" />
+                <SelectValue placeholder="Filter by session" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sessions</SelectItem>
+                <SelectItem value="none">No Session</SelectItem>
+                {sessions.map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                    {getSessionDisplayName(session)}
+                    {session.status && (
+                      <span className="ml-1 text-muted-foreground">({session.status})</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
         <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="space-y-4">
           <TabsList className="grid w-full grid-cols-6 rounded-lg">
-            <TabsTrigger value="all" className="rounded-md">All</TabsTrigger>
-            <TabsTrigger value="mine" className="rounded-md">Mine</TabsTrigger>
-            <TabsTrigger value="dm" className="rounded-md">DM Only</TabsTrigger>
-            <TabsTrigger value="shared" className="rounded-md">Shared</TabsTrigger>
-            <TabsTrigger value="private" className="rounded-md">Private</TabsTrigger>
-            <TabsTrigger value="pinned" className="rounded-md">
+            <TabsTrigger value="all" className="rounded-md text-xs">All</TabsTrigger>
+            <TabsTrigger value="mine" className="rounded-md text-xs">Mine</TabsTrigger>
+            {isDM && <TabsTrigger value="dm" className="rounded-md text-xs">DM</TabsTrigger>}
+            <TabsTrigger value="shared" className="rounded-md text-xs">Shared</TabsTrigger>
+            <TabsTrigger value="private" className="rounded-md text-xs">Private</TabsTrigger>
+            <TabsTrigger value="pinned" className="rounded-md text-xs">
               <Pin className="w-4 h-4" />
             </TabsTrigger>
           </TabsList>
@@ -222,6 +275,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                           isDM={isDM}
                           isOwner={note.author_id === userId}
                           campaignId={campaignId}
+                          session={note.session_id ? sessionMap.get(note.session_id) : null}
                         />
                       ))}
                     </div>
@@ -237,18 +291,17 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                       </div>
                     )}
                     {Object.entries(notesBySession).map(([sessionId, sessionNotes]) => {
-                      const session = sessions.find(s => s.id === sessionId);
+                      const session = sessionId !== "no-session" ? sessionMap.get(sessionId) : undefined;
                       return (
                         <div key={sessionId} className="space-y-3">
                           <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-brass" />
                             <div className="text-sm font-semibold text-foreground">
-                              {session ? `Session ${session.session_number}: ${session.title}` : "Unassigned Notes"}
+                              {session ? getSessionDisplayName(session) : "General Notes"}
                             </div>
-                            {session?.session_date && (
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(session.session_date).toLocaleDateString()}
-                              </div>
-                            )}
+                            <Badge variant="secondary" className="text-xs">
+                              {sessionNotes.length}
+                            </Badge>
                           </div>
                           <div className="grid gap-3">
                             {sessionNotes.map((note) => (
@@ -259,6 +312,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                                 isDM={isDM}
                                 isOwner={note.author_id === userId}
                                 campaignId={campaignId}
+                                session={session}
                               />
                             ))}
                           </div>

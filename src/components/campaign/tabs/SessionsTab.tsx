@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Clock, MapPin, Plus, Send, FileText, Users, Package } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Package, Play, Target, CheckSquare } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
@@ -17,18 +16,27 @@ import { SessionLogViewer } from "../SessionLogViewer";
 
 interface SessionsTabProps {
   campaignId: string;
+  onStartSession?: (sessionId: string) => void;
+}
+
+interface PrepChecklistItem {
+  text: string;
+  completed: boolean;
 }
 
 interface Session {
   id: string;
+  name: string | null;
   started_at: string | null;
   ended_at: string | null;
   session_notes: string | null;
   dm_notes: string | null;
   status: string;
+  goals: string | null;
+  prep_checklist: PrepChecklistItem[];
 }
 
-export function SessionsTab({ campaignId }: SessionsTabProps) {
+export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -36,6 +44,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [logViewerOpen, setLogViewerOpen] = useState(false);
   const [viewingSession, setViewingSession] = useState<Session | null>(null);
+  const [startingSessionId, setStartingSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -66,13 +75,86 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSessions(data || []);
+      
+      // Parse prep_checklist from JSON if needed
+      const parsedSessions = (data || []).map(s => {
+        let checklist: PrepChecklistItem[] = [];
+        if (s.prep_checklist) {
+          if (typeof s.prep_checklist === 'string') {
+            try {
+              checklist = JSON.parse(s.prep_checklist);
+            } catch {
+              checklist = [];
+            }
+          } else if (Array.isArray(s.prep_checklist)) {
+            checklist = s.prep_checklist as unknown as PrepChecklistItem[];
+          }
+        }
+        return {
+          id: s.id,
+          name: s.name,
+          started_at: s.started_at,
+          ended_at: s.ended_at,
+          session_notes: s.session_notes,
+          dm_notes: s.dm_notes,
+          status: s.status,
+          goals: s.goals,
+          prep_checklist: checklist
+        };
+      });
+      
+      setSessions(parsedSessions);
     } catch (error: any) {
       console.error('Error fetching sessions:', error);
       toast.error('Failed to load sessions');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartSession = async (session: Session) => {
+    setStartingSessionId(session.id);
+    try {
+      // Update session status to live
+      const { error: sessionError } = await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'live',
+          started_at: new Date().toISOString(),
+          paused_duration_seconds: 0
+        })
+        .eq('id', session.id);
+
+      if (sessionError) throw sessionError;
+
+      // Update campaign's live_session_id
+      const { error: campaignError } = await supabase
+        .from('campaigns')
+        .update({ live_session_id: session.id })
+        .eq('id', campaignId);
+
+      if (campaignError) throw campaignError;
+
+      toast.success('Session started!');
+      onStartSession?.(session.id);
+    } catch (error: any) {
+      console.error('Error starting session:', error);
+      toast.error('Failed to start session');
+    } finally {
+      setStartingSessionId(null);
+    }
+  };
+
+  const getSessionDisplayName = (session: Session) => {
+    if (session.name) return session.name;
+    if (session.started_at) return format(new Date(session.started_at), "MMM d, yyyy");
+    return 'Scheduled Session';
+  };
+
+  const getPrepProgress = (checklist: PrepChecklistItem[]) => {
+    if (!checklist || checklist.length === 0) return null;
+    const completed = checklist.filter(item => item.completed).length;
+    return { completed, total: checklist.length };
   };
 
   const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled') || [];
@@ -125,32 +207,70 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
             </p>
           ) : (
             <div className="space-y-3">
-              {upcomingSessions.map((session) => (
-                <Card key={session.id} className="bg-background/50 border-brass/10">
-                  <CardContent className="p-4">
-                     <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <h4 className="font-medium font-cinzel">
-                          {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Scheduled Session'}
-                        </h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-arcanePurple" />
-                            {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'TBD'}
+              {upcomingSessions.map((session) => {
+                const prepProgress = getPrepProgress(session.prep_checklist);
+                return (
+                  <Card key={session.id} className="bg-background/50 border-brass/10">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <h4 className="font-medium font-cinzel text-lg">
+                            {getSessionDisplayName(session)}
+                          </h4>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-arcanePurple" />
+                              {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy 'at' h:mm a") : 'TBD'}
+                            </div>
+                            <Badge variant="outline" className="border-brass/30">
+                              {session.status}
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="border-brass/30">
-                            {session.status}
-                          </Badge>
+                          
+                          {/* Goals preview */}
+                          {session.goals && (
+                            <div className="flex items-start gap-2 mt-2">
+                              <Target className="w-3 h-3 text-brass mt-0.5" />
+                              <p className="text-sm text-muted-foreground line-clamp-2">{session.goals}</p>
+                            </div>
+                          )}
+                          
+                          {/* Prep checklist progress */}
+                          {prepProgress && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <CheckSquare className="w-3 h-3 text-brass" />
+                              <span className="text-xs text-muted-foreground">
+                                Prep: {prepProgress.completed}/{prepProgress.total} complete
+                              </span>
+                              <div className="flex-1 h-1.5 bg-muted rounded-full max-w-24">
+                                <div 
+                                  className="h-full bg-brass rounded-full transition-all"
+                                  style={{ width: `${(prepProgress.completed / prepProgress.total) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2 ml-4">
+                          <Button size="sm" variant="outline" onClick={() => openPackBuilder(session)}>
+                            <Package className="w-4 h-4 mr-2" />
+                            Build Pack
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleStartSession(session)}
+                            disabled={startingSessionId === session.id}
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            {startingSessionId === session.id ? 'Starting...' : 'Start'}
+                          </Button>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => openPackBuilder(session)}>
-                        <Package className="w-4 h-4 mr-2" />
-                        Build Pack
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -182,7 +302,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
                       <div className="flex items-start justify-between">
                         <div className="space-y-2 flex-1">
                           <h4 className="font-medium font-cinzel">
-                            {session.started_at ? format(new Date(session.started_at), "MMM d, yyyy") : 'Past Session'}
+                            {getSessionDisplayName(session)}
                           </h4>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
@@ -199,7 +319,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
                           {session.session_notes && (
                             <div className="flex items-start gap-2 mt-2">
                               <FileText className="w-3 h-3 text-brass mt-0.5" />
-                              <p className="text-sm text-muted-foreground">{session.session_notes}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-2">{session.session_notes}</p>
                             </div>
                           )}
                         </div>
@@ -226,7 +346,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
             <SessionPackBuilder
               campaignId={campaignId}
               sessionId={selectedSession.id}
-              sessionName={selectedSession.started_at ? format(new Date(selectedSession.started_at), "MMM d, yyyy") : "Upcoming Session"}
+              sessionName={getSessionDisplayName(selectedSession)}
             />
           )}
         </DialogContent>
@@ -247,6 +367,7 @@ export function SessionsTab({ campaignId }: SessionsTabProps) {
           onOpenChange={setLogViewerOpen}
           sessionId={viewingSession.id}
           sessionDate={viewingSession.started_at || viewingSession.ended_at || new Date().toISOString()}
+          sessionName={viewingSession.name}
         />
       )}
     </div>

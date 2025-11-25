@@ -220,10 +220,13 @@ export type Database = {
           created_at: string | null
           dm_notes: string | null
           ended_at: string | null
+          goals: string | null
           id: string
+          name: string | null
           paused_at: string | null
           paused_duration_seconds: number | null
           player_attendance: Json | null
+          prep_checklist: Json | null
           session_notes: string | null
           started_at: string | null
           status: string
@@ -235,10 +238,13 @@ export type Database = {
           created_at?: string | null
           dm_notes?: string | null
           ended_at?: string | null
+          goals?: string | null
           id?: string
+          name?: string | null
           paused_at?: string | null
           paused_duration_seconds?: number | null
           player_attendance?: Json | null
+          prep_checklist?: Json | null
           session_notes?: string | null
           started_at?: string | null
           status: string
@@ -250,10 +256,13 @@ export type Database = {
           created_at?: string | null
           dm_notes?: string | null
           ended_at?: string | null
+          goals?: string | null
           id?: string
+          name?: string | null
           paused_at?: string | null
           paused_duration_seconds?: number | null
           player_attendance?: Json | null
+          prep_checklist?: Json | null
           session_notes?: string | null
           started_at?: string | null
           status?: string

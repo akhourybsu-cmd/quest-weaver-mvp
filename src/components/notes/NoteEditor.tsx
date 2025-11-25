@@ -186,14 +186,22 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   }, [note, open, isDM]);
 
   const loadSessions = async () => {
+    // Query campaign_sessions instead of sessions table
     const { data } = await supabase
-      .from("sessions")
-      .select("id, title, session_number")
+      .from("campaign_sessions")
+      .select("id, name, started_at, status")
       .eq("campaign_id", campaignId)
-      .order("session_number", { ascending: false });
+      .order("started_at", { ascending: false });
     
     if (data) {
-      setSessions(data);
+      // Transform to match expected format
+      setSessions(data.map((s, index) => ({
+        id: s.id,
+        title: s.name || (s.started_at ? new Date(s.started_at).toLocaleDateString() : `Session`),
+        session_number: data.length - index,
+        status: s.status,
+        started_at: s.started_at
+      })));
     }
   };
 
@@ -639,9 +647,14 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No session</SelectItem>
-                {sessions.map((session) => (
+                {sessions.map((session: any) => (
                   <SelectItem key={session.id} value={session.id}>
-                    Session {session.session_number}: {session.title}
+                    {session.title}
+                    {session.status && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({session.status})
+                      </span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>

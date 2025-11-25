@@ -95,6 +95,7 @@ import { ItemVaultTab } from "@/components/campaign/tabs/ItemVaultTab";
 import { EncountersTab } from "@/components/campaign/tabs/EncountersTab";
 import { NotesTab } from "@/components/campaign/tabs/NotesTab";
 import { TimelineTab } from "@/components/campaign/tabs/TimelineTab";
+import { LoreTab } from "@/components/campaign/tabs/LoreTab";
 import { InspectorPanel } from "@/components/campaign/InspectorPanel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -739,6 +740,12 @@ const CampaignHub = () => {
                   Locations
                 </TabsTrigger>
                 <TabsTrigger
+                  value="lore"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
+                >
+                  Lore
+                </TabsTrigger>
+                <TabsTrigger
                   value="factions"
                   className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3"
                 >
@@ -846,6 +853,17 @@ const CampaignHub = () => {
                   />
                 ) : (
                   <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="lore" className="mt-0 h-full">
+                {activeCampaign ? (
+                  <LoreTab campaignId={activeCampaign.id} />
+                ) : (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
                     <Skeleton className="h-32 w-full" />
                   </div>
                 )}

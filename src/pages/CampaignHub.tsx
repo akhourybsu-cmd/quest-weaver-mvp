@@ -706,7 +706,7 @@ const CampaignHub = () => {
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="border-b border-brass/20 px-6 bg-obsidian/50 sticky top-0 z-10">
+            <div className="border-b border-brass/20 px-6 bg-obsidian sticky top-0 z-20">
               <TabsList className="bg-transparent border-0 h-auto p-0">
                 <TabsTrigger
                   value="overview"

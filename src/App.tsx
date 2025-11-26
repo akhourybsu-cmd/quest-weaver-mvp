@@ -31,6 +31,8 @@ import AuditHarness from "./pages/dev/AuditHarness";
 import PlayerHub from "@/pages/PlayerHub";
 import PlayerDashboardNew from "@/pages/PlayerDashboardNew";
 import { PlayerWaitingRoom } from "@/components/player/PlayerWaitingRoom";
+import Community from "./pages/Community";
+import Changelog from "./pages/Changelog";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,10 @@ const App = () => {
                 <Route path="/" element={<Index session={session} />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/player" element={<Navigate to="/player-hub" replace />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/community/:categoryId" element={<Community />} />
+                <Route path="/community/topic/:topicId" element={<Community />} />
+                <Route path="/changelog" element={<Changelog />} />
                 
                 {/* Protected routes */}
                 {loading ? (

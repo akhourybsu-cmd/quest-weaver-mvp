@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,7 +11,6 @@ import {
   Sparkles,
   Trophy,
   ChevronRight,
-  Dice1,
   Dice6,
   Flame,
   FlaskConical,
@@ -21,6 +19,8 @@ import {
   Play,
   Menu,
   X,
+  MessageCircle,
+  History,
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
 import { Session } from "@supabase/supabase-js";
@@ -32,8 +32,6 @@ interface IndexProps {
 const Index = ({ session }: IndexProps) => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"dm" | "player">("dm");
-  const [joinCode, setJoinCode] = useState("");
-  const [joinError, setJoinError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAuthenticated = !!session;
 
@@ -48,15 +46,6 @@ const Index = ({ session }: IndexProps) => {
     } else {
       navigate("/auth");
     }
-  };
-
-  const handleJoinCode = () => {
-    if (!joinCode || joinCode.length < 6 || joinCode.length > 8) {
-      setJoinError("Enter a valid 6-8 character code");
-      return;
-    }
-    setJoinError("");
-    navigate(`/session/player?campaign=${joinCode}`);
   };
 
   const handleTryDemo = () => {
@@ -187,8 +176,17 @@ const Index = ({ session }: IndexProps) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate("/player")}
-              className="mx-2"
+              onClick={() => navigate("/community")}
+              className="mx-1"
+            >
+              <MessageCircle className="w-4 h-4 mr-1" />
+              Community
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/player-hub")}
+              className="mx-1"
             >
               Player Hub
             </Button>
@@ -270,7 +268,18 @@ const Index = ({ session }: IndexProps) => {
               </Button>
               <Button 
                 onClick={() => {
-                  navigate("/player");
+                  navigate("/community");
+                  setMobileMenuOpen(false);
+                }} 
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Community
+              </Button>
+              <Button 
+                onClick={() => {
+                  navigate("/player-hub");
                   setMobileMenuOpen(false);
                 }} 
                 variant="outline"
@@ -344,7 +353,7 @@ const Index = ({ session }: IndexProps) => {
                   <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
                 </Button>
                 {viewMode === "player" ? (
-                  <Button size="lg" variant="outline" onClick={() => navigate("/player")}>
+                  <Button size="lg" variant="outline" onClick={() => navigate("/player-hub")}>
                     <Users className="w-4 h-4 mr-2" />
                     I'm a Player
                   </Button>
@@ -353,26 +362,6 @@ const Index = ({ session }: IndexProps) => {
                     Try a Demo
                   </Button>
                 )}
-              </div>
-
-              {/* Join Code Input */}
-              <div className="pt-4">
-                <p className="text-sm text-muted-foreground mb-2">Join with code</p>
-                <div className="flex gap-2 max-w-full">
-                  <Input
-                    placeholder="Enter 6-8 char code"
-                    value={joinCode}
-                    onChange={(e) => {
-                      setJoinCode(e.target.value);
-                      setJoinError("");
-                    }}
-                    className={`flex-1 min-w-0 max-w-xs ${joinError ? "border-destructive" : joinCode.length >= 6 ? "border-brand-arcanePurple" : ""}`}
-                  />
-                  <Button onClick={handleJoinCode} variant="secondary" className="shrink-0">
-                    Join
-                  </Button>
-                </div>
-                {joinError && <p className="text-sm text-destructive mt-1">{joinError}</p>}
               </div>
             </div>
 
@@ -481,32 +470,25 @@ const Index = ({ session }: IndexProps) => {
       {/* Demo Strip */}
       <section id="demo" className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-cinzel font-bold text-center mb-12">
-            See it in action
+          <h2 className="text-3xl md:text-4xl font-cinzel font-bold text-center mb-6">
+            Experience it yourself
           </h2>
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-8">
+            Jump into our interactive demo to explore the full Campaign Manager experience. 
+            No signup required—just dive in and see how Quest Weaver can transform your sessions.
+          </p>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl border-2 border-brand-brass/30 bg-card p-8 shadow-xl">
-              <div className="aspect-video bg-muted/20 rounded-lg flex items-center justify-center mb-4">
-                <div className="text-center space-y-4">
-                  <Dice1 className="w-16 h-16 text-brand-arcanePurple mx-auto animate-pulse" />
-                  <p className="text-muted-foreground">Demo video placeholder</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap justify-center gap-3 mt-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="rounded-2xl border-2 border-brand-brass/30 bg-card p-8 shadow-xl text-center">
+              <div className="flex justify-center gap-3 mb-6">
                 <Badge variant="secondary">Live Initiative</Badge>
                 <Badge variant="secondary">Loot Handouts</Badge>
                 <Badge variant="secondary">Spell Panel</Badge>
-                <Badge variant="secondary">Player Synced View</Badge>
+                <Badge variant="secondary">Player Sync</Badge>
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-              <Button size="lg" variant="outline" onClick={() => navigate("/campaign-hub")}>
-                Watch the full demo
-              </Button>
-              <Button size="lg" onClick={() => navigate("/session-dm")}>
-                Start a Session
+              <Button size="lg" onClick={handleTryDemo} className="shadow-lg">
+                <Play className="w-4 h-4 mr-2" />
+                Try the Demo
               </Button>
             </div>
           </div>
@@ -560,8 +542,8 @@ const Index = ({ session }: IndexProps) => {
             Bring order to chaos—run tonight's session with Quest Weaver.
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/session-dm")} className="shadow-lg">
-              Start a Session
+            <Button size="lg" onClick={handleStartSession} className="shadow-lg">
+              {isAuthenticated ? "Go to Campaign Hub" : "Sign Up Free"}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
             <Button size="lg" variant="outline" onClick={handleTryDemo}>
@@ -600,13 +582,19 @@ const Index = ({ session }: IndexProps) => {
               <h4 className="font-cinzel font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <span className="text-muted-foreground">Docs</span>
+                  <button 
+                    onClick={() => navigate("/changelog")}
+                    className="text-muted-foreground hover:text-brand-arcanePurple transition-colors"
+                  >
+                    <History className="w-3 h-3 inline mr-1" />
+                    Changelog
+                  </button>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">Changelog</span>
+                  <span className="text-muted-foreground">Docs (Coming Soon)</span>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">Roadmap</span>
+                  <span className="text-muted-foreground">Roadmap (Coming Soon)</span>
                 </li>
               </ul>
             </div>
@@ -615,13 +603,29 @@ const Index = ({ session }: IndexProps) => {
               <h4 className="font-cinzel font-semibold mb-4">Community</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <span className="text-muted-foreground">Discord</span>
+                  <button 
+                    onClick={() => navigate("/community")}
+                    className="text-muted-foreground hover:text-brand-arcanePurple transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3 inline mr-1" />
+                    Forum
+                  </button>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">X / Twitter</span>
+                  <button 
+                    onClick={() => navigate("/community?category=feature-requests")}
+                    className="text-muted-foreground hover:text-brand-arcanePurple transition-colors"
+                  >
+                    Feature Requests
+                  </button>
                 </li>
                 <li>
-                  <span className="text-muted-foreground">GitHub</span>
+                  <button 
+                    onClick={() => navigate("/community?category=campaign-stories")}
+                    className="text-muted-foreground hover:text-brand-arcanePurple transition-colors"
+                  >
+                    Campaign Stories
+                  </button>
                 </li>
               </ul>
             </div>

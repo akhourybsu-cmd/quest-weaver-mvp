@@ -5,9 +5,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Loader2, Shield, Heart, Zap, Link2 } from 'lucide-react';
+import { Plus, Loader2, Shield, Heart, Zap, Link2, MoreVertical, Unlink, Link as LinkIcon } from 'lucide-react';
 import CharacterWizard from '@/components/character/CharacterWizard';
 import { JoinCampaignDialog } from './JoinCampaignDialog';
+import { AssignCharacterDialog } from './AssignCharacterDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Character {
   id: string;
@@ -31,10 +49,14 @@ interface PlayerCharacterListProps {
 }
 
 export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
+  const { toast } = useToast();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,6 +88,44 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
   const handleCharacterClick = (characterId: string) => {
     navigate(`/player/${playerId}/characters/${characterId}`);
+  };
+
+  const handleRemoveFromCampaign = async () => {
+    if (!selectedCharacter) return;
+
+    try {
+      const { error } = await supabase
+        .from('characters')
+        .update({ campaign_id: null })
+        .eq('id', selectedCharacter.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Character removed',
+        description: `${selectedCharacter.name} has been removed from the campaign`,
+      });
+
+      loadCharacters();
+      setRemoveDialogOpen(false);
+      setSelectedCharacter(null);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAssignClick = (character: Character) => {
+    setSelectedCharacter(character);
+    setAssignDialogOpen(true);
+  };
+
+  const handleRemoveClick = (character: Character) => {
+    setSelectedCharacter(character);
+    setRemoveDialogOpen(true);
   };
 
   if (loading) {
@@ -140,22 +200,38 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                           {character.campaign.name}
                         </Badge>
                       )}
-                      {!character.campaign && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setJoinCampaignOpen(true);
-                          }}
-                        >
-                          <Link2 className="w-3 h-3 mr-1" />
-                          Link to Campaign
-                        </Button>
-                      )}
                     </div>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAssignClick(character);
+                        }}
+                      >
+                        <LinkIcon className="w-4 h-4 mr-2" />
+                        {character.campaign ? 'Change Campaign' : 'Assign to Campaign'}
+                      </DropdownMenuItem>
+                      {character.campaign && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveClick(character);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Unlink className="w-4 h-4 mr-2" />
+                          Remove from Campaign
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
@@ -196,6 +272,40 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
         }}
         playerId={playerId}
       />
+
+      {selectedCharacter && (
+        <>
+          <AssignCharacterDialog
+            open={assignDialogOpen}
+            onClose={() => {
+              setAssignDialogOpen(false);
+              setSelectedCharacter(null);
+              loadCharacters();
+            }}
+            characterId={selectedCharacter.id}
+            characterName={selectedCharacter.name}
+            currentCampaignId={selectedCharacter.campaign_id || undefined}
+          />
+
+          <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove from Campaign?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove {selectedCharacter.name} from {selectedCharacter.campaign?.name}.
+                  You can assign them to another campaign later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemoveFromCampaign} className="bg-destructive hover:bg-destructive/90">
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 };

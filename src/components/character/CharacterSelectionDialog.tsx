@@ -57,9 +57,16 @@ const CharacterSelectionDialog = ({
 
       const { data, error } = await supabase
         .from("characters")
-        .select("id, name, class, level, campaign_id, creation_status")
+        .select(`
+          id, 
+          name, 
+          class, 
+          level, 
+          campaign_id, 
+          creation_status,
+          campaign:campaigns(name)
+        `)
         .eq("user_id", user.id)
-        .is("campaign_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -86,6 +93,24 @@ const CharacterSelectionDialog = ({
         description: "Please finish creating this character before joining a campaign",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Warn if character is already in another campaign
+    if (character.campaign_id && character.campaign_id !== campaignId) {
+      const confirmed = window.confirm(
+        `${character.name} is currently in another campaign. Assigning them here will remove them from that campaign. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    // Skip if already in this campaign
+    if (character.campaign_id === campaignId) {
+      toast({
+        title: "Already assigned",
+        description: "This character is already in this campaign",
+      });
+      onComplete();
       return;
     }
 
@@ -153,52 +178,86 @@ const CharacterSelectionDialog = ({
         ) : characters.length > 0 ? (
           <div className="space-y-4">
             <div className="grid gap-3">
-              {characters.map((character) => (
-                <Card key={character.id} className={`transition-colors ${character.creation_status === 'draft' ? 'border-yellow-500/50' : 'hover:border-primary cursor-pointer'}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Sword className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold truncate">{character.name}</h4>
-                            {character.creation_status === 'draft' && (
-                              <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
-                                Incomplete
+              {characters.map((character) => {
+                const isInThisCampaign = character.campaign_id === campaignId;
+                const isInOtherCampaign = character.campaign_id && character.campaign_id !== campaignId;
+                
+                return (
+                  <Card 
+                    key={character.id} 
+                    className={`transition-colors ${
+                      character.creation_status === 'draft' 
+                        ? 'border-yellow-500/50' 
+                        : isInThisCampaign
+                        ? 'border-green-500/50 bg-green-500/5'
+                        : isInOtherCampaign
+                        ? 'border-orange-500/50'
+                        : 'hover:border-primary cursor-pointer'
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Sword className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-semibold truncate">{character.name}</h4>
+                              {character.creation_status === 'draft' && (
+                                <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-600">
+                                  Incomplete
+                                </Badge>
+                              )}
+                              {isInThisCampaign && (
+                                <Badge variant="outline" className="text-xs border-green-500 text-green-600">
+                                  Current Campaign
+                                </Badge>
+                              )}
+                              {isInOtherCampaign && (
+                                <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                                  In: {(character as any).campaign?.name}
+                                </Badge>
+                              )}
+                              {!character.campaign_id && (
+                                <Badge variant="outline" className="text-xs">
+                                  Available
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Badge variant="secondary" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Level {character.level} {character.class}
                               </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <Badge variant="secondary" className="text-xs">
-                              <Shield className="w-3 h-3 mr-1" />
-                              Level {character.level} {character.class}
-                            </Badge>
+                            </div>
                           </div>
                         </div>
+                        {character.creation_status === 'draft' ? (
+                          <Button
+                            onClick={() => handleResumeCreation(character.id)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Continue
+                          </Button>
+                        ) : isInThisCampaign ? (
+                          <Badge variant="secondary">Selected</Badge>
+                        ) : (
+                          <Button
+                            onClick={() => handleSelectCharacter(character)}
+                            disabled={assigning}
+                            size="sm"
+                            variant={isInOtherCampaign ? "outline" : "default"}
+                          >
+                            {assigning ? "Assigning..." : isInOtherCampaign ? "Reassign" : "Select"}
+                          </Button>
+                        )}
                       </div>
-                      {character.creation_status === 'draft' ? (
-                        <Button
-                          onClick={() => handleResumeCreation(character.id)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Continue
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => handleSelectCharacter(character)}
-                          disabled={assigning}
-                          size="sm"
-                        >
-                          {assigning ? "Assigning..." : "Select"}
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             <div className="relative">

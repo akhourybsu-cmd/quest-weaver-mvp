@@ -10,7 +10,10 @@ import { PlayerLocationsView } from "@/components/player/PlayerLocationsView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Swords, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ArrowLeft, Swords, Loader2, User, Shield } from "lucide-react";
+import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
@@ -19,10 +22,13 @@ export default function PlayerCampaignView() {
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sessionStatus, setSessionStatus] = useState<'live' | 'paused' | 'offline'>('offline');
+  const [character, setCharacter] = useState<any>(null);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
 
   useEffect(() => {
     if (!campaignCode) return;
     loadCampaign();
+    loadCharacter();
   }, [campaignCode]);
 
   const loadCampaign = async () => {
@@ -50,6 +56,33 @@ export default function PlayerCampaignView() {
     }
     
     setLoading(false);
+  };
+
+  const loadCharacter = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: campaignData } = await supabase
+        .from('campaigns')
+        .select('id')
+        .eq('code', campaignCode)
+        .single();
+
+      if (!campaignData) return;
+
+      const { data, error } = await supabase
+        .from('characters')
+        .select('id, name, class, level, portrait_url')
+        .eq('campaign_id', campaignData.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setCharacter(data);
+    } catch (error) {
+      console.error('Error loading character:', error);
+    }
   };
 
   const handleJoinSession = () => {
@@ -122,6 +155,48 @@ export default function PlayerCampaignView() {
               </div>
             </div>
           </div>
+
+          <Card className="mb-6 rounded-2xl shadow-xl border-brass/30">
+            <CardHeader>
+              <CardTitle className="font-cinzel text-xl">Your Character</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {character ? (
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-16 h-16 border-2 border-brass/30">
+                    <AvatarImage src={character.portrait_url} />
+                    <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl">
+                      {character.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{character.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="w-4 h-4" />
+                      Level {character.level} {character.class}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCharacterSelect(true)}
+                  >
+                    Change Character
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-muted-foreground mb-4">
+                    You haven't assigned a character to this campaign yet
+                  </p>
+                  <Button onClick={() => setShowCharacterSelect(true)}>
+                    <User className="w-4 h-4 mr-2" />
+                    Select Character
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
       
       <Tabs defaultValue="quests">
         <TabsList className="grid w-full grid-cols-4">
@@ -149,6 +224,18 @@ export default function PlayerCampaignView() {
         </Tabs>
         </div>
       </div>
+
+      {campaign && (
+        <CharacterSelectionDialog
+          open={showCharacterSelect}
+          campaignId={campaign.id}
+          onComplete={() => {
+            setShowCharacterSelect(false);
+            loadCharacter();
+          }}
+          onCancel={() => setShowCharacterSelect(false)}
+        />
+      )}
     </div>
   );
 }

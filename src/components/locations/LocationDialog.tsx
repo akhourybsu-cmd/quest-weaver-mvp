@@ -51,6 +51,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
   const [relatedNotes, setRelatedNotes] = useState<any[]>([]);
+  const [discovered, setDiscovered] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -67,6 +68,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setDetails(locationDetails);
         setCoordX(locationDetails.coord_x?.toString() || "");
         setCoordY(locationDetails.coord_y?.toString() || "");
+        setDiscovered(locationToEdit.discovered || false);
         
         // Load related quests
         loadRelatedQuests(locationToEdit.id);
@@ -181,6 +183,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       parent_location_id: parentLocation !== "none" ? parentLocation : null,
       tags,
       details: mergedDetails,
+      discovered,
     };
 
     if (isEditing) {
@@ -606,6 +609,20 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
               )}
             </div>
             <div className="flex gap-2">
+              <div className="flex items-center gap-2 mr-2">
+                <Label htmlFor="location-discovered" className="text-sm">Discovered by Players</Label>
+                <Switch
+                  id="location-discovered"
+                  checked={discovered}
+                  onCheckedChange={setDiscovered}
+                />
+              </div>
+              {isEditing && (
+                <Button variant="outline" onClick={() => setShowAddToSessionDialog(true)}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Add to Session
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

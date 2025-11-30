@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [locationsList, setLocationsList] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
+  const [playerVisible, setPlayerVisible] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,6 +83,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         setDmNotes(questToEdit.dmNotes || "");
         setSelectedCharacters(questToEdit.assignedTo || []);
         setSelectedFaction(questToEdit.factionId || "none");
+        setPlayerVisible(questToEdit.playerVisible || false);
         setSteps(questToEdit.steps?.map((s: any) => ({
           id: s.id,
           description: s.description,
@@ -192,6 +195,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           assigned_to: selectedCharacters,
           faction_id: selectedFaction !== "none" ? selectedFaction : null,
           dm_notes: dmNotes || null,
+          player_visible: playerVisible,
         })
         .eq("id", questToEdit.id);
 
@@ -245,6 +249,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           faction_id: selectedFaction !== "none" ? selectedFaction : null,
           dm_notes: dmNotes || null,
           status: 'not_started',
+          player_visible: playerVisible,
         })
         .select()
         .single();
@@ -703,9 +708,17 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
-              </Button>
-              )}
-            <div className="flex gap-2 ml-auto">
+            </Button>
+            )}
+            <div className="flex items-center gap-4 ml-auto">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="player-visible" className="text-sm">Visible to Players</Label>
+                <Switch
+                  id="player-visible"
+                  checked={playerVisible}
+                  onCheckedChange={setPlayerVisible}
+                />
+              </div>
               {isEditing && (
                 <Button variant="outline" onClick={() => setShowAddToSessionDialog(true)}>
                   <Calendar className="w-4 h-4 mr-2" />

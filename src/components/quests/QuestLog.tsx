@@ -56,6 +56,7 @@ interface Quest {
   assignedTo: string[];
   factionId?: string;
   dmNotes?: string;
+  playerVisible?: boolean;
   steps: QuestStep[];
 }
 
@@ -145,10 +146,11 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
             rewardXP: q.reward_xp || 0,
             rewardGP: q.reward_gp || 0,
             assignedTo: q.assigned_to || [],
-            factionId: q.faction_id,
-            dmNotes: q.dm_notes,
-            steps: (q.quest_steps || [])
-              .sort((a: any, b: any) => a.step_order - b.step_order)
+          factionId: q.faction_id,
+          dmNotes: q.dm_notes,
+          playerVisible: q.player_visible,
+          steps: (q.quest_steps || [])
+            .sort((a: any, b: any) => a.step_order - b.step_order)
               .map((s: any) => ({
                 id: s.id,
                 description: s.description,
@@ -349,6 +351,11 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-lg">{quest.title}</h3>
+                            {isDM && (
+                              <Badge variant={quest.playerVisible ? "default" : "secondary"} className="text-xs">
+                                {quest.playerVisible ? "Visible" : "Hidden"}
+                              </Badge>
+                            )}
                             <Badge className={statusColors[quest.status as keyof typeof statusColors]}>
                               {quest.status.replace('_', ' ')}
                             </Badge>

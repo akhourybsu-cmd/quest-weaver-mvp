@@ -28,11 +28,12 @@ export const PlayerWaitingRoom = () => {
     }
 
     // Ensure there is a player profile linked to this auth user
-    const { data: existingPlayer, error: playerFetchError } = await supabase
+    const { data: existingPlayers, error: playerFetchError } = await supabase
       .from('players')
       .select('id, name')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('user_id', user.id);
+    
+    const existingPlayer = existingPlayers && existingPlayers.length > 0 ? existingPlayers[0] : null;
 
     if (playerFetchError) {
       console.error('Failed to load player profile:', playerFetchError);

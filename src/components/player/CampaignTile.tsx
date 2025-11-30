@@ -24,6 +24,8 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   const [loading, setLoading] = useState(true);
   const [character, setCharacter] = useState<any>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+  const [combatActive, setCombatActive] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     loadStatus();
@@ -81,6 +83,42 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
       setCharacter(data);
     } catch (error) {
       console.error('Error loading character:', error);
+    }
+  };
+
+  const checkCombatStatus = async () => {
+    try {
+      const { data } = await supabase
+        .from('encounters')
+        .select('id, status')
+        .eq('campaign_id', link.campaign_id)
+        .eq('is_active', true)
+        .in('status', ['active', 'preparing'])
+        .maybeSingle();
+
+      setCombatActive(!!data);
+    } catch (error) {
+      console.error('Error checking combat status:', error);
+    }
+  };
+
+  const checkUnreadMessages = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get messages since last joined
+      const { data, error } = await supabase
+        .from('campaign_messages')
+        .select('id')
+        .eq('campaign_id', link.campaign_id)
+        .gt('created_at', link.last_joined_at || new Date(0).toISOString())
+        .neq('sender_id', user.id);
+
+      if (error) throw error;
+      setUnreadMessages(data?.length || 0);
+    } catch (error) {
+      console.error('Error checking messages:', error);
     }
   };
 
@@ -143,7 +181,20 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
           <p className="text-sm text-muted-foreground">
             Code: <span className="font-mono font-semibold">{link.join_code}</span>
           </p>
-          {getStatusBadge()}
+          <div className="flex items-center gap-2">
+            {getStatusBadge()}
+            {combatActive && (
+              <Badge variant="destructive" className="text-xs">
+                <Swords className="w-3 h-3 mr-1" />
+                Combat
+              </Badge>
+            )}
+            {unreadMessages > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {unreadMessages} new
+              </Badge>
+            )}
+          </div>
         </div>
         
         {character ? (

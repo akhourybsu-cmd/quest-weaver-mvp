@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Heart, Shield, Eye, Users, Swords, Map, FileImage 
+  Heart, Shield, Eye, Users, Swords, Map, FileImage, MessageSquare 
 } from 'lucide-react';
 import PlayerPresence from '@/components/presence/PlayerPresence';
 import { TurnIndicator } from '@/components/presence/TurnIndicator';
@@ -30,6 +30,7 @@ import { PartyRestManager } from '@/components/combat/PartyRestManager';
 import { ReadiedActionsList } from '@/components/combat/ReadiedActionsList';
 import HandoutViewer from '@/components/handouts/HandoutViewer';
 import { LiveSessionPack } from '@/components/campaign/LiveSessionPack';
+import { PlayerChat } from '@/components/player/PlayerChat';
 
 interface Character {
   id: string;
@@ -317,7 +318,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="party" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="party">
             <Users className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Party</span>
@@ -325,6 +326,10 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
           <TabsTrigger value="combat" disabled={!activeEncounter}>
             <Swords className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Combat</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat">
+            <MessageSquare className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Chat</span>
           </TabsTrigger>
           <TabsTrigger value="map">
             <Map className="w-4 h-4 sm:mr-2" />
@@ -489,6 +494,15 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
               <EffectsList encounterId={activeEncounter.id} />
             </>
           )}
+        </TabsContent>
+
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="space-y-4">
+          <PlayerChat
+            campaignId={campaignId}
+            currentUserId={currentUserId}
+            isDM={true}
+          />
         </TabsContent>
 
         {/* Map Tab */}

@@ -163,6 +163,47 @@ export type Database = {
           },
         ]
       }
+      campaign_messages: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          is_announcement: boolean | null
+          is_dm_message: boolean | null
+          message: string
+          sender_id: string
+          sender_name: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          is_announcement?: boolean | null
+          is_dm_message?: boolean | null
+          message: string
+          sender_id: string
+          sender_name: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          is_announcement?: boolean | null
+          is_dm_message?: boolean | null
+          message?: string
+          sender_id?: string
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_pitch: {
         Row: {
           campaign_id: string

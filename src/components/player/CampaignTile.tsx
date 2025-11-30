@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Swords, Link2Off, Pin, PinOff, User } from 'lucide-react';
+import { Swords, Link2Off, Pin, PinOff, User, Eye } from 'lucide-react';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,14 +179,25 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
           </Button>
         )}
         
-        <Button 
-          className="w-full" 
-          onClick={handleJoinSession}
-          disabled={loading || !status || !character}
-        >
-          <Swords className="w-4 h-4 mr-2" />
-          Join Session
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate(`/player/campaign/${link.join_code}`)}
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            View Campaign
+          </Button>
+          
+          <Button 
+            className="flex-1" 
+            onClick={handleJoinSession}
+            disabled={loading || !status || !character}
+          >
+            <Swords className="w-4 h-4 mr-2" />
+            {status?.hasLiveSession ? 'Join Session' : 'Waiting Room'}
+          </Button>
+        </div>
       </CardContent>
       
       <CharacterSelectionDialog

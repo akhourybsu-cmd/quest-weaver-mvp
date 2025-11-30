@@ -32,6 +32,9 @@ import PlayerHub from "@/pages/PlayerHub";
 import PlayerDashboardNew from "@/pages/PlayerDashboardNew";
 import { PlayerWaitingRoom } from "@/components/player/PlayerWaitingRoom";
 import PlayerCampaignView from "@/pages/PlayerCampaignView";
+import PlayerSettings from "@/pages/PlayerSettings";
+import PlayerCharactersPage from "@/pages/PlayerCharactersPage";
+import PlayerCharacterViewPage from "@/pages/PlayerCharacterViewPage";
 import Community from "./pages/Community";
 import Changelog from "./pages/Changelog";
 
@@ -107,6 +110,9 @@ const App = () => {
                     <Route path="/campaign/:campaignId/characters" element={<CharacterList />} />
                     <Route path="/characters/:characterId" element={<CharacterSheetPage />} />
                     <Route path="/player/:playerId" element={<PlayerDashboardNew />} />
+                    <Route path="/player/:playerId/settings" element={<PlayerSettings />} />
+                    <Route path="/player/:playerId/characters" element={<PlayerCharactersPage />} />
+                    <Route path="/player/:playerId/characters/:characterId" element={<PlayerCharacterViewPage />} />
                     <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
                     <Route path="/player/campaign/:campaignCode" element={<PlayerCampaignView />} />
                     <Route path="/audit" element={<AuditHarness />} />

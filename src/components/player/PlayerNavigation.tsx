@@ -62,11 +62,22 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
     });
   }
 
+  const isActivePath = (path: string) => {
+    if (path === `/player/${playerId}`) {
+      return location.pathname === path;
+    }
+    if (path === '/') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div
       className={cn(
         'h-full bg-card border-r border-brass/20 transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? 'w-16' : 'w-64',
+        'md:relative md:z-auto'
       )}
     >
       {/* Header */}
@@ -98,19 +109,21 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = isActivePath(item.path);
 
           return (
             <Link key={item.path} to={item.path}>
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
-                  'w-full justify-start gap-3',
+                  'w-full justify-start gap-3 transition-colors',
                   collapsed && 'justify-center px-2',
-                  isActive && 'bg-brass/10 text-brass border border-brass/30'
+                  isActive 
+                    ? 'bg-brass/20 text-brass hover:bg-brass/30 border border-brass/40' 
+                    : 'hover:bg-brass/10 hover:text-brass'
                 )}
               >
                 <Icon className="w-5 h-5 shrink-0" />

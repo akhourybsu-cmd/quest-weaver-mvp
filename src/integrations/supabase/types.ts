@@ -2714,6 +2714,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           details: Json | null
+          discovered: boolean | null
           id: string
           location_type: string | null
           name: string
@@ -2727,6 +2728,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           details?: Json | null
+          discovered?: boolean | null
           id?: string
           location_type?: string | null
           name: string
@@ -2740,6 +2742,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           details?: Json | null
+          discovered?: boolean | null
           id?: string
           location_type?: string | null
           name?: string
@@ -3456,6 +3459,7 @@ export type Database = {
           location: string | null
           location_id: string | null
           name: string
+          player_visible: boolean | null
           portrait_url: string | null
           pronouns: string | null
           public_bio: string | null
@@ -3481,6 +3485,7 @@ export type Database = {
           location?: string | null
           location_id?: string | null
           name: string
+          player_visible?: boolean | null
           portrait_url?: string | null
           pronouns?: string | null
           public_bio?: string | null
@@ -3506,6 +3511,7 @@ export type Database = {
           location?: string | null
           location_id?: string | null
           name?: string
+          player_visible?: boolean | null
           portrait_url?: string | null
           pronouns?: string | null
           public_bio?: string | null
@@ -3900,6 +3906,7 @@ export type Database = {
           legacy_quest_giver: string | null
           location_id: string | null
           locations: string[] | null
+          player_visible: boolean | null
           quest_chain_parent: string | null
           quest_giver_id: string | null
           quest_type: string | null
@@ -3925,6 +3932,7 @@ export type Database = {
           legacy_quest_giver?: string | null
           location_id?: string | null
           locations?: string[] | null
+          player_visible?: boolean | null
           quest_chain_parent?: string | null
           quest_giver_id?: string | null
           quest_type?: string | null
@@ -3950,6 +3958,7 @@ export type Database = {
           legacy_quest_giver?: string | null
           location_id?: string | null
           locations?: string[] | null
+          player_visible?: boolean | null
           quest_chain_parent?: string | null
           quest_giver_id?: string | null
           quest_type?: string | null

@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 interface NPC {
   id: string;
@@ -48,6 +49,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
   const [alignment, setAlignment] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [playerVisible, setPlayerVisible] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,6 +64,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setTags(npc.tags || []);
       setStatus(npc.status || "alive");
       setAlignment(npc.alignment || "");
+      setPlayerVisible((npc as any).player_visible || false);
     } else {
       setName("");
       setPronouns("");
@@ -147,6 +150,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
         tags,
         status: status || "alive",
         alignment: alignment.trim() || null,
+        player_visible: playerVisible,
       };
 
       if (npc) {
@@ -384,6 +388,14 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
               </Button>
             )}
             <div className="flex gap-2 ml-auto">
+              <div className="flex items-center gap-2 mr-2">
+                <Label htmlFor="npc-visible" className="text-sm">Visible to Players</Label>
+                <Switch
+                  id="npc-visible"
+                  checked={playerVisible}
+                  onCheckedChange={setPlayerVisible}
+                />
+              </div>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

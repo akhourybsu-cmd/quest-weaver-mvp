@@ -31,6 +31,7 @@ import AuditHarness from "./pages/dev/AuditHarness";
 import PlayerHub from "@/pages/PlayerHub";
 import PlayerDashboardNew from "@/pages/PlayerDashboardNew";
 import { PlayerWaitingRoom } from "@/components/player/PlayerWaitingRoom";
+import PlayerCampaignView from "@/pages/PlayerCampaignView";
 import Community from "./pages/Community";
 import Changelog from "./pages/Changelog";
 

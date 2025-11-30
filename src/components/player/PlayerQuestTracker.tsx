@@ -64,6 +64,7 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
         location:location_id(id, name)
       `)
       .eq("campaign_id", campaignId)
+      .eq("player_visible", true)
       .order("status", { ascending: false })
       .order("created_at", { ascending: false });
 

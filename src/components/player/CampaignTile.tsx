@@ -30,6 +30,8 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   useEffect(() => {
     loadStatus();
     loadCharacter();
+    checkCombatStatus();
+    checkUnreadMessages();
   }, [link.campaign_id]);
 
   // Real-time subscription for campaign and session updates
@@ -52,6 +54,22 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
         filter: `campaign_id=eq.${link.campaign_id}`
       }, () => {
         loadStatus(); // Refresh when session status changes
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'encounters',
+        filter: `campaign_id=eq.${link.campaign_id}`
+      }, () => {
+        checkCombatStatus(); // Refresh when encounter status changes
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'campaign_messages',
+        filter: `campaign_id=eq.${link.campaign_id}`
+      }, () => {
+        checkUnreadMessages(); // Refresh when new messages arrive
       })
       .subscribe();
 

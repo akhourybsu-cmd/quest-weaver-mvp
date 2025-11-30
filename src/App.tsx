@@ -108,6 +108,7 @@ const App = () => {
                     <Route path="/characters/:characterId" element={<CharacterSheetPage />} />
                     <Route path="/player/:playerId" element={<PlayerDashboardNew />} />
                     <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
+                    <Route path="/player/campaign/:campaignCode" element={<PlayerCampaignView />} />
                     <Route path="/audit" element={<AuditHarness />} />
                     <Route path="/player-hub" element={<PlayerHub />} />
                     <Route path="*" element={<NotFound />} />

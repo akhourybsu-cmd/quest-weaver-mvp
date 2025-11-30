@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2 } from "lucide-react";
+import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ interface Location {
   parent_location_id: string | null;
   path: string | null;
   details: any;
+  discovered?: boolean;
 }
 
 const terrainColors: Record<string, string> = {
@@ -306,19 +307,25 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                             {location.description || 'No description'}
                           </p>
 
-                          {location.tags && location.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {location.tags.slice(0, 3).map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="outline"
-                                  className={terrainColors[tag] || "border-brass/30"}
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            {location.tags && location.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {location.tags.slice(0, 3).map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className={terrainColors[tag] || "border-brass/30"}
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
+                              <Eye className="w-3 h-3 mr-1" />
+                              {location.discovered ? "Discovered" : "Hidden"}
+                            </Badge>
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -410,19 +417,25 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                         {location.description || 'No description'}
                       </p>
 
-                      {location.tags && location.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {location.tags.slice(0, 3).map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className={terrainColors[tag] || "border-brass/30"}
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        {location.tags && location.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {location.tags.slice(0, 3).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className={terrainColors[tag] || "border-brass/30"}
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
+                          <Eye className="w-3 h-3 mr-1" />
+                          {location.discovered ? "Discovered" : "Hidden"}
+                        </Badge>
+                      </div>
                     </CardContent>
                   </Card>
                 );

@@ -16,6 +16,7 @@ import { PlayerJournal } from "@/components/player/PlayerJournal";
 import { PlayerBackstory } from "@/components/player/PlayerBackstory";
 import { PlayerSpellbook } from "@/components/player/PlayerSpellbook";
 import { PlayerFeatures } from "@/components/player/PlayerFeatures";
+import { PlayerChat } from "@/components/player/PlayerChat";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,8 @@ import {
   Package, 
   Map as MapIcon,
   Scroll,
-  Zap
+  Zap,
+  MessageSquare
 } from "lucide-react";
 
 interface Character {
@@ -368,7 +370,7 @@ const SessionPlayer = () => {
             </TabsList>
 
             {/* Bottom Row - Secondary Tabs */}
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="quests">
                 <Scroll className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Quests</span>
@@ -376,6 +378,10 @@ const SessionPlayer = () => {
               <TabsTrigger value="inventory">
                 <Package className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Inventory</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat">
+                <MessageSquare className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
               <TabsTrigger value="map" disabled={!mapId}>
                 <MapIcon className="w-4 h-4 sm:mr-2" />
@@ -442,6 +448,17 @@ const SessionPlayer = () => {
               characterId={character.id}
               campaignId={campaignId}
             />
+          </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="space-y-4">
+            {campaignId && currentUserId && (
+              <PlayerChat
+                campaignId={campaignId}
+                currentUserId={currentUserId}
+                isDM={false}
+              />
+            )}
           </TabsContent>
 
           {/* Map Tab */}

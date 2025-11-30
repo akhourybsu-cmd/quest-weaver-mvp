@@ -169,13 +169,19 @@ export const PlayerWaitingRoom = () => {
     };
   };
   const checkForLiveSession = async (campId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('campaigns')
-      .select('live_session_id, campaign_sessions(status)')
+      .select('live_session_id')
       .eq('id', campId)
       .single();
 
-    if (data?.live_session_id && ['live', 'paused'].includes(data.campaign_sessions?.status)) {
+    if (error) {
+      console.error('Failed to check for live session:', error);
+      setChecking(false);
+      return;
+    }
+
+    if (data?.live_session_id) {
       // Session is active, redirect
       navigate(`/session/player?campaign=${campaignCode}`);
     } else {

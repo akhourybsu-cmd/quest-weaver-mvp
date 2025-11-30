@@ -57,6 +57,41 @@ export const PlayerWaitingRoom = () => {
     }
 
     setCampaignId(campaign.id);
+
+    // Auto-link player to campaign if not already linked
+    const { data: existingLink } = await supabase
+      .from('player_campaign_links')
+      .select('id')
+      .eq('player_id', user.id)
+      .eq('campaign_id', campaign.id)
+      .maybeSingle();
+
+    if (!existingLink) {
+      const { error: linkError } = await supabase
+        .from('player_campaign_links')
+        .insert({
+          player_id: user.id,
+          campaign_id: campaign.id,
+          join_code: campaignCode,
+          role: 'player',
+        });
+
+      if (linkError) {
+        console.error('Failed to link player to campaign:', linkError);
+        toast({
+          title: 'Connection error',
+          description: 'Failed to join campaign. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Campaign joined!',
+        description: 'Waiting for DM to start session...',
+      });
+    }
+
     checkForLiveSession(campaign.id);
 
     // Subscribe to campaign updates

@@ -3652,6 +3652,64 @@ export type Database = {
           },
         ]
       }
+      player_journals: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          content: string
+          created_at: string
+          id: string
+          session_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          content: string
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_journals_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_journals_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_journals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_presence: {
         Row: {
           campaign_id: string

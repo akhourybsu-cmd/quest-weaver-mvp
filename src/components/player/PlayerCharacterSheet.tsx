@@ -7,6 +7,27 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Heart, Shield, Zap, User, BookOpen } from "lucide-react";
 
+interface AbilityScores {
+  str: number;
+  dex: number;
+  con: number;
+  int: number;
+  wis: number;
+  cha: number;
+}
+
+interface Skill {
+  skill: string;
+  proficient: boolean;
+  expertise: boolean;
+}
+
+interface SpellSlot {
+  spell_level: number;
+  max_slots: number;
+  used_slots: number;
+}
+
 interface CharacterData {
   id: string;
   name: string;
@@ -34,9 +55,15 @@ interface PlayerCharacterSheetProps {
 
 export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps) {
   const [character, setCharacter] = useState<CharacterData | null>(null);
+  const [abilities, setAbilities] = useState<AbilityScores | null>(null);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [spellSlots, setSpellSlots] = useState<SpellSlot[]>([]);
 
   useEffect(() => {
     fetchCharacter();
+    fetchAbilities();
+    fetchSkills();
+    fetchSpellSlots();
 
     const channel = supabase
       .channel(`char-sheet:${characterId}`)
@@ -49,6 +76,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           filter: `id=eq.${characterId}`,
         },
         () => fetchCharacter()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'character_spell_slots',
+          filter: `character_id=eq.${characterId}`,
+        },
+        () => fetchSpellSlots()
       )
       .subscribe();
 
@@ -65,6 +102,66 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       .single();
 
     if (data) setCharacter(data as CharacterData);
+  };
+
+  const fetchAbilities = async () => {
+    const { data } = await supabase
+      .from("character_abilities")
+      .select("str, dex, con, int, wis, cha")
+      .eq("character_id", characterId)
+      .maybeSingle();
+
+    if (data) setAbilities(data);
+  };
+
+  const fetchSkills = async () => {
+    const { data } = await supabase
+      .from("character_skills")
+      .select("skill, proficient, expertise")
+      .eq("character_id", characterId)
+      .order("skill");
+
+    if (data) setSkills(data);
+  };
+
+  const fetchSpellSlots = async () => {
+    const { data } = await supabase
+      .from("character_spell_slots")
+      .select("spell_level, max_slots, used_slots")
+      .eq("character_id", characterId)
+      .order("spell_level");
+
+    if (data) setSpellSlots(data);
+  };
+
+  const getAbilityModifier = (score: number) => {
+    return Math.floor((score - 10) / 2);
+  };
+
+  const formatModifier = (mod: number) => {
+    return mod >= 0 ? `+${mod}` : `${mod}`;
+  };
+
+  const getSkillModifier = (skill: Skill, abilityScore: number) => {
+    const baseMod = getAbilityModifier(abilityScore);
+    if (!character) return baseMod;
+    
+    let bonus = baseMod;
+    if (skill.proficient) bonus += character.proficiency_bonus;
+    if (skill.expertise) bonus += character.proficiency_bonus;
+    return bonus;
+  };
+
+  const getSkillAbility = (skillName: string): keyof AbilityScores => {
+    const skillMap: Record<string, keyof AbilityScores> = {
+      'Acrobatics': 'dex', 'Animal Handling': 'wis', 'Arcana': 'int',
+      'Athletics': 'str', 'Deception': 'cha', 'History': 'int',
+      'Insight': 'wis', 'Intimidation': 'cha', 'Investigation': 'int',
+      'Medicine': 'wis', 'Nature': 'int', 'Perception': 'wis',
+      'Performance': 'cha', 'Persuasion': 'cha', 'Religion': 'int',
+      'Sleight of Hand': 'dex', 'Stealth': 'dex', 'Survival': 'wis'
+    };
+    return skillMap[skillName] || 'str';
   };
 
   if (!character) {
@@ -147,6 +244,29 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
 
             <Separator />
 
+            {/* Ability Scores */}
+            {abilities && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="font-semibold">Ability Scores</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.entries(abilities).map(([key, value]) => (
+                    <div key={key} className="text-center p-2 bg-muted/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground uppercase">{key}</div>
+                      <div className="text-xl font-bold">{value}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {formatModifier(getAbilityModifier(value))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
             {/* Saving Throws */}
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -192,6 +312,70 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                 </div>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Skills */}
+            {skills.length > 0 && abilities && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4" />
+                  <span className="font-semibold">Skills</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {skills.map((skill) => {
+                    const abilityKey = getSkillAbility(skill.skill);
+                    const abilityScore = abilities[abilityKey];
+                    const modifier = getSkillModifier(skill, abilityScore);
+                    
+                    return (
+                      <div key={skill.skill} className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          {skill.skill}
+                          {skill.expertise && <Badge variant="outline" className="text-[10px] h-4 px-1">E</Badge>}
+                          {skill.proficient && !skill.expertise && <span className="text-xs">●</span>}
+                        </span>
+                        <span className="font-mono">{formatModifier(modifier)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Spell Slots */}
+            {spellSlots.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="w-4 h-4" />
+                    <span className="font-semibold">Spell Slots</span>
+                  </div>
+                  <div className="space-y-2">
+                    {spellSlots.map((slot) => (
+                      <div key={slot.spell_level} className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Level {slot.spell_level}
+                        </span>
+                        <div className="flex gap-1">
+                          {Array.from({ length: slot.max_slots }).map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded-full border-2 ${
+                                i < slot.max_slots - slot.used_slots
+                                  ? 'bg-primary border-primary'
+                                  : 'bg-muted border-muted-foreground'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Resources */}
             {character.resources && Object.keys(character.resources).length > 0 && (

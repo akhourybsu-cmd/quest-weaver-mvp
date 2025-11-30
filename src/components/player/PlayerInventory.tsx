@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { Backpack, Package } from "lucide-react";
+import { Backpack, Coins } from "lucide-react";
 
 interface Holding {
   id: string;
@@ -28,9 +29,11 @@ interface PlayerInventoryProps {
 
 export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProps) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [currency, setCurrency] = useState({ cp: 0, sp: 0, gp: 0, pp: 0 });
 
   useEffect(() => {
     fetchHoldings();
+    fetchCurrency();
 
     const channel = supabase
       .channel(`player-inventory:${campaignId}`)
@@ -68,6 +71,19 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
 
     if (data) {
       setHoldings(data as any);
+    }
+  };
+
+  const fetchCurrency = async () => {
+    const { data } = await supabase
+      .from("characters")
+      .select("resources")
+      .eq("id", characterId)
+      .maybeSingle();
+
+    if (data?.resources && typeof data.resources === 'object' && 'currency' in data.resources) {
+      const curr = (data.resources as any).currency;
+      setCurrency(curr || { cp: 0, sp: 0, gp: 0, pp: 0 });
     }
   };
 
@@ -144,10 +160,21 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Backpack className="w-5 h-5" />
-          Inventory
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Backpack className="w-5 h-5" />
+            Inventory
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-amber-500" />
+            <div className="flex gap-2 text-sm font-semibold">
+              {currency.pp > 0 && <span className="text-purple-400">{currency.pp}pp</span>}
+              {currency.gp > 0 && <span className="text-amber-400">{currency.gp}gp</span>}
+              {currency.sp > 0 && <span className="text-slate-300">{currency.sp}sp</span>}
+              {currency.cp > 0 && <span className="text-orange-400">{currency.cp}cp</span>}
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="w-full">

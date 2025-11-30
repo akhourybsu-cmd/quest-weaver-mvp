@@ -26,8 +26,53 @@ export const PlayerWaitingRoom = () => {
       navigate('/');
       return;
     }
-    
-    setPlayerId(user.id);
+
+    // Ensure there is a player profile linked to this auth user
+    const { data: existingPlayer, error: playerFetchError } = await supabase
+      .from('players')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (playerFetchError) {
+      console.error('Failed to load player profile:', playerFetchError);
+      toast({
+        title: 'Connection error',
+        description: 'Could not load your player profile. Please try again.',
+        variant: 'destructive',
+      });
+      navigate('/');
+      return;
+    }
+
+    let playerRecord = existingPlayer;
+
+    // Auto-create a player profile if one does not exist yet
+    if (!playerRecord) {
+      const { data: newPlayer, error: createError } = await supabase
+        .from('players')
+        .insert({
+          user_id: user.id,
+          name: user.email || 'Player',
+        })
+        .select('id, name')
+        .single();
+
+      if (createError || !newPlayer) {
+        console.error('Failed to create player profile:', createError);
+        toast({
+          title: 'Connection error',
+          description: 'Could not create your player profile. Please try again.',
+          variant: 'destructive',
+        });
+        navigate('/');
+        return;
+      }
+
+      playerRecord = newPlayer;
+    }
+
+    setPlayerId(playerRecord.id);
 
     if (!campaignCode) {
       toast({
@@ -35,7 +80,7 @@ export const PlayerWaitingRoom = () => {
         description: 'No campaign code provided',
         variant: 'destructive',
       });
-      navigate(`/player/${user.id}`);
+      navigate(`/player/${playerRecord.id}`);
       return;
     }
 
@@ -52,7 +97,7 @@ export const PlayerWaitingRoom = () => {
         description: 'Invalid campaign code',
         variant: 'destructive',
       });
-      navigate(`/player/${user.id}`);
+      navigate(`/player/${playerRecord.id}`);
       return;
     }
 
@@ -62,7 +107,7 @@ export const PlayerWaitingRoom = () => {
     const { data: existingLink } = await supabase
       .from('player_campaign_links')
       .select('id')
-      .eq('player_id', user.id)
+      .eq('player_id', playerRecord.id)
       .eq('campaign_id', campaign.id)
       .maybeSingle();
 
@@ -70,7 +115,7 @@ export const PlayerWaitingRoom = () => {
       const { error: linkError } = await supabase
         .from('player_campaign_links')
         .insert({
-          player_id: user.id,
+          player_id: playerRecord.id,
           campaign_id: campaign.id,
           join_code: campaignCode,
           role: 'player',
@@ -122,7 +167,6 @@ export const PlayerWaitingRoom = () => {
       supabase.removeChannel(channel);
     };
   };
-
   const checkForLiveSession = async (campId: string) => {
     const { data } = await supabase
       .from('campaigns')

@@ -14,6 +14,8 @@ import { PlayerInventory } from "@/components/player/PlayerInventory";
 import { PlayerEffects } from "@/components/player/PlayerEffects";
 import { PlayerJournal } from "@/components/player/PlayerJournal";
 import { PlayerBackstory } from "@/components/player/PlayerBackstory";
+import { PlayerSpellbook } from "@/components/player/PlayerSpellbook";
+import { PlayerFeatures } from "@/components/player/PlayerFeatures";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +27,8 @@ import {
   ScrollText, 
   Package, 
   Map as MapIcon,
-  Scroll 
+  Scroll,
+  Zap
 } from "lucide-react";
 
 interface Character {
@@ -341,7 +344,7 @@ const SessionPlayer = () => {
         <Tabs defaultValue={activeEncounter ? "combat" : "character"} className="space-y-4">
           <div className="space-y-2">
             {/* Top Row - Primary Tabs */}
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="character">
                 <User className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Character</span>
@@ -350,13 +353,17 @@ const SessionPlayer = () => {
                 <Swords className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Combat</span>
               </TabsTrigger>
-              <TabsTrigger value="journal">
+              <TabsTrigger value="spells">
                 <BookOpen className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Journal</span>
+                <span className="hidden sm:inline">Spells</span>
               </TabsTrigger>
-              <TabsTrigger value="backstory">
+              <TabsTrigger value="features">
+                <Zap className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Features</span>
+              </TabsTrigger>
+              <TabsTrigger value="journal">
                 <ScrollText className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Story</span>
+                <span className="hidden sm:inline">Journal</span>
               </TabsTrigger>
             </TabsList>
 
@@ -409,14 +416,19 @@ const SessionPlayer = () => {
             </TabsContent>
           )}
 
+          {/* Spells Tab */}
+          <TabsContent value="spells" className="space-y-4">
+            <PlayerSpellbook characterId={character.id} />
+          </TabsContent>
+
+          {/* Features Tab */}
+          <TabsContent value="features" className="space-y-4">
+            <PlayerFeatures characterId={character.id} />
+          </TabsContent>
+
           {/* Journal Tab */}
           <TabsContent value="journal" className="space-y-4">
             <PlayerJournal campaignId={campaignId} characterId={character.id} />
-          </TabsContent>
-
-          {/* Backstory Tab */}
-          <TabsContent value="backstory" className="space-y-4">
-            <PlayerBackstory characterId={character.id} />
           </TabsContent>
 
           {/* Quests Tab */}

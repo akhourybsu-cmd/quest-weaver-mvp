@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Clock, Plus, FileText, Package, Play, Target, CheckSquare } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Package, Play, Target, CheckSquare, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
@@ -40,6 +40,7 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [packBuilderOpen, setPackBuilderOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [logViewerOpen, setLogViewerOpen] = useState(false);
@@ -253,6 +254,17 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
                         </div>
                         
                         <div className="flex gap-2 ml-4">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              setSessionToEdit(session);
+                              setScheduleDialogOpen(true);
+                            }}
+                            title="Edit Session"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => openPackBuilder(session)}>
                             <Package className="w-4 h-4 mr-2" />
                             Build Pack
@@ -355,8 +367,12 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
       {/* Schedule Session Dialog */}
       <ScheduleSessionDialog
         open={scheduleDialogOpen}
-        onOpenChange={setScheduleDialogOpen}
+        onOpenChange={(open) => {
+          setScheduleDialogOpen(open);
+          if (!open) setSessionToEdit(null);
+        }}
         campaignId={campaignId}
+        sessionToEdit={sessionToEdit}
         onSuccess={fetchSessions}
       />
 

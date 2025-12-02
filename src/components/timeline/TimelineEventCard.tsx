@@ -11,10 +11,13 @@ import {
   Star,
   FileText,
   Eye,
-  EyeOff
+  EyeOff,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +40,10 @@ export interface TimelineEvent {
 interface TimelineEventCardProps {
   event: TimelineEvent;
   showVisibility?: boolean;
+  showActions?: boolean;
   onToggleVisibility?: (event: TimelineEvent) => void;
+  onEdit?: (event: TimelineEvent) => void;
+  onDelete?: (event: TimelineEvent) => void;
   onClick?: (event: TimelineEvent) => void;
 }
 
@@ -59,8 +65,11 @@ const eventConfig: Record<string, { icon: typeof Sword; color: string; bgColor: 
 
 export function TimelineEventCard({ 
   event, 
-  showVisibility = false, 
+  showVisibility = false,
+  showActions = false,
   onToggleVisibility,
+  onEdit,
+  onDelete,
   onClick 
 }: TimelineEventCardProps) {
   const config = eventConfig[event.kind] || eventConfig.custom;
@@ -69,7 +78,7 @@ export function TimelineEventCard({
   return (
     <Card 
       className={cn(
-        "bg-card/50 border-border/50 hover:border-brass/30 transition-colors",
+        "bg-card/50 border-border/50 hover:border-brass/30 transition-colors group",
         onClick && "cursor-pointer"
       )}
       onClick={() => onClick?.(event)}
@@ -105,22 +114,53 @@ export function TimelineEventCard({
           </div>
         </div>
 
-        {showVisibility && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleVisibility?.(event);
-            }}
-            className="p-1.5 hover:bg-muted rounded transition-colors shrink-0"
-            title={event.player_visible ? "Visible to players" : "Hidden from players"}
-          >
-            {event.player_visible ? (
-              <Eye className="w-4 h-4 text-emerald-400" />
-            ) : (
-              <EyeOff className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {showActions && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(event);
+                }}
+                title="Edit event"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(event);
+                }}
+                title="Delete event"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
+          
+          {showVisibility && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleVisibility?.(event);
+              }}
+              className="p-1.5 hover:bg-muted rounded transition-colors"
+              title={event.player_visible ? "Visible to players" : "Hidden from players"}
+            >
+              {event.player_visible ? (
+                <Eye className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <EyeOff className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

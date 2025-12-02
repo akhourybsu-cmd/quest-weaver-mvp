@@ -131,7 +131,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-2xl h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col bg-card overflow-hidden" variant="ornaments">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col bg-card" variant="ornaments">
         <DialogHeader>
           <DialogTitle className="font-cinzel flex items-center gap-2 text-foreground">
             <Upload className="w-5 h-5 text-primary" />
@@ -142,7 +142,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Upload Area */}
           {!hasEntities && !isProcessing && (
             <div
@@ -218,8 +218,8 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
               </div>
 
               {/* Categories */}
-              <ScrollArea className="flex-1 mt-2">
-                <div className="space-y-3 pr-4">
+              <ScrollArea className="flex-1 min-h-0 mt-2" style={{ maxHeight: 'calc(60vh - 200px)' }}>
+                <div className="space-y-3 pr-4 pb-2">
                   {categories.map((category) => {
                     const categoryEntities = getCategoryEntities(category);
                     if (categoryEntities.length === 0) return null;
@@ -340,10 +340,10 @@ function EntityRow({
         checked={entity.selected} 
         className="mt-0.5 shrink-0 border-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
       />
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate text-foreground text-sm sm:text-base">{name}</p>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <p className="font-medium text-foreground text-sm sm:text-base truncate">{name}</p>
         {description && (
-          <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">{description}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-0.5">{description}</p>
         )}
       </div>
       {entity.entity.rarity && (

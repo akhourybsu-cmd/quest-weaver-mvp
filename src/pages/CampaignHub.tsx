@@ -78,6 +78,7 @@ import {
   FileText,
   Pause,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayout";
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
@@ -106,6 +107,7 @@ import { DeleteCampaignDialog } from "@/components/campaign/DeleteCampaignDialog
 import { SessionTimer } from "@/components/campaign/SessionTimer";
 import { SessionControl } from "@/components/campaign/SessionControl";
 import { resilientChannel } from "@/lib/realtime";
+import { DocumentImportDialog } from "@/components/campaign/DocumentImportDialog";
 
 interface Campaign {
   id: string;
@@ -135,6 +137,7 @@ const CampaignHub = () => {
   const [liveSession, setLiveSession] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [playerData, setPlayerData] = useState<{ count: number; players: any[] }>({ count: 0, players: [] });
   const [sessionCount, setSessionCount] = useState(0);
   const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0);
@@ -622,6 +625,10 @@ const CampaignHub = () => {
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Join Code
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import Content (AI)
+                  </DropdownMenuItem>
                   <DropdownMenuItem>
                     <FileDown className="w-4 h-4 mr-2" />
                     Export Campaign
@@ -975,6 +982,14 @@ const CampaignHub = () => {
           navigate('/campaign-hub');
         }}
       />
+
+      {activeCampaign && (
+        <DocumentImportDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          campaignId={activeCampaign.id}
+        />
+      )}
     </>
   );
 };

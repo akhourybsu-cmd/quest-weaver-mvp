@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield, Database } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SRDDataSeeder } from "@/components/admin/SRDDataSeeder";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminTools = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isDM, setIsDM] = useState(false);
+  const [fixingSpells, setFixingSpells] = useState(false);
+  const [spellStats, setSpellStats] = useState<{ total: number; withClasses: number } | null>(null);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -28,10 +32,56 @@ const AdminTools = () => {
 
       setIsDM(campaigns && campaigns.length > 0);
       setLoading(false);
+      
+      // Check spell data status
+      checkSpellStatus();
     };
 
     checkAccess();
   }, []);
+
+  const checkSpellStatus = async () => {
+    const { data: spells, error } = await supabase
+      .from("srd_spells")
+      .select("id, classes, level");
+    
+    if (!error && spells) {
+      const withClasses = spells.filter(s => 
+        Array.isArray(s.classes) && s.classes.length > 0
+      ).length;
+      setSpellStats({ total: spells.length, withClasses });
+    }
+  };
+
+  const handleFixSpells = async () => {
+    setFixingSpells(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-srd-core", {
+        body: { categories: ["spells"] }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Spell Import Started",
+        description: "Spells are being re-imported in the background. This may take a minute.",
+      });
+      
+      // Wait a bit then refresh stats
+      setTimeout(() => {
+        checkSpellStatus();
+        setFixingSpells(false);
+      }, 5000);
+    } catch (error) {
+      console.error("Failed to fix spells:", error);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      setFixingSpells(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -62,6 +112,8 @@ const AdminTools = () => {
     );
   }
 
+  const spellsNeedFix = spellStats && spellStats.withClasses < spellStats.total * 0.5;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b p-4">
@@ -77,6 +129,58 @@ const AdminTools = () => {
       <main className="container mx-auto p-6 space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           <SRDDataSeeder />
+          
+          {/* Spell Data Fixer */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-5 w-5" />
+                Spell Data Status
+              </CardTitle>
+              <CardDescription>
+                Fix spell class assignments for character creation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {spellStats && (
+                <div className="flex items-center gap-2">
+                  {spellsNeedFix ? (
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  )}
+                  <span className="text-sm">
+                    {spellStats.withClasses}/{spellStats.total} spells have class assignments
+                  </span>
+                </div>
+              )}
+              
+              {spellsNeedFix && (
+                <p className="text-sm text-muted-foreground">
+                  Many spells are missing class assignments. This prevents players from selecting spells during character creation.
+                </p>
+              )}
+              
+              <Button 
+                onClick={handleFixSpells} 
+                disabled={fixingSpells}
+                variant={spellsNeedFix ? "default" : "outline"}
+                className="w-full"
+              >
+                {fixingSpells ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Re-importing Spells...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    {spellsNeedFix ? "Fix Spell Data" : "Re-import Spells"}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
           
           <Card>
             <CardHeader>

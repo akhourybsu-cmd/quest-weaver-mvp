@@ -194,6 +194,23 @@ const StepSpells = () => {
     );
   }
 
+  // Show warning if no spells found for the class
+  if (allSpells.length === 0) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="space-y-2">
+          <p className="font-medium">No spells found for {selectedClass.name}</p>
+          <p className="text-sm">
+            The spell database may need to be re-imported. Please visit{" "}
+            <a href="/admin" className="underline font-medium">Admin Tools</a>{" "}
+            and click "Fix Spell Data" to resolve this issue.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Status */}

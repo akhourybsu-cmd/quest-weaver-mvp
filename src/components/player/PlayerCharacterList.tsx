@@ -357,9 +357,20 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Character Permanently?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete <strong>{selectedCharacter.name}</strong>? 
-                  This action cannot be undone. All character data, equipment, spells, and history will be permanently removed.
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2">
+                    <p>
+                      Are you sure you want to delete <strong>{selectedCharacter.name}</strong>?
+                    </p>
+                    {selectedCharacter.campaign && (
+                      <p className="text-destructive font-medium">
+                        This will also remove them from "{selectedCharacter.campaign.name}".
+                      </p>
+                    )}
+                    <p className="text-sm">
+                      This action cannot be undone. All character data, equipment, spells, and history will be permanently removed.
+                    </p>
+                  </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

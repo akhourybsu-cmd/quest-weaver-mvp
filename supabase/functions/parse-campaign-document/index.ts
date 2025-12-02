@@ -136,14 +136,26 @@ serve(async (req) => {
       throw new Error(`AI processing failed: ${response.status}`);
     }
 
-    const aiResponse = await response.json();
+    // Read response as text first to handle potential issues
+    const responseText = await response.text();
+    
+    let aiResponse;
+    try {
+      aiResponse = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse AI gateway response:', responseText.substring(0, 500));
+      throw new Error('AI gateway returned invalid response');
+    }
+    
     const aiContent = aiResponse.choices?.[0]?.message?.content;
 
     if (!aiContent) {
+      console.error('No content in AI response:', JSON.stringify(aiResponse).substring(0, 500));
       throw new Error('No response from AI');
     }
 
     console.log('AI response received, parsing JSON...');
+    console.log('AI content length:', aiContent.length);
 
     // Parse the JSON response (handle potential markdown code blocks)
     let entities;
@@ -162,8 +174,9 @@ serve(async (req) => {
 
       entities = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error('Failed to parse AI response as JSON:', aiContent);
-      throw new Error('AI returned invalid JSON format');
+      console.error('Failed to parse AI response as JSON. Content preview:', aiContent.substring(0, 1000));
+      console.error('Content end:', aiContent.substring(aiContent.length - 200));
+      throw new Error('AI returned invalid JSON format. The response may have been truncated.');
     }
 
     // Ensure all required arrays exist

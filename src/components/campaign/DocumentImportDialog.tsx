@@ -131,13 +131,13 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col" variant="ornaments">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col bg-card" variant="ornaments">
         <DialogHeader>
-          <DialogTitle className="font-cinzel flex items-center gap-2">
-            <Upload className="w-5 h-5 text-arcanePurple" />
+          <DialogTitle className="font-cinzel flex items-center gap-2 text-foreground">
+            <Upload className="w-5 h-5 text-primary" />
             Import Campaign Content
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-muted-foreground">
             Upload a document and AI will extract NPCs, locations, items, factions, lore, and quests.
           </DialogDescription>
         </DialogHeader>
@@ -146,18 +146,18 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           {/* Upload Area */}
           {!hasEntities && !isProcessing && (
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors bg-muted/30 ${
                 dragActive
-                  ? 'border-arcanePurple bg-arcanePurple/10'
-                  : 'border-brass/30 hover:border-brass/50'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50'
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              <FileText className="w-12 h-12 mx-auto mb-4 text-brass/50" />
-              <p className="text-lg mb-2">Drag & drop your document here</p>
+              <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg mb-2 text-foreground font-medium">Drag & drop your document here</p>
               <p className="text-sm text-muted-foreground mb-4">
                 Supports PDF, DOCX, TXT, and MD files (max 20MB)
               </p>
@@ -177,9 +177,9 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
           {/* Processing State */}
           {isProcessing && (
-            <div className="py-12 text-center">
-              <Loader2 className="w-12 h-12 mx-auto mb-4 text-arcanePurple animate-spin" />
-              <p className="text-lg mb-4">AI is analyzing your document...</p>
+            <div className="py-12 text-center bg-muted/20 rounded-lg">
+              <Loader2 className="w-12 h-12 mx-auto mb-4 text-primary animate-spin" />
+              <p className="text-lg mb-4 text-foreground font-medium">AI is analyzing your document...</p>
               <Progress value={progress} className="max-w-xs mx-auto" />
               <p className="text-sm text-muted-foreground mt-2">
                 This may take 30-60 seconds for large documents
@@ -189,9 +189,9 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
           {/* Error State */}
           {error && !isProcessing && (
-            <div className="py-8 text-center">
+            <div className="py-8 text-center bg-destructive/10 rounded-lg border border-destructive/30">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-              <p className="text-lg mb-2">Processing failed</p>
+              <p className="text-lg mb-2 text-foreground font-medium">Processing failed</p>
               <p className="text-sm text-muted-foreground mb-4">{error}</p>
               <Button onClick={reset}>Try Again</Button>
             </div>
@@ -201,17 +201,17 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           {hasEntities && !isProcessing && (
             <>
               {/* Selection Controls */}
-              <div className="flex items-center justify-between py-3 border-b border-brass/20">
+              <div className="flex items-center justify-between py-3 border-b border-border bg-muted/30 px-3 rounded-t-lg">
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="bg-primary/20 text-primary-foreground border-primary/30">
                     {selectedCount} of {totalCount} selected
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={selectAll}>
+                  <Button variant="ghost" size="sm" onClick={selectAll} className="text-foreground hover:bg-accent">
                     Select All
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={deselectAll}>
+                  <Button variant="ghost" size="sm" onClick={deselectAll} className="text-foreground hover:bg-accent">
                     Deselect All
                   </Button>
                 </div>
@@ -219,7 +219,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
               {/* Categories */}
               <ScrollArea className="flex-1 mt-2">
-                <div className="space-y-2 pr-4">
+                <div className="space-y-3 pr-4">
                   {categories.map((category) => {
                     const categoryEntities = getCategoryEntities(category);
                     if (categoryEntities.length === 0) return null;
@@ -231,30 +231,31 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
                     return (
                       <Collapsible key={category} open={isExpanded} onOpenChange={() => toggleCategory(category)}>
-                        <div className="flex items-center gap-2 p-2 rounded-lg bg-card/50 border border-brass/20">
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/50 border border-border hover:bg-accent/70 transition-colors">
                           <Checkbox
                             checked={allSelected}
                             ref={(el) => {
                               if (el) (el as any).indeterminate = someSelected;
                             }}
                             onCheckedChange={(checked) => toggleAllInCategory(category, !!checked)}
+                            className="border-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           />
                           <CollapsibleTrigger className="flex-1 flex items-center gap-2 text-left">
                             {isExpanded ? (
-                              <ChevronDown className="w-4 h-4" />
+                              <ChevronDown className="w-4 h-4 text-foreground" />
                             ) : (
-                              <ChevronRight className="w-4 h-4" />
+                              <ChevronRight className="w-4 h-4 text-foreground" />
                             )}
-                            {CATEGORY_ICONS[category]}
-                            <span className="font-medium">{ENTITY_LABELS[category]}</span>
-                            <Badge variant="outline" className="ml-auto">
+                            <span className="text-primary">{CATEGORY_ICONS[category]}</span>
+                            <span className="font-medium text-foreground">{ENTITY_LABELS[category]}</span>
+                            <Badge variant="outline" className="ml-auto bg-background/80 text-foreground border-border">
                               {selectedInCategory}/{categoryEntities.length}
                             </Badge>
                           </CollapsibleTrigger>
                         </div>
 
                         <CollapsibleContent>
-                          <div className="ml-8 mt-1 space-y-1">
+                          <div className="ml-8 mt-2 space-y-2">
                             {categoryEntities.map((item) => (
                               <EntityRow
                                 key={item.id}
@@ -272,10 +273,10 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
               {/* Import Progress */}
               {isImporting && (
-                <div className="py-4 border-t border-brass/20">
+                <div className="py-4 border-t border-border bg-muted/30 px-3 rounded-b-lg mt-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Importing entities...</span>
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span className="text-foreground font-medium">Importing entities...</span>
                   </div>
                   <Progress value={progress} />
                 </div>
@@ -286,8 +287,8 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
         {/* Footer Actions */}
         {hasEntities && !isProcessing && (
-          <div className="flex items-center justify-between pt-4 border-t border-brass/20">
-            <Button variant="ghost" onClick={reset}>
+          <div className="flex items-center justify-between pt-4 border-t border-border bg-muted/20 -mx-6 -mb-6 px-6 pb-6 mt-4">
+            <Button variant="ghost" onClick={reset} className="text-muted-foreground hover:text-foreground">
               Upload Different File
             </Button>
             <div className="flex items-center gap-2">
@@ -328,32 +329,35 @@ function EntityRow({
 
   return (
     <div
-      className={`flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
         entity.selected
-          ? 'border-arcanePurple/50 bg-arcanePurple/5'
-          : 'border-brass/10 hover:border-brass/30'
+          ? 'border-primary/50 bg-primary/10'
+          : 'border-border bg-background hover:border-primary/30 hover:bg-accent/30'
       }`}
       onClick={onToggle}
     >
-      <Checkbox checked={entity.selected} className="mt-1" />
+      <Checkbox 
+        checked={entity.selected} 
+        className="mt-0.5 border-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
+      />
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{name}</p>
+        <p className="font-medium truncate text-foreground">{name}</p>
         {description && (
-          <p className="text-sm text-muted-foreground truncate">{description}</p>
+          <p className="text-sm text-muted-foreground truncate mt-0.5">{description}</p>
         )}
       </div>
       {entity.entity.rarity && (
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs bg-background/80 text-foreground border-border">
           {entity.entity.rarity}
         </Badge>
       )}
       {entity.entity.location_type && (
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs bg-background/80 text-foreground border-border">
           {entity.entity.location_type}
         </Badge>
       )}
       {entity.entity.category && (
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs bg-background/80 text-foreground border-border">
           {entity.entity.category}
         </Badge>
       )}

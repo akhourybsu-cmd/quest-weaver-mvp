@@ -4,6 +4,7 @@ import { CLASS_FEATURES_SRD } from "@/data/srd/classFeaturesSeed";
 import { SUBCLASSES_SRD, SUBCLASS_FEATURES_SRD } from "@/data/srd/subclassesSeed";
 import { SUBANCESTRIES_SRD } from "@/data/srd/subancestriesSeed";
 import { TOOLS_SRD } from "@/data/srd/toolsSeed";
+import { SPELLS_SRD } from "@/data/srd/spellsSeed";
 
 interface SeedStatus {
   classFeatures: boolean;
@@ -239,19 +240,78 @@ export function useSRDAutoSeed() {
 
   const fixSpellData = async () => {
     try {
+      console.log("Attempting to fix spell data via edge function...");
+      
       // Call the edge function to re-import spells with proper class data
       const { error } = await supabase.functions.invoke("import-srd-core", {
         body: { categories: ["spells"] }
       });
       
       if (error) {
-        console.error("Error fixing spell data:", error);
+        console.error("Edge function failed, using local fallback:", error);
+        await seedSpellsFromLocal();
         return;
       }
 
-      console.log("Spell data fix initiated");
+      // Wait a bit for the background task to complete
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Verify the fix worked
+      const { data: verifySpells } = await supabase
+        .from("srd_spells")
+        .select("id, classes, level")
+        .limit(50);
+      
+      const hasValidData = verifySpells?.filter(s => 
+        Array.isArray(s.classes) && s.classes.length > 0
+      ).length || 0;
+      
+      // If less than 50% have valid class data, use local fallback
+      if (verifySpells && hasValidData < verifySpells.length * 0.5) {
+        console.log("Edge function didn't fix data, using local fallback...");
+        await seedSpellsFromLocal();
+      } else {
+        console.log("Spell data fix verified successfully");
+      }
     } catch (error) {
-      console.error("Error fixing spell data:", error);
+      console.error("Error fixing spell data, using local fallback:", error);
+      await seedSpellsFromLocal();
+    }
+  };
+
+  const seedSpellsFromLocal = async () => {
+    try {
+      console.log(`Seeding ${SPELLS_SRD.length} spells from local data...`);
+      
+      // Insert/update spells in batches
+      for (let i = 0; i < SPELLS_SRD.length; i += 50) {
+        const batch = SPELLS_SRD.slice(i, i + 50).map(spell => ({
+          name: spell.name,
+          level: spell.level,
+          school: spell.school,
+          classes: spell.classes,
+          casting_time: spell.casting_time,
+          range: spell.range,
+          components: spell.components.split(', ').map(c => c.trim()),
+          duration: spell.duration,
+          concentration: spell.concentration,
+          ritual: spell.ritual,
+          description: spell.description,
+          higher_levels: spell.higher_levels || null,
+        }));
+        
+        const { error } = await supabase
+          .from("srd_spells")
+          .upsert(batch, { onConflict: 'name' });
+          
+        if (error) {
+          console.error("Error inserting spell batch:", error);
+        }
+      }
+      
+      console.log(`Successfully seeded ${SPELLS_SRD.length} spells from local data`);
+    } catch (error) {
+      console.error("Error seeding spells from local:", error);
     }
   };
 

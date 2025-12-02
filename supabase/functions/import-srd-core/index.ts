@@ -491,11 +491,25 @@ async function importSpells(supabase: any): Promise<ImportResult> {
   
   try {
     // Use v1 API which has the dnd_class field as comma-separated string
+    // First try without document filter (v1 API is inconsistent with it)
     console.log("Fetching spells from Open5e v1 API...");
-    const spells = await fetchAllPages(`${OPEN5E_BASE}/v1/spells/?document__slug=${SRD_SLUG}&limit=100`);
-    console.log(`Fetched ${spells.length} spells from v1 API`);
+    let spells = await fetchAllPages(`${OPEN5E_BASE}/v1/spells/?limit=100`);
+    console.log(`Fetched ${spells.length} total spells from v1 API`);
+    
+    // Filter to SRD-compatible spells in code
+    const srdSpells = spells.filter((s: any) => 
+      !s.document__slug || 
+      s.document__slug === '5esrd' ||
+      s.document__slug === 'wotc-srd' ||
+      s.document__slug?.toLowerCase().includes('srd')
+    );
+    console.log(`Filtered to ${srdSpells.length} SRD spells`);
+    
+    // Use filtered spells if we got good results, otherwise use all
+    const spellsToImport = srdSpells.length > 100 ? srdSpells : spells;
+    console.log(`Importing ${spellsToImport.length} spells`);
 
-    for (const spell of spells) {
+    for (const spell of spellsToImport) {
       // v1 API provides dnd_class as comma-separated string like "Bard, Cleric, Wizard"
       const classesArray = spell.dnd_class 
         ? spell.dnd_class.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)

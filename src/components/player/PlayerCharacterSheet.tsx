@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Heart, Shield, Zap, User, BookOpen, Languages, 
-  ShieldAlert, Wand2, ChevronDown, Sword, Package, Sparkles
+  ShieldAlert, Wand2, ChevronDown, Sword, Package, Sparkles, Star
 } from "lucide-react";
 
 interface AbilityScores {
@@ -62,6 +62,23 @@ interface CharacterSpell {
   };
 }
 
+interface CharacterFeature {
+  id: string;
+  name: string;
+  source: string;
+  level: number;
+  description: string | null;
+}
+
+interface CharacterResource {
+  id: string;
+  resource_key: string;
+  label: string;
+  current_value: number;
+  max_value: number;
+  recharge: string;
+}
+
 interface CharacterData {
   id: string;
   name: string;
@@ -87,6 +104,8 @@ interface CharacterData {
   spell_ability: string | null;
   spell_save_dc: number | null;
   spell_attack_mod: number | null;
+  ancestry_id: string | null;
+  subancestry_id: string | null;
 }
 
 interface PlayerCharacterSheetProps {
@@ -101,10 +120,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [proficiencies, setProficiencies] = useState<Proficiency[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [spells, setSpells] = useState<CharacterSpell[]>([]);
+  const [features, setFeatures] = useState<CharacterFeature[]>([]);
+  const [resources, setResources] = useState<CharacterResource[]>([]);
+  const [ancestryTraits, setAncestryTraits] = useState<string[]>([]);
+  const [subancestryTraits, setSubancestryTraits] = useState<string[]>([]);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [profOpen, setProfOpen] = useState(false);
   const [spellsOpen, setSpellsOpen] = useState(true);
+  const [featuresOpen, setFeaturesOpen] = useState(true);
   const [selectedSpell, setSelectedSpell] = useState<CharacterSpell['spell'] | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<CharacterFeature | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -147,17 +172,28 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       fetchProficiencies(),
       fetchLanguages(),
       fetchSpells(),
+      fetchFeatures(),
+      fetchResources(),
     ]);
   };
 
   const fetchCharacter = async () => {
     const { data } = await supabase
       .from("characters")
-      .select("*")
+      .select("*, srd_ancestries(traits), srd_subancestries(traits)")
       .eq("id", characterId)
       .single();
 
-    if (data) setCharacter(data as CharacterData);
+    if (data) {
+      setCharacter(data as CharacterData);
+      // Extract ancestry traits
+      if ((data as any).srd_ancestries?.traits) {
+        setAncestryTraits((data as any).srd_ancestries.traits);
+      }
+      if ((data as any).srd_subancestries?.traits) {
+        setSubancestryTraits((data as any).srd_subancestries.traits);
+      }
+    }
   };
 
   const fetchAbilities = async () => {
@@ -238,6 +274,39 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     if (data) {
       const validSpells = data.filter(s => s.spell !== null) as CharacterSpell[];
       setSpells(validSpells);
+    }
+  };
+
+  const fetchFeatures = async () => {
+    const { data } = await supabase
+      .from("character_features")
+      .select("id, name, source, level, description")
+      .eq("character_id", characterId)
+      .order("level")
+      .order("source");
+
+    if (data) setFeatures(data);
+  };
+
+  const fetchResources = async () => {
+    const { data } = await supabase
+      .from("character_resources")
+      .select("id, resource_key, label, current_value, max_value, recharge")
+      .eq("character_id", characterId)
+      .order("label");
+
+    if (data) setResources(data as CharacterResource[]);
+  };
+
+  const getSourceBadgeColor = (source: string) => {
+    switch (source) {
+      case 'Class': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      case 'Subclass': return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+      case 'Ancestry': return 'bg-green-500/10 text-green-400 border-green-500/30';
+      case 'Subancestry': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      case 'Background': return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      case 'Feat': return 'bg-red-500/10 text-red-400 border-red-500/30';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -699,8 +768,103 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               </>
             )}
 
-            {/* Resources */}
-            {character.resources && Object.keys(character.resources).length > 0 && (
+            {/* Features & Abilities */}
+            {(features.length > 0 || ancestryTraits.length > 0 || subancestryTraits.length > 0) && (
+              <>
+                <Separator />
+                <Collapsible open={featuresOpen} onOpenChange={setFeaturesOpen}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-primary" />
+                      <span className="font-semibold">Features & Abilities</span>
+                      <Badge variant="outline" className="text-xs">
+                        {features.length + ancestryTraits.length + subancestryTraits.length}
+                      </Badge>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${featuresOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3 space-y-4">
+                    {/* Class Features */}
+                    {features.filter(f => f.source === 'Class').length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground font-medium">Class Features</span>
+                        <div className="space-y-1 mt-1">
+                          {features.filter(f => f.source === 'Class').map((feature) => (
+                            <div 
+                              key={feature.id}
+                              className="flex items-center justify-between p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50"
+                              onClick={() => setSelectedFeature(feature)}
+                            >
+                              <span className="text-sm font-medium">{feature.name}</span>
+                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Class')}`}>
+                                Lvl {feature.level}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Subclass Features */}
+                    {features.filter(f => f.source === 'Subclass').length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground font-medium">Subclass Features</span>
+                        <div className="space-y-1 mt-1">
+                          {features.filter(f => f.source === 'Subclass').map((feature) => (
+                            <div 
+                              key={feature.id}
+                              className="flex items-center justify-between p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50"
+                              onClick={() => setSelectedFeature(feature)}
+                            >
+                              <span className="text-sm font-medium">{feature.name}</span>
+                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subclass')}`}>
+                                Lvl {feature.level}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Ancestry Traits */}
+                    {ancestryTraits.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground font-medium">Ancestry Traits</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {ancestryTraits.map((trait, idx) => (
+                            <Badge 
+                              key={idx} 
+                              variant="outline" 
+                              className={`text-xs ${getSourceBadgeColor('Ancestry')}`}
+                            >
+                              {trait}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Subancestry Traits */}
+                    {subancestryTraits.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground font-medium">Subancestry Traits</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {subancestryTraits.map((trait, idx) => (
+                            <Badge 
+                              key={idx} 
+                              variant="outline" 
+                              className={`text-xs ${getSourceBadgeColor('Subancestry')}`}
+                            >
+                              {trait}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+
+            {/* Resources (from character_resources table) */}
+            {resources.length > 0 && (
               <>
                 <Separator />
                 <div>
@@ -709,14 +873,31 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                     <span className="font-semibold">Resources</span>
                   </div>
                   <div className="space-y-2">
-                    {Object.entries(character.resources).map(([key, value]: [string, any]) => (
-                      <div key={key} className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </span>
-                        <Badge variant="outline">
-                          {value.current}/{value.max}
-                        </Badge>
+                    {resources.map((resource) => (
+                      <div key={resource.id} className="flex justify-between items-center text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-foreground">{resource.label}</span>
+                          <span className="text-[10px] text-muted-foreground capitalize">
+                            {resource.recharge === 'short' ? 'Short Rest' : 'Long Rest'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {Array.from({ length: resource.max_value }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={`w-3 h-3 rounded-full border-2 ${
+                                  i < resource.current_value
+                                    ? 'bg-primary border-primary'
+                                    : 'bg-muted border-muted-foreground'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {resource.current_value}/{resource.max_value}
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -791,6 +972,33 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   <p className="mt-1 text-sm whitespace-pre-wrap">{selectedSpell.higher_levels}</p>
                 </div>
               )}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Feature Detail Dialog */}
+    <Dialog open={!!selectedFeature} onOpenChange={() => setSelectedFeature(null)}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        {selectedFeature && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                {selectedFeature.name}
+              </DialogTitle>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className={getSourceBadgeColor(selectedFeature.source)}>
+                  {selectedFeature.source}
+                </Badge>
+                <Badge variant="outline">Level {selectedFeature.level}</Badge>
+              </div>
+            </DialogHeader>
+            <div className="mt-4">
+              <p className="text-sm whitespace-pre-wrap">
+                {selectedFeature.description || 'No description available.'}
+              </p>
             </div>
           </>
         )}

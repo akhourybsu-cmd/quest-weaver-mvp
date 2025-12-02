@@ -28,6 +28,7 @@ import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
 import { PlayerHome } from "./components/permissions/PlayerHome";
 import AuditHarness from "./pages/dev/AuditHarness";
+import AdminTools from "./pages/dev/AdminTools";
 import PlayerHub from "@/pages/PlayerHub";
 import PlayerDashboardNew from "@/pages/PlayerDashboardNew";
 import { PlayerWaitingRoom } from "@/components/player/PlayerWaitingRoom";
@@ -116,6 +117,7 @@ const App = () => {
                     <Route path="/player/:playerId/notes" element={<PlayerNotes />} />
                     <Route path="/player/campaign/:campaignCode" element={<PlayerCampaignView />} />
                     <Route path="/audit" element={<AuditHarness />} />
+                    <Route path="/admin" element={<AdminTools />} />
                     <Route path="/player-hub" element={<PlayerHub />} />
                     <Route path="*" element={<NotFound />} />
                   </>

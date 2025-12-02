@@ -4,12 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Heart, Shield, Zap, BookOpen, Languages, 
-  ShieldAlert, Wand2, ChevronDown, Sword, Sparkles, Star, Flame
+  ShieldAlert, Wand2, ChevronDown, Sword, Sparkles, Star, Flame, TrendingUp
 } from "lucide-react";
+import { LevelUpWizard } from "@/components/character/LevelUpWizard";
 
 // Type definitions
 interface AncestryTrait {
@@ -139,6 +141,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [selectedSpell, setSelectedSpell] = useState<CharacterSpell['spell'] | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<CharacterFeature | null>(null);
   const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
+  const [showLevelUp, setShowLevelUp] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -372,9 +375,20 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             
             {/* Name & Class */}
             <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-cinzel font-bold text-foreground tracking-wide truncate">
-                {character.name}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-cinzel font-bold text-foreground tracking-wide truncate">
+                  {character.name}
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 border-brass/50 hover:border-brass hover:bg-brass/10"
+                  onClick={() => setShowLevelUp(true)}
+                >
+                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                  Level Up
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
                 Level {character.level} {character.class}
               </p>
@@ -923,6 +937,18 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Level Up Wizard */}
+      <LevelUpWizard
+        open={showLevelUp}
+        onOpenChange={setShowLevelUp}
+        characterId={characterId}
+        currentLevel={character.level}
+        onComplete={() => {
+          setShowLevelUp(false);
+          fetchAllData();
+        }}
+      />
     </>
   );
 }

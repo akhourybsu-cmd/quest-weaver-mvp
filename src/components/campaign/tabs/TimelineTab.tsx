@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, Filter, Eye, EyeOff, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Calendar, Plus, Filter, Eye, EyeOff, Download, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
@@ -42,6 +43,9 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKind>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<TimelineEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<TimelineEvent | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,6 +121,38 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
     }
   };
 
+  const handleEdit = (event: TimelineEvent) => {
+    setEventToEdit(event);
+    setShowAddDialog(true);
+  };
+
+  const handleDeleteClick = (event: TimelineEvent) => {
+    setEventToDelete(event);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!eventToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('timeline_events')
+        .delete()
+        .eq('id', eventToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Event deleted');
+      setEventToDelete(null);
+      fetchEvents();
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const exportTimeline = () => {
     const markdown = events
       .filter(e => filter === 'all' || filterKindMap[filter].includes(e.kind))
@@ -175,7 +211,7 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
               <Button variant="outline" size="sm" onClick={exportTimeline}>
                 <Download className="w-4 h-4" />
               </Button>
-              <Button size="sm" onClick={() => setShowAddDialog(true)}>
+              <Button size="sm" onClick={() => { setEventToEdit(null); setShowAddDialog(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
               </Button>
@@ -201,7 +237,7 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
                   ? "No events recorded yet. Start chronicling your campaign's history."
                   : "No events match this filter."}
               </p>
-              <Button variant="outline" onClick={() => setShowAddDialog(true)}>
+              <Button variant="outline" onClick={() => { setEventToEdit(null); setShowAddDialog(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Event
               </Button>
@@ -234,7 +270,10 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
                         key={event.id}
                         event={event}
                         showVisibility
+                        showActions
                         onToggleVisibility={toggleVisibility}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
                       />
                     ))}
                   </div>
@@ -247,11 +286,43 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
 
       <AddTimelineEventDialog
         open={showAddDialog}
-        onOpenChange={setShowAddDialog}
+        onOpenChange={(open) => {
+          setShowAddDialog(open);
+          if (!open) setEventToEdit(null);
+        }}
         campaignId={campaignId}
         sessionId={liveSessionId}
+        eventToEdit={eventToEdit}
         onEventAdded={fetchEvents}
       />
+
+      <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Timeline Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{eventToDelete?.title}" from the timeline. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Event"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

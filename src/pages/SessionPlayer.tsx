@@ -17,6 +17,7 @@ import { PlayerBackstory } from "@/components/player/PlayerBackstory";
 import { PlayerSpellbook } from "@/components/player/PlayerSpellbook";
 import { PlayerFeatures } from "@/components/player/PlayerFeatures";
 import { PlayerChat } from "@/components/player/PlayerChat";
+import { PlayerProfile } from "@/components/player/PlayerProfile";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,8 @@ import {
   Map as MapIcon,
   Scroll,
   Zap,
-  MessageSquare
+  MessageSquare,
+  UserCircle
 } from "lucide-react";
 
 interface Character {
@@ -380,7 +382,11 @@ const SessionPlayer = () => {
             </TabsList>
 
             {/* Bottom Row - Secondary Tabs */}
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="profile">
+                <UserCircle className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
               <TabsTrigger value="quests">
                 <Scroll className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Quests</span>
@@ -445,6 +451,11 @@ const SessionPlayer = () => {
           {/* Journal Tab */}
           <TabsContent value="journal" className="space-y-4">
             <PlayerJournal campaignId={campaignId} characterId={character.id} />
+          </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-4">
+            <PlayerProfile characterId={character.id} />
           </TabsContent>
 
           {/* Quests Tab */}

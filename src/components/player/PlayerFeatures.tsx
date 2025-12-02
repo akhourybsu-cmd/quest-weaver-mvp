@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Zap, Award, BookOpen } from "lucide-react";
+import { Zap, Award, Dna, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,11 @@ interface Feat {
   };
 }
 
+interface AncestryTrait {
+  name: string;
+  description: string;
+}
+
 interface PlayerFeaturesProps {
   characterId: string;
 }
@@ -38,12 +43,17 @@ interface PlayerFeaturesProps {
 export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [feats, setFeats] = useState<Feat[]>([]);
+  const [ancestryTraits, setAncestryTraits] = useState<AncestryTrait[]>([]);
+  const [subancestryTraits, setSubancestryTraits] = useState<AncestryTrait[]>([]);
+  const [ancestryName, setAncestryName] = useState<string>("");
+  const [subancestryName, setSubancestryName] = useState<string>("");
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [selectedFeat, setSelectedFeat] = useState<Feat | null>(null);
+  const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
+  const [traitSource, setTraitSource] = useState<string>("");
 
   useEffect(() => {
-    fetchFeatures();
-    fetchFeats();
+    fetchAllData();
 
     const channel = supabase
       .channel(`player-features:${characterId}`)
@@ -74,6 +84,14 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
     };
   }, [characterId]);
 
+  const fetchAllData = async () => {
+    await Promise.all([
+      fetchFeatures(),
+      fetchFeats(),
+      fetchAncestryTraits(),
+    ]);
+  };
+
   const fetchFeatures = async () => {
     const { data } = await supabase
       .from("character_features")
@@ -102,34 +120,167 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
     }
   };
 
+  const fetchAncestryTraits = async () => {
+    // Get character's ancestry and subancestry IDs
+    const { data: char } = await supabase
+      .from("characters")
+      .select("ancestry_id, subancestry_id")
+      .eq("id", characterId)
+      .single();
+
+    if (!char) return;
+
+    // Fetch ancestry traits
+    if (char.ancestry_id) {
+      const { data: ancestry } = await supabase
+        .from("srd_ancestries")
+        .select("name, traits")
+        .eq("id", char.ancestry_id)
+        .single();
+
+      if (ancestry) {
+        setAncestryName(ancestry.name);
+        const traits = ancestry.traits as any;
+        if (Array.isArray(traits)) {
+          setAncestryTraits(traits);
+        } else if (traits && typeof traits === 'object') {
+          // Handle object format
+          const traitList = Object.entries(traits).map(([name, desc]) => ({
+            name,
+            description: typeof desc === 'string' ? desc : JSON.stringify(desc)
+          }));
+          setAncestryTraits(traitList);
+        }
+      }
+    }
+
+    // Fetch subancestry traits
+    if (char.subancestry_id) {
+      const { data: subancestry } = await supabase
+        .from("srd_subancestries")
+        .select("name, traits")
+        .eq("id", char.subancestry_id)
+        .single();
+
+      if (subancestry) {
+        setSubancestryName(subancestry.name);
+        const traits = subancestry.traits as any;
+        if (Array.isArray(traits)) {
+          setSubancestryTraits(traits);
+        } else if (traits && typeof traits === 'object') {
+          const traitList = Object.entries(traits).map(([name, desc]) => ({
+            name,
+            description: typeof desc === 'string' ? desc : JSON.stringify(desc)
+          }));
+          setSubancestryTraits(traitList);
+        }
+      }
+    }
+  };
+
   const getSourceColor = (source: string) => {
     const colors: Record<string, string> = {
       'Class': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       'Subclass': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
       'Ancestry': 'bg-green-500/20 text-green-300 border-green-500/30',
+      'Subancestry': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
       'Background': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      'Feat': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
     };
     return colors[source] || 'bg-muted';
   };
 
-  const groupFeaturesByLevel = () => {
-    return features.reduce((acc, feature) => {
-      if (!acc[feature.level]) acc[feature.level] = [];
-      acc[feature.level].push(feature);
-      return acc;
-    }, {} as Record<number, Feature[]>);
+  const groupFeaturesBySource = () => {
+    const grouped: Record<string, Feature[]> = {};
+    features.forEach(feature => {
+      if (!grouped[feature.source]) grouped[feature.source] = [];
+      grouped[feature.source].push(feature);
+    });
+    return grouped;
   };
 
-  const featuresByLevel = groupFeaturesByLevel();
+  const featuresBySource = groupFeaturesBySource();
+  const hasAncestryTraits = ancestryTraits.length > 0 || subancestryTraits.length > 0;
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Class Features */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Ancestry & Racial Traits */}
+        {hasAncestryTraits && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Dna className="w-5 h-5 text-green-400" />
+                Ancestry Traits
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Ancestry Traits */}
+                {ancestryTraits.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className={getSourceColor('Ancestry')}>{ancestryName}</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {ancestryTraits.map((trait, idx) => (
+                        <Card
+                          key={idx}
+                          className="cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => {
+                            setSelectedTrait(trait);
+                            setTraitSource(ancestryName);
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <h5 className="font-semibold text-sm">{trait.name}</h5>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {trait.description}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subancestry Traits */}
+                {subancestryTraits.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className={getSourceColor('Subancestry')}>{subancestryName}</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {subancestryTraits.map((trait, idx) => (
+                        <Card
+                          key={idx}
+                          className="cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => {
+                            setSelectedTrait(trait);
+                            setTraitSource(subancestryName);
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <h5 className="font-semibold text-sm">{trait.name}</h5>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {trait.description}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Class & Subclass Features */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="w-5 h-5" />
+              <Zap className="w-5 h-5 text-blue-400" />
               Class Features
             </CardTitle>
           </CardHeader>
@@ -140,18 +291,21 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
                 <p className="text-sm">No class features yet</p>
               </div>
             ) : (
-              <ScrollArea className="h-[500px] pr-4">
+              <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
-                  {Object.entries(featuresByLevel)
-                    .sort(([a], [b]) => Number(a) - Number(b))
-                    .map(([level, levelFeatures]) => (
-                      <div key={level}>
+                  {Object.entries(featuresBySource)
+                    .sort(([a], [b]) => {
+                      const order = ['Class', 'Subclass', 'Background'];
+                      return order.indexOf(a) - order.indexOf(b);
+                    })
+                    .map(([source, sourceFeatures]) => (
+                      <div key={source}>
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline">Level {level}</Badge>
+                          <Badge className={getSourceColor(source)}>{source}</Badge>
                           <Separator className="flex-1" />
                         </div>
                         <div className="space-y-2">
-                          {levelFeatures.map((feature) => (
+                          {sourceFeatures.map((feature) => (
                             <Card
                               key={feature.id}
                               className="cursor-pointer hover:border-primary transition-colors"
@@ -160,10 +314,17 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <h5 className="font-semibold mb-1">{feature.name}</h5>
-                                    <Badge className={getSourceColor(feature.source)}>
-                                      {feature.source}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <h5 className="font-semibold text-sm">{feature.name}</h5>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        Lvl {feature.level}
+                                      </Badge>
+                                    </div>
+                                    {feature.description && (
+                                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                        {feature.description}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               </CardContent>
@@ -182,7 +343,7 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Award className="w-5 h-5" />
+              <Award className="w-5 h-5 text-yellow-400" />
               Feats
             </CardTitle>
           </CardHeader>
@@ -191,9 +352,10 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
               <div className="text-center py-8 text-muted-foreground">
                 <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">No feats chosen yet</p>
+                <p className="text-xs mt-1">Feats are typically gained at levels 4, 8, 12, 16, and 19</p>
               </div>
             ) : (
-              <ScrollArea className="h-[500px] pr-4">
+              <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-2">
                   {feats.map((feat) => (
                     <Card
@@ -226,6 +388,29 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ancestry Trait Detail Dialog */}
+      <Dialog open={!!selectedTrait} onOpenChange={() => setSelectedTrait(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedTrait && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 flex-wrap">
+                  <Dna className="w-5 h-5" />
+                  {selectedTrait.name}
+                  <Badge className={getSourceColor('Ancestry')}>
+                    {traitSource}
+                  </Badge>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="whitespace-pre-wrap">{selectedTrait.description}</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Feature Detail Dialog */}
       <Dialog open={!!selectedFeature} onOpenChange={() => setSelectedFeature(null)}>

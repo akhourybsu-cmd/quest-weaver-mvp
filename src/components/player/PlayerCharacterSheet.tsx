@@ -5,7 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Shield, Zap, User, BookOpen } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { 
+  Heart, Shield, Zap, User, BookOpen, Languages, 
+  ShieldAlert, Wand2, ChevronDown, Sword, Package
+} from "lucide-react";
 
 interface AbilityScores {
   str: number;
@@ -28,6 +32,15 @@ interface SpellSlot {
   used_slots: number;
 }
 
+interface Proficiency {
+  type: string;
+  name: string;
+}
+
+interface Language {
+  name: string;
+}
+
 interface CharacterData {
   id: string;
   name: string;
@@ -47,6 +60,12 @@ interface CharacterData {
   wis_save: number;
   cha_save: number;
   resources: any;
+  resistances: string[] | null;
+  immunities: string[] | null;
+  vulnerabilities: string[] | null;
+  spell_ability: string | null;
+  spell_save_dc: number | null;
+  spell_attack_mod: number | null;
 }
 
 interface PlayerCharacterSheetProps {
@@ -58,12 +77,13 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [abilities, setAbilities] = useState<AbilityScores | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [spellSlots, setSpellSlots] = useState<SpellSlot[]>([]);
+  const [proficiencies, setProficiencies] = useState<Proficiency[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [profOpen, setProfOpen] = useState(false);
 
   useEffect(() => {
-    fetchCharacter();
-    fetchAbilities();
-    fetchSkills();
-    fetchSpellSlots();
+    fetchAllData();
 
     const channel = supabase
       .channel(`char-sheet:${characterId}`)
@@ -93,6 +113,17 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       supabase.removeChannel(channel);
     };
   }, [characterId]);
+
+  const fetchAllData = async () => {
+    await Promise.all([
+      fetchCharacter(),
+      fetchAbilities(),
+      fetchSkills(),
+      fetchSpellSlots(),
+      fetchProficiencies(),
+      fetchLanguages(),
+    ]);
+  };
 
   const fetchCharacter = async () => {
     const { data } = await supabase
@@ -134,6 +165,27 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     if (data) setSpellSlots(data);
   };
 
+  const fetchProficiencies = async () => {
+    const { data } = await supabase
+      .from("character_proficiencies")
+      .select("type, name")
+      .eq("character_id", characterId)
+      .order("type")
+      .order("name");
+
+    if (data) setProficiencies(data);
+  };
+
+  const fetchLanguages = async () => {
+    const { data } = await supabase
+      .from("character_languages")
+      .select("name")
+      .eq("character_id", characterId)
+      .order("name");
+
+    if (data) setLanguages(data);
+  };
+
   const getAbilityModifier = (score: number) => {
     return Math.floor((score - 10) / 2);
   };
@@ -164,6 +216,15 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     return skillMap[skillName] || 'str';
   };
 
+  const groupProficiencies = () => {
+    const grouped: Record<string, string[]> = {};
+    proficiencies.forEach(p => {
+      if (!grouped[p.type]) grouped[p.type] = [];
+      grouped[p.type].push(p.name);
+    });
+    return grouped;
+  };
+
   if (!character) {
     return (
       <div className="flex items-center justify-center h-[400px]">
@@ -175,6 +236,12 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const getHPPercentage = () => {
     return (character.current_hp / character.max_hp) * 100;
   };
+
+  const groupedProfs = groupProficiencies();
+  const hasDefenses = (character.resistances?.length || 0) > 0 || 
+                      (character.immunities?.length || 0) > 0 || 
+                      (character.vulnerabilities?.length || 0) > 0;
+  const hasSpellcasting = character.spell_ability && character.spell_save_dc;
 
   return (
     <Card className="h-full">
@@ -193,7 +260,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {/* HP */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Heart className="w-4 h-4 text-status-hp" />
+                <Heart className="w-4 h-4 text-destructive" />
                 <span className="font-semibold">Hit Points</span>
               </div>
               <div className="space-y-2">
@@ -242,6 +309,87 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               </div>
             </div>
 
+            {/* Spellcasting Stats */}
+            {hasSpellcasting && (
+              <>
+                <Separator />
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                    <span className="font-semibold">Spellcasting</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-2 bg-primary/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">Ability</div>
+                      <div className="text-sm font-bold uppercase">{character.spell_ability}</div>
+                    </div>
+                    <div className="text-center p-2 bg-primary/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">Save DC</div>
+                      <div className="text-lg font-bold">{character.spell_save_dc}</div>
+                    </div>
+                    <div className="text-center p-2 bg-primary/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">Attack</div>
+                      <div className="text-lg font-bold">
+                        {character.spell_attack_mod && character.spell_attack_mod >= 0 ? '+' : ''}
+                        {character.spell_attack_mod}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Defenses */}
+            {hasDefenses && (
+              <>
+                <Separator />
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span className="font-semibold">Defenses</span>
+                  </div>
+                  <div className="space-y-2">
+                    {character.resistances && character.resistances.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">Resistances</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {character.resistances.map((r) => (
+                            <Badge key={r} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                              {r}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {character.immunities && character.immunities.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">Immunities</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {character.immunities.map((i) => (
+                            <Badge key={i} variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 text-xs">
+                              {i}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {character.vulnerabilities && character.vulnerabilities.length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">Vulnerabilities</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {character.vulnerabilities.map((v) => (
+                            <Badge key={v} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
+                              {v}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             <Separator />
 
             {/* Ability Scores */}
@@ -270,7 +418,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {/* Saving Throws */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="w-4 h-4" />
+                <Shield className="w-4 h-4" />
                 <span className="font-semibold">Saving Throws</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -313,34 +461,91 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               </div>
             </div>
 
-            <Separator />
-
-            {/* Skills */}
+            {/* Skills (Collapsible) */}
             {skills.length > 0 && abilities && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4" />
-                  <span className="font-semibold">Skills</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {skills.map((skill) => {
-                    const abilityKey = getSkillAbility(skill.skill);
-                    const abilityScore = abilities[abilityKey];
-                    const modifier = getSkillModifier(skill, abilityScore);
-                    
-                    return (
-                      <div key={skill.skill} className="flex justify-between items-center">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          {skill.skill}
-                          {skill.expertise && <Badge variant="outline" className="text-[10px] h-4 px-1">E</Badge>}
-                          {skill.proficient && !skill.expertise && <span className="text-xs">●</span>}
-                        </span>
-                        <span className="font-mono">{formatModifier(modifier)}</span>
+              <>
+                <Separator />
+                <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      <span className="font-semibold">Skills</span>
+                      <Badge variant="outline" className="text-xs">{skills.length}</Badge>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {skills.map((skill) => {
+                        const abilityKey = getSkillAbility(skill.skill);
+                        const abilityScore = abilities[abilityKey];
+                        const modifier = getSkillModifier(skill, abilityScore);
+                        
+                        return (
+                          <div key={skill.skill} className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              {skill.skill}
+                              {skill.expertise && <Badge variant="outline" className="text-[10px] h-4 px-1">E</Badge>}
+                              {skill.proficient && !skill.expertise && <span className="text-xs">●</span>}
+                            </span>
+                            <span className="font-mono">{formatModifier(modifier)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+
+            {/* Proficiencies (Collapsible) */}
+            {Object.keys(groupedProfs).length > 0 && (
+              <>
+                <Separator />
+                <Collapsible open={profOpen} onOpenChange={setProfOpen}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Sword className="w-4 h-4" />
+                      <span className="font-semibold">Proficiencies</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${profOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-3">
+                    {Object.entries(groupedProfs).map(([type, items]) => (
+                      <div key={type}>
+                        <span className="text-xs text-muted-foreground capitalize">{type}</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {items.map((name) => (
+                            <Badge key={name} variant="secondary" className="text-xs">
+                              {name}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+
+            {/* Languages */}
+            {languages.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Languages className="w-4 h-4" />
+                    <span className="font-semibold">Languages</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {languages.map((lang) => (
+                      <Badge key={lang.name} variant="outline" className="text-xs">
+                        {lang.name}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Spell Slots */}
@@ -382,8 +587,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               <>
                 <Separator />
                 <div>
-                  <span className="font-semibold">Resources</span>
-                  <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="w-4 h-4" />
+                    <span className="font-semibold">Resources</span>
+                  </div>
+                  <div className="space-y-2">
                     {Object.entries(character.resources).map(([key, value]: [string, any]) => (
                       <div key={key} className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground capitalize">

@@ -490,23 +490,56 @@ async function importSpells(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'spells', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const spells = await fetchAllPages(`${OPEN5E_BASE}/v2/spells/?document__slug=${SRD_SLUG}&limit=100`);
+    // Use v1 API which has the dnd_class field as comma-separated string
+    console.log("Fetching spells from Open5e v1 API...");
+    const spells = await fetchAllPages(`${OPEN5E_BASE}/v1/spells/?document__slug=${SRD_SLUG}&limit=100`);
+    console.log(`Fetched ${spells.length} spells from v1 API`);
 
     for (const spell of spells) {
+      // v1 API provides dnd_class as comma-separated string like "Bard, Cleric, Wizard"
+      const classesArray = spell.dnd_class 
+        ? spell.dnd_class.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+        : [];
+      
+      // Parse level - v1 uses 'level_int' for numeric level, or parse from 'level' string
+      let spellLevel = 0;
+      if (typeof spell.level_int === 'number') {
+        spellLevel = spell.level_int;
+      } else if (typeof spell.level === 'string') {
+        // Handle "Cantrip", "1st-level", "2nd-level", etc.
+        if (spell.level.toLowerCase() === 'cantrip') {
+          spellLevel = 0;
+        } else {
+          const match = spell.level.match(/^(\d+)/);
+          if (match) spellLevel = parseInt(match[1], 10);
+        }
+      }
+
+      // Parse concentration and ritual - v1 uses string "yes"/"no"
+      const isConcentration = spell.concentration === 'yes' || spell.concentration === true;
+      const isRitual = spell.ritual === 'yes' || spell.ritual === true;
+
+      // Extract school name
+      const schoolName = typeof spell.school === 'object' 
+        ? spell.school?.name || 'evocation'
+        : spell.school || 'evocation';
+
       const spellData = {
         name: spell.name,
-        level: spell.level_int || 0,
-        school: spell.school || 'evocation',
+        level: spellLevel,
+        school: schoolName.toLowerCase(),
         casting_time: spell.casting_time || '1 action',
         range: spell.range || '30 feet',
-        components: spell.components || [],
+        components: spell.components || '',
         duration: spell.duration || 'Instantaneous',
-        concentration: spell.concentration || false,
-        ritual: spell.ritual || false,
+        concentration: isConcentration,
+        ritual: isRitual,
         description: spell.desc || '',
         higher_levels: spell.higher_level || null,
-        classes: spell.dnd_class ? spell.dnd_class.split(',').map((c: string) => c.trim()) : []
+        classes: classesArray
       };
+
+      console.log(`Importing spell: ${spell.name}, Level: ${spellLevel}, Classes: [${classesArray.join(', ')}]`);
 
       const { error } = await supabase
         .from('srd_spells')
@@ -514,12 +547,16 @@ async function importSpells(supabase: any): Promise<ImportResult> {
 
       if (error) {
         result.errors.push(`Spell ${spell.name}: ${error.message}`);
+        console.error(`Failed to import spell ${spell.name}:`, error.message);
       } else {
         result.imported++;
       }
     }
+    
+    console.log(`Spells import complete: ${result.imported} imported, ${result.errors.length} errors`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Spells import failed:`, errorMessage);
     result.errors.push(`Spells import failed: ${errorMessage}`);
   }
 

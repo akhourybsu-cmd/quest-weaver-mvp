@@ -110,7 +110,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const [, resetDraft] = useAtom(resetDraftAtom);
   
   // Auto-seed SRD data if missing
-  const { isSeeding, seedComplete } = useSRDAutoSeed();
+  const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
 
   // Reset draft when dialog opens
   useEffect(() => {
@@ -767,7 +767,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <div className="text-center">
               <p className="font-semibold">Preparing Character Creator...</p>
-              <p className="text-sm text-muted-foreground">Loading game data for the first time</p>
+              <p className="text-sm text-muted-foreground">
+                {seedingStatus || "Loading game data for the first time"}
+              </p>
             </div>
           </div>
         ) : (

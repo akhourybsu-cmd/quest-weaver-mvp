@@ -5,9 +5,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
+import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
 
 // Wizard steps
 import StepBasics from "./wizard/StepBasics";
@@ -107,6 +108,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   
   const [draft, setDraft] = useAtom(draftAtom);
   const [, resetDraft] = useAtom(resetDraftAtom);
+  
+  // Auto-seed SRD data if missing
+  const { isSeeding, seedComplete } = useSRDAutoSeed();
 
   // Reset draft when dialog opens
   useEffect(() => {
@@ -757,63 +761,74 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
       <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col">
-        <div className="flex flex-col md:flex-row flex-1 min-h-0">
-          {/* Main wizard content */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Header */}
-            <div className="p-4 md:p-6 border-b flex-shrink-0">
-              <h2 className="text-xl md:text-2xl font-bold mb-2">
-                Character Creation Wizard
-              </h2>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}: </span>
-                  <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
-                  {STEPS[currentStep]}
-                </p>
-                <Button variant="outline" size="sm" onClick={handleSaveAndExit}>
-                  <Save className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">Save & Exit</span>
-                </Button>
-              </div>
-              <Progress value={progress} className="mt-3" />
+        {/* Show loading state while seeding SRD data */}
+        {isSeeding ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="text-center">
+              <p className="font-semibold">Preparing Character Creator...</p>
+              <p className="text-sm text-muted-foreground">Loading game data for the first time</p>
             </div>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row flex-1 min-h-0">
+            {/* Main wizard content */}
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Header */}
+              <div className="p-4 md:p-6 border-b flex-shrink-0">
+                <h2 className="text-xl md:text-2xl font-bold mb-2">
+                  Character Creation Wizard
+                </h2>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}: </span>
+                    <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
+                    {STEPS[currentStep]}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={handleSaveAndExit}>
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-2">Save & Exit</span>
+                  </Button>
+                </div>
+                <Progress value={progress} className="mt-3" />
+              </div>
 
-            {/* Step content - Scrollable */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-4 md:p-6">
-                <div className="max-w-4xl mx-auto">
-                  {renderStep()}
+              {/* Step content - Scrollable */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-4 md:p-6">
+                  <div className="max-w-4xl mx-auto">
+                    {renderStep()}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Navigation */}
-            <div className="p-4 md:p-6 border-t flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={currentStep === 0}
-                className="w-full sm:w-auto"
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              
-              {currentStep < STEPS.length - 1 ? (
-                <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto">
-                  Next
-                  <ChevronRight className="ml-2 h-4 w-4" />
+              {/* Navigation */}
+              <div className="p-4 md:p-6 border-t flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={currentStep === 0}
+                  className="w-full sm:w-auto"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back
                 </Button>
-              ) : null}
+                
+                {currentStep < STEPS.length - 1 ? (
+                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto">
+                    Next
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Live summary sidebar - hidden on mobile, visible on tablet+ */}
+            <div className="hidden md:block md:w-80 border-l bg-muted/30 flex-shrink-0">
+              <LiveSummaryPanel />
             </div>
           </div>
-
-          {/* Live summary sidebar - hidden on mobile, visible on tablet+ */}
-          <div className="hidden md:block md:w-80 border-l bg-muted/30 flex-shrink-0">
-            <LiveSummaryPanel />
-          </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

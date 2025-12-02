@@ -104,11 +104,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model: 'google/gemini-2.5-flash',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert D&D content parser. Always respond with valid JSON only, no markdown formatting.'
+            content: 'You are an expert D&D content parser. Always respond with valid JSON only, no markdown formatting or code blocks.'
           },
           {
             role: 'user',
@@ -138,20 +138,27 @@ serve(async (req) => {
 
     // Read response as text first to handle potential issues
     const responseText = await response.text();
+    console.log('Raw response length:', responseText.length);
+    
+    if (!responseText || responseText.trim().length === 0) {
+      console.error('AI gateway returned empty response');
+      throw new Error('AI returned empty response. Please try again.');
+    }
     
     let aiResponse;
     try {
       aiResponse = JSON.parse(responseText);
     } catch (e) {
-      console.error('Failed to parse AI gateway response:', responseText.substring(0, 500));
-      throw new Error('AI gateway returned invalid response');
+      console.error('Failed to parse AI gateway response. Length:', responseText.length);
+      console.error('Response preview:', responseText.substring(0, 500));
+      throw new Error('AI gateway returned invalid response. Please try again.');
     }
     
     const aiContent = aiResponse.choices?.[0]?.message?.content;
 
     if (!aiContent) {
       console.error('No content in AI response:', JSON.stringify(aiResponse).substring(0, 500));
-      throw new Error('No response from AI');
+      throw new Error('No response from AI. Please try again.');
     }
 
     console.log('AI response received, parsing JSON...');

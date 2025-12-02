@@ -109,7 +109,7 @@ export const SRDDataSeeder = () => {
         name: s.name,
         ability_bonuses: s.ability_bonuses,
         traits: s.traits,
-        languages: s.languages || [],
+        options: {},
       })).filter(s => s.ancestry_id);
 
       const { error } = await supabase.from("srd_subancestries").insert(subancestries);

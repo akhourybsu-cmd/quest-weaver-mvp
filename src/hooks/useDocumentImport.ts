@@ -231,8 +231,22 @@ export function useDocumentImport(): UseDocumentImportResult {
   };
 }
 
-// Helper to read file content
+// Helper to read file content - supports .docx, .txt, .md
 async function readFileContent(file: File): Promise<string> {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  
+  // Handle Word documents (.docx)
+  if (extension === 'docx') {
+    const mammoth = await import('mammoth');
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    if (!result.value || result.value.trim().length === 0) {
+      throw new Error('Could not extract text from Word document');
+    }
+    return result.value;
+  }
+  
+  // Handle plain text files (.txt, .md, etc.)
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);

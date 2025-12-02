@@ -5805,6 +5805,69 @@ export type Database = {
           },
         ]
       }
+      timeline_events: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          id: string
+          in_game_date: string | null
+          kind: string
+          occurred_at: string | null
+          payload: Json | null
+          player_visible: boolean | null
+          ref_id: string | null
+          ref_type: string | null
+          session_id: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          id?: string
+          in_game_date?: string | null
+          kind: string
+          occurred_at?: string | null
+          payload?: Json | null
+          player_visible?: boolean | null
+          ref_id?: string | null
+          ref_type?: string | null
+          session_id?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          id?: string
+          in_game_date?: string | null
+          kind?: string
+          occurred_at?: string | null
+          payload?: Json | null
+          player_visible?: boolean | null
+          ref_id?: string | null
+          ref_type?: string | null
+          session_id?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tokens: {
         Row: {
           character_id: string | null

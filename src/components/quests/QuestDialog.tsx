@@ -20,6 +20,7 @@ import { Plus, X, Coins, Award, Package, Trash2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
+import { timelineLogger } from "@/hooks/useTimelineLogger";
 
 interface QuestDialogProps {
   open: boolean;
@@ -276,6 +277,25 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
 
         await supabase.from("quest_steps").insert(stepsData);
       }
+
+      // Log quest creation to timeline
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('live_session_id')
+        .eq('id', campaignId)
+        .single();
+      
+      // Get quest giver name if available
+      const questGiverNpc = npcs.find(n => n.id === questGiverId);
+      const questGiverName = questGiverNpc?.name || giver || undefined;
+      
+      await timelineLogger.questCreated(
+        campaignId,
+        campaign?.live_session_id || null,
+        title,
+        questData.id,
+        questGiverName
+      );
 
       toast({
         title: "Quest added!",

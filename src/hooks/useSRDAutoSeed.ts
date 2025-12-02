@@ -292,7 +292,9 @@ export function useSRDAutoSeed() {
           classes: spell.classes,
           casting_time: spell.casting_time,
           range: spell.range,
-          components: spell.components.split(', ').map(c => c.trim()),
+          components: typeof spell.components === 'string'
+            ? spell.components.split(',').map(c => c.trim()).filter(c => c.length > 0)
+            : spell.components,
           duration: spell.duration,
           concentration: spell.concentration,
           ritual: spell.ritual,

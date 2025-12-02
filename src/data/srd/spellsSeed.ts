@@ -8,7 +8,7 @@ export interface SpellSeed {
   classes: string[];
   casting_time: string;
   range: string;
-  components: string;
+  components: string; // Stored as "V, S, M" string, converted to array on insert
   duration: string;
   concentration: boolean;
   ritual: boolean;

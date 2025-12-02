@@ -63,6 +63,11 @@ export function useDocumentImport(): UseDocumentImportResult {
         throw new Error(fnError.message || 'Failed to process document');
       }
 
+      // Check for error in response
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setProgress(80);
 
       // Validate and structure the response
@@ -84,8 +89,18 @@ export function useDocumentImport(): UseDocumentImportResult {
         });
       });
 
+      // Check if any entities were found
+      if (selectableEntities.length === 0) {
+        throw new Error('No campaign content found in document. Try a document with NPCs, locations, items, factions, lore, or quests.');
+      }
+
       setEntities(selectableEntities);
       setProgress(100);
+      
+      toast({
+        title: 'Document processed',
+        description: `Found ${selectableEntities.length} items to import`,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to process document';
       setError(message);

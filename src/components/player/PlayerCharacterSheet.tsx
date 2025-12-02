@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Heart, Shield, Zap, User, BookOpen, Languages, 
-  ShieldAlert, Wand2, ChevronDown, Sword, Package
+  ShieldAlert, Wand2, ChevronDown, Sword, Package, Sparkles
 } from "lucide-react";
 
 interface AbilityScores {
@@ -39,6 +40,26 @@ interface Proficiency {
 
 interface Language {
   name: string;
+}
+
+interface CharacterSpell {
+  id: string;
+  prepared: boolean;
+  known: boolean;
+  spell: {
+    id: string;
+    name: string;
+    level: number;
+    school: string;
+    casting_time: string;
+    range: string;
+    components: string[];
+    duration: string;
+    concentration: boolean;
+    ritual: boolean;
+    description: string;
+    higher_levels: string | null;
+  };
 }
 
 interface CharacterData {
@@ -79,8 +100,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [spellSlots, setSpellSlots] = useState<SpellSlot[]>([]);
   const [proficiencies, setProficiencies] = useState<Proficiency[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const [spells, setSpells] = useState<CharacterSpell[]>([]);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [profOpen, setProfOpen] = useState(false);
+  const [spellsOpen, setSpellsOpen] = useState(true);
+  const [selectedSpell, setSelectedSpell] = useState<CharacterSpell['spell'] | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -122,6 +146,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       fetchSpellSlots(),
       fetchProficiencies(),
       fetchLanguages(),
+      fetchSpells(),
     ]);
   };
 
@@ -186,6 +211,36 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     if (data) setLanguages(data);
   };
 
+  const fetchSpells = async () => {
+    const { data } = await supabase
+      .from("character_spells")
+      .select(`
+        id,
+        prepared,
+        known,
+        spell:srd_spells(
+          id,
+          name,
+          level,
+          school,
+          casting_time,
+          range,
+          components,
+          duration,
+          concentration,
+          ritual,
+          description,
+          higher_levels
+        )
+      `)
+      .eq("character_id", characterId);
+
+    if (data) {
+      const validSpells = data.filter(s => s.spell !== null) as CharacterSpell[];
+      setSpells(validSpells);
+    }
+  };
+
   const getAbilityModifier = (score: number) => {
     return Math.floor((score - 10) / 2);
   };
@@ -244,6 +299,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const hasSpellcasting = character.spell_ability && character.spell_save_dc;
 
   return (
+    <>
     <Card className="h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
@@ -582,6 +638,67 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               </>
             )}
 
+            {/* Spellbook */}
+            {spells.length > 0 && (
+              <>
+                <Separator />
+                <Collapsible open={spellsOpen} onOpenChange={setSpellsOpen}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <span className="font-semibold">Spellbook</span>
+                      <Badge variant="outline" className="text-xs">{spells.length}</Badge>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${spellsOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3 space-y-4">
+                    {/* Cantrips */}
+                    {spells.filter(s => s.spell.level === 0).length > 0 && (
+                      <div>
+                        <span className="text-xs text-muted-foreground font-medium">Cantrips</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {spells.filter(s => s.spell.level === 0).map((s) => (
+                            <Badge 
+                              key={s.id} 
+                              variant="outline" 
+                              className="cursor-pointer hover:bg-primary/10 text-xs"
+                              onClick={() => setSelectedSpell(s.spell)}
+                            >
+                              {s.spell.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Level 1-9 Spells */}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => {
+                      const levelSpells = spells.filter(s => s.spell.level === level);
+                      if (levelSpells.length === 0) return null;
+                      return (
+                        <div key={level}>
+                          <span className="text-xs text-muted-foreground font-medium">Level {level}</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {levelSpells.map((s) => (
+                              <Badge 
+                                key={s.id} 
+                                variant={s.prepared ? "default" : "outline"}
+                                className="cursor-pointer hover:bg-primary/10 text-xs"
+                                onClick={() => setSelectedSpell(s.spell)}
+                              >
+                                {s.spell.name}
+                                {s.spell.concentration && <span className="ml-1 opacity-70">C</span>}
+                                {s.spell.ritual && <span className="ml-1 opacity-70">R</span>}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+
             {/* Resources */}
             {character.resources && Object.keys(character.resources).length > 0 && (
               <>
@@ -610,5 +727,75 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         </ScrollArea>
       </CardContent>
     </Card>
+
+    {/* Spell Detail Dialog */}
+    <Dialog open={!!selectedSpell} onOpenChange={() => setSelectedSpell(null)}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        {selectedSpell && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                {selectedSpell.name}
+              </DialogTitle>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline">
+                  {selectedSpell.level === 0 ? 'Cantrip' : `Level ${selectedSpell.level}`}
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {selectedSpell.school}
+                </Badge>
+                {selectedSpell.concentration && (
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                    Concentration
+                  </Badge>
+                )}
+                {selectedSpell.ritual && (
+                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+                    Ritual
+                  </Badge>
+                )}
+              </div>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Casting Time</span>
+                  <p className="font-medium">{selectedSpell.casting_time}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Range</span>
+                  <p className="font-medium">{selectedSpell.range}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Components</span>
+                  <p className="font-medium">
+                    {Array.isArray(selectedSpell.components) 
+                      ? selectedSpell.components.join(', ') 
+                      : selectedSpell.components}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Duration</span>
+                  <p className="font-medium">{selectedSpell.duration}</p>
+                </div>
+              </div>
+              <Separator />
+              <div>
+                <span className="text-sm text-muted-foreground">Description</span>
+                <p className="mt-1 text-sm whitespace-pre-wrap">{selectedSpell.description}</p>
+              </div>
+              {selectedSpell.higher_levels && (
+                <div>
+                  <span className="text-sm text-muted-foreground">At Higher Levels</span>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{selectedSpell.higher_levels}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

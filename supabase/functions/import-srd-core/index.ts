@@ -544,7 +544,9 @@ async function importSpells(supabase: any): Promise<ImportResult> {
         school: schoolName.toLowerCase(),
         casting_time: spell.casting_time || '1 action',
         range: spell.range || '30 feet',
-        components: spell.components || '',
+        components: spell.components 
+          ? spell.components.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+          : [],
         duration: spell.duration || 'Instantaneous',
         concentration: isConcentration,
         ritual: isRitual,

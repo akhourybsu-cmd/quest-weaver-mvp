@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BookMarked, Plus, Trash2 } from "lucide-react";
+import { BookMarked, Plus, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -24,13 +24,15 @@ interface SpellbookManagerProps {
   onOpenChange: (open: boolean) => void;
   characterId: string;
   characterLevel: number;
+  characterClass?: string;
 }
 
 export const SpellbookManager = ({
   open,
   onOpenChange,
   characterId,
-  characterLevel
+  characterLevel,
+  characterClass = "Wizard"
 }: SpellbookManagerProps) => {
   const [spellbook, setSpellbook] = useState<any[]>([]);
   const [availableSpells, setAvailableSpells] = useState<any[]>([]);
@@ -44,7 +46,7 @@ export const SpellbookManager = ({
       loadSpellbook();
       loadAvailableSpells();
     }
-  }, [open, characterId]);
+  }, [open, characterId, characterClass]);
 
   const loadSpellbook = async () => {
     try {
@@ -68,15 +70,30 @@ export const SpellbookManager = ({
   const loadAvailableSpells = async () => {
     setLoading(true);
     try {
+      // First try to get spells by class using the classes array
       const { data, error } = await supabase
         .from("srd_spells")
         .select("*")
-        .contains("classes", ["Wizard"])
+        .contains("classes", [characterClass])
         .order("level")
         .order("name");
 
       if (error) throw error;
-      setAvailableSpells(data || []);
+      
+      // If no spells found with class filter, fall back to all spells
+      if (!data || data.length === 0) {
+        console.warn(`No spells found for class ${characterClass}, loading all spells`);
+        const { data: allSpells, error: allError } = await supabase
+          .from("srd_spells")
+          .select("*")
+          .order("level")
+          .order("name");
+        
+        if (allError) throw allError;
+        setAvailableSpells(allSpells || []);
+      } else {
+        setAvailableSpells(data);
+      }
     } catch (error) {
       console.error("Error loading available spells:", error);
       toast.error("Failed to load available spells");
@@ -144,7 +161,7 @@ export const SpellbookManager = ({
   };
 
   const spellbookByLevel = spellbook.reduce((acc: any, entry: any) => {
-    const level = entry.srd_spells.level;
+    const level = entry.srd_spells?.level ?? 0;
     if (!acc[level]) acc[level] = [];
     acc[level].push(entry);
     return acc;
@@ -164,6 +181,7 @@ export const SpellbookManager = ({
               <div className="flex items-center gap-2">
                 <BookMarked className="h-5 w-5 text-primary" />
                 <DialogTitle>Spellbook</DialogTitle>
+                <Badge variant="secondary">{characterClass}</Badge>
               </div>
               <Button size="sm" onClick={() => setShowAddSpell(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -192,8 +210,8 @@ export const SpellbookManager = ({
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{entry.srd_spells.name}</h4>
-                            {entry.srd_spells.ritual && (
+                            <h4 className="font-medium">{entry.srd_spells?.name}</h4>
+                            {entry.srd_spells?.ritual && (
                               <Badge variant="outline" className="text-xs">
                                 Ritual
                               </Badge>
@@ -232,7 +250,7 @@ export const SpellbookManager = ({
           <DialogHeader>
             <DialogTitle>Add Spell to Spellbook</DialogTitle>
             <DialogDescription>
-              Copying a spell costs 50gp per spell level
+              {loading ? "Loading spells..." : `${availableSpells.length} ${characterClass} spells available • Copying costs 50gp per spell level`}
             </DialogDescription>
           </DialogHeader>
 
@@ -243,37 +261,54 @@ export const SpellbookManager = ({
           />
 
           <ScrollArea className="h-[500px]">
-            <div className="space-y-2">
-              {filteredAvailableSpells.map(spell => (
-                <div
-                  key={spell.id}
-                  className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{spell.name}</h4>
-                      <Badge variant="secondary">
-                        {spell.level === 0 ? "Cantrip" : `Level ${spell.level}`}
-                      </Badge>
-                      {spell.ritual && (
-                        <Badge variant="outline" className="text-xs">
-                          Ritual
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                      {spell.description}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => addSpellToSpellbook(spell.id, spell.level)}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredAvailableSpells.map(spell => (
+                  <div
+                    key={spell.id}
+                    className="flex items-start justify-between gap-3 p-3 rounded-lg border hover:border-primary transition-colors"
                   >
-                    Add ({spell.level * 50}gp)
-                  </Button>
-                </div>
-              ))}
-            </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{spell.name}</h4>
+                        <Badge variant="secondary">
+                          {spell.level === 0 ? "Cantrip" : `Level ${spell.level}`}
+                        </Badge>
+                        {spell.ritual && (
+                          <Badge variant="outline" className="text-xs">
+                            Ritual
+                          </Badge>
+                        )}
+                        {spell.concentration && (
+                          <Badge variant="outline" className="text-xs">
+                            C
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                        {spell.description}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => addSpellToSpellbook(spell.id, spell.level)}
+                    >
+                      Add ({spell.level * 50}gp)
+                    </Button>
+                  </div>
+                ))}
+
+                {filteredAvailableSpells.length === 0 && !loading && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No spells found. Make sure spell data has been imported in /admin.
+                  </p>
+                )}
+              </div>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>

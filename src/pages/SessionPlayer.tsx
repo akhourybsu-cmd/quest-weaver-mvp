@@ -85,7 +85,7 @@ const SessionPlayer = () => {
   }, [campaignCode, navigate]);
 
   useEffect(() => {
-    if (!character) return;
+    if (!character || !campaignId) return;
 
     // Subscribe to character changes
     const characterChannel = supabase
@@ -102,10 +102,113 @@ const SessionPlayer = () => {
       )
       .subscribe();
 
+    // Subscribe to encounter changes for real-time combat sync
+    const encounterChannel = supabase
+      .channel(`encounter-changes:${campaignId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'encounters',
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        (payload) => {
+          console.log('SessionPlayer - Encounter change detected:', payload);
+          // Re-fetch encounter status
+          fetchEncounterStatus();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to initiative changes (for turn tracking)
+    const initiativeChannel = supabase
+      .channel(`initiative-changes:${campaignId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'initiative',
+        },
+        () => {
+          // Check if it's now this player's turn
+          if (activeEncounter && character) {
+            checkMyTurn(activeEncounter, character.id);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(characterChannel);
+      supabase.removeChannel(encounterChannel);
+      supabase.removeChannel(initiativeChannel);
     };
-  }, [character?.id]);
+  }, [character?.id, campaignId, activeEncounter]);
+
+  const fetchEncounterStatus = async () => {
+    if (!campaignId) return;
+    
+    const { data: encounter } = await supabase
+      .from("encounters")
+      .select("id, status")
+      .eq("campaign_id", campaignId)
+      .in("status", ["active", "paused", "preparing"])
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (encounter) {
+      setActiveEncounter(encounter.id);
+      if (character) {
+        checkMyTurn(encounter.id, character.id);
+      }
+      // Check for map
+      const { data: mapData } = await supabase
+        .from("maps")
+        .select("id")
+        .eq("encounter_id", encounter.id)
+        .maybeSingle();
+      setMapId(mapData?.id || null);
+      
+      toast({
+        title: "⚔️ Combat Active",
+        description: "An encounter has started!",
+      });
+    } else {
+      if (activeEncounter) {
+        toast({
+          title: "Combat Ended",
+          description: "The encounter has concluded.",
+        });
+      }
+      setActiveEncounter(null);
+      setMapId(null);
+      setIsMyTurn(false);
+    }
+  };
+
+  const checkMyTurn = async (encounterId: string, characterId: string) => {
+    const { data: initData } = await supabase
+      .from("initiative")
+      .select("is_current_turn")
+      .eq("encounter_id", encounterId)
+      .eq("combatant_id", characterId)
+      .eq("combatant_type", "character")
+      .maybeSingle();
+    
+    const wasMyTurn = isMyTurn;
+    const nowMyTurn = initData?.is_current_turn || false;
+    
+    if (!wasMyTurn && nowMyTurn) {
+      toast({
+        title: "⚡ Your Turn!",
+        description: "It's your turn to act in combat!",
+      });
+    }
+    
+    setIsMyTurn(nowMyTurn);
+  };
 
   const fetchCharacter = async () => {
     const { data: { user } } = await supabase.auth.getUser();

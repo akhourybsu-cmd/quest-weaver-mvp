@@ -12,6 +12,7 @@ import { EncounterDialog } from "@/components/encounters/EncounterDialog";
 interface EncountersTabProps {
   campaignId: string;
   liveSessionId?: string | null;
+  onLaunchEncounter?: (encounterId: string) => void;
 }
 
 interface Encounter {
@@ -25,7 +26,7 @@ interface Encounter {
   assigned_session?: string | null;
 }
 
-export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps) {
+export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: EncountersTabProps) {
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "prepared" | "active" | "completed">("all");
@@ -110,6 +111,41 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
   const handleEditEncounter = (encounterId: string) => {
     setSelectedEncounterId(encounterId);
     setDialogOpen(true);
+  };
+
+  const handleLaunchEncounter = async (encounterId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      // Deactivate any other active encounters first
+      await supabase
+        .from("encounters")
+        .update({ is_active: false, status: "ended" })
+        .eq("campaign_id", campaignId)
+        .eq("is_active", true);
+
+      // Activate the selected encounter
+      const { error } = await supabase
+        .from("encounters")
+        .update({ 
+          is_active: true, 
+          status: "preparing",
+          current_round: 1
+        })
+        .eq("id", encounterId);
+
+      if (error) throw error;
+
+      toast.success("Encounter launched! Switching to battle view...");
+      
+      // Notify parent to switch to session tab
+      if (onLaunchEncounter) {
+        onLaunchEncounter(encounterId);
+      }
+    } catch (error: any) {
+      console.error("Error launching encounter:", error);
+      toast.error("Failed to launch encounter");
+    }
   };
 
   const filteredEncounters = encounters.filter((enc) => {
@@ -225,10 +261,19 @@ export function EncountersTab({ campaignId, liveSessionId }: EncountersTabProps)
                   </div>
                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {liveSessionId && !encounter.is_active && (
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        onClick={(e) => handleLaunchEncounter(encounter.id, e)}
+                      >
                         <Play className="w-4 h-4 mr-2" />
                         Launch
                       </Button>
+                    )}
+                    {encounter.is_active && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        ⚔️ In Combat
+                      </Badge>
                     )}
                     <Button
                       size="sm"

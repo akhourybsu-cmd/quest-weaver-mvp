@@ -901,6 +901,16 @@ const CampaignHub = () => {
                   <EncountersTab 
                     campaignId={activeCampaign.id}
                     liveSessionId={liveSession?.id}
+                    onLaunchEncounter={(encounterId) => {
+                      // If no session is active, start one first
+                      if (!liveSession) {
+                        handleStartSession().then(() => {
+                          setActiveTab("session");
+                        });
+                      } else {
+                        setActiveTab("session");
+                      }
+                    }}
                   />
                 ) : (
                   <div className="space-y-4">

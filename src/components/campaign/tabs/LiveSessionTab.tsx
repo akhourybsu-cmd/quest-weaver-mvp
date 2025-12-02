@@ -8,8 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Heart, Shield, Eye, Users, Swords, Map, FileImage, MessageSquare 
+  Heart, Shield, Eye, Users, Swords, Map, FileImage, MessageSquare
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import PlayerPresence from '@/components/presence/PlayerPresence';
 import { TurnIndicator } from '@/components/presence/TurnIndicator';
 import { PlayerTurnSignals } from '@/components/combat/PlayerTurnSignals';
@@ -57,6 +63,15 @@ interface Encounter {
   current_round: number;
   is_active: boolean;
   status: 'preparing' | 'active' | 'paused' | 'ended';
+  monster_count?: number;
+}
+
+interface PreparedEncounter {
+  id: string;
+  name: string;
+  description: string | null;
+  difficulty: string | null;
+  monster_count: number;
 }
 
 interface LiveSessionTabProps {
@@ -72,6 +87,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
+  const [preparedEncounters, setPreparedEncounters] = useState<PreparedEncounter[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,7 +130,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
   }, [campaignId]);
 
   const fetchData = async () => {
-    await Promise.all([fetchCharacters(), fetchActiveEncounter()]);
+    await Promise.all([fetchCharacters(), fetchActiveEncounter(), fetchPreparedEncounters()]);
     setLoading(false);
   };
 
@@ -155,6 +171,73 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
     }
 
     setActiveEncounter(data);
+  };
+
+  const fetchPreparedEncounters = async () => {
+    const { data, error } = await supabase
+      .from('encounters')
+      .select('id, name, description, difficulty')
+      .eq('campaign_id', campaignId)
+      .eq('is_active', false)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading prepared encounters:', error);
+      return;
+    }
+
+    // Get monster counts for each encounter
+    const encountersWithCounts = await Promise.all(
+      (data || []).map(async (enc) => {
+        const { count } = await supabase
+          .from('encounter_monsters')
+          .select('*', { count: 'exact', head: true })
+          .eq('encounter_id', enc.id);
+        return { ...enc, monster_count: count || 0 };
+      })
+    );
+
+    setPreparedEncounters(encountersWithCounts);
+  };
+
+  const launchPreparedEncounter = async (encounterId: string) => {
+    try {
+      // Deactivate any other active encounters
+      await supabase
+        .from('encounters')
+        .update({ is_active: false, status: 'ended' })
+        .eq('campaign_id', campaignId)
+        .eq('is_active', true);
+
+      // Activate the selected encounter
+      const { data, error } = await supabase
+        .from('encounters')
+        .update({ 
+          is_active: true, 
+          status: 'preparing',
+          current_round: 1
+        })
+        .eq('id', encounterId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setActiveEncounter(data);
+      toast({
+        title: 'Encounter Launched',
+        description: 'Roll initiative to begin combat!',
+      });
+      
+      // Refresh prepared encounters list
+      fetchPreparedEncounters();
+    } catch (error: any) {
+      toast({
+        title: 'Error launching encounter',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const createEncounter = async () => {
@@ -295,10 +378,36 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
                 />
               )}
               {!activeEncounter && (
-                <Button onClick={createEncounter} size="sm">
-                  <Swords className="w-4 h-4 mr-2" />
-                  Start Combat
-                </Button>
+                <div className="flex items-center gap-2">
+                  {preparedEncounters.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <Swords className="w-4 h-4 mr-2" />
+                          Launch Prepared ({preparedEncounters.length})
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        {preparedEncounters.map((enc) => (
+                          <DropdownMenuItem
+                            key={enc.id}
+                            onClick={() => launchPreparedEncounter(enc.id)}
+                            className="flex flex-col items-start"
+                          >
+                            <span className="font-medium">{enc.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {enc.monster_count} monsters • {enc.difficulty || 'Unknown'} difficulty
+                            </span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  <Button onClick={createEncounter} size="sm">
+                    <Swords className="w-4 h-4 mr-2" />
+                    Quick Combat
+                  </Button>
+                </div>
               )}
             </div>
           </div>

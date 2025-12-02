@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Loader2, Shield, Heart, Zap, Link2, MoreVertical, Unlink, Link as LinkIcon } from 'lucide-react';
+import { Plus, Loader2, Shield, Heart, Zap, Link2, MoreVertical, Unlink, Link as LinkIcon, Trash2 } from 'lucide-react';
 import CharacterWizard from '@/components/character/CharacterWizard';
 import { JoinCampaignDialog } from './JoinCampaignDialog';
 import { AssignCharacterDialog } from './AssignCharacterDialog';
@@ -57,6 +57,8 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -118,6 +120,37 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
     }
   };
 
+  const handleDeleteCharacter = async () => {
+    if (!selectedCharacter) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('characters')
+        .delete()
+        .eq('id', selectedCharacter.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Character deleted',
+        description: `${selectedCharacter.name} has been permanently deleted`,
+      });
+
+      loadCharacters();
+      setDeleteDialogOpen(false);
+      setSelectedCharacter(null);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleAssignClick = (character: Character) => {
     setSelectedCharacter(character);
     setAssignDialogOpen(true);
@@ -126,6 +159,11 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
   const handleRemoveClick = (character: Character) => {
     setSelectedCharacter(character);
     setRemoveDialogOpen(true);
+  };
+
+  const handleDeleteClick = (character: Character) => {
+    setSelectedCharacter(character);
+    setDeleteDialogOpen(true);
   };
 
   if (loading) {
@@ -230,6 +268,16 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                           Remove from Campaign
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(character);
+                        }}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Character
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -300,6 +348,28 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleRemoveFromCampaign} className="bg-destructive hover:bg-destructive/90">
                   Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Character Permanently?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete <strong>{selectedCharacter.name}</strong>? 
+                  This action cannot be undone. All character data, equipment, spells, and history will be permanently removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDeleteCharacter} 
+                  disabled={deleting}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Permanently'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

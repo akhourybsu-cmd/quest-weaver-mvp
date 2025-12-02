@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, ChevronDown, Calendar, Swords, Flag, FileText, User, Package, Download, Plus } from "lucide-react";
+import { ArrowLeft, ChevronDown, Calendar, Swords, Flag, FileText, User, Package, Download, MapPin, Star, Play, Square } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 interface TimelineEvent {
@@ -20,19 +20,18 @@ interface TimelineEvent {
   refType: string | null;
   refId: string | null;
   payload: any;
+  playerVisible: boolean;
 }
 
 interface Session {
   id: string;
-  title: string;
-  sessionDate: string;
-  notes: string | null;
+  name: string | null;
+  startedAt: string;
 }
 
 const CampaignTimeline = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const campaignId = searchParams.get("campaign");
   const isDM = searchParams.get("dm") === "true";
@@ -47,7 +46,6 @@ const CampaignTimeline = () => {
     
     loadData();
     
-    // Poll for updates instead of realtime to avoid type recursion
     const interval = setInterval(loadData, 10000);
 
     return () => {
@@ -60,15 +58,22 @@ const CampaignTimeline = () => {
     
     setLoading(true);
     
-    // Load events
-    const { data: eventsData } = await (supabase as any)
+    // Load events from timeline_events table
+    const { data: eventsData, error: eventsError } = await supabase
       .from('timeline_events')
       .select('*')
       .eq('campaign_id', campaignId)
       .order('occurred_at', { ascending: false });
 
-    if (eventsData) {
-      setEvents(eventsData.map((e: any) => ({
+    if (eventsError) {
+      console.error('Error loading timeline events:', eventsError);
+    } else if (eventsData) {
+      // Filter for player visibility if not DM
+      const filteredEvents = isDM 
+        ? eventsData 
+        : eventsData.filter(e => e.player_visible);
+      
+      setEvents(filteredEvents.map((e) => ({
         id: e.id,
         sessionId: e.session_id,
         occurredAt: e.occurred_at,
@@ -78,22 +83,24 @@ const CampaignTimeline = () => {
         refType: e.ref_type,
         refId: e.ref_id,
         payload: e.payload,
+        playerVisible: e.player_visible,
       })));
     }
     
-    // Load sessions
-    const { data: sessionsData } = await (supabase as any)
-      .from('sessions')
-      .select('*')
+    // Load sessions from campaign_sessions table
+    const { data: sessionsData, error: sessionsError } = await supabase
+      .from('campaign_sessions')
+      .select('id, name, started_at')
       .eq('campaign_id', campaignId)
-      .order('session_date', { ascending: false });
+      .order('started_at', { ascending: false });
 
-    if (sessionsData) {
-      setSessions(sessionsData.map((s: any) => ({
+    if (sessionsError) {
+      console.error('Error loading sessions:', sessionsError);
+    } else if (sessionsData) {
+      setSessions(sessionsData.map((s) => ({
         id: s.id,
-        title: s.title,
-        sessionDate: s.session_date,
-        notes: s.notes,
+        name: s.name,
+        startedAt: s.started_at || '',
       })));
     }
     
@@ -102,40 +109,38 @@ const CampaignTimeline = () => {
 
   const getEventIcon = (kind: string) => {
     const icons: Record<string, any> = {
-      SESSION_START: Calendar,
-      SESSION_END: Calendar,
-      ENCOUNTER_START: Swords,
-      ENCOUNTER_END: Swords,
-      ROUND_SUMMARY: Swords,
-      QUEST_CREATED: Flag,
-      QUEST_OBJECTIVE_UPDATED: Flag,
-      QUEST_COMPLETED: Flag,
-      NOTE_CREATED: FileText,
-      HIGHLIGHT: FileText,
-      NPC_APPEARANCE: User,
-      ITEM_GAINED: Package,
-      ITEM_SPENT: Package,
-      CUSTOM: FileText,
+      session_start: Play,
+      session_end: Square,
+      encounter_start: Swords,
+      encounter_end: Swords,
+      quest_created: Flag,
+      quest_objective: Flag,
+      quest_completed: Flag,
+      note_created: FileText,
+      highlight: Star,
+      npc_appearance: User,
+      item_gained: Package,
+      location_discovered: MapPin,
+      custom: FileText,
     };
     return icons[kind] || FileText;
   };
 
   const getEventColor = (kind: string) => {
     const colors: Record<string, string> = {
-      ENCOUNTER_START: "rose",
-      ENCOUNTER_END: "rose",
-      ROUND_SUMMARY: "rose",
-      QUEST_CREATED: "amber",
-      QUEST_OBJECTIVE_UPDATED: "amber",
-      QUEST_COMPLETED: "emerald",
-      NOTE_CREATED: "sky",
-      HIGHLIGHT: "sky",
-      NPC_APPEARANCE: "violet",
-      ITEM_GAINED: "emerald",
-      ITEM_SPENT: "orange",
-      SESSION_START: "zinc",
-      SESSION_END: "zinc",
-      CUSTOM: "zinc",
+      session_start: "emerald",
+      session_end: "amber",
+      encounter_start: "rose",
+      encounter_end: "rose",
+      quest_created: "violet",
+      quest_objective: "violet",
+      quest_completed: "emerald",
+      note_created: "sky",
+      highlight: "amber",
+      npc_appearance: "sky",
+      item_gained: "amber",
+      location_discovered: "emerald",
+      custom: "zinc",
     };
     return colors[kind] || "zinc";
   };
@@ -146,17 +151,15 @@ const CampaignTimeline = () => {
       return `### ${e.title}\n**${date}** - ${e.kind}\n\n${e.summary || ''}\n\n`;
     }).join('\n');
     
-    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const blob = new Blob([`# Campaign Timeline\n\n${markdown}`], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'campaign-timeline.md';
     a.click();
+    URL.revokeObjectURL(url);
     
-    toast({
-      title: "Timeline exported",
-      description: "Downloaded as Markdown file",
-    });
+    toast.success("Timeline exported as Markdown");
   };
 
   const filteredEvents = selectedKinds.length > 0
@@ -172,7 +175,7 @@ const CampaignTimeline = () => {
   }, {} as Record<string, TimelineEvent[]>);
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -185,17 +188,15 @@ const CampaignTimeline = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold">Campaign Timeline</h1>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={exportTimeline}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-            </div>
+            <h1 className="text-2xl font-cinzel font-bold">Campaign Timeline</h1>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={exportTimeline}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
       </div>
@@ -208,8 +209,9 @@ const CampaignTimeline = () => {
           </Card>
         ) : events.length === 0 ? (
           <Card className="p-8 text-center">
+            <Calendar className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">
-              No timeline events yet. Play your campaign to build your story!
+              No timeline events yet. Start a session to build your campaign history!
             </p>
           </Card>
         ) : (
@@ -222,7 +224,7 @@ const CampaignTimeline = () => {
                   <Badge
                     key={kind}
                     variant={selectedKinds.includes(kind) ? "default" : "outline"}
-                    className="cursor-pointer"
+                    className="cursor-pointer capitalize"
                     onClick={() => {
                       setSelectedKinds(prev =>
                         prev.includes(kind)
@@ -242,7 +244,7 @@ const CampaignTimeline = () => {
               {Object.entries(eventsBySession).map(([sessionId, sessionEvents]) => {
                 const session = sessions.find(s => s.id === sessionId);
                 const sectionTitle = session
-                  ? `${session.title} - ${format(new Date(session.sessionDate), 'PP')}`
+                  ? `${session.name || 'Session'} - ${session.startedAt ? format(new Date(session.startedAt), 'PP') : 'Unknown date'}`
                   : 'Unassigned Events';
 
                 return (
@@ -280,7 +282,7 @@ const CampaignTimeline = () => {
                                   {event.summary && (
                                     <p className="text-sm text-muted-foreground">{event.summary}</p>
                                   )}
-                                  <Badge variant="outline" className="mt-2 text-xs">
+                                  <Badge variant="outline" className="mt-2 text-xs capitalize">
                                     {event.kind.replace(/_/g, ' ')}
                                   </Badge>
                                 </div>

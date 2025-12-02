@@ -4,52 +4,56 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Plus, Sword, Scroll, Users, Crown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Plus, Filter, Eye, EyeOff, Download } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
+import { TimelineEventCard, TimelineEvent } from "@/components/timeline/TimelineEventCard";
+import { AddTimelineEventDialog } from "@/components/timeline/AddTimelineEventDialog";
 
 interface TimelineTabProps {
   campaignId: string;
 }
 
-interface TimelineEvent {
-  id: string;
-  created_at: string;
-  text: string;
-  color: string | null;
-  session_id: string | null;
-}
+type FilterKind = 'all' | 'highlight' | 'combat' | 'quest' | 'social' | 'discovery';
 
-const typeIcons = {
-  combat: Sword,
-  quest: Scroll,
-  social: Users,
-  political: Crown,
-  default: Scroll,
-};
+const filterOptions: { value: FilterKind; label: string }[] = [
+  { value: 'all', label: 'All Events' },
+  { value: 'highlight', label: 'Highlights' },
+  { value: 'combat', label: 'Combat' },
+  { value: 'quest', label: 'Quests' },
+  { value: 'social', label: 'NPCs & Social' },
+  { value: 'discovery', label: 'Discoveries' },
+];
 
-const typeColors: Record<string, string> = {
-  red: "text-dragonRed",
-  purple: "text-arcanePurple",
-  brass: "text-brass",
-  neutral: "text-muted-foreground",
+const filterKindMap: Record<FilterKind, string[]> = {
+  all: [],
+  highlight: ['highlight', 'custom'],
+  combat: ['encounter_start', 'encounter_end'],
+  quest: ['quest_created', 'quest_completed', 'quest_objective'],
+  social: ['npc_appearance', 'note_created'],
+  discovery: ['location_discovered', 'item_gained'],
 };
 
 export function TimelineTab({ campaignId }: TimelineTabProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterKind>('all');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents();
+    fetchLiveSession();
 
     const channel = resilientChannel(supabase, `timeline:${campaignId}`);
     channel
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'session_highlights',
+        table: 'timeline_events',
         filter: `campaign_id=eq.${campaignId}`
       }, () => {
         fetchEvents();
@@ -64,10 +68,11 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
   const fetchEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('session_highlights')
+        .from('timeline_events')
         .select('*')
         .eq('campaign_id', campaignId)
-        .order('created_at', { ascending: false });
+        .order('occurred_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       setEvents(data || []);
@@ -79,20 +84,102 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
     }
   };
 
+  const fetchLiveSession = async () => {
+    try {
+      const { data } = await supabase
+        .from('campaigns')
+        .select('live_session_id')
+        .eq('id', campaignId)
+        .single();
+      
+      setLiveSessionId(data?.live_session_id || null);
+    } catch (error) {
+      console.error('Error fetching live session:', error);
+    }
+  };
+
+  const toggleVisibility = async (event: TimelineEvent) => {
+    try {
+      const { error } = await supabase
+        .from('timeline_events')
+        .update({ player_visible: !event.player_visible })
+        .eq('id', event.id);
+
+      if (error) throw error;
+      
+      setEvents(events.map(e => 
+        e.id === event.id ? { ...e, player_visible: !e.player_visible } : e
+      ));
+      
+      toast.success(event.player_visible ? 'Hidden from players' : 'Visible to players');
+    } catch (error: any) {
+      toast.error('Failed to update visibility');
+    }
+  };
+
+  const exportTimeline = () => {
+    const markdown = events
+      .filter(e => filter === 'all' || filterKindMap[filter].includes(e.kind))
+      .map(e => {
+        const date = format(new Date(e.occurred_at), "MMM d, yyyy");
+        const gameDate = e.in_game_date ? ` (${e.in_game_date})` : '';
+        return `### ${e.title}${gameDate}\n*${date}*\n\n${e.summary || 'No description'}\n`;
+      })
+      .join('\n---\n\n');
+
+    const blob = new Blob([`# Campaign Timeline\n\n${markdown}`], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'campaign-timeline.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredEvents = filter === 'all' 
+    ? events 
+    : events.filter(e => filterKindMap[filter].includes(e.kind));
+
+  // Group events by date
+  const groupedEvents = filteredEvents.reduce((acc, event) => {
+    const date = format(new Date(event.occurred_at), "MMMM d, yyyy");
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(event);
+    return acc;
+  }, {} as Record<string, TimelineEvent[]>);
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <Card className="bg-card/50 border-brass/20">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <CardTitle className="font-cinzel">Campaign Timeline</CardTitle>
               <CardDescription>Chronicle your adventures</CardDescription>
             </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Event
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={filter} onValueChange={(v) => setFilter(v as FilterKind)}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={exportTimeline}>
+                <Download className="w-4 h-4" />
+              </Button>
+              <Button size="sm" onClick={() => setShowAddDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Event
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -100,18 +187,24 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
       {/* Timeline */}
       {loading ? (
         <div className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
-      ) : events.length === 0 ? (
+      ) : filteredEvents.length === 0 ? (
         <Card className="bg-card/50 border-brass/20">
           <CardContent className="py-12">
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <Calendar className="w-12 h-12 mx-auto text-brass/50" />
               <p className="text-sm text-muted-foreground">
-                No events recorded yet. Start chronicling your campaign's history.
+                {filter === 'all' 
+                  ? "No events recorded yet. Start chronicling your campaign's history."
+                  : "No events match this filter."}
               </p>
+              <Button variant="outline" onClick={() => setShowAddDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add First Event
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -119,45 +212,46 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
         <ScrollArea className="h-[calc(100vh-300px)]">
           <div className="relative pb-4">
             {/* Timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-px bg-brass/30" />
+            <div className="absolute left-4 top-0 bottom-0 w-px bg-brass/30" />
 
             <div className="space-y-6">
-              {events.map((event) => {
-                const Icon = typeIcons.default;
-                const colorClass = event.color ? typeColors[event.color] || typeColors.neutral : typeColors.neutral;
-                return (
-                  <div key={event.id} className="relative pl-16">
-                    {/* Timeline node */}
-                    <div className="absolute left-6 top-2 w-5 h-5 rounded-full bg-obsidian border-2 border-brass flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-arcanePurple" />
+              {Object.entries(groupedEvents).map(([date, dateEvents]) => (
+                <div key={date} className="relative">
+                  {/* Date marker */}
+                  <div className="flex items-center gap-3 mb-3 pl-1">
+                    <div className="w-7 h-7 rounded-full bg-brass/20 border-2 border-brass flex items-center justify-center z-10">
+                      <Calendar className="w-3.5 h-3.5 text-brass" />
                     </div>
-
-                    <Card className="bg-card/50 border-brass/20">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1">
-                            <Icon className={`w-4 h-4 ${colorClass}`} />
-                            <CardTitle className="text-base font-cinzel">{event.text}</CardTitle>
-                          </div>
-                          {event.session_id && (
-                            <Badge variant="outline" className="border-brass/30 shrink-0">
-                              Session
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-brass">
-                          <Calendar className="w-3 h-3" />
-                          <span>{format(new Date(event.created_at), "MMMM d, yyyy")}</span>
-                        </div>
-                      </CardHeader>
-                    </Card>
+                    <Badge variant="outline" className="border-brass/30 text-brass font-cinzel">
+                      {date}
+                    </Badge>
                   </div>
-                );
-              })}
+
+                  {/* Events for this date */}
+                  <div className="space-y-2 pl-12">
+                    {dateEvents.map((event) => (
+                      <TimelineEventCard
+                        key={event.id}
+                        event={event}
+                        showVisibility
+                        onToggleVisibility={toggleVisibility}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </ScrollArea>
       )}
+
+      <AddTimelineEventDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        campaignId={campaignId}
+        sessionId={liveSessionId}
+        onEventAdded={fetchEvents}
+      />
     </div>
   );
 }

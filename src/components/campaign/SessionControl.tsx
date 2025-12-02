@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "@/hooks/use-toast";
 import { EndSessionDialog } from "./EndSessionDialog";
+import { timelineLogger } from "@/hooks/useTimelineLogger";
 
 interface SessionData {
   id: string;
@@ -182,6 +183,9 @@ export function SessionControl({ campaignId }: SessionControlProps) {
         setMorphing(false);
       }, 300);
 
+      // Log to timeline
+      await timelineLogger.sessionStart(campaignId, newSession.id);
+
       toast({ title: 'Session started' });
     } catch (error) {
       console.error('Error starting session:', error);
@@ -280,6 +284,10 @@ export function SessionControl({ campaignId }: SessionControlProps) {
         .eq('id', campaignId);
 
       if (campaignError) throw campaignError;
+
+      // Log to timeline
+      const durationFormatted = formatTime(Math.floor((Date.now() - new Date(session.started_at).getTime() - finalPausedSeconds * 1000) / 1000));
+      await timelineLogger.sessionEnd(campaignId, session.id, undefined, durationFormatted);
 
       setSession(null);
       toast({ title: 'Session ended' });

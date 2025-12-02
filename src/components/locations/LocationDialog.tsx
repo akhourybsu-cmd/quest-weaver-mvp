@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DynamicLocationFields } from "./DynamicLocationFields";
 import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locationSchemas";
+import { timelineLogger } from "@/hooks/useTimelineLogger";
 
 interface LocationDialogProps {
   open: boolean;
@@ -187,6 +188,10 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     };
 
     if (isEditing) {
+      // Check if location is being discovered for the first time
+      const wasDiscovered = locationToEdit?.discovered || false;
+      const isNowDiscovered = discovered;
+      
       const { error } = await supabase
         .from("locations")
         .update(locationData)
@@ -195,6 +200,23 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       if (error) {
         toast.error(`Failed to update location: ${error.message}`);
         return;
+      }
+
+      // Log timeline event if location was just discovered
+      if (!wasDiscovered && isNowDiscovered) {
+        // Get live session ID for this campaign
+        const { data: campaign } = await supabase
+          .from('campaigns')
+          .select('live_session_id')
+          .eq('id', campaignId)
+          .single();
+        
+        await timelineLogger.locationDiscovered(
+          campaignId, 
+          campaign?.live_session_id || null, 
+          name, 
+          locationToEdit.id
+        );
       }
 
       toast.success(`${name} has been updated.`);

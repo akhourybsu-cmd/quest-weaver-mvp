@@ -56,6 +56,7 @@ export interface DemoLocation {
   hooks: string[];
   npcIds: string[];
   factionIds: string[];
+  image_url?: string;
 }
 
 export interface DemoFaction {
@@ -67,6 +68,7 @@ export interface DemoFaction {
   tags: string[];
   goals: string[];
   reputation: number; // -100 to 100
+  banner_url?: string;
 }
 
 export interface DemoMonster {
@@ -186,6 +188,7 @@ export const RECKONING_SEED: DemoCampaign = {
       public_bio: "A mysterious figure in dark robes, rarely seen in daylight. Whispers suggest she commands dark powers.",
       gm_notes: "Level 12 Shadow Sorcerer. Former court wizard who turned to dark magic after being exiled. Seeks revenge against the crown.",
       secrets: "She is actually the twin sister of the Queen, presumed dead 20 years ago. The ritual is her attempt to resurrect her murdered husband from the Shadowfell.",
+      portrait_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
       location_id: "loc-2",
       faction_id: "faction-1",
       tags: ["Villain", "Spellcaster", "Tragic"],
@@ -199,6 +202,7 @@ export const RECKONING_SEED: DemoCampaign = {
       public_bio: "An elderly human scholar who has dedicated his life to preserving ancient knowledge in the Grand Archive.",
       gm_notes: "Level 5 Wizard (Divination). Has photographic memory. Knows more than he lets on about the Grimoire's contents.",
       secrets: "He secretly made a copy of key pages from the Grimoire before it was stolen. Will share this if the party earns his trust.",
+      portrait_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
       location_id: "loc-1",
       tags: ["Ally", "Knowledge", "Cautious"],
       disposition: 45,
@@ -211,6 +215,7 @@ export const RECKONING_SEED: DemoCampaign = {
       public_bio: "A hooded figure who knows every secret in the Shadow Quarter. For the right price, they'll share what they know.",
       gm_notes: "Level 8 Rogue (Arcane Trickster). Actually works for the Veiled Hand faction as a double agent.",
       secrets: "Knows the exact location of the cult hideout and can provide a map for 500gp or a favor.",
+      portrait_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
       location_id: "loc-2",
       faction_id: "faction-2",
       tags: ["Neutral", "Informant", "Opportunist"],
@@ -224,6 +229,7 @@ export const RECKONING_SEED: DemoCampaign = {
       public_bio: "A stern but fair paladin who leads the capital's elite guard. She takes the recent murders very seriously.",
       gm_notes: "Level 10 Paladin (Devotion). Secretly investigating corruption within the city watch. Suspects a mole feeding info to the cult.",
       secrets: "Her lieutenant is the cult informant. She's gathering evidence to expose them.",
+      portrait_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
       location_id: "loc-4",
       faction_id: "faction-3",
       tags: ["Ally", "Lawful", "Determined"],
@@ -237,6 +243,7 @@ export const RECKONING_SEED: DemoCampaign = {
       public_bio: "A fearsome red dragon who once terrorized the northern villages, now driven from his lair.",
       gm_notes: "Standard Adult Red Dragon stats. Currently licking his wounds in a cave further north. May return for revenge.",
       secrets: "He was actually guarding an ancient artifact in his hoard that the cult needs for their ritual. They orchestrated his removal.",
+      portrait_url: "https://images.unsplash.com/photo-1577493340887-b7bfff550145?w=400&h=400&fit=crop",
       location_id: "loc-3",
       tags: ["Defeated", "Dragon", "Prideful"],
       disposition: -90,
@@ -253,6 +260,7 @@ export const RECKONING_SEED: DemoCampaign = {
       hooks: ["Strange shadowy figures seen near the restricted section at night", "Ancient prophecies mention a 'Grimoire of Shadows'"],
       npcIds: ["npc-2"],
       factionIds: ["faction-3"],
+      image_url: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop",
     },
     {
       id: "loc-2",
@@ -263,6 +271,7 @@ export const RECKONING_SEED: DemoCampaign = {
       hooks: ["Locals whisper of disappearances and strange lights", "The old Raven Temple has been sealed for decades"],
       npcIds: ["npc-1", "npc-3"],
       factionIds: ["faction-1", "faction-2"],
+      image_url: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800&h=600&fit=crop",
     },
     {
       id: "loc-3",
@@ -273,6 +282,7 @@ export const RECKONING_SEED: DemoCampaign = {
       hooks: ["Dragon tracks lead further north", "Unusual magical residue detected in the deepest chamber"],
       npcIds: ["npc-5"],
       factionIds: [],
+      image_url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
     },
     {
       id: "loc-4",
@@ -283,6 +293,7 @@ export const RECKONING_SEED: DemoCampaign = {
       hooks: ["Increased patrols around the Shadow Quarter", "Captain Stormwind has posted a bounty for information"],
       npcIds: ["npc-4"],
       factionIds: ["faction-3"],
+      image_url: "https://images.unsplash.com/photo-1555636222-cae831e670b3?w=800&h=600&fit=crop",
     },
     {
       id: "loc-5",
@@ -293,6 +304,7 @@ export const RECKONING_SEED: DemoCampaign = {
       hooks: ["The ritual requires three components: dragon blood, the Grimoire, and a celestial alignment", "Cult members patrol in shifts"],
       npcIds: ["npc-1"],
       factionIds: ["faction-1"],
+      image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&h=600&fit=crop",
     },
   ],
 
@@ -306,6 +318,7 @@ export const RECKONING_SEED: DemoCampaign = {
       tags: ["Villain", "Secretive", "Magical"],
       goals: ["Open the Shadowgate portal", "Resurrect fallen members from the Shadowfell", "Overthrow the crown"],
       reputation: -80,
+      banner_url: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=800&h=400&fit=crop",
     },
     {
       id: "faction-2",
@@ -316,6 +329,7 @@ export const RECKONING_SEED: DemoCampaign = {
       tags: ["Neutral", "Criminal", "Connected"],
       goals: ["Maintain control of Shadow Quarter", "Profit from chaos without causing it", "Keep the cult's activities contained"],
       reputation: 20,
+      banner_url: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=800&h=400&fit=crop",
     },
     {
       id: "faction-3",
@@ -326,6 +340,7 @@ export const RECKONING_SEED: DemoCampaign = {
       tags: ["Ally", "Lawful", "Military"],
       goals: ["Stop the Shadow Quarter murders", "Root out corruption", "Prevent the ritual"],
       reputation: 75,
+      banner_url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&h=400&fit=crop",
     },
   ],
 

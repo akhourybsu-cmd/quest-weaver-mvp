@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ import StepProficiencies from "./wizard/StepProficiencies";
 import StepEquipment from "./wizard/StepEquipment";
 import StepSpells from "./wizard/StepSpells";
 import StepFeatures from "./wizard/StepFeatures";
+import StepLevelChoices from "./wizard/StepLevelChoices";
 import StepDescription from "./wizard/StepDescription";
 import StepReview from "./wizard/StepReview";
 import LiveSummaryPanel from "./wizard/LiveSummaryPanel";
@@ -87,18 +88,32 @@ export interface WizardData {
   notes?: string;
 }
 
-const STEPS = [
-  "Basics",
-  "Ancestry",
-  "Abilities",
-  "Background",
-  "Proficiencies",
-  "Equipment",
-  "Spells",
-  "Features",
-  "Description",
-  "Review"
-];
+// Steps are now computed dynamically based on level
+const getSteps = (level: number, isSpellcaster: boolean) => {
+  const baseSteps = [
+    "Basics",
+    "Ancestry",
+    "Abilities",
+    "Background",
+    "Proficiencies",
+    "Equipment",
+  ];
+  
+  if (isSpellcaster) {
+    baseSteps.push("Spells");
+  }
+  
+  baseSteps.push("Features");
+  
+  // Add level choices step if level > 1
+  if (level > 1) {
+    baseSteps.push("Level Choices");
+  }
+  
+  baseSteps.push("Description", "Review");
+  
+  return baseSteps;
+};
 
 const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: CharacterWizardProps) => {
   const { toast } = useToast();
@@ -111,6 +126,19 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   
   // Auto-seed SRD data if missing
   const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
+
+  // Helper to check if class is a spellcaster
+  const checkIsSpellcaster = (): boolean => {
+    const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
+                         "Eldritch Knight", "Arcane Trickster"];
+    const className = draft.className || "";
+    return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
+  };
+
+  // Compute steps dynamically based on level and class
+  const STEPS = useMemo(() => {
+    return getSteps(draft.level, checkIsSpellcaster());
+  }, [draft.level, draft.className]);
 
   // Reset draft when dialog opens
   useEffect(() => {
@@ -376,17 +404,18 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   };
 
   const canProceed = (): boolean => {
-    switch (currentStep) {
-      case 0: // Basics
+    const stepName = STEPS[currentStep];
+    
+    switch (stepName) {
+      case "Basics":
         return !!(draft.name && draft.classId && draft.className);
-      case 1: // Ancestry
+      case "Ancestry":
         return !!draft.ancestryId;
-      case 2: // Abilities
-        return true; // Always valid
-      case 3: // Background
+      case "Abilities":
+        return true;
+      case "Background":
         return !!draft.backgroundId;
-      case 4: // Proficiencies
-        // Check if all required choices are met
+      case "Proficiencies":
         const skillsNeeded = draft.needs.skill?.required ?? 0;
         const toolsNeeded = draft.needs.tool?.required ?? 0;
         const langsNeeded = draft.needs.language?.required ?? 0;
@@ -395,15 +424,17 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           draft.choices.tools.length >= toolsNeeded &&
           draft.choices.languages.length >= langsNeeded
         );
-      case 5: // Equipment
+      case "Equipment":
         return !!draft.choices.equipmentBundleId;
-      case 6: // Spells
-        return true; // May not be a caster
-      case 7: // Features
+      case "Spells":
         return true;
-      case 8: // Description
-        return true; // All optional
-      case 9: // Review
+      case "Features":
+        return true;
+      case "Level Choices":
+        return true; // StepLevelChoices has its own internal validation
+      case "Description":
+        return true;
+      case "Review":
         return true;
       default:
         return false;
@@ -419,31 +450,11 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       });
       return;
     }
-    
-    // Skip spells step if not a caster (from Equipment to Features)
-    if (currentStep === 5 && !isSpellcaster()) {
-      setCurrentStep(7); // Skip directly to Features
-    } else {
-      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
-    }
+    setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
   };
 
   const handleBack = () => {
-    // Skip spells step if not a caster (from Features back to Equipment)
-    if (currentStep === 7 && !isSpellcaster()) {
-      setCurrentStep(5); // Skip back to Equipment
-    } else {
-      setCurrentStep(prev => Math.max(prev - 1, 0));
-    }
-  };
-
-  const isSpellcaster = (): boolean => {
-    // Check if class has spellcasting progression in SRD data
-    // This requires us to fetch class data - for now, check via known caster names
-    const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
-                         "Eldritch Knight", "Arcane Trickster"];
-    const className = draft.className || "";
-    return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
+    setCurrentStep(prev => Math.max(prev - 1, 0));
   };
 
   const handleSaveAndExit = async () => {
@@ -724,26 +735,30 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   };
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 0:
+    const stepName = STEPS[currentStep];
+    
+    switch (stepName) {
+      case "Basics":
         return <StepBasics />;
-      case 1:
+      case "Ancestry":
         return <StepAncestry />;
-      case 2:
+      case "Abilities":
         return <StepAbilities />;
-      case 3:
+      case "Background":
         return <StepBackground />;
-      case 4:
+      case "Proficiencies":
         return <StepProficiencies />;
-      case 5:
+      case "Equipment":
         return <StepEquipment />;
-      case 6:
+      case "Spells":
         return <StepSpells />;
-      case 7:
+      case "Features":
         return <StepFeatures />;
-      case 8:
+      case "Level Choices":
+        return <StepLevelChoices />;
+      case "Description":
         return <StepDescription />;
-      case 9:
+      case "Review":
         return <StepReview onFinalize={handleFinalizeCharacter} loading={loading} />;
       default:
         return null;

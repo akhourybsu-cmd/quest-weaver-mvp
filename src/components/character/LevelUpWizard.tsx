@@ -86,6 +86,54 @@ export const LevelUpWizard = ({
   const [step, setStep] = useState<LevelUpStep>("hp-roll");
   const [character, setCharacter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Reset all state when dialog opens
+  useEffect(() => {
+    if (open) {
+      // Reset step
+      setStep("hp-roll");
+      setLoading(true);
+      
+      // Reset HP
+      setHpRoll(null);
+      setUseAverage(false);
+      
+      // Reset ASI/Feat
+      setAsiChoice(null);
+      setSelectedFeat(null);
+      setAbilityIncreases({});
+      
+      // Reset spells
+      setNewSpells([]);
+      setNewCantrips([]);
+      setSpellToSwap(null);
+      setSwapReplacement(null);
+      setWizardSpellbookSpells([]);
+      
+      // Reset feature choices
+      setFightingStyleChoice([]);
+      setExpertiseChoices([]);
+      setMetamagicChoices([]);
+      setPactBoonChoice([]);
+      setNewInvocations([]);
+      setInvocationsToRemove([]);
+      setMagicalSecretsSpells([]);
+      setFavoredEnemyChoice(null);
+      setFavoredTerrainChoice(null);
+      
+      // Reset existing data caches
+      setCurrentProficientSkills([]);
+      setCurrentExpertiseSkills([]);
+      setCurrentInvocations([]);
+      setCurrentPactBoon(null);
+      setCurrentMetamagic([]);
+      setCurrentFavoredEnemies([]);
+      setCurrentFavoredTerrains([]);
+      setCurrentSpellIds([]);
+      setAvailableSpells([]);
+      setAvailableCantrips([]);
+    }
+  }, [open]);
   
   // HP
   const [hpRoll, setHpRoll] = useState<number | null>(null);

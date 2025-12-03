@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Zap, Award, Dna, Sparkles } from "lucide-react";
+import { Zap, Award, Dna, Sparkles, Target, MapPin, Swords } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,13 @@ interface AncestryTrait {
   description: string;
 }
 
+interface FeatureChoice {
+  id: string;
+  choice_key: string;
+  value_json: any;
+  level_gained: number;
+}
+
 interface PlayerFeaturesProps {
   characterId: string;
 }
@@ -43,6 +50,7 @@ interface PlayerFeaturesProps {
 export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [feats, setFeats] = useState<Feat[]>([]);
+  const [featureChoices, setFeatureChoices] = useState<FeatureChoice[]>([]);
   const [ancestryTraits, setAncestryTraits] = useState<AncestryTrait[]>([]);
   const [subancestryTraits, setSubancestryTraits] = useState<AncestryTrait[]>([]);
   const [ancestryName, setAncestryName] = useState<string>("");
@@ -89,7 +97,18 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
       fetchFeatures(),
       fetchFeats(),
       fetchAncestryTraits(),
+      fetchFeatureChoices(),
     ]);
+  };
+
+  const fetchFeatureChoices = async () => {
+    const { data } = await supabase
+      .from("character_feature_choices")
+      .select("*")
+      .eq("character_id", characterId)
+      .order("level_gained");
+    
+    if (data) setFeatureChoices(data);
   };
 
   const fetchFeatures = async () => {
@@ -201,10 +220,70 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
 
   const featuresBySource = groupFeaturesBySource();
   const hasAncestryTraits = ancestryTraits.length > 0 || subancestryTraits.length > 0;
+  const hasFeatureChoices = featureChoices.length > 0;
+
+  // Group feature choices by type for display
+  const groupedChoices = featureChoices.reduce((acc, choice) => {
+    if (!acc[choice.choice_key]) acc[choice.choice_key] = [];
+    acc[choice.choice_key].push(choice);
+    return acc;
+  }, {} as Record<string, FeatureChoice[]>);
+
+  const getChoiceLabel = (key: string) => {
+    const labels: Record<string, string> = {
+      'fighting_style': 'Fighting Style',
+      'expertise': 'Expertise',
+      'metamagic': 'Metamagic',
+      'pact_boon': 'Pact Boon',
+      'invocation': 'Eldritch Invocations',
+      'magical_secrets': 'Magical Secrets',
+      'favored_enemy': 'Favored Enemies',
+      'favored_terrain': 'Favored Terrains',
+    };
+    return labels[key] || key;
+  };
+
+  const getChoiceIcon = (key: string) => {
+    if (key === 'fighting_style') return <Swords className="w-4 h-4" />;
+    if (key === 'favored_enemy') return <Target className="w-4 h-4" />;
+    if (key === 'favored_terrain') return <MapPin className="w-4 h-4" />;
+    return <Sparkles className="w-4 h-4" />;
+  };
 
   return (
     <>
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Feature Choices (Fighting Style, Expertise, etc.) */}
+        {hasFeatureChoices && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Class Choices
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(groupedChoices).map(([key, choices]) => (
+                  <div key={key} className="p-3 rounded-lg bg-muted/50 border">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getChoiceIcon(key)}
+                      <span className="font-medium text-sm">{getChoiceLabel(key)}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {choices.map((choice, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {choice.value_json?.name || choice.value_json?.skill || 'Selected'}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Ancestry & Racial Traits */}
         {hasAncestryTraits && (
           <Card className="lg:col-span-2">

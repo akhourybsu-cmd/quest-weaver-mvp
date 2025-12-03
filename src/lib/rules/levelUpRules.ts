@@ -2,7 +2,7 @@
 // Based on SRD 5.1 rules
 
 export interface FeatureChoice {
-  type: 'fighting_style' | 'expertise' | 'metamagic' | 'invocation' | 'pact_boon' | 'maneuver' | 'infusion' | 'totem' | 'land_circle' | 'arcane_tradition' | 'divine_domain' | 'martial_archetype' | 'monastic_tradition' | 'sacred_oath' | 'ranger_archetype' | 'roguish_archetype' | 'sorcerous_origin' | 'otherworldly_patron';
+  type: 'fighting_style' | 'expertise' | 'metamagic' | 'invocation' | 'pact_boon' | 'maneuver' | 'infusion' | 'totem' | 'land_circle' | 'arcane_tradition' | 'divine_domain' | 'martial_archetype' | 'monastic_tradition' | 'sacred_oath' | 'ranger_archetype' | 'roguish_archetype' | 'sorcerous_origin' | 'otherworldly_patron' | 'magical_secrets' | 'favored_enemy' | 'favored_terrain';
   count: number;
   options?: string[];
   replaceCount?: number; // Can replace this many existing choices
@@ -147,7 +147,9 @@ export const CLASS_LEVEL_UP_RULES: Record<string, ClassLevelUpRules> = {
     ],
     featureChoiceLevels: {
       3: [{ type: 'expertise', count: 2 }],
-      10: [{ type: 'expertise', count: 2 }],
+      10: [{ type: 'expertise', count: 2 }, { type: 'magical_secrets', count: 2 }],
+      14: [{ type: 'magical_secrets', count: 2 }],
+      18: [{ type: 'magical_secrets', count: 2 }],
     },
     subclassLevel: 3,
   },
@@ -297,7 +299,11 @@ export const CLASS_LEVEL_UP_RULES: Record<string, ClassLevelUpRules> = {
     cantripProgression: {},
     resourceProgression: [],
     featureChoiceLevels: {
+      1: [{ type: 'favored_enemy', count: 1 }, { type: 'favored_terrain', count: 1 }],
       2: [{ type: 'fighting_style', count: 1, options: FIGHTING_STYLES.Ranger }],
+      6: [{ type: 'favored_enemy', count: 1 }, { type: 'favored_terrain', count: 1 }],
+      10: [{ type: 'favored_terrain', count: 1 }],
+      14: [{ type: 'favored_enemy', count: 1 }],
     },
     subclassLevel: 3,
     extraAttackLevel: 5,

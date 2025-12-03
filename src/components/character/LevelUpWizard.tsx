@@ -16,6 +16,9 @@ import { WizardSpellbookStep } from "./levelup/WizardSpellbookStep";
 import { FeatureChoiceStep } from "./levelup/FeatureChoiceStep";
 import { SpellSelectionStep } from "./levelup/SpellSelectionStep";
 import { InvocationSelector } from "./levelup/InvocationSelector";
+import { MagicalSecretsStep } from "./levelup/MagicalSecretsStep";
+import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnemySelector";
+import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
 import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,
@@ -49,6 +52,9 @@ type LevelUpStep =
   | "metamagic"
   | "fighting-style"
   | "expertise"
+  | "magical-secrets"
+  | "favored-enemy"
+  | "favored-terrain"
   | "asi-or-feat" 
   | "features" 
   | "review";
@@ -107,6 +113,9 @@ export const LevelUpWizard = ({
   const [pactBoonChoice, setPactBoonChoice] = useState<string[]>([]);
   const [newInvocations, setNewInvocations] = useState<string[]>([]);
   const [invocationsToRemove, setInvocationsToRemove] = useState<string[]>([]);
+  const [magicalSecretsSpells, setMagicalSecretsSpells] = useState<string[]>([]);
+  const [favoredEnemyChoice, setFavoredEnemyChoice] = useState<string | null>(null);
+  const [favoredTerrainChoice, setFavoredTerrainChoice] = useState<string | null>(null);
   
   // Existing character data
   const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);
@@ -114,6 +123,8 @@ export const LevelUpWizard = ({
   const [currentInvocations, setCurrentInvocations] = useState<string[]>([]);
   const [currentPactBoon, setCurrentPactBoon] = useState<string | null>(null);
   const [currentMetamagic, setCurrentMetamagic] = useState<string[]>([]);
+  const [currentFavoredEnemies, setCurrentFavoredEnemies] = useState<string[]>([]);
+  const [currentFavoredTerrains, setCurrentFavoredTerrains] = useState<string[]>([]);
   
   // Features
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
@@ -193,6 +204,24 @@ export const LevelUpWizard = ({
     return choice || null;
   }, [featureChoices]);
 
+  // Magical Secrets (Bard)
+  const magicalSecretsToChoose = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "magical_secrets");
+    return choice || null;
+  }, [featureChoices]);
+
+  // Favored Enemy (Ranger)
+  const favoredEnemyToChoose = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "favored_enemy");
+    return choice || null;
+  }, [featureChoices]);
+
+  // Favored Terrain (Ranger)
+  const favoredTerrainToChoose = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "favored_terrain");
+    return choice || null;
+  }, [featureChoices]);
+
   // Load character data
   useEffect(() => {
     if (open) {
@@ -258,6 +287,9 @@ export const LevelUpWizard = ({
         .eq("character_id", characterId);
 
       if (choices) {
+        const favoredEnemies: string[] = [];
+        const favoredTerrains: string[] = [];
+        
         choices.forEach(choice => {
           if (choice.choice_key === "pact_boon") {
             setCurrentPactBoon((choice.value_json as any)?.id || null);
@@ -268,7 +300,16 @@ export const LevelUpWizard = ({
           if (choice.choice_key === "metamagic") {
             setCurrentMetamagic(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
           }
+          if (choice.choice_key === "favored_enemy") {
+            favoredEnemies.push((choice.value_json as any)?.id);
+          }
+          if (choice.choice_key === "favored_terrain") {
+            favoredTerrains.push((choice.value_json as any)?.id);
+          }
         });
+        
+        setCurrentFavoredEnemies(favoredEnemies.filter(Boolean));
+        setCurrentFavoredTerrains(favoredTerrains.filter(Boolean));
       }
     } catch (error) {
       console.error("Error loading feature choices:", error);
@@ -437,6 +478,9 @@ export const LevelUpWizard = ({
             pact_boon: pactBoonChoice,
             invocations: newInvocations,
             invocations_removed: invocationsToRemove,
+            magical_secrets: magicalSecretsSpells,
+            favored_enemy: favoredEnemyChoice,
+            favored_terrain: favoredTerrainChoice,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });
@@ -620,6 +664,52 @@ export const LevelUpWizard = ({
         });
       }
 
+      // Save Magical Secrets spells (Bard)
+      if (magicalSecretsSpells.length > 0) {
+        // Add spells to character_spells
+        const secretsInserts = magicalSecretsSpells.map(spellId => ({
+          character_id: characterId,
+          spell_id: spellId,
+          known: true,
+          prepared: false,
+          source: 'magical_secrets'
+        }));
+        await supabase.from("character_spells").insert(secretsInserts);
+        
+        // Also record the choice
+        featureChoicesToSave.push({
+          character_id: characterId,
+          feature_type: 'class',
+          choice_key: 'magical_secrets',
+          value_json: { spells: magicalSecretsSpells },
+          level_gained: newLevel
+        });
+      }
+
+      // Save Favored Enemy (Ranger)
+      if (favoredEnemyChoice) {
+        const enemy = FAVORED_ENEMY_TYPES.find(e => e.id === favoredEnemyChoice);
+        featureChoicesToSave.push({
+          character_id: characterId,
+          feature_type: 'class',
+          choice_key: 'favored_enemy',
+          value_json: { id: favoredEnemyChoice, name: enemy?.name || favoredEnemyChoice },
+          level_gained: newLevel
+        });
+      }
+
+      // Save Favored Terrain (Ranger)
+      if (favoredTerrainChoice) {
+        const terrain = FAVORED_TERRAIN_TYPES.find(t => t.id === favoredTerrainChoice);
+        featureChoicesToSave.push({
+          character_id: characterId,
+          feature_type: 'class',
+          choice_key: 'favored_terrain',
+          value_json: { id: favoredTerrainChoice, name: terrain?.name || favoredTerrainChoice },
+          level_gained: newLevel
+        });
+      }
+
       // Remove replaced invocations
       if (invocationsToRemove.length > 0) {
         for (const inv of invocationsToRemove) {
@@ -781,6 +871,21 @@ export const LevelUpWizard = ({
       s.push("expertise");
     }
     
+    // Magical Secrets (Bard)
+    if (magicalSecretsToChoose) {
+      s.push("magical-secrets");
+    }
+    
+    // Favored Enemy (Ranger)
+    if (favoredEnemyToChoose) {
+      s.push("favored-enemy");
+    }
+    
+    // Favored Terrain (Ranger)
+    if (favoredTerrainToChoose) {
+      s.push("favored-terrain");
+    }
+    
     // ASI/Feat
     if (hasASI) {
       s.push("asi-or-feat");
@@ -793,7 +898,7 @@ export const LevelUpWizard = ({
     
     s.push("review");
     return s;
-  }, [isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, hasASI, featuresToGrant]);
+  }, [isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
@@ -818,6 +923,12 @@ export const LevelUpWizard = ({
         return fightingStyleChoice.length === 1;
       case "expertise":
         return expertiseChoices.length === (expertiseToChoose?.count || 0);
+      case "magical-secrets":
+        return magicalSecretsSpells.length === (magicalSecretsToChoose?.count || 0);
+      case "favored-enemy":
+        return favoredEnemyChoice !== null;
+      case "favored-terrain":
+        return favoredTerrainChoice !== null;
       case "asi-or-feat":
         if (!asiChoice) return false;
         if (asiChoice === "asi") {
@@ -1054,6 +1165,35 @@ export const LevelUpWizard = ({
               currentExpertiseSkills={currentExpertiseSkills}
               selectedValues={expertiseChoices}
               onSelectionChange={setExpertiseChoices}
+            />
+          )}
+
+          {/* Magical Secrets Step (Bard) */}
+          {step === "magical-secrets" && magicalSecretsToChoose && (
+            <MagicalSecretsStep
+              maxSpellLevel={maxSpellLevel}
+              currentSpellIds={currentSpellIds}
+              selectedSpells={magicalSecretsSpells}
+              count={magicalSecretsToChoose.count}
+              onSelectionChange={setMagicalSecretsSpells}
+            />
+          )}
+
+          {/* Favored Enemy Step (Ranger) */}
+          {step === "favored-enemy" && (
+            <FavoredEnemySelector
+              currentFavoredEnemies={currentFavoredEnemies}
+              selectedEnemy={favoredEnemyChoice}
+              onSelectionChange={setFavoredEnemyChoice}
+            />
+          )}
+
+          {/* Favored Terrain Step (Ranger) */}
+          {step === "favored-terrain" && (
+            <FavoredTerrainSelector
+              currentFavoredTerrains={currentFavoredTerrains}
+              selectedTerrain={favoredTerrainChoice}
+              onSelectionChange={setFavoredTerrainChoice}
             />
           )}
 

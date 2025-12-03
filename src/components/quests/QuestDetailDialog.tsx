@@ -142,11 +142,11 @@ export function QuestDetailDialog({ open, onOpenChange, quest, onEdit, onDelete,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]" variant="ornaments" size="xl">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh]" variant="ornaments" size="xl">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-cinzel">{quest.title}</DialogTitle>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-xl sm:text-2xl font-cinzel truncate">{quest.title}</DialogTitle>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="gap-1">
                   <TypeIcon className="h-3 w-3" />
@@ -185,14 +185,14 @@ export function QuestDetailDialog({ open, onOpenChange, quest, onEdit, onDelete,
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="objectives">Objectives</TabsTrigger>
-            <TabsTrigger value="rewards">Rewards</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm py-2">Overview</TabsTrigger>
+            <TabsTrigger value="objectives" className="text-xs sm:text-sm py-2">Objectives</TabsTrigger>
+            <TabsTrigger value="rewards" className="text-xs sm:text-sm py-2">Rewards</TabsTrigger>
+            <TabsTrigger value="notes" className="text-xs sm:text-sm py-2">Notes</TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="h-[60vh] mt-4">
+          <ScrollArea className="h-[50vh] sm:h-[60vh] mt-4">
             <TabsContent value="overview" className="space-y-4 px-1">
               <div>
                 <label className="text-sm font-medium mb-2 block">Status</label>

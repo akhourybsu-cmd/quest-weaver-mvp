@@ -402,8 +402,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         </div>
 
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-300px)]">
-            <div className="p-6 space-y-6">
+          <ScrollArea className="h-[calc(100vh-280px)] sm:h-[calc(100vh-300px)]">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               
               {/* HP Section - Dramatic */}
               <div className="relative p-4 rounded-lg bg-gradient-to-br from-hp-red/10 to-transparent border border-hp-red/20">
@@ -432,8 +432,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                 </div>
               </div>
 
-              {/* Core Stats Grid - Hexagonal Style */}
-              <div className="grid grid-cols-4 gap-3">
+              {/* Core Stats Grid - Responsive */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {[
                   { icon: Shield, label: 'AC', value: character.ac, color: 'text-brass' },
                   { icon: Zap, label: 'Speed', value: `${character.speed}`, color: 'text-primary' },
@@ -459,7 +459,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                     <span className="font-cinzel text-sm text-brass tracking-widest uppercase">Abilities</span>
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
                   </div>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     {Object.entries(abilities).map(([key, value]) => {
                       const mod = getAbilityModifier(value);
                       return (

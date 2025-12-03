@@ -8,13 +8,17 @@ import { JoinCampaignDialog } from '@/components/player/JoinCampaignDialog';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Shield, Users, Plus } from 'lucide-react';
+import { Loader2, Shield, Users, Plus, Menu } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PlayerDashboardNew = () => {
   const { player, loading: playerLoading } = usePlayer();
   const { links, loading: linksLoading, refreshLinks } = usePlayerLinks(player?.id);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   if (playerLoading) {
     return (
@@ -29,12 +33,33 @@ const PlayerDashboardNew = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex">
-      <PlayerNavigation playerId={player.id} />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex flex-col md:flex-row">
+      {/* Mobile Header */}
+      {isMobile && (
+        <header className="sticky top-0 z-50 bg-card border-b border-brass/20 p-3 flex items-center gap-3">
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-64">
+              <PlayerNavigation playerId={player.id} />
+            </SheetContent>
+          </Sheet>
+          <h1 className="font-cinzel font-bold text-foreground truncate">
+            {player.name}'s Dashboard
+          </h1>
+        </header>
+      )}
+
+      {/* Desktop Sidebar */}
+      {!isMobile && <PlayerNavigation playerId={player.id} />}
       
       <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto p-8">
-          <div className="mb-8">
+        <div className="max-w-7xl mx-auto p-4 md:p-8">
+          {/* Desktop Welcome Header */}
+          <div className="mb-6 md:mb-8 hidden md:block">
             <h1 className="text-4xl font-cinzel font-bold text-foreground">
               Welcome, {player.name}
             </h1>

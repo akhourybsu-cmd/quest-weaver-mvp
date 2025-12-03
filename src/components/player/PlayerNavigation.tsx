@@ -76,8 +76,7 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
     <div
       className={cn(
         'h-full bg-card border-r border-brass/20 transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-64',
-        'md:relative md:z-auto'
+        collapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Header */}

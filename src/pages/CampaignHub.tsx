@@ -594,7 +594,8 @@ const CampaignHub = () => {
         {/* Header Bar */}
         <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4">
           <div className="flex items-center justify-between mb-3">
-            <Breadcrumb>
+            {/* Breadcrumb - hidden on mobile */}
+            <Breadcrumb className="hidden sm:block">
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/" className="text-brass hover:text-ink">
@@ -608,15 +609,18 @@ const CampaignHub = () => {
               </BreadcrumbList>
             </Breadcrumb>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {activeCampaign && <SessionControl campaignId={activeCampaign.id} />}
-              <Button onClick={handleInvitePlayers} variant="outline" size="sm">
+              <Button onClick={handleInvitePlayers} variant="outline" size="sm" className="hidden sm:flex">
                 <Users className="w-4 h-4 mr-2" />
                 Invite
               </Button>
+              <Button onClick={handleInvitePlayers} variant="outline" size="icon" className="sm:hidden h-8 w-8">
+                <Users className="w-4 h-4" />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -650,24 +654,28 @@ const CampaignHub = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-cinzel font-bold text-ink">{activeCampaign?.name}</h1>
-            <Badge variant="outline" className="border-brass/30 text-brass">
-              5e
-            </Badge>
-            <Badge variant="outline" className="border-brass/30 text-brass">
-              Milestone
-            </Badge>
-            <Badge variant="outline" className="border-brass/30 text-brass">
-              {sessionCount} Session{sessionCount !== 1 ? 's' : ''}
-            </Badge>
-            <Badge variant="outline" className="border-brass/30 text-brass">
-              <Users className="w-3 h-3 mr-1" />
-              {playerData.count} Player{playerData.count !== 1 ? 's' : ''}
-            </Badge>
-            <div className="flex-1" />
-            <div className="flex items-center gap-1">
-              <Avatar className="w-7 h-7 border border-brass/30">
+          {/* Campaign name and badges - responsive */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-2xl font-cinzel font-bold text-ink truncate">{activeCampaign?.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="border-brass/30 text-brass text-xs">
+                5e
+              </Badge>
+              <Badge variant="outline" className="border-brass/30 text-brass text-xs hidden sm:inline-flex">
+                Milestone
+              </Badge>
+              <Badge variant="outline" className="border-brass/30 text-brass text-xs">
+                {sessionCount} Sess.
+              </Badge>
+              <Badge variant="outline" className="border-brass/30 text-brass text-xs">
+                <Users className="w-3 h-3 mr-1" />
+                {playerData.count}
+              </Badge>
+            </div>
+            <div className="flex-1 hidden sm:block" />
+            {/* Player avatars - horizontal scroll on mobile */}
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+              <Avatar className="w-6 h-6 sm:w-7 sm:h-7 border border-brass/30 shrink-0">
                 <AvatarFallback className="text-xs bg-arcanePurple/20 text-ink">DM</AvatarFallback>
               </Avatar>
               {(playerData?.players || []).slice(0, 4).map((char, idx) => {
@@ -678,7 +686,7 @@ const CampaignHub = () => {
                   .toUpperCase()
                   .slice(0, 2);
                 return (
-                  <Avatar key={char.id} className="w-7 h-7 border border-green-500/50">
+                  <Avatar key={char.id} className="w-6 h-6 sm:w-7 sm:h-7 border border-green-500/50 shrink-0">
                     <AvatarFallback className="text-xs bg-green-500/20 text-ink">
                       {initials}
                     </AvatarFallback>
@@ -686,28 +694,29 @@ const CampaignHub = () => {
                 );
               })}
               {playerData.count > 4 && (
-                <Avatar className="w-7 h-7 border border-brass/30">
+                <Avatar className="w-6 h-6 sm:w-7 sm:h-7 border border-brass/30 shrink-0">
                   <AvatarFallback className="text-xs bg-brass/20 text-ink">
                     +{playerData.count - 4}
                   </AvatarFallback>
                 </Avatar>
               )}
               {playerData.count === 0 && (
-                <span className="text-sm text-muted-foreground ml-2">No players yet</span>
+                <span className="text-xs sm:text-sm text-muted-foreground ml-2 whitespace-nowrap">No players yet</span>
               )}
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
+          {/* Quick Command - hide kbd on mobile */}
+          <div className="mt-2 sm:mt-4 flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="text-brass hover:text-ink"
+              className="text-brass hover:text-ink h-8 px-2 sm:px-3"
               onClick={() => setPaletteOpen(true)}
             >
-              <Sword className="w-4 h-4 mr-1" />
-              Quick Command
-              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-brass/10 border border-brass/20 rounded">
+              <Sword className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Quick Command</span>
+              <kbd className="hidden sm:inline ml-2 px-1.5 py-0.5 text-xs bg-brass/10 border border-brass/20 rounded">
                 ⌘K
               </kbd>
             </Button>

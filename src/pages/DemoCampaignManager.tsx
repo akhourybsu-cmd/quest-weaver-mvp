@@ -8,7 +8,6 @@
 
 import { useState } from "react";
 import { useDemo } from "@/contexts/DemoContext";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Breadcrumb,
@@ -23,18 +22,27 @@ import {
   Scroll,
   Calendar,
   MapPin,
-  Crown,
+  Users,
   Package,
   Flame,
   BookOpen,
   FileText,
-  Users,
+  Swords,
+  Clock,
+  Crown,
 } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DemoOverviewTab } from "@/components/demo/tabs/DemoOverviewTab";
 import { DemoQuestsTab } from "@/components/demo/tabs/DemoQuestsTab";
+import { DemoSessionsTab } from "@/components/demo/tabs/DemoSessionsTab";
+import { DemoNPCsTab } from "@/components/demo/tabs/DemoNPCsTab";
 import { DemoLocationsTab } from "@/components/demo/tabs/DemoLocationsTab";
+import { DemoLoreTab } from "@/components/demo/tabs/DemoLoreTab";
+import { DemoFactionsTab } from "@/components/demo/tabs/DemoFactionsTab";
 import { DemoBestiaryTab } from "@/components/demo/tabs/DemoBestiaryTab";
+import { DemoEncountersTab } from "@/components/demo/tabs/DemoEncountersTab";
 import { DemoItemVaultTab } from "@/components/demo/tabs/DemoItemVaultTab";
+import { DemoTimelineTab } from "@/components/demo/tabs/DemoTimelineTab";
 import { DemoNotesTab } from "@/components/demo/tabs/DemoNotesTab";
 
 export default function DemoCampaignManager() {
@@ -55,6 +63,21 @@ export default function DemoCampaignManager() {
       </div>
     );
   }
+
+  const tabs = [
+    { value: "overview", label: "Overview", icon: Shield },
+    { value: "quests", label: "Quests", icon: Scroll },
+    { value: "sessions", label: "Sessions", icon: Calendar },
+    { value: "npcs", label: "NPCs", icon: Users },
+    { value: "locations", label: "Locations", icon: MapPin },
+    { value: "lore", label: "Lore", icon: BookOpen },
+    { value: "factions", label: "Factions", icon: Crown },
+    { value: "bestiary", label: "Bestiary", icon: Flame },
+    { value: "encounters", label: "Encounters", icon: Swords },
+    { value: "items", label: "Items", icon: Package },
+    { value: "timeline", label: "Timeline", icon: Clock },
+    { value: "notes", label: "Notes", icon: FileText },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,32 +105,17 @@ export default function DemoCampaignManager() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="overview" className="gap-2">
-              <Shield className="w-4 h-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="quests" className="gap-2">
-              <Scroll className="w-4 h-4" />
-              <span className="hidden sm:inline">Quests</span>
-            </TabsTrigger>
-            <TabsTrigger value="locations" className="gap-2">
-              <MapPin className="w-4 h-4" />
-              <span className="hidden sm:inline">Locations</span>
-            </TabsTrigger>
-            <TabsTrigger value="bestiary" className="gap-2">
-              <Flame className="w-4 h-4" />
-              <span className="hidden sm:inline">Bestiary</span>
-            </TabsTrigger>
-            <TabsTrigger value="items" className="gap-2">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Items</span>
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Notes</span>
-            </TabsTrigger>
-          </TabsList>
+          <ScrollArea className="w-full whitespace-nowrap">
+            <TabsList className="inline-flex w-max">
+              {tabs.map(tab => (
+                <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
+                  <tab.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
           <TabsContent value="overview" className="space-y-6">
             <DemoOverviewTab campaign={campaign} />
@@ -117,16 +125,40 @@ export default function DemoCampaignManager() {
             <DemoQuestsTab campaign={campaign} />
           </TabsContent>
 
+          <TabsContent value="sessions" className="space-y-6">
+            <DemoSessionsTab campaign={campaign} />
+          </TabsContent>
+
+          <TabsContent value="npcs" className="space-y-6">
+            <DemoNPCsTab campaign={campaign} />
+          </TabsContent>
+
           <TabsContent value="locations" className="space-y-6">
             <DemoLocationsTab campaign={campaign} />
+          </TabsContent>
+
+          <TabsContent value="lore" className="space-y-6">
+            <DemoLoreTab campaign={campaign} />
+          </TabsContent>
+
+          <TabsContent value="factions" className="space-y-6">
+            <DemoFactionsTab campaign={campaign} />
           </TabsContent>
 
           <TabsContent value="bestiary" className="space-y-6">
             <DemoBestiaryTab campaign={campaign} />
           </TabsContent>
 
+          <TabsContent value="encounters" className="space-y-6">
+            <DemoEncountersTab campaign={campaign} />
+          </TabsContent>
+
           <TabsContent value="items" className="space-y-6">
             <DemoItemVaultTab campaign={campaign} />
+          </TabsContent>
+
+          <TabsContent value="timeline" className="space-y-6">
+            <DemoTimelineTab campaign={campaign} />
           </TabsContent>
 
           <TabsContent value="notes" className="space-y-6">

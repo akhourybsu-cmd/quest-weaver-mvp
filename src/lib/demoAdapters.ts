@@ -153,6 +153,31 @@ export function adaptDemoNotes(demoCampaign: DemoCampaign) {
   }));
 }
 
+export function adaptDemoLore(demoCampaign: DemoCampaign) {
+  return demoCampaign.lore.map(page => ({
+    id: page.id,
+    title: page.title,
+    category: page.category,
+    content: page.content,
+    show_on_timeline: page.show_on_timeline,
+    image_url: page.image_url,
+    campaign_id: demoCampaign.id,
+  }));
+}
+
+export function adaptDemoEncounters(demoCampaign: DemoCampaign) {
+  return demoCampaign.encounters.map(encounter => ({
+    id: encounter.id,
+    name: encounter.name,
+    description: encounter.description,
+    difficulty: encounter.difficulty,
+    status: encounter.status,
+    monsters: encounter.monsters,
+    location_id: encounter.location_id,
+    campaign_id: demoCampaign.id,
+  }));
+}
+
 export function getDemoCampaignStats(demoCampaign: DemoCampaign) {
   const activeQuests = demoCampaign.quests.filter(q => q.status === "active").length;
   const completedQuests = demoCampaign.quests.filter(q => q.status === "complete").length;

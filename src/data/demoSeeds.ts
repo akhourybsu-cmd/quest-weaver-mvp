@@ -17,6 +17,27 @@ export interface DemoCampaign {
   sessions: DemoSession[];
   timeline: DemoTimelineEvent[];
   notes: DemoNote[];
+  lore: DemoLorePage[];
+  encounters: DemoEncounter[];
+}
+
+export interface DemoLorePage {
+  id: string;
+  title: string;
+  category: "history" | "region" | "magic" | "myth" | "faction" | "other";
+  content: string;
+  show_on_timeline: boolean;
+  image_url?: string;
+}
+
+export interface DemoEncounter {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: "trivial" | "easy" | "medium" | "hard" | "deadly";
+  status: "planned" | "active" | "completed";
+  monsters: { name: string; count: number; cr: number }[];
+  location_id?: string;
 }
 
 export interface DemoQuest {
@@ -508,6 +529,80 @@ export const RECKONING_SEED: DemoCampaign = {
       visibility: "SHARED",
       tags: ["Quest", "Active"],
       is_pinned: false,
+    },
+  ],
+
+  lore: [
+    {
+      id: "lore-1",
+      title: "The Shadowfell Incursion of 847",
+      category: "history",
+      content: "Two centuries ago, the Shadowfell nearly consumed the realm. A cult of shadow worshippers opened a massive portal beneath the old capital, unleashing waves of shadow creatures upon the land.\n\nThe Silver Shield Order, led by the legendary paladin Aldric Lightbringer, managed to close the portal at great cost. Aldric sacrificed himself to seal the rift, and the old capital was abandoned—now known as the Shadow Quarter.\n\nHistorians note that the current cult activity mirrors the events of 847. The Grimoire of Shadows, believed destroyed in that conflict, has resurfaced.",
+      show_on_timeline: true,
+      image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&h=600&fit=crop",
+    },
+    {
+      id: "lore-2",
+      title: "The Northern Mountains",
+      category: "region",
+      content: "The Northern Mountains form a natural barrier between the civilized lands and the frozen wastes beyond. Home to dwarven strongholds, dragon lairs, and ancient ruins.\n\n**Key Locations:**\n- Crimson Peak: Former lair of Scorathax the Burning\n- Ironhold: Primary dwarven trade city\n- The Frost Gate: Ancient passage to the frozen north\n\n**Notable Features:**\n- Rich in precious metals and gemstones\n- Volcanic activity near Crimson Peak\n- Dangerous wildlife including wyverns and frost giants",
+      show_on_timeline: false,
+      image_url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=600&fit=crop",
+    },
+    {
+      id: "lore-3",
+      title: "Shadow Magic and the Shadowfell",
+      category: "magic",
+      content: "Shadow magic draws power from the Shadowfell, a dark reflection of the Material Plane. Those who wield it risk corruption and madness.\n\n**Properties of Shadow Magic:**\n- Drains color and light from surroundings\n- Can create semi-real illusions from shadowstuff\n- Allows passage between the planes at thin points\n- Requires emotional darkness to fuel (grief, rage, despair)\n\n**The Shadowfell:**\n- Mirror of the Material Plane, but twisted and dark\n- Home to shadow creatures, undead, and the Raven Queen\n- Time flows differently—hours can be years\n- Those who die there become shadows themselves",
+      show_on_timeline: false,
+      image_url: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=800&h=600&fit=crop",
+    },
+    {
+      id: "lore-4",
+      title: "The Legend of Aldric Lightbringer",
+      category: "myth",
+      content: "Aldric Lightbringer was the greatest paladin of his age, founder of the Silver Shield Order and savior of the realm. His sacrifice to close the Shadowgate in 847 is commemorated every year on the Day of Silver Light.\n\n**The Legend Says:**\n- His sword, Dawn's Edge, still burns with holy fire in the ruins\n- His spirit guards the sealed portal to this day\n- Those of his bloodline carry a spark of divine light\n\n**The Truth:**\n- Queen Arianna is his direct descendant\n- The seal is weakening after 200 years\n- Dawn's Edge may be the only weapon that can permanently destroy the Shadowgate",
+      show_on_timeline: true,
+    },
+  ],
+
+  encounters: [
+    {
+      id: "encounter-1",
+      name: "Ritual Chamber Showdown",
+      description: "The final confrontation with Cassandra Nightwhisper and her cult. The party must stop the Shadowgate ritual before completion.",
+      difficulty: "deadly",
+      status: "planned",
+      monsters: [
+        { name: "Cassandra (Shadow Sorcerer)", count: 1, cr: 12 },
+        { name: "Shadow Cultist", count: 4, cr: 3 },
+        { name: "Shadow Demon", count: 2, cr: 4 },
+      ],
+      location_id: "loc-5",
+    },
+    {
+      id: "encounter-2",
+      name: "Sewer Ambush",
+      description: "While tracking the Grimoire thieves through the sewers, the party is ambushed by cult scouts.",
+      difficulty: "medium",
+      status: "planned",
+      monsters: [
+        { name: "Shadow Cultist", count: 3, cr: 3 },
+        { name: "Giant Rat", count: 6, cr: 0.125 },
+      ],
+      location_id: "loc-2",
+    },
+    {
+      id: "encounter-3",
+      name: "Shadow Depths Battle",
+      description: "The party fought through waves of shadow demons guarding the entrance to the cult hideout.",
+      difficulty: "hard",
+      status: "completed",
+      monsters: [
+        { name: "Shadow Demon", count: 4, cr: 4 },
+        { name: "Shadow", count: 6, cr: 0.5 },
+      ],
+      location_id: "loc-2",
     },
   ],
 };

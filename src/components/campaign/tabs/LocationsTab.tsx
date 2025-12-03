@@ -41,6 +41,7 @@ interface Location {
   path: string | null;
   details: any;
   discovered?: boolean;
+  image_url?: string | null;
 }
 
 const terrainColors: Record<string, string> = {
@@ -71,75 +72,87 @@ const LocationCard = memo(({
   onDelete: (location: Location) => void;
 }) => (
   <Card
-    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden"
     onClick={() => onEdit(location)}
   >
-    <CardHeader className="pb-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
-            {parentName && (
-              <p className="text-xs text-muted-foreground mt-0.5">in {parentName}</p>
+    {/* Background Image with Overlay */}
+    {location.image_url && (
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${location.image_url})` }}
+      />
+    )}
+    <div className={`absolute inset-0 ${location.image_url ? 'bg-card/85 backdrop-blur-[2px]' : 'bg-card/50'}`} />
+    
+    {/* Content */}
+    <div className="relative z-10">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+              {parentName && (
+                <p className="text-xs text-muted-foreground mt-0.5">in {parentName}</p>
+              )}
+            </div>
+            {childCount > 0 && (
+              <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
+                {childCount} sub
+              </Badge>
             )}
           </div>
-          {childCount > 0 && (
-            <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
-              {childCount} sub
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-1 shrink-0">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 px-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddSub(location.id);
-            }}
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            Sub
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(location);
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-      {location.location_type && (
-        <CardDescription className="text-xs">{location.location_type}</CardDescription>
-      )}
-    </CardHeader>
-    <CardContent className="space-y-3">
-      <p className="text-sm text-muted-foreground line-clamp-2">
-        {location.description || 'No description'}
-      </p>
-      <div className="flex items-center justify-between gap-2">
-        {location.tags && location.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {location.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className={terrainColors[tag] || "border-brass/30"}>
-                {tag}
-              </Badge>
-            ))}
+          <div className="flex gap-1 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddSub(location.id);
+              }}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Sub
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(location);
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
+        </div>
+        {location.location_type && (
+          <CardDescription className="text-xs">{location.location_type}</CardDescription>
         )}
-        <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
-          <Eye className="w-3 h-3 mr-1" />
-          {location.discovered ? "Discovered" : "Hidden"}
-        </Badge>
-      </div>
-    </CardContent>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {location.description || 'No description'}
+        </p>
+        <div className="flex items-center justify-between gap-2">
+          {location.tags && location.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {location.tags.slice(0, 3).map((tag) => (
+                <Badge key={tag} variant="outline" className={terrainColors[tag] || "border-brass/30"}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+          <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
+            <Eye className="w-3 h-3 mr-1" />
+            {location.discovered ? "Discovered" : "Hidden"}
+          </Badge>
+        </div>
+      </CardContent>
+    </div>
   </Card>
 ));
 

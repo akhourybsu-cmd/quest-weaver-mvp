@@ -19,6 +19,7 @@ interface Location {
   location_type: string | null;
   tags: string[];
   parent_location_id: string | null;
+  image_url: string | null;
 }
 
 interface PlayerLocationsViewProps {
@@ -67,7 +68,7 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
   const loadLocations = async () => {
     const { data, error } = await supabase
       .from("locations")
-      .select("id, name, description, location_type, tags, parent_location_id")
+      .select("id, name, description, location_type, tags, parent_location_id, image_url")
       .eq("campaign_id", campaignId)
       .eq("discovered", true)
       .order("name");
@@ -109,6 +110,17 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
           </DialogHeader>
           {selectedLocation && (
             <div className="space-y-4">
+              {/* Full Image Display */}
+              {selectedLocation.image_url && (
+                <div className="rounded-lg overflow-hidden border border-brass/20">
+                  <img
+                    src={selectedLocation.image_url}
+                    alt={selectedLocation.name}
+                    className="w-full h-auto max-h-[300px] object-cover"
+                  />
+                </div>
+              )}
+              
               {selectedLocation.location_type && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Type</p>
@@ -180,10 +192,20 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
                   return (
                     <Card
                       key={location.id}
-                      className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20"
+                      className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20 relative overflow-hidden"
                       onClick={() => handleViewLocation(location)}
                     >
-                      <CardContent className="p-4 space-y-2">
+                      {/* Background Image with Overlay */}
+                      {location.image_url && (
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center"
+                          style={{ backgroundImage: `url(${location.image_url})` }}
+                        />
+                      )}
+                      <div className={`absolute inset-0 ${location.image_url ? 'bg-card/85 backdrop-blur-[2px]' : ''}`} />
+                      
+                      {/* Content */}
+                      <CardContent className="p-4 space-y-2 relative z-10">
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
                           <h3 className="font-cinzel font-semibold truncate">{location.name}</h3>

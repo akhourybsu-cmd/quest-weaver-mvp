@@ -26,6 +26,7 @@ import {
 import { DynamicLocationFields } from "./DynamicLocationFields";
 import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locationSchemas";
 import { timelineLogger } from "@/hooks/useTimelineLogger";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LocationDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
   const [relatedNotes, setRelatedNotes] = useState<any[]>([]);
   const [discovered, setDiscovered] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -63,6 +65,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setLocationType(locationToEdit.location_type || "City");
         setParentLocation(locationToEdit.parent_location_id || "none");
         setTags(locationToEdit.tags || []);
+        setImageUrl(locationToEdit.image_url || null);
         
         // Load from details object if it exists
         const locationDetails = locationToEdit.details || {};
@@ -78,6 +81,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       } else if (parentLocationId) {
         // Pre-fill parent location when creating sub-location
         setParentLocation(parentLocationId);
+        setImageUrl(null);
       }
     }
   }, [open, locationToEdit, parentLocationId]);
@@ -161,6 +165,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setCoordY("");
     setDetails({});
     setAutoAddVenues(false);
+    setImageUrl(null);
   };
 
   const handleSubmit = async () => {
@@ -185,6 +190,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       tags,
       details: mergedDetails,
       discovered,
+      image_url: imageUrl,
     };
 
     if (isEditing) {
@@ -419,6 +425,16 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                     </Select>
                   </div>
                 </div>
+
+                {/* Location Image Upload */}
+                <ImageUpload
+                  bucket="maps"
+                  path={`locations/${campaignId}`}
+                  currentImageUrl={imageUrl}
+                  onImageUploaded={setImageUrl}
+                  label="Location Image"
+                  aspectRatio="landscape"
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>

@@ -550,7 +550,8 @@ const CampaignHub = () => {
     id: c.id,
     name: c.name,
     system: "5e",
-    isLive: c.live_session_id !== null || (activeCampaign?.id === c.id && liveSession !== null),
+    // Only show live indicator when we've verified session is actually active (live or paused)
+    isLive: activeCampaign?.id === c.id && liveSession !== null && ['live', 'paused'].includes(liveSession.status),
   }));
 
   if (loading) {

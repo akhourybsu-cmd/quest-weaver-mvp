@@ -13,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RitualCastDialog } from "@/components/spells/RitualCastDialog";
+import { MysticArcanumTracker } from "@/components/spells/MysticArcanumTracker";
 
 interface Spell {
   id: string;
@@ -46,13 +48,37 @@ interface SpellSlot {
 
 interface PlayerSpellbookProps {
   characterId: string;
+  characterName?: string;
+  characterClass?: string;
+  characterLevel?: number;
 }
 
-export function PlayerSpellbook({ characterId }: PlayerSpellbookProps) {
+export function PlayerSpellbook({ characterId, characterName, characterClass, characterLevel }: PlayerSpellbookProps) {
   const [characterSpells, setCharacterSpells] = useState<CharacterSpell[]>([]);
   const [spellSlots, setSpellSlots] = useState<SpellSlot[]>([]);
   const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [characterData, setCharacterData] = useState<{ name: string; class: string; level: number; can_cast_rituals: boolean; mystic_arcanum_6_used: boolean; mystic_arcanum_7_used: boolean; mystic_arcanum_8_used: boolean; mystic_arcanum_9_used: boolean } | null>(null);
+  
+  // Load character data if not provided via props
+  useEffect(() => {
+    const loadCharacterData = async () => {
+      if (characterName && characterClass && characterLevel) {
+        setCharacterData({ name: characterName, class: characterClass, level: characterLevel, can_cast_rituals: false, mystic_arcanum_6_used: false, mystic_arcanum_7_used: false, mystic_arcanum_8_used: false, mystic_arcanum_9_used: false });
+      } else {
+        const { data } = await supabase
+          .from('characters')
+          .select('name, class, level, can_cast_rituals, mystic_arcanum_6_used, mystic_arcanum_7_used, mystic_arcanum_8_used, mystic_arcanum_9_used')
+          .eq('id', characterId)
+          .single();
+        if (data) setCharacterData(data);
+      }
+    };
+    loadCharacterData();
+  }, [characterId, characterName, characterClass, characterLevel]);
+
+  const isWarlock = characterData?.class?.toLowerCase().includes('warlock');
+  const warlockLevel = isWarlock ? (characterData?.level || 0) : 0;
 
   useEffect(() => {
     fetchSpells();
@@ -233,10 +259,21 @@ export function PlayerSpellbook({ characterId }: PlayerSpellbookProps) {
       <Card>
         <CardHeader>
           <div className="space-y-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Spellbook
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Spellbook
+              </CardTitle>
+              {characterData?.can_cast_rituals && (
+                <RitualCastDialog
+                  characterId={characterId}
+                  characterName={characterData.name}
+                  characterClass={characterData.class}
+                  canCastRituals={characterData.can_cast_rituals}
+                  onCast={() => {}}
+                />
+              )}
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -286,6 +323,19 @@ export function PlayerSpellbook({ characterId }: PlayerSpellbookProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Mystic Arcanum for Warlocks */}
+      {isWarlock && warlockLevel >= 11 && characterData && (
+        <MysticArcanumTracker
+          characterId={characterId}
+          characterName={characterData.name}
+          warlockLevel={warlockLevel}
+          arcanum6Used={characterData.mystic_arcanum_6_used}
+          arcanum7Used={characterData.mystic_arcanum_7_used}
+          arcanum8Used={characterData.mystic_arcanum_8_used}
+          arcanum9Used={characterData.mystic_arcanum_9_used}
+        />
+      )}
 
       {/* Spell Detail Dialog */}
       <Dialog open={!!selectedSpell} onOpenChange={() => setSelectedSpell(null)}>

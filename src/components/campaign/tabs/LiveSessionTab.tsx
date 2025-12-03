@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Heart, Shield, Eye, Users, Swords, Map, FileImage, MessageSquare
+  Heart, Shield, Eye, Users, Swords, Map, FileImage, MessageSquare, Dices
 } from 'lucide-react';
+import { SkillCheckDialog } from '@/components/combat/SkillCheckDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -370,6 +371,11 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
               </Badge>
             </div>
             <div className="flex items-center gap-2">
+              <SkillCheckDialog
+                encounterId={activeEncounter?.id}
+                campaignId={campaignId}
+                characters={characters.map(c => ({ id: c.id, name: c.name }))}
+              />
               {activeEncounter && (
                 <EncounterControls
                   encounterId={activeEncounter.id}

@@ -4,15 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, TrendingUp, Sparkles, BookOpen, Swords } from "lucide-react";
+import { ArrowLeft, ArrowRight, TrendingUp, Sparkles, BookOpen, Swords, Star, Shield, Eye } from "lucide-react";
 import { FeatSelector } from "./FeatSelector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { applyFeature } from "@/lib/rules/rulesEngine";
-import { getCantripCount, getKnownPreparedModel } from "@/lib/rules/spellRules";
+import { getSpellSlotInfo } from "@/lib/rules/spellRules";
+import { WizardSpellbookStep } from "./levelup/WizardSpellbookStep";
+import { FeatureChoiceStep } from "./levelup/FeatureChoiceStep";
+import { SpellSelectionStep } from "./levelup/SpellSelectionStep";
+import { InvocationSelector } from "./levelup/InvocationSelector";
+import {
+  CLASS_LEVEL_UP_RULES,
+  getClassRules,
+  getSpellsKnownGain,
+  getCantripGain,
+  getFeatureChoicesAtLevel,
+  isASILevel,
+  getMaxSpellLevelForClass,
+  getInvocationsKnownAtLevel,
+  METAMAGIC_OPTIONS,
+  PACT_BOONS,
+  ELDRITCH_INVOCATIONS,
+  FeatureChoice,
+} from "@/lib/rules/levelUpRules";
 
 interface LevelUpWizardProps {
   open: boolean;
@@ -22,13 +39,27 @@ interface LevelUpWizardProps {
   onComplete: () => void;
 }
 
-type LevelUpStep = "hp-roll" | "spells" | "asi-or-feat" | "features" | "review";
+type LevelUpStep = 
+  | "hp-roll" 
+  | "wizard-spellbook"
+  | "spells" 
+  | "cantrips"
+  | "invocations"
+  | "pact-boon"
+  | "metamagic"
+  | "fighting-style"
+  | "expertise"
+  | "asi-or-feat" 
+  | "features" 
+  | "review";
 
 interface SpellOption {
   id: string;
   name: string;
   level: number;
   school: string;
+  concentration?: boolean;
+  ritual?: boolean;
 }
 
 interface FeatureToGrant {
@@ -38,15 +69,6 @@ interface FeatureToGrant {
   level: number;
   source: string;
 }
-
-const HIT_DICE: Record<string, number> = {
-  Barbarian: 12, Bard: 8, Cleric: 8, Druid: 8,
-  Fighter: 10, Monk: 8, Paladin: 10, Ranger: 10,
-  Rogue: 8, Sorcerer: 6, Warlock: 8, Wizard: 6
-};
-
-const KNOWN_CASTERS = ["Bard", "Sorcerer", "Warlock", "Ranger"];
-const CANTRIP_CLASSES = ["Bard", "Cleric", "Druid", "Sorcerer", "Warlock", "Wizard"];
 
 export const LevelUpWizard = ({
   open,
@@ -64,64 +86,114 @@ export const LevelUpWizard = ({
   const [useAverage, setUseAverage] = useState(false);
   
   // ASI/Feat
-  const [choice, setChoice] = useState<"asi" | "feat" | null>(null);
+  const [asiChoice, setAsiChoice] = useState<"asi" | "feat" | null>(null);
   const [selectedFeat, setSelectedFeat] = useState<string | null>(null);
   const [abilityIncreases, setAbilityIncreases] = useState<Record<string, number>>({});
   
   // Spells
   const [availableSpells, setAvailableSpells] = useState<SpellOption[]>([]);
-  const [currentSpells, setCurrentSpells] = useState<string[]>([]);
+  const [availableCantrips, setAvailableCantrips] = useState<SpellOption[]>([]);
+  const [currentSpellIds, setCurrentSpellIds] = useState<string[]>([]);
   const [newSpells, setNewSpells] = useState<string[]>([]);
+  const [newCantrips, setNewCantrips] = useState<string[]>([]);
   const [spellToSwap, setSpellToSwap] = useState<string | null>(null);
   const [swapReplacement, setSwapReplacement] = useState<string | null>(null);
-  const [newCantrips, setNewCantrips] = useState<string[]>([]);
-  const [availableCantrips, setAvailableCantrips] = useState<SpellOption[]>([]);
+  const [wizardSpellbookSpells, setWizardSpellbookSpells] = useState<string[]>([]);
+  
+  // Feature choices
+  const [fightingStyleChoice, setFightingStyleChoice] = useState<string[]>([]);
+  const [expertiseChoices, setExpertiseChoices] = useState<string[]>([]);
+  const [metamagicChoices, setMetamagicChoices] = useState<string[]>([]);
+  const [pactBoonChoice, setPactBoonChoice] = useState<string[]>([]);
+  const [newInvocations, setNewInvocations] = useState<string[]>([]);
+  const [invocationsToRemove, setInvocationsToRemove] = useState<string[]>([]);
+  
+  // Existing character data
+  const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);
+  const [currentExpertiseSkills, setCurrentExpertiseSkills] = useState<string[]>([]);
+  const [currentInvocations, setCurrentInvocations] = useState<string[]>([]);
+  const [currentPactBoon, setCurrentPactBoon] = useState<string | null>(null);
+  const [currentMetamagic, setCurrentMetamagic] = useState<string[]>([]);
   
   // Features
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
 
   const newLevel = currentLevel + 1;
   
-  // Determine if ASI/Feat is available at this level
-  const canChooseFeat = useMemo(() => {
-    if (!character?.class) return false;
-    const cls = character.class;
-    // Standard ASI levels: 4, 8, 12, 16, 19
-    const standardASI = [4, 8, 12, 16, 19].includes(newLevel);
-    // Fighter gets extra at 6, 14
-    const fighterExtra = cls === "Fighter" && [6, 14].includes(newLevel);
-    // Rogue gets extra at 10
-    const rogueExtra = cls === "Rogue" && newLevel === 10;
-    return standardASI || fighterExtra || rogueExtra;
-  }, [character?.class, newLevel]);
-
-  // Determine if this class is a known caster that gains spells on level up
-  const isKnownCaster = useMemo(() => {
-    return KNOWN_CASTERS.includes(character?.class || "");
+  // Get class rules
+  const classRules = useMemo(() => {
+    return character?.class ? getClassRules(character.class) : null;
   }, [character?.class]);
 
-  // Determine if this class gets cantrips and if they gain one at this level
+  // Calculate what's needed at this level
   const cantripGain = useMemo(() => {
-    if (!character?.class || !CANTRIP_CLASSES.includes(character.class)) return 0;
-    const prevCount = getCantripCount(character.class, currentLevel);
-    const newCount = getCantripCount(character.class, newLevel);
+    if (!character?.class) return 0;
+    return getCantripGain(character.class, currentLevel, newLevel);
+  }, [character?.class, currentLevel, newLevel]);
+
+  const spellsKnownGain = useMemo(() => {
+    if (!character?.class) return 0;
+    return getSpellsKnownGain(character.class, currentLevel, newLevel);
+  }, [character?.class, currentLevel, newLevel]);
+
+  const isWizard = character?.class === "Wizard";
+  const wizardSpellsToAdd = isWizard ? 2 : 0;
+
+  const maxSpellLevel = useMemo(() => {
+    if (!character?.class) return 0;
+    return getMaxSpellLevelForClass(character.class, newLevel);
+  }, [character?.class, newLevel]);
+
+  const canSwapSpell = useMemo(() => {
+    return classRules?.spellcasting.canSwapOnLevelUp || false;
+  }, [classRules]);
+
+  const featureChoices = useMemo(() => {
+    if (!character?.class) return [];
+    return getFeatureChoicesAtLevel(character.class, newLevel);
+  }, [character?.class, newLevel]);
+
+  const hasASI = useMemo(() => {
+    if (!character?.class) return false;
+    return isASILevel(character.class, newLevel);
+  }, [character?.class, newLevel]);
+
+  // Warlock-specific
+  const invocationsToGain = useMemo(() => {
+    if (character?.class !== "Warlock") return 0;
+    const prevCount = getInvocationsKnownAtLevel(currentLevel);
+    const newCount = getInvocationsKnownAtLevel(newLevel);
     return newCount - prevCount;
   }, [character?.class, currentLevel, newLevel]);
 
-  // Calculate spells known increase
-  const spellsKnownGain = useMemo(() => {
-    if (!isKnownCaster || !character?.class) return 0;
-    const prevModel = getKnownPreparedModel(character.class, currentLevel, 0);
-    const newModel = getKnownPreparedModel(character.class, newLevel, 0);
-    if (prevModel.model !== "known" || newModel.model !== "known") return 0;
-    return (newModel.knownMax || 0) - (prevModel.knownMax || 0);
-  }, [character?.class, currentLevel, newLevel, isKnownCaster]);
+  const invocationReplaceCount = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "invocation");
+    return choice?.replaceCount || 0;
+  }, [featureChoices]);
 
-  // Can swap one spell on level up (Bard, Sorcerer, Warlock)
-  const canSwapSpell = useMemo(() => {
-    return ["Bard", "Sorcerer", "Warlock"].includes(character?.class || "");
-  }, [character?.class]);
+  const showPactBoon = useMemo(() => {
+    return character?.class === "Warlock" && newLevel === 3 && !currentPactBoon;
+  }, [character?.class, newLevel, currentPactBoon]);
 
+  // Sorcerer metamagic
+  const metamagicToGain = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "metamagic");
+    return choice?.count || 0;
+  }, [featureChoices]);
+
+  // Fighting style
+  const fightingStyleToChoose = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "fighting_style");
+    return choice || null;
+  }, [featureChoices]);
+
+  // Expertise
+  const expertiseToChoose = useMemo(() => {
+    const choice = featureChoices.find(c => c.type === "expertise");
+    return choice || null;
+  }, [featureChoices]);
+
+  // Load character data
   useEffect(() => {
     if (open) {
       loadCharacter();
@@ -132,6 +204,8 @@ export const LevelUpWizard = ({
   useEffect(() => {
     if (character?.class) {
       loadSpells();
+      loadCharacterProficiencies();
+      loadCharacterFeatureChoices();
     }
   }, [character?.class]);
 
@@ -151,7 +225,7 @@ export const LevelUpWizard = ({
 
       if (error) throw error;
       setCharacter(data);
-      setCurrentSpells(data.character_spells?.filter((s: any) => s.known).map((s: any) => s.spell_id) || []);
+      setCurrentSpellIds(data.character_spells?.filter((s: any) => s.known).map((s: any) => s.spell_id) || []);
     } catch (error) {
       console.error("Error loading character:", error);
       toast.error("Failed to load character");
@@ -160,15 +234,49 @@ export const LevelUpWizard = ({
     }
   };
 
+  const loadCharacterProficiencies = async () => {
+    try {
+      const { data: skills } = await supabase
+        .from("character_skills")
+        .select("skill, proficient, expertise")
+        .eq("character_id", characterId);
+
+      if (skills) {
+        setCurrentProficientSkills(skills.filter(s => s.proficient).map(s => s.skill));
+        setCurrentExpertiseSkills(skills.filter(s => s.expertise).map(s => s.skill));
+      }
+    } catch (error) {
+      console.error("Error loading proficiencies:", error);
+    }
+  };
+
+  const loadCharacterFeatureChoices = async () => {
+    try {
+      const { data: choices } = await supabase
+        .from("character_feature_choices")
+        .select("choice_key, value_json")
+        .eq("character_id", characterId);
+
+      if (choices) {
+        choices.forEach(choice => {
+          if (choice.choice_key === "pact_boon") {
+            setCurrentPactBoon((choice.value_json as any)?.id || null);
+          }
+          if (choice.choice_key === "invocation") {
+            setCurrentInvocations(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+          }
+          if (choice.choice_key === "metamagic") {
+            setCurrentMetamagic(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error loading feature choices:", error);
+    }
+  };
+
   const loadFeatures = async () => {
     try {
-      // Get class ID
-      const { data: classes } = await supabase
-        .from("srd_classes")
-        .select("id, name")
-        .single();
-
-      // Get character's class
       const { data: charData } = await supabase
         .from("characters")
         .select("class, subclass_id")
@@ -177,7 +285,6 @@ export const LevelUpWizard = ({
 
       if (!charData) return;
 
-      // Get class ID by name
       const { data: classData } = await supabase
         .from("srd_classes")
         .select("id")
@@ -186,7 +293,6 @@ export const LevelUpWizard = ({
 
       if (!classData) return;
 
-      // Get class features for this level
       const { data: classFeatures } = await supabase
         .from("srd_class_features")
         .select("id, name, description, level")
@@ -201,7 +307,6 @@ export const LevelUpWizard = ({
         source: "Class"
       }));
 
-      // Get subclass features if applicable
       if (charData.subclass_id) {
         const { data: subclassFeatures } = await supabase
           .from("srd_subclass_features")
@@ -230,26 +335,23 @@ export const LevelUpWizard = ({
     if (!character?.class) return;
 
     try {
-      // Load spells available for this class
       const { data: spells } = await supabase
         .from("srd_spells")
-        .select("id, name, level, school")
+        .select("id, name, level, school, concentration, ritual")
         .contains("classes", [character.class])
         .order("level")
         .order("name");
 
       if (spells) {
-        const leveledSpells = spells.filter(s => s.level > 0);
-        const cantrips = spells.filter(s => s.level === 0);
-        setAvailableSpells(leveledSpells);
-        setAvailableCantrips(cantrips);
+        setAvailableSpells(spells.filter(s => s.level > 0));
+        setAvailableCantrips(spells.filter(s => s.level === 0));
       }
     } catch (error) {
       console.error("Error loading spells:", error);
     }
   };
 
-  const getHitDie = () => HIT_DICE[character?.class] || 8;
+  const getHitDie = () => classRules?.hitDie || 8;
 
   const rollHP = () => {
     const die = getHitDie();
@@ -277,19 +379,11 @@ export const LevelUpWizard = ({
     setAbilityIncreases({ ...abilityIncreases, [ability]: newValue });
   };
 
-  const toggleNewSpell = (spellId: string) => {
-    if (newSpells.includes(spellId)) {
-      setNewSpells(newSpells.filter(s => s !== spellId));
-    } else if (newSpells.length < spellsKnownGain) {
-      setNewSpells([...newSpells, spellId]);
-    }
-  };
-
-  const toggleNewCantrip = (spellId: string) => {
-    if (newCantrips.includes(spellId)) {
-      setNewCantrips(newCantrips.filter(s => s !== spellId));
-    } else if (newCantrips.length < cantripGain) {
-      setNewCantrips([...newCantrips, spellId]);
+  const toggleSpell = (spellId: string, list: string[], setList: (v: string[]) => void, max: number) => {
+    if (list.includes(spellId)) {
+      setList(list.filter(s => s !== spellId));
+    } else if (list.length < max) {
+      setList([...list, spellId]);
     }
   };
 
@@ -304,7 +398,7 @@ export const LevelUpWizard = ({
       const hpGain = Math.max(1, hpRoll + conMod);
 
       // Update character level and HP
-      const { error: updateError } = await supabase
+      await supabase
         .from("characters")
         .update({
           level: newLevel,
@@ -315,16 +409,13 @@ export const LevelUpWizard = ({
         })
         .eq("id", characterId);
 
-      if (updateError) throw updateError;
-
-      // Get class ID for history
+      // Record level history
       const { data: classData } = await supabase
         .from("srd_classes")
         .select("id")
         .eq("name", character?.class)
         .single();
 
-      // Record level history
       if (classData) {
         await supabase.from("character_level_history").insert({
           character_id: characterId,
@@ -333,19 +424,26 @@ export const LevelUpWizard = ({
           new_level: newLevel,
           hp_gained: hpGain,
           choices_made: {
-            asi_or_feat: choice,
+            asi_or_feat: asiChoice,
             feat_id: selectedFeat,
             ability_increases: abilityIncreases,
             new_spells: newSpells,
             new_cantrips: newCantrips,
-            spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null
+            wizard_spellbook: wizardSpellbookSpells,
+            spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null,
+            fighting_style: fightingStyleChoice,
+            expertise: expertiseChoices,
+            metamagic: metamagicChoices,
+            pact_boon: pactBoonChoice,
+            invocations: newInvocations,
+            invocations_removed: invocationsToRemove,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });
       }
 
       // Add feat if selected
-      if (choice === "feat" && selectedFeat) {
+      if (asiChoice === "feat" && selectedFeat) {
         await supabase.from("character_feats").insert({
           character_id: characterId,
           feat_id: selectedFeat,
@@ -370,7 +468,7 @@ export const LevelUpWizard = ({
       }
 
       // Apply ability increases
-      if (choice === "asi" && Object.keys(abilityIncreases).length > 0) {
+      if (asiChoice === "asi" && Object.keys(abilityIncreases).length > 0) {
         const abilities = character?.character_abilities?.[0];
         if (abilities) {
           const updates: Record<string, number> = {};
@@ -386,13 +484,26 @@ export const LevelUpWizard = ({
         }
       }
 
-      // Add new spells
+      // Add wizard spellbook spells
+      if (wizardSpellbookSpells.length > 0) {
+        const spellInserts = wizardSpellbookSpells.map(spellId => ({
+          character_id: characterId,
+          spell_id: spellId,
+          known: true,
+          prepared: false,
+          source: 'spellbook'
+        }));
+        await supabase.from("character_spells").insert(spellInserts);
+      }
+
+      // Add new known spells
       if (newSpells.length > 0) {
         const spellInserts = newSpells.map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: false
+          prepared: false,
+          source: 'class'
         }));
         await supabase.from("character_spells").insert(spellInserts);
       }
@@ -403,7 +514,8 @@ export const LevelUpWizard = ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: true // Cantrips are always prepared
+          prepared: true,
+          source: 'class'
         }));
         await supabase.from("character_spells").insert(cantripInserts);
       }
@@ -420,7 +532,8 @@ export const LevelUpWizard = ({
           character_id: characterId,
           spell_id: swapReplacement,
           known: true,
-          prepared: false
+          prepared: false,
+          source: 'class'
         });
       }
 
@@ -436,8 +549,98 @@ export const LevelUpWizard = ({
         await supabase.from("character_features").insert(featureInserts);
       }
 
-      // Update class resources if applicable
+      // Save feature choices
+      const featureChoicesToSave: any[] = [];
+
+      if (fightingStyleChoice.length > 0) {
+        featureChoicesToSave.push({
+          character_id: characterId,
+          feature_type: 'class',
+          choice_key: 'fighting_style',
+          value_json: { id: fightingStyleChoice[0], name: fightingStyleChoice[0] },
+          level_gained: newLevel
+        });
+      }
+
+      if (expertiseChoices.length > 0) {
+        expertiseChoices.forEach(skill => {
+          featureChoicesToSave.push({
+            character_id: characterId,
+            feature_type: 'class',
+            choice_key: 'expertise',
+            value_json: { skill },
+            level_gained: newLevel
+          });
+        });
+
+        // Also update character_skills with expertise
+        for (const skill of expertiseChoices) {
+          await supabase
+            .from("character_skills")
+            .update({ expertise: true })
+            .eq("character_id", characterId)
+            .eq("skill", skill);
+        }
+      }
+
+      if (metamagicChoices.length > 0) {
+        metamagicChoices.forEach(mm => {
+          const option = METAMAGIC_OPTIONS.find(o => o.id === mm);
+          featureChoicesToSave.push({
+            character_id: characterId,
+            feature_type: 'class',
+            choice_key: 'metamagic',
+            value_json: { id: mm, name: option?.name || mm },
+            level_gained: newLevel
+          });
+        });
+      }
+
+      if (pactBoonChoice.length > 0) {
+        const boon = PACT_BOONS.find(b => b.id === pactBoonChoice[0]);
+        featureChoicesToSave.push({
+          character_id: characterId,
+          feature_type: 'class',
+          choice_key: 'pact_boon',
+          value_json: { id: pactBoonChoice[0], name: boon?.name || pactBoonChoice[0] },
+          level_gained: newLevel
+        });
+      }
+
+      if (newInvocations.length > 0) {
+        newInvocations.forEach(inv => {
+          const invocation = ELDRITCH_INVOCATIONS.find(i => i.id === inv);
+          featureChoicesToSave.push({
+            character_id: characterId,
+            feature_type: 'class',
+            choice_key: 'invocation',
+            value_json: { id: inv, name: invocation?.name || inv },
+            level_gained: newLevel
+          });
+        });
+      }
+
+      // Remove replaced invocations
+      if (invocationsToRemove.length > 0) {
+        for (const inv of invocationsToRemove) {
+          await supabase
+            .from("character_feature_choices")
+            .delete()
+            .eq("character_id", characterId)
+            .eq("choice_key", "invocation")
+            .contains("value_json", { id: inv });
+        }
+      }
+
+      if (featureChoicesToSave.length > 0) {
+        await supabase.from("character_feature_choices").insert(featureChoicesToSave);
+      }
+
+      // Update class resources
       await updateClassResources();
+
+      // Update spell slots
+      await updateSpellSlots();
 
       toast.success(`Leveled up to ${newLevel}!`);
       onComplete();
@@ -449,68 +652,175 @@ export const LevelUpWizard = ({
   };
 
   const updateClassResources = async () => {
-    // Update resource max values based on new level
-    const resourceUpdates: Record<string, number> = {};
-    
-    switch (character?.class) {
-      case "Barbarian":
-        if (newLevel >= 17) resourceUpdates["rage"] = 6;
-        else if (newLevel >= 12) resourceUpdates["rage"] = 5;
-        else if (newLevel >= 6) resourceUpdates["rage"] = 4;
-        else if (newLevel >= 3) resourceUpdates["rage"] = 3;
-        else resourceUpdates["rage"] = 2;
-        break;
-      case "Monk":
-        resourceUpdates["ki_points"] = newLevel;
-        break;
-      case "Sorcerer":
-        resourceUpdates["sorcery_points"] = newLevel;
-        break;
-      case "Bard":
-        const chaMod = Math.floor(((character?.character_abilities?.[0]?.cha || 10) - 10) / 2);
-        resourceUpdates["bardic_inspiration"] = Math.max(1, chaMod);
-        break;
-    }
+    if (!classRules) return;
 
-    for (const [key, max] of Object.entries(resourceUpdates)) {
-      await supabase
+    for (const resource of classRules.resourceProgression) {
+      if (resource.startLevel && newLevel < resource.startLevel) continue;
+
+      const abilityMod = resource.key === 'divine_sense' || resource.key === 'bardic_inspiration'
+        ? Math.floor(((character?.character_abilities?.[0]?.cha || 10) - 10) / 2)
+        : 0;
+
+      const maxValue = resource.formula(newLevel, abilityMod);
+
+      // Check if resource exists
+      const { data: existing } = await supabase
         .from("character_resources")
-        .update({ max_value: max })
+        .select("id")
         .eq("character_id", characterId)
-        .eq("resource_key", key);
+        .eq("resource_key", resource.key)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("character_resources")
+          .update({ max_value: maxValue })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("character_resources").insert({
+          character_id: characterId,
+          resource_key: resource.key,
+          label: resource.label,
+          max_value: maxValue,
+          current_value: maxValue,
+          recharge: resource.recharge
+        });
+      }
     }
   };
 
-  // Build steps array based on what's available
+  const updateSpellSlots = async () => {
+    if (!classRules || classRules.spellcasting.type === 'none') return;
+
+    const slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+
+    if (slotInfo.shared) {
+      for (const [level, count] of Object.entries(slotInfo.shared.slots)) {
+        const { data: existing } = await supabase
+          .from("character_spell_slots")
+          .select("id")
+          .eq("character_id", characterId)
+          .eq("spell_level", parseInt(level))
+          .single();
+
+        if (existing) {
+          await supabase
+            .from("character_spell_slots")
+            .update({ max_slots: count })
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("character_spell_slots").insert({
+            character_id: characterId,
+            spell_level: parseInt(level),
+            max_slots: count,
+            used_slots: 0
+          });
+        }
+      }
+    }
+
+    if (slotInfo.pact) {
+      // Handle warlock pact slots separately if needed
+      const { data: existing } = await supabase
+        .from("character_spell_slots")
+        .select("id")
+        .eq("character_id", characterId)
+        .eq("spell_level", slotInfo.pact.pactSlotLevel)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("character_spell_slots")
+          .update({ max_slots: slotInfo.pact.pactSlots })
+          .eq("id", existing.id);
+      }
+    }
+  };
+
+  // Build steps array dynamically based on class
   const steps = useMemo(() => {
     const s: LevelUpStep[] = ["hp-roll"];
-    if (isKnownCaster && (spellsKnownGain > 0 || cantripGain > 0 || canSwapSpell)) {
+    
+    // Wizard spellbook (always 2 spells per level)
+    if (isWizard) {
+      s.push("wizard-spellbook");
+    }
+    
+    // Known caster spells
+    if (spellsKnownGain > 0 && !isWizard) {
       s.push("spells");
     }
-    if (canChooseFeat) {
+    
+    // Cantrips
+    if (cantripGain > 0) {
+      s.push("cantrips");
+    }
+    
+    // Warlock invocations
+    if (invocationsToGain > 0 || invocationReplaceCount > 0) {
+      s.push("invocations");
+    }
+    
+    // Pact Boon (Warlock level 3)
+    if (showPactBoon) {
+      s.push("pact-boon");
+    }
+    
+    // Metamagic (Sorcerer)
+    if (metamagicToGain > 0) {
+      s.push("metamagic");
+    }
+    
+    // Fighting Style
+    if (fightingStyleToChoose) {
+      s.push("fighting-style");
+    }
+    
+    // Expertise
+    if (expertiseToChoose) {
+      s.push("expertise");
+    }
+    
+    // ASI/Feat
+    if (hasASI) {
       s.push("asi-or-feat");
     }
+    
+    // Features (if any new features)
     if (featuresToGrant.length > 0) {
       s.push("features");
     }
+    
     s.push("review");
     return s;
-  }, [isKnownCaster, spellsKnownGain, cantripGain, canSwapSpell, canChooseFeat, featuresToGrant]);
+  }, [isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, hasASI, featuresToGrant]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
-
-  if (loading) return null;
 
   const canProceed = () => {
     switch (step) {
       case "hp-roll":
         return hpRoll !== null;
+      case "wizard-spellbook":
+        return wizardSpellbookSpells.length === wizardSpellsToAdd;
       case "spells":
-        return newSpells.length === spellsKnownGain && newCantrips.length === cantripGain;
+        return newSpells.length === spellsKnownGain;
+      case "cantrips":
+        return newCantrips.length === cantripGain;
+      case "invocations":
+        return newInvocations.length >= invocationsToGain;
+      case "pact-boon":
+        return pactBoonChoice.length === 1;
+      case "metamagic":
+        return metamagicChoices.length === metamagicToGain;
+      case "fighting-style":
+        return fightingStyleChoice.length === 1;
+      case "expertise":
+        return expertiseChoices.length === (expertiseToChoose?.count || 0);
       case "asi-or-feat":
-        if (!choice) return false;
-        if (choice === "asi") {
+        if (!asiChoice) return false;
+        if (asiChoice === "asi") {
           const total = Object.values(abilityIncreases).reduce((sum, val) => sum + val, 0);
           return total === 2;
         }
@@ -524,18 +834,38 @@ export const LevelUpWizard = ({
     }
   };
 
+  const goNext = () => {
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < steps.length) {
+      setStep(steps[nextIndex]);
+    }
+  };
+
+  const goBack = () => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      setStep(steps[prevIndex]);
+    }
+  };
+
+  if (loading) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            <DialogTitle>Level Up to {newLevel}</DialogTitle>
+            <DialogTitle>Level Up to {newLevel} - {character?.name}</DialogTitle>
           </div>
           <Progress value={progress} className="mt-2" />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>Step {currentStepIndex + 1} of {steps.length}</span>
+            <span className="capitalize">{step.replace(/-/g, ' ')}</span>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 py-4">
           {/* HP Roll Step */}
           {step === "hp-roll" && (
             <Card>
@@ -576,165 +906,182 @@ export const LevelUpWizard = ({
             </Card>
           )}
 
-          {/* Spells Step */}
+          {/* Wizard Spellbook Step */}
+          {step === "wizard-spellbook" && (
+            <WizardSpellbookStep
+              availableSpells={availableSpells}
+              currentSpellIds={currentSpellIds}
+              selectedSpells={wizardSpellbookSpells}
+              onSpellToggle={(id) => toggleSpell(id, wizardSpellbookSpells, setWizardSpellbookSpells, wizardSpellsToAdd)}
+              spellsToAdd={wizardSpellsToAdd}
+              maxSpellLevel={maxSpellLevel}
+            />
+          )}
+
+          {/* Known Caster Spells Step */}
           {step === "spells" && (
-            <div className="space-y-4">
-              {/* New Cantrips */}
-              {cantripGain > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5" />
-                      Learn New Cantrips ({newCantrips.length}/{cantripGain})
-                    </CardTitle>
-                    <CardDescription>
-                      You can learn {cantripGain} new cantrip{cantripGain > 1 ? "s" : ""} at this level.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[200px]">
-                      <div className="space-y-2">
-                        {availableCantrips
-                          .filter(s => !currentSpells.includes(s.id))
-                          .map(spell => (
-                            <div
-                              key={spell.id}
-                              className={`flex items-center gap-3 p-2 border rounded cursor-pointer transition-colors ${
-                                newCantrips.includes(spell.id) ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                              }`}
-                              onClick={() => toggleNewCantrip(spell.id)}
-                            >
-                              <Checkbox checked={newCantrips.includes(spell.id)} />
-                              <div>
-                                <p className="font-medium">{spell.name}</p>
-                                <p className="text-xs text-muted-foreground">{spell.school}</p>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              )}
+            <SpellSelectionStep
+              className={character?.class || ""}
+              availableSpells={availableSpells}
+              currentSpellIds={currentSpellIds}
+              selectedNewSpells={newSpells}
+              onNewSpellToggle={(id) => toggleSpell(id, newSpells, setNewSpells, spellsKnownGain)}
+              spellsToAdd={spellsKnownGain}
+              maxSpellLevel={maxSpellLevel}
+              canSwap={canSwapSpell}
+              spellToSwap={spellToSwap}
+              swapReplacement={swapReplacement}
+              onSpellToSwapChange={setSpellToSwap}
+              onSwapReplacementChange={setSwapReplacement}
+              availableCantrips={[]}
+              selectedNewCantrips={[]}
+              onNewCantripToggle={() => {}}
+              cantripsToAdd={0}
+            />
+          )}
 
-              {/* New Spells Known */}
-              {spellsKnownGain > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      Learn New Spells ({newSpells.length}/{spellsKnownGain})
-                    </CardTitle>
-                    <CardDescription>
-                      You can learn {spellsKnownGain} new spell{spellsKnownGain > 1 ? "s" : ""} at this level.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[300px]">
-                      <div className="space-y-2">
-                        {availableSpells
-                          .filter(s => !currentSpells.includes(s.id) && !newSpells.includes(s.id) || newSpells.includes(s.id))
-                          .map(spell => (
-                            <div
-                              key={spell.id}
-                              className={`flex items-center gap-3 p-2 border rounded cursor-pointer transition-colors ${
-                                newSpells.includes(spell.id) ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                              }`}
-                              onClick={() => toggleNewSpell(spell.id)}
-                            >
-                              <Checkbox checked={newSpells.includes(spell.id)} />
-                              <div className="flex-1">
-                                <p className="font-medium">{spell.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Level {spell.level} • {spell.school}
-                                </p>
-                              </div>
+          {/* Cantrips Step */}
+          {step === "cantrips" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Learn New Cantrips
+                </CardTitle>
+                <CardDescription>
+                  Choose {cantripGain} new cantrip{cantripGain > 1 ? "s" : ""} from your class list.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 mb-4">
+                  <span className="text-sm font-medium">Cantrips Selected</span>
+                  <Badge variant={newCantrips.length === cantripGain ? "default" : "secondary"}>
+                    {newCantrips.length} / {cantripGain}
+                  </Badge>
+                </div>
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-1">
+                    {availableCantrips
+                      .filter(s => !currentSpellIds.includes(s.id))
+                      .map(spell => {
+                        const isSelected = newCantrips.includes(spell.id);
+                        const isDisabled = !isSelected && newCantrips.length >= cantripGain;
+                        
+                        return (
+                          <div
+                            key={spell.id}
+                            className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                              isSelected
+                                ? "bg-primary/20 border border-primary/40"
+                                : isDisabled
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "hover:bg-muted/50"
+                            }`}
+                            onClick={() => !isDisabled && toggleSpell(spell.id, newCantrips, setNewCantrips, cantripGain)}
+                          >
+                            <input type="checkbox" checked={isSelected} readOnly className="pointer-events-none" />
+                            <div className="flex-1">
+                              <span className="font-medium">{spell.name}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{spell.school}</span>
                             </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Spell Swap */}
-              {canSwapSpell && currentSpells.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Swap a Spell (Optional)</CardTitle>
-                    <CardDescription>
-                      You may replace one spell you know with another from the {character?.class} spell list.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium mb-2">Spell to Replace</p>
-                      <ScrollArea className="h-[150px] border rounded p-2">
-                        {currentSpells.map(spellId => {
-                          const spell = availableSpells.find(s => s.id === spellId);
-                          if (!spell) return null;
-                          return (
-                            <div
-                              key={spellId}
-                              className={`p-2 rounded cursor-pointer ${
-                                spellToSwap === spellId ? "bg-destructive/10" : "hover:bg-muted"
-                              }`}
-                              onClick={() => setSpellToSwap(spellToSwap === spellId ? null : spellId)}
-                            >
-                              {spell.name}
-                            </div>
-                          );
-                        })}
-                      </ScrollArea>
-                    </div>
-                    {spellToSwap && (
-                      <div>
-                        <p className="text-sm font-medium mb-2">Replace With</p>
-                        <ScrollArea className="h-[150px] border rounded p-2">
-                          {availableSpells
-                            .filter(s => !currentSpells.includes(s.id) && !newSpells.includes(s.id))
-                            .map(spell => (
-                              <div
-                                key={spell.id}
-                                className={`p-2 rounded cursor-pointer ${
-                                  swapReplacement === spell.id ? "bg-primary/10" : "hover:bg-muted"
-                                }`}
-                                onClick={() => setSwapReplacement(spell.id)}
-                              >
-                                {spell.name} (Level {spell.level})
-                              </div>
-                            ))}
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+          {/* Invocations Step (Warlock) */}
+          {step === "invocations" && (
+            <InvocationSelector
+              warlockLevel={newLevel}
+              pactBoon={currentPactBoon || pactBoonChoice[0] || null}
+              knownCantrips={currentSpellIds.map(id => availableCantrips.find(c => c.id === id)?.name || "").filter(Boolean)}
+              currentInvocations={currentInvocations}
+              selectedNewInvocations={newInvocations}
+              invocationsToRemove={invocationsToRemove}
+              onNewInvocationToggle={(id) => toggleSpell(id, newInvocations, setNewInvocations, invocationsToGain + invocationsToRemove.length)}
+              onRemoveInvocationToggle={(id) => toggleSpell(id, invocationsToRemove, setInvocationsToRemove, invocationReplaceCount)}
+              newCount={invocationsToGain}
+              replaceCount={invocationReplaceCount}
+            />
+          )}
+
+          {/* Pact Boon Step (Warlock Level 3) */}
+          {step === "pact-boon" && (
+            <FeatureChoiceStep
+              choice={{ type: "pact_boon", count: 1 }}
+              className={character?.class || ""}
+              currentProficientSkills={[]}
+              currentExpertiseSkills={[]}
+              selectedValues={pactBoonChoice}
+              onSelectionChange={setPactBoonChoice}
+            />
+          )}
+
+          {/* Metamagic Step (Sorcerer) */}
+          {step === "metamagic" && (
+            <FeatureChoiceStep
+              choice={{ type: "metamagic", count: metamagicToGain }}
+              className={character?.class || ""}
+              currentProficientSkills={[]}
+              currentExpertiseSkills={[]}
+              selectedValues={metamagicChoices}
+              onSelectionChange={setMetamagicChoices}
+            />
+          )}
+
+          {/* Fighting Style Step */}
+          {step === "fighting-style" && fightingStyleToChoose && (
+            <FeatureChoiceStep
+              choice={fightingStyleToChoose}
+              className={character?.class || ""}
+              currentProficientSkills={[]}
+              currentExpertiseSkills={[]}
+              selectedValues={fightingStyleChoice}
+              onSelectionChange={setFightingStyleChoice}
+            />
+          )}
+
+          {/* Expertise Step */}
+          {step === "expertise" && expertiseToChoose && (
+            <FeatureChoiceStep
+              choice={expertiseToChoose}
+              className={character?.class || ""}
+              currentProficientSkills={currentProficientSkills}
+              currentExpertiseSkills={currentExpertiseSkills}
+              selectedValues={expertiseChoices}
+              onSelectionChange={setExpertiseChoices}
+            />
           )}
 
           {/* ASI or Feat Step */}
-          {step === "asi-or-feat" && canChooseFeat && (
+          {step === "asi-or-feat" && (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Ability Score Improvement or Feat</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-primary" />
+                    Ability Score Improvement
+                  </CardTitle>
                   <CardDescription>
-                    Choose to increase your ability scores or gain a feat
+                    Increase your ability scores or choose a feat
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <Button
-                      variant={choice === "asi" ? "default" : "outline"}
-                      onClick={() => setChoice("asi")}
+                      variant={asiChoice === "asi" ? "default" : "outline"}
+                      onClick={() => setAsiChoice("asi")}
                       className="h-20"
                     >
-                      Ability Score Improvement
+                      +2 Ability Scores
                     </Button>
                     <Button
-                      variant={choice === "feat" ? "default" : "outline"}
-                      onClick={() => setChoice("feat")}
+                      variant={asiChoice === "feat" ? "default" : "outline"}
+                      onClick={() => setAsiChoice("feat")}
                       className="h-20"
                     >
                       Choose a Feat
@@ -743,12 +1090,12 @@ export const LevelUpWizard = ({
                 </CardContent>
               </Card>
 
-              {choice === "asi" && (
+              {asiChoice === "asi" && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ability Score Improvements</CardTitle>
+                    <CardTitle>Distribute 2 Points</CardTitle>
                     <CardDescription>
-                      Distribute 2 points among your abilities (max 20)
+                      Increase abilities by up to 2 each (max 20)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -766,7 +1113,7 @@ export const LevelUpWizard = ({
                               {increase > 0 && (
                                 <>
                                   <span>→</span>
-                                  <Badge>{newScore}</Badge>
+                                  <Badge className="bg-primary">{newScore}</Badge>
                                 </>
                               )}
                               <div className="flex gap-1">
@@ -799,7 +1146,7 @@ export const LevelUpWizard = ({
                 </Card>
               )}
 
-              {choice === "feat" && (
+              {asiChoice === "feat" && (
                 <FeatSelector
                   level={newLevel}
                   abilityScores={
@@ -820,15 +1167,18 @@ export const LevelUpWizard = ({
           {step === "features" && featuresToGrant.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>New Features at Level {newLevel}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  New Features at Level {newLevel}
+                </CardTitle>
                 <CardDescription>
-                  You gain the following features at this level
+                  You gain the following features
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {featuresToGrant.map((feature, idx) => (
-                    <div key={feature.id || idx} className="border rounded-lg p-4">
+                    <div key={feature.id || idx} className="border rounded-lg p-4 bg-muted/30">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold">{feature.name}</h4>
                         <Badge variant="outline">{feature.source}</Badge>
@@ -846,25 +1196,25 @@ export const LevelUpWizard = ({
             <Card>
               <CardHeader>
                 <CardTitle>Review Level Up</CardTitle>
-                <CardDescription>Confirm your choices before leveling up</CardDescription>
+                <CardDescription>Confirm your choices before leveling up to {newLevel}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                   <p className="text-sm font-medium">HP Gained</p>
-                  <p className="text-2xl font-bold text-primary">
+                  <p className="text-3xl font-bold text-primary">
                     +{Math.max(1, (hpRoll || 0) + Math.floor(((character?.character_abilities?.[0]?.con || 10) - 10) / 2))}
                   </p>
                 </div>
 
                 <Separator />
 
-                {newCantrips.length > 0 && (
+                {wizardSpellbookSpells.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium">New Cantrips</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {newCantrips.map(id => {
-                        const spell = availableCantrips.find(s => s.id === id);
-                        return spell ? <Badge key={id}>{spell.name}</Badge> : null;
+                    <p className="text-sm font-medium mb-2">Spellbook Additions</p>
+                    <div className="flex flex-wrap gap-2">
+                      {wizardSpellbookSpells.map(id => {
+                        const spell = availableSpells.find(s => s.id === id);
+                        return spell ? <Badge key={id} variant="secondary">{spell.name}</Badge> : null;
                       })}
                     </div>
                   </div>
@@ -872,48 +1222,99 @@ export const LevelUpWizard = ({
 
                 {newSpells.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium">New Spells Known</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
+                    <p className="text-sm font-medium mb-2">New Spells Known</p>
+                    <div className="flex flex-wrap gap-2">
                       {newSpells.map(id => {
                         const spell = availableSpells.find(s => s.id === id);
-                        return spell ? <Badge key={id}>{spell.name}</Badge> : null;
+                        return spell ? <Badge key={id} variant="secondary">{spell.name}</Badge> : null;
                       })}
                     </div>
                   </div>
                 )}
 
-                {spellToSwap && swapReplacement && (
+                {newCantrips.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium">Spell Swap</p>
-                    <p className="text-sm text-muted-foreground">
-                      {availableSpells.find(s => s.id === spellToSwap)?.name} → 
-                      {availableSpells.find(s => s.id === swapReplacement)?.name}
-                    </p>
+                    <p className="text-sm font-medium mb-2">New Cantrips</p>
+                    <div className="flex flex-wrap gap-2">
+                      {newCantrips.map(id => {
+                        const spell = availableCantrips.find(s => s.id === id);
+                        return spell ? <Badge key={id} variant="secondary">{spell.name}</Badge> : null;
+                      })}
+                    </div>
                   </div>
                 )}
 
-                {canChooseFeat && choice && (
+                {fightingStyleChoice.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium">{choice === "asi" ? "Ability Improvements" : "Feat"}</p>
-                    {choice === "asi" && (
-                      <div className="flex flex-wrap gap-2 mt-1">
+                    <p className="text-sm font-medium mb-2">Fighting Style</p>
+                    <Badge>{fightingStyleChoice[0]}</Badge>
+                  </div>
+                )}
+
+                {expertiseChoices.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Expertise</p>
+                    <div className="flex flex-wrap gap-2">
+                      {expertiseChoices.map(skill => (
+                        <Badge key={skill} variant="secondary">{skill}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {metamagicChoices.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Metamagic</p>
+                    <div className="flex flex-wrap gap-2">
+                      {metamagicChoices.map(mm => {
+                        const option = METAMAGIC_OPTIONS.find(o => o.id === mm);
+                        return <Badge key={mm} variant="secondary">{option?.name || mm}</Badge>;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {pactBoonChoice.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Pact Boon</p>
+                    <Badge>{PACT_BOONS.find(b => b.id === pactBoonChoice[0])?.name}</Badge>
+                  </div>
+                )}
+
+                {newInvocations.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">New Invocations</p>
+                    <div className="flex flex-wrap gap-2">
+                      {newInvocations.map(inv => {
+                        const invocation = ELDRITCH_INVOCATIONS.find(i => i.id === inv);
+                        return <Badge key={inv} variant="secondary">{invocation?.name || inv}</Badge>;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {hasASI && asiChoice && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">{asiChoice === "asi" ? "Ability Increases" : "Feat"}</p>
+                    {asiChoice === "asi" && (
+                      <div className="flex flex-wrap gap-2">
                         {Object.entries(abilityIncreases).map(([ability, increase]) => (
-                          increase > 0 && <Badge key={ability}>{ability} +{increase}</Badge>
+                          increase > 0 ? <Badge key={ability} variant="secondary">{ability} +{increase}</Badge> : null
                         ))}
                       </div>
                     )}
-                    {choice === "feat" && selectedFeat && (
-                      <Badge className="mt-1">Feat Selected</Badge>
+                    {asiChoice === "feat" && selectedFeat && (
+                      <Badge variant="secondary">Feat Selected</Badge>
                     )}
                   </div>
                 )}
 
                 {featuresToGrant.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium">New Features</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {featuresToGrant.map((f, idx) => (
-                        <Badge key={idx} variant="secondary">{f.name}</Badge>
+                    <p className="text-sm font-medium mb-2">New Features</p>
+                    <div className="flex flex-wrap gap-2">
+                      {featuresToGrant.map(f => (
+                        <Badge key={f.id} variant="outline">{f.name}</Badge>
                       ))}
                     </div>
                   </div>
@@ -921,38 +1322,30 @@ export const LevelUpWizard = ({
               </CardContent>
             </Card>
           )}
+        </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => {
-                const prevIndex = currentStepIndex - 1;
-                if (prevIndex >= 0) setStep(steps[prevIndex]);
-              }}
-              disabled={currentStepIndex === 0}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+        {/* Navigation */}
+        <div className="flex justify-between pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={goBack}
+            disabled={currentStepIndex === 0}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          
+          {step === "review" ? (
+            <Button onClick={handleComplete} disabled={!canProceed()}>
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Level Up!
             </Button>
-
-            {currentStepIndex < steps.length - 1 ? (
-              <Button
-                onClick={() => {
-                  const nextIndex = currentStepIndex + 1;
-                  if (nextIndex < steps.length) setStep(steps[nextIndex]);
-                }}
-                disabled={!canProceed()}
-              >
-                Next
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            ) : (
-              <Button onClick={handleComplete} disabled={!canProceed()}>
-                Complete Level Up
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button onClick={goNext} disabled={!canProceed()}>
+              Next
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

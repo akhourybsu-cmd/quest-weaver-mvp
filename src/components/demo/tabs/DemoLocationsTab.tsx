@@ -37,8 +37,22 @@ export function DemoLocationsTab({ campaign }: DemoLocationsTabProps) {
 
       <div className="grid gap-4 md:grid-cols-2">
         {locations.map((location) => (
-          <Card key={location.id} className="bg-card/50 border-brass/20 hover:shadow-lg transition-all">
-            <CardHeader>
+          <Card 
+            key={location.id} 
+            className="relative overflow-hidden bg-card/50 border-brass/20 hover:shadow-lg transition-all"
+          >
+            {/* Background image with overlay */}
+            {location.image_url && (
+              <>
+                <div 
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${location.image_url})` }}
+                />
+                <div className="absolute inset-0 bg-card/85 backdrop-blur-[1px]" />
+              </>
+            )}
+            
+            <CardHeader className="relative z-10">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <CardTitle className="font-cinzel flex items-center gap-2">
@@ -56,7 +70,7 @@ export function DemoLocationsTab({ campaign }: DemoLocationsTabProps) {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="relative z-10 space-y-4">
               {location.description && (
                 <p className="text-sm text-muted-foreground">{location.description}</p>
               )}

@@ -64,6 +64,7 @@ export function adaptDemoLocations(demoCampaign: DemoCampaign) {
     tags: [loc.terrain, loc.region],
     parent_location_id: null,
     path: null,
+    image_url: loc.image_url,
     details: {
       region: loc.region,
       terrain: loc.terrain,
@@ -85,6 +86,7 @@ export function adaptDemoFactions(demoCampaign: DemoCampaign) {
     tags: faction.tags,
     goals: faction.goals,
     reputation: faction.reputation,
+    banner_url: faction.banner_url,
     campaign_id: demoCampaign.id,
   }));
 }

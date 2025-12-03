@@ -29,6 +29,16 @@ interface PlayerCombatActionsProps {
   isMyTurn: boolean;
 }
 
+interface CharacterAttack {
+  id: string;
+  name: string;
+  attack_bonus: number;
+  damage: string;
+  damage_type: string | null;
+  ability: string;
+  properties: string[] | null;
+}
+
 export function PlayerCombatActions({
   characterId,
   encounterId,
@@ -39,6 +49,7 @@ export function PlayerCombatActions({
   const [reactionUsed, setReactionUsed] = useState(false);
   const [showEndTurnDialog, setShowEndTurnDialog] = useState(false);
   const [character, setCharacter] = useState<any>(null);
+  const [attacks, setAttacks] = useState<CharacterAttack[]>([]);
   const [targets, setTargets] = useState<any[]>([]);
   const [grappleCondition, setGrappleCondition] = useState<any>(null);
   const [showReadiedActionDialog, setShowReadiedActionDialog] = useState(false);
@@ -52,6 +63,7 @@ export function PlayerCombatActions({
   useEffect(() => {
     fetchActionEconomy();
     fetchCharacterData();
+    fetchAttacks();
     fetchTargets();
     fetchGrappleCondition();
     fetchEncounterRound();
@@ -123,7 +135,7 @@ export function PlayerCombatActions({
   const fetchCharacterData = async () => {
     const { data } = await supabase
       .from("characters")
-      .select("id, name, str_save, dex_save, proficiency_bonus, size")
+      .select("id, name, str_save, dex_save, proficiency_bonus, size, exhaustion_level")
       .eq("id", characterId)
       .single();
 
@@ -138,6 +150,18 @@ export function PlayerCombatActions({
         athleticsBonus,
         acrobaticsBonus,
       });
+    }
+  };
+
+  const fetchAttacks = async () => {
+    const { data } = await supabase
+      .from("character_attacks")
+      .select("*")
+      .eq("character_id", characterId)
+      .order("name");
+
+    if (data) {
+      setAttacks(data);
     }
   };
 
@@ -337,13 +361,27 @@ export function PlayerCombatActions({
             <div className="space-y-2">
               <p className="text-sm font-medium">Combat Options:</p>
               <div className="flex flex-wrap gap-2">
-                <PlayerAttackDialog
-                  characterName={character.name}
-                  attackBonus={character.athleticsBonus}
-                  weaponName="Weapon"
-                  damageFormula="1d8"
-                  exhaustionLevel={0}
-                />
+                {/* Weapon Attacks */}
+                {attacks.length > 0 ? (
+                  attacks.map((attack) => (
+                    <PlayerAttackDialog
+                      key={attack.id}
+                      characterName={character.name}
+                      attackBonus={attack.attack_bonus}
+                      weaponName={attack.name}
+                      damageFormula={attack.damage}
+                      exhaustionLevel={character.exhaustion_level || 0}
+                    />
+                  ))
+                ) : (
+                  <PlayerAttackDialog
+                    characterName={character.name}
+                    attackBonus={character.athleticsBonus}
+                    weaponName="Unarmed Strike"
+                    damageFormula="1 + STR"
+                    exhaustionLevel={character.exhaustion_level || 0}
+                  />
+                )}
                 <GrappleShoveMenu
                   attackerId={character.id}
                   attackerType="character"

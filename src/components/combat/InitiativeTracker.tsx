@@ -584,14 +584,14 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
                       )}
                       {entry.combatant_type === 'monster' && (
                         <>
-                          {(entry.combatant_stats as any)?.legendary_actions_max > 0 && (
+                          {(entry.combatant_stats?.legendary_actions_max || 0) > 0 && (
                             <LegendaryTracker
                               monsterId={entry.combatant_id}
                               monsterName={entry.combatant_name || "Unknown"}
-                              legendaryActionsMax={(entry.combatant_stats as any)?.legendary_actions_max || 0}
-                              legendaryActionsRemaining={(entry.combatant_stats as any)?.legendary_actions_remaining || 0}
-                              legendaryResistancesMax={(entry.combatant_stats as any)?.legendary_resistances_max || 0}
-                              legendaryResistancesRemaining={(entry.combatant_stats as any)?.legendary_resistances_remaining || 0}
+                              legendaryActionsMax={entry.combatant_stats?.legendary_actions_max || 0}
+                              legendaryActionsRemaining={entry.combatant_stats?.legendary_actions_remaining || 0}
+                              legendaryResistancesMax={entry.combatant_stats?.legendary_resistances_max || 0}
+                              legendaryResistancesRemaining={entry.combatant_stats?.legendary_resistances_remaining || 0}
                               compact
                             />
                           )}

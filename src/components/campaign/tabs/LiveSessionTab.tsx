@@ -56,6 +56,7 @@ interface Character {
   death_save_success: number;
   death_save_fail: number;
   inspiration: boolean;
+  exhaustion_level: number;
 }
 
 interface Encounter {
@@ -374,7 +375,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
               <SkillCheckDialog
                 encounterId={activeEncounter?.id}
                 campaignId={campaignId}
-                characters={characters.map(c => ({ id: c.id, name: c.name }))}
+                characters={characters.map(c => ({ id: c.id, name: c.name, exhaustion_level: c.exhaustion_level }))}
               />
               {activeEncounter && (
                 <EncounterControls

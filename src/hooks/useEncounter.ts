@@ -22,6 +22,11 @@ interface InitiativeEntry {
     reaction_used?: boolean;
     resources?: any;
     inspiration?: boolean;
+    // Monster legendary stats
+    legendary_actions_max?: number;
+    legendary_actions_remaining?: number;
+    legendary_resistances_max?: number;
+    legendary_resistances_remaining?: number;
   };
 }
 
@@ -154,7 +159,7 @@ export const useEncounter = (encounterId: string | null) => {
         } else {
           const { data: monster } = await supabase
             .from('encounter_monsters')
-            .select('display_name, ac, hp_current, hp_max, resistances, vulnerabilities, immunities')
+            .select('display_name, ac, hp_current, hp_max, resistances, vulnerabilities, immunities, legendary_actions_max, legendary_actions_remaining, legendary_resistances_max, legendary_resistances_remaining')
             .eq('id', init.combatant_id)
             .single();
 
@@ -171,7 +176,11 @@ export const useEncounter = (encounterId: string | null) => {
               hp_max: monster.hp_max,
               resistances: (monster.resistances as any) || [],
               vulnerabilities: (monster.vulnerabilities as any) || [],
-              immunities: (monster.immunities as any) || []
+              immunities: (monster.immunities as any) || [],
+              legendary_actions_max: monster.legendary_actions_max || 0,
+              legendary_actions_remaining: monster.legendary_actions_remaining || 0,
+              legendary_resistances_max: monster.legendary_resistances_max || 0,
+              legendary_resistances_remaining: monster.legendary_resistances_remaining || 0
             } : undefined
           };
         }

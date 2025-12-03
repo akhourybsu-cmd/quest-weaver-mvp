@@ -114,6 +114,7 @@ interface Campaign {
   name: string;
   code: string;
   dm_user_id: string;
+  live_session_id: string | null;
 }
 
 const CampaignHub = () => {
@@ -179,11 +180,13 @@ const CampaignHub = () => {
         filter: `id=eq.${activeCampaign.id}`,
       }, () => {
         fetchLiveSession();
+        fetchCampaigns(); // Update sidebar live indicators
       })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'campaign_sessions',
+        filter: `campaign_id=eq.${activeCampaign.id}`,
       }, () => {
         fetchLiveSession();
         fetchSessionCount();
@@ -250,10 +253,7 @@ const CampaignHub = () => {
 
     if (data?.live_session_id && data.campaign_sessions && ['live', 'paused'].includes(data.campaign_sessions.status)) {
       setLiveSession(data.campaign_sessions);
-      // Auto-switch to session tab if session is active and we're not already there
-      if (activeTab !== 'session') {
-        setActiveTab('session');
-      }
+      // Only auto-switch on initial load, not on every update
     } else {
       setLiveSession(null);
     }
@@ -550,6 +550,7 @@ const CampaignHub = () => {
     id: c.id,
     name: c.name,
     system: "5e",
+    isLive: c.live_session_id !== null || (activeCampaign?.id === c.id && liveSession !== null),
   }));
 
   if (loading) {

@@ -1,5 +1,5 @@
 import { useState, ReactNode, useEffect } from "react";
-import { Search, Plus, Archive, Command as CommandIcon, ChevronLeft, ChevronRight, LogOut, User, Menu } from "lucide-react";
+import { Search, Plus, Archive, Command as CommandIcon, ChevronLeft, ChevronRight, LogOut, User, Menu, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +30,7 @@ interface Campaign {
   id: string;
   name: string;
   system: string;
+  isLive?: boolean;
 }
 
 interface CampaignManagerLayoutProps {
@@ -153,8 +154,11 @@ export function CampaignManagerLayout({
               {(!leftRailCollapsed || inSheet) && (
                 <>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 rounded bg-gradient-to-br from-brass/20 to-brass/10 flex items-center justify-center text-xs font-cinzel font-bold text-brass">
+                    <div className="w-8 h-8 rounded bg-gradient-to-br from-brass/20 to-brass/10 flex items-center justify-center text-xs font-cinzel font-bold text-brass relative">
                       {campaign.name.charAt(0)}
+                      {campaign.isLive && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-obsidian animate-pulse" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-ink truncate">{campaign.name}</div>
@@ -164,6 +168,12 @@ export function CampaignManagerLayout({
                     <Badge variant="outline" className="text-xs border-brass/30 text-brass">
                       {campaign.system}
                     </Badge>
+                    {campaign.isLive && (
+                      <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30 animate-pulse">
+                        <Radio className="w-3 h-3 mr-1" />
+                        LIVE
+                      </Badge>
+                    )}
                   </div>
                 </>
               )}

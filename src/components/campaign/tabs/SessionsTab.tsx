@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Clock, Plus, FileText, Package, Play, Target, CheckSquare, Pencil } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Package, Play, Target, CheckSquare, Pencil, Pause, Square } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { SessionPackBuilder } from "../SessionPackBuilder";
 import { ScheduleSessionDialog } from "../ScheduleSessionDialog";
 import { SessionLogViewer } from "../SessionLogViewer";
+import { EndSessionDialog } from "../EndSessionDialog";
 
 interface SessionsTabProps {
   campaignId: string;
@@ -34,6 +35,8 @@ interface Session {
   status: string;
   goals: string | null;
   prep_checklist: PrepChecklistItem[];
+  paused_at: string | null;
+  paused_duration_seconds: number | null;
 }
 
 export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
@@ -46,6 +49,8 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
   const [logViewerOpen, setLogViewerOpen] = useState(false);
   const [viewingSession, setViewingSession] = useState<Session | null>(null);
   const [startingSessionId, setStartingSessionId] = useState<string | null>(null);
+  const [showEndDialog, setShowEndDialog] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     fetchSessions();
@@ -100,7 +105,9 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
           dm_notes: s.dm_notes,
           status: s.status,
           goals: s.goals,
-          prep_checklist: checklist
+          prep_checklist: checklist,
+          paused_at: s.paused_at,
+          paused_duration_seconds: s.paused_duration_seconds
         };
       });
       
@@ -158,8 +165,143 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
     return { completed, total: checklist.length };
   };
 
+  const liveSessions = sessions?.filter((s) => ['live', 'paused'].includes(s.status)) || [];
+  const currentSession = liveSessions[0] || null;
   const upcomingSessions = sessions?.filter((s) => s.status === 'scheduled') || [];
   const pastSessions = sessions?.filter((s) => s.status === 'ended') || [];
+
+  // Timer for current session
+  useEffect(() => {
+    if (!currentSession || currentSession.status !== 'live') {
+      return;
+    }
+
+    const calculateElapsed = () => {
+      const start = new Date(currentSession.started_at!).getTime();
+      const now = Date.now();
+      const pausedMs = (currentSession.paused_duration_seconds || 0) * 1000;
+      return Math.floor((now - start - pausedMs) / 1000);
+    };
+
+    setElapsed(calculateElapsed());
+    const interval = setInterval(() => {
+      setElapsed(calculateElapsed());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentSession]);
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
+  };
+
+  const handlePauseSession = async () => {
+    if (!currentSession) return;
+
+    try {
+      const { error } = await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'paused',
+          paused_at: new Date().toISOString()
+        })
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+      toast.success('Session paused');
+    } catch (error) {
+      console.error('Error pausing session:', error);
+      toast.error('Failed to pause session');
+    }
+  };
+
+  const handleResumeSession = async () => {
+    if (!currentSession) return;
+
+    try {
+      const pausedAt = currentSession.paused_at ? new Date(currentSession.paused_at).getTime() : 0;
+      const now = Date.now();
+      const additionalPausedSeconds = pausedAt > 0 ? Math.floor((now - pausedAt) / 1000) : 0;
+      const totalPausedSeconds = (currentSession.paused_duration_seconds || 0) + additionalPausedSeconds;
+
+      const { error } = await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'live',
+          paused_at: null,
+          paused_duration_seconds: totalPausedSeconds
+        })
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+      toast.success('Session resumed');
+    } catch (error) {
+      console.error('Error resuming session:', error);
+      toast.error('Failed to resume session');
+    }
+  };
+
+  const handleEndSession = async (notes?: string) => {
+    if (!currentSession) return;
+
+    try {
+      let finalPausedSeconds = currentSession.paused_duration_seconds || 0;
+
+      if (currentSession.status === 'paused' && currentSession.paused_at) {
+        const pausedAt = new Date(currentSession.paused_at).getTime();
+        const additionalPausedSeconds = Math.floor((Date.now() - pausedAt) / 1000);
+        finalPausedSeconds += additionalPausedSeconds;
+      }
+
+      const { error: sessionError } = await supabase
+        .from('campaign_sessions')
+        .update({
+          status: 'ended',
+          ended_at: new Date().toISOString(),
+          paused_duration_seconds: finalPausedSeconds,
+          ...(notes && { dm_notes: notes })
+        })
+        .eq('id', currentSession.id);
+
+      if (sessionError) throw sessionError;
+
+      const { error: campaignError } = await supabase
+        .from('campaigns')
+        .update({ live_session_id: null })
+        .eq('id', campaignId);
+
+      if (campaignError) throw campaignError;
+
+      toast.success('Session ended');
+      setShowEndDialog(false);
+    } catch (error) {
+      console.error('Error ending session:', error);
+      toast.error('Failed to end session');
+    }
+  };
+
+  const getSessionDuration = () => {
+    if (!currentSession || !currentSession.started_at) return "0s";
+    
+    const start = new Date(currentSession.started_at).getTime();
+    const end = currentSession.status === 'paused' && currentSession.paused_at 
+      ? new Date(currentSession.paused_at).getTime()
+      : Date.now();
+    const pausedMs = (currentSession.paused_duration_seconds || 0) * 1000;
+    const elapsedSeconds = Math.floor((end - start - pausedMs) / 1000);
+    
+    return formatTime(elapsedSeconds);
+  };
 
   const openPackBuilder = (session: Session) => {
     setSelectedSession(session);
@@ -173,6 +315,75 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Current Session */}
+      {currentSession && (
+        <Card className="bg-card/50 border-brass/40 shadow-lg">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="font-cinzel">{getSessionDisplayName(currentSession)}</CardTitle>
+                {currentSession.status === 'live' && (
+                  <Badge variant="outline" className="border-red-500/50 text-red-500 bg-red-500/10 animate-pulse">
+                    🔴 Live
+                  </Badge>
+                )}
+                {currentSession.status === 'paused' && (
+                  <Badge variant="outline" className="border-yellow-500/50 text-yellow-500 bg-yellow-500/10">
+                    ⏸️ Paused
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 tabular-nums font-mono text-lg font-semibold text-brass ${currentSession.status === 'paused' ? 'opacity-50' : ''}`}>
+                  <Clock className="w-5 h-5" />
+                  {formatTime(elapsed)}
+                </div>
+                <div className="w-px h-6 bg-brass/20" />
+                {currentSession.status === 'live' && (
+                  <Button
+                    onClick={handlePauseSession}
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-yellow-500/10 hover:text-yellow-400"
+                    title="Pause session"
+                  >
+                    <Pause className="w-4 h-4" />
+                  </Button>
+                )}
+                {currentSession.status === 'paused' && (
+                  <Button
+                    onClick={handleResumeSession}
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-green-500/10 hover:text-green-400"
+                    title="Resume session"
+                  >
+                    <Play className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setShowEndDialog(true)}
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-destructive/10 hover:text-destructive"
+                  title="End session"
+                >
+                  <Square className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-arcanePurple" />
+                Started {currentSession.started_at ? format(new Date(currentSession.started_at), "MMM d, yyyy 'at' h:mm a") : 'now'}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Session Pack Builder */}
       <Card className="bg-card/50 border-brass/20">
         <CardHeader>
@@ -386,6 +597,14 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
           sessionName={viewingSession.name}
         />
       )}
+
+      {/* End Session Dialog */}
+      <EndSessionDialog
+        open={showEndDialog}
+        onOpenChange={setShowEndDialog}
+        onConfirm={handleEndSession}
+        sessionDuration={getSessionDuration()}
+      />
     </div>
   );
 }

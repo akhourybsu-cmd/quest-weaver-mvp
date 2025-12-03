@@ -245,15 +245,27 @@ const CampaignHub = () => {
   const fetchLiveSession = async () => {
     if (!activeCampaign) return;
 
-    const { data } = await supabase
+    // First get the campaign to check live_session_id
+    const { data: campaign } = await supabase
       .from('campaigns')
-      .select('live_session_id, campaign_sessions(*)')
+      .select('live_session_id')
       .eq('id', activeCampaign.id)
       .single();
 
-    if (data?.live_session_id && data.campaign_sessions && ['live', 'paused'].includes(data.campaign_sessions.status)) {
-      setLiveSession(data.campaign_sessions);
-      // Only auto-switch on initial load, not on every update
+    if (!campaign?.live_session_id) {
+      setLiveSession(null);
+      return;
+    }
+
+    // Then fetch the specific session by ID
+    const { data: session } = await supabase
+      .from('campaign_sessions')
+      .select('*')
+      .eq('id', campaign.live_session_id)
+      .single();
+
+    if (session && ['live', 'paused'].includes(session.status)) {
+      setLiveSession(session);
     } else {
       setLiveSession(null);
     }

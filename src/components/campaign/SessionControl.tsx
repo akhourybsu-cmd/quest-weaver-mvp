@@ -327,29 +327,9 @@ export function SessionControl({ campaignId }: SessionControlProps) {
     return formatTime(elapsedSeconds);
   };
 
-  // Idle state - Start button
+  // Idle state - show nothing (sessions are started from SessionsTab)
   if (!session) {
-    return (
-      <Button
-        onClick={handleStart}
-        size="default"
-        disabled={loading || morphing}
-        className={`transition-all duration-300 ${morphing ? 'scale-95 opacity-0' : 'scale-100 opacity-100 animate-scale-in'}`}
-        aria-label="Start new session (Shortcut: S)"
-      >
-        {loading ? (
-          <>
-            <div className="w-4 h-4 mr-2 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-            Starting...
-          </>
-        ) : (
-          <>
-            <Play className="w-4 h-4 mr-2" />
-            Start Session
-          </>
-        )}
-      </Button>
-    );
+    return null;
   }
 
   // Live or Paused state - Control pill

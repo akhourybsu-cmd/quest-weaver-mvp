@@ -1238,6 +1238,7 @@ export type Database = {
           death_save_fail: number | null
           death_save_success: number | null
           dex_save: number | null
+          exhaustion_level: number
           export_version: string | null
           eyes: string | null
           flaws: string | null
@@ -1309,6 +1310,7 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          exhaustion_level?: number
           export_version?: string | null
           eyes?: string | null
           flaws?: string | null
@@ -1380,6 +1382,7 @@ export type Database = {
           death_save_fail?: number | null
           death_save_success?: number | null
           dex_save?: number | null
+          exhaustion_level?: number
           export_version?: string | null
           eyes?: string | null
           flaws?: string | null
@@ -1875,6 +1878,10 @@ export type Database = {
           is_visible_to_players: boolean | null
           languages: string | null
           legendary_actions: Json | null
+          legendary_actions_max: number | null
+          legendary_actions_remaining: number | null
+          legendary_resistances_max: number | null
+          legendary_resistances_remaining: number | null
           name: string
           order_tiebreak: number
           reactions: Json | null
@@ -1910,6 +1917,10 @@ export type Database = {
           is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null
+          legendary_actions_max?: number | null
+          legendary_actions_remaining?: number | null
+          legendary_resistances_max?: number | null
+          legendary_resistances_remaining?: number | null
           name: string
           order_tiebreak?: number
           reactions?: Json | null
@@ -1945,6 +1956,10 @@ export type Database = {
           is_visible_to_players?: boolean | null
           languages?: string | null
           legendary_actions?: Json | null
+          legendary_actions_max?: number | null
+          legendary_actions_remaining?: number | null
+          legendary_resistances_max?: number | null
+          legendary_resistances_remaining?: number | null
           name?: string
           order_tiebreak?: number
           reactions?: Json | null

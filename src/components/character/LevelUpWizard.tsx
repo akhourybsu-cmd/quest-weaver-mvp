@@ -19,6 +19,8 @@ import { InvocationSelector } from "./levelup/InvocationSelector";
 import { MagicalSecretsStep } from "./levelup/MagicalSecretsStep";
 import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnemySelector";
 import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
+import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
+import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,
@@ -43,6 +45,7 @@ interface LevelUpWizardProps {
 }
 
 type LevelUpStep = 
+  | "class-select"
   | "hp-roll" 
   | "wizard-spellbook"
   | "spells" 
@@ -58,6 +61,13 @@ type LevelUpStep =
   | "asi-or-feat" 
   | "features" 
   | "review";
+
+interface CharacterClass {
+  className: string;
+  classId: string;
+  level: number;
+  isPrimary: boolean;
+}
 
 interface SpellOption {
   id: string;
@@ -86,13 +96,21 @@ export const LevelUpWizard = ({
   const [step, setStep] = useState<LevelUpStep>("hp-roll");
   const [character, setCharacter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Multiclass state
+  const [characterClasses, setCharacterClasses] = useState<CharacterClass[]>([]);
+  const [selectedClassToLevel, setSelectedClassToLevel] = useState<{ className: string; classId: string } | null>(null);
 
   // Reset all state when dialog opens
   useEffect(() => {
     if (open) {
-      // Reset step
+      // Reset step - will be set to class-select if multiclass after loading
       setStep("hp-roll");
       setLoading(true);
+      
+      // Reset multiclass
+      setCharacterClasses([]);
+      setSelectedClassToLevel(null);
       
       // Reset HP
       setHpRoll(null);
@@ -303,6 +321,54 @@ export const LevelUpWizard = ({
       if (error) throw error;
       setCharacter(data);
       setCurrentSpellIds(data.character_spells?.filter((s: any) => s.known).map((s: any) => s.spell_id) || []);
+      
+      // Load character classes for multiclass support
+      const { data: classesData } = await supabase
+        .from("character_classes")
+        .select(`
+          id,
+          class_level,
+          is_primary,
+          class_id,
+          srd_classes!inner(id, name)
+        `)
+        .eq("character_id", characterId);
+      
+      if (classesData && classesData.length > 0) {
+        const classes: CharacterClass[] = classesData.map((c: any) => ({
+          className: c.srd_classes.name,
+          classId: c.class_id,
+          level: c.class_level,
+          isPrimary: c.is_primary || false,
+        }));
+        setCharacterClasses(classes);
+        
+        // If multiclass, start with class selection
+        if (classes.length > 1) {
+          setStep("class-select");
+        } else {
+          // Single class - auto-select it
+          setSelectedClassToLevel({ className: classes[0].className, classId: classes[0].classId });
+        }
+      } else {
+        // No character_classes entries - use main character class
+        const { data: srdClass } = await supabase
+          .from("srd_classes")
+          .select("id, name")
+          .eq("name", data.class)
+          .single();
+        
+        if (srdClass) {
+          const singleClass: CharacterClass = {
+            className: srdClass.name,
+            classId: srdClass.id,
+            level: data.level,
+            isPrimary: true,
+          };
+          setCharacterClasses([singleClass]);
+          setSelectedClassToLevel({ className: singleClass.className, classId: singleClass.classId });
+        }
+      }
     } catch (error) {
       console.error("Error loading character:", error);
       toast.error("Failed to load character");
@@ -498,12 +564,29 @@ export const LevelUpWizard = ({
         })
         .eq("id", characterId);
 
+      // Update the specific class level in character_classes (for multiclass support)
+      if (selectedClassToLevel) {
+        const existingClass = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
+        if (existingClass && existingClass.level > 0) {
+          // Update existing class entry
+          await supabase
+            .from("character_classes")
+            .update({ class_level: existingClass.level + 1 })
+            .eq("character_id", characterId)
+            .eq("class_id", selectedClassToLevel.classId);
+        }
+        // Note: If this is a new multiclass (level 0), it was already inserted by AddClassDialog
+      }
+
       // Record level history
-      const { data: classData } = await supabase
-        .from("srd_classes")
-        .select("id")
-        .eq("name", character?.class)
-        .single();
+      const classIdForHistory = selectedClassToLevel?.classId;
+      const { data: classData } = classIdForHistory 
+        ? { data: { id: classIdForHistory } }
+        : await supabase
+            .from("srd_classes")
+            .select("id")
+            .eq("name", character?.class)
+            .single();
 
       if (classData) {
         await supabase.from("character_level_history").insert({
@@ -877,7 +960,14 @@ export const LevelUpWizard = ({
 
   // Build steps array dynamically based on class
   const steps = useMemo(() => {
-    const s: LevelUpStep[] = ["hp-roll"];
+    const s: LevelUpStep[] = [];
+    
+    // Multiclass class selection (if multiple classes)
+    if (characterClasses.length > 1) {
+      s.push("class-select");
+    }
+    
+    s.push("hp-roll");
     
     // Wizard spellbook (always 2 spells per level)
     if (isWizard) {
@@ -946,13 +1036,15 @@ export const LevelUpWizard = ({
     
     s.push("review");
     return s;
-  }, [isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant]);
+  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
   const canProceed = () => {
     switch (step) {
+      case "class-select":
+        return selectedClassToLevel !== null;
       case "hp-roll":
         return hpRoll !== null;
       case "wizard-spellbook":
@@ -1025,6 +1117,37 @@ export const LevelUpWizard = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Class Select Step (Multiclass) */}
+          {step === "class-select" && (
+            <MulticlassLevelUpStep
+              characterId={characterId}
+              characterClasses={characterClasses}
+              abilityScores={{
+                str: character?.character_abilities?.[0]?.str || 10,
+                dex: character?.character_abilities?.[0]?.dex || 10,
+                con: character?.character_abilities?.[0]?.con || 10,
+                int: character?.character_abilities?.[0]?.int || 10,
+                wis: character?.character_abilities?.[0]?.wis || 10,
+                cha: character?.character_abilities?.[0]?.cha || 10,
+              }}
+              totalLevel={currentLevel}
+              selectedClassToLevel={selectedClassToLevel?.className || null}
+              onSelectClassToLevel={(className, classId) => {
+                setSelectedClassToLevel({ className, classId });
+              }}
+              onClassAdded={(className, classId) => {
+                const newClass: CharacterClass = {
+                  className,
+                  classId,
+                  level: 0, // Will become 1 after level up
+                  isPrimary: false,
+                };
+                setCharacterClasses([...characterClasses, newClass]);
+                setSelectedClassToLevel({ className, classId });
+              }}
+            />
+          )}
+
           {/* HP Roll Step */}
           {step === "hp-roll" && (
             <Card>

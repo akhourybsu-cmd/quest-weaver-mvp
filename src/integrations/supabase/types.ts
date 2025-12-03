@@ -918,6 +918,45 @@ export type Database = {
           },
         ]
       }
+      character_mystic_arcanum: {
+        Row: {
+          character_id: string
+          created_at: string | null
+          id: string
+          spell_id: string | null
+          spell_level: number
+        }
+        Insert: {
+          character_id: string
+          created_at?: string | null
+          id?: string
+          spell_id?: string | null
+          spell_level: number
+        }
+        Update: {
+          character_id?: string
+          created_at?: string | null
+          id?: string
+          spell_id?: string | null
+          spell_level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_mystic_arcanum_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_mystic_arcanum_spell_id_fkey"
+            columns: ["spell_id"]
+            isOneToOne: false
+            referencedRelation: "srd_spells"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_proficiencies: {
         Row: {
           character_id: string
@@ -1258,8 +1297,15 @@ export type Database = {
           luck_points_total: number | null
           luck_points_used: number | null
           max_hp: number
+          mystic_arcanum_6_used: boolean | null
+          mystic_arcanum_7_used: boolean | null
+          mystic_arcanum_8_used: boolean | null
+          mystic_arcanum_9_used: boolean | null
           name: string
           notes: string | null
+          pact_slot_level: number | null
+          pact_slots_max: number | null
+          pact_slots_used: number | null
           passive_insight: number | null
           passive_investigation: number | null
           passive_perception: number | null
@@ -1330,8 +1376,15 @@ export type Database = {
           luck_points_total?: number | null
           luck_points_used?: number | null
           max_hp: number
+          mystic_arcanum_6_used?: boolean | null
+          mystic_arcanum_7_used?: boolean | null
+          mystic_arcanum_8_used?: boolean | null
+          mystic_arcanum_9_used?: boolean | null
           name: string
           notes?: string | null
+          pact_slot_level?: number | null
+          pact_slots_max?: number | null
+          pact_slots_used?: number | null
           passive_insight?: number | null
           passive_investigation?: number | null
           passive_perception?: number | null
@@ -1402,8 +1455,15 @@ export type Database = {
           luck_points_total?: number | null
           luck_points_used?: number | null
           max_hp?: number
+          mystic_arcanum_6_used?: boolean | null
+          mystic_arcanum_7_used?: boolean | null
+          mystic_arcanum_8_used?: boolean | null
+          mystic_arcanum_9_used?: boolean | null
           name?: string
           notes?: string | null
+          pact_slot_level?: number | null
+          pact_slots_max?: number | null
+          pact_slots_used?: number | null
           passive_insight?: number | null
           passive_investigation?: number | null
           passive_perception?: number | null

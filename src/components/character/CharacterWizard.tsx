@@ -681,12 +681,19 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       }
 
       // Write spells (if caster)
-      if (draft.choices.spellsKnown && draft.choices.spellsKnown.length > 0) {
-        const spellsData = draft.choices.spellsKnown.map(spellId => ({
+      // Combine spellsKnown (cantrips + known-caster spells) and spellsPrepared (prepared-caster spells like Wizard/Cleric/Druid)
+      const allSpellIds = new Set([
+        ...(draft.choices.spellsKnown || []),
+        ...(draft.choices.spellsPrepared || []),
+      ]);
+
+      if (allSpellIds.size > 0) {
+        const spellsData = Array.from(allSpellIds).map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
           prepared: draft.choices.spellsPrepared?.includes(spellId) || false,
+          source: 'class',
         }));
 
         const { error: spellsError } = await supabase

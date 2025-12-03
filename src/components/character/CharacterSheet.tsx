@@ -17,6 +17,8 @@ import { SpellbookManager } from "@/components/spells/SpellbookManager";
 import { ResourcePanel } from "@/components/character/ResourcePanel";
 import { DefensesPanel } from "@/components/character/DefensesPanel";
 import { DefensesEditor } from "@/components/character/DefensesEditor";
+import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
+import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
 import type { DamageType } from "@/lib/damageEngine";
 
 interface CharacterSheetProps {
@@ -199,6 +201,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             <span className="text-lg font-bold">+{profBonus}</span>
           </div>
           <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Exhaustion</span>
+            <span className="text-lg font-bold">{character.exhaustion_level || 0}</span>
+          </div>
+          <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Passive Per</span>
             <span className="text-lg font-bold">{character.passive_perception}</span>
           </div>
@@ -275,6 +281,8 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                 character={character}
                 attacks={attacks}
                 equipment={equipment}
+                characterId={characterId}
+                onUpdate={loadCharacter}
               />
             </TabsContent>
 
@@ -515,9 +523,32 @@ const SkillsTab = ({ skills, abilities, profBonus, proficiencies, languages }: a
   );
 };
 
-const CombatTab = ({ character, attacks, equipment }: any) => {
+const CombatTab = ({ character, attacks, equipment, characterId, onUpdate }: any) => {
+  const isWarlock = character.class?.toLowerCase().includes('warlock');
+  
   return (
     <div className="space-y-6">
+      {/* Status Trackers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ExhaustionManager
+          characterId={characterId}
+          characterName={character.name}
+          currentLevel={character.exhaustion_level || 0}
+          baseSpeed={character.speed || 30}
+          baseMaxHP={character.max_hp}
+          onLevelChange={onUpdate}
+        />
+        {isWarlock && (
+          <WarlockPactSlots
+            characterId={characterId}
+            characterName={character.name}
+            pactSlotsMax={character.pact_slots_max || 1}
+            pactSlotsUsed={character.pact_slots_used || 0}
+            pactSlotLevel={character.pact_slot_level || 1}
+          />
+        )}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Attacks</CardTitle>

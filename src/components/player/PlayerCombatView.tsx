@@ -251,8 +251,8 @@ export function PlayerCombatView({
               </div>
             )}
 
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2 pr-4">
+            <ScrollArea className="h-[300px] sm:h-[400px]">
+              <div className="space-y-2 pr-2 sm:pr-4">
                 {initiative.map((entry) => (
                   <div
                     key={entry.id}
@@ -303,8 +303,8 @@ export function PlayerCombatView({
           </TabsContent>
 
           <TabsContent value="log" className="mt-4">
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2 pr-4">
+            <ScrollArea className="h-[300px] sm:h-[400px]">
+              <div className="space-y-2 pr-2 sm:pr-4">
                 {combatLog.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center py-8">
                     No combat actions yet
@@ -326,8 +326,8 @@ export function PlayerCombatView({
           </TabsContent>
 
           <TabsContent value="conditions" className="mt-4">
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2 pr-4">
+            <ScrollArea className="h-[300px] sm:h-[400px]">
+              <div className="space-y-2 pr-2 sm:pr-4">
                 {conditions.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center py-8">
                     No active conditions

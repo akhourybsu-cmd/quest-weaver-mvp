@@ -105,14 +105,14 @@ export function EncounterControls({
     <div className="flex items-center gap-2">
       {getStatusBadge()}
 
-      {status === 'preparing' && hasInitiative && (
+      {status === 'preparing' && (
         <Button
           onClick={() => updateStatus('active')}
           size="sm"
           variant="default"
         >
           <Play className="w-4 h-4 mr-1" />
-          Start Encounter
+          {hasInitiative ? 'Start Encounter' : 'Start Combat'}
         </Button>
       )}
 

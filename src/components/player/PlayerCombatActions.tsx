@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, SkipForward, Zap, Mountain } from "lucide-react";
+import { Check, X, SkipForward, Zap, Mountain, Sword, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -20,6 +20,8 @@ import EscapeGrappleButton from "@/components/combat/EscapeGrappleButton";
 import { ReadiedActionDialog } from "@/components/combat/ReadiedActionDialog";
 import { MountCombatManager } from "@/components/combat/MountCombatManager";
 import { useMountedStatus } from "@/hooks/useMountedStatus";
+import { PlayerAttackDialog } from "@/components/combat/PlayerAttackDialog";
+import { AmmunitionTracker } from "@/components/combat/AmmunitionTracker";
 
 interface PlayerCombatActionsProps {
   characterId: string;
@@ -335,6 +337,13 @@ export function PlayerCombatActions({
             <div className="space-y-2">
               <p className="text-sm font-medium">Combat Options:</p>
               <div className="flex flex-wrap gap-2">
+                <PlayerAttackDialog
+                  characterName={character.name}
+                  attackBonus={character.athleticsBonus}
+                  weaponName="Weapon"
+                  damageFormula="1d8"
+                  exhaustionLevel={0}
+                />
                 <GrappleShoveMenu
                   attackerId={character.id}
                   attackerType="character"
@@ -375,6 +384,9 @@ export function PlayerCombatActions({
               </div>
             </div>
           )}
+
+          {/* Ammunition Tracker */}
+          <AmmunitionTracker characterId={characterId} />
 
           <Button
             onClick={() => setShowEndTurnDialog(true)}

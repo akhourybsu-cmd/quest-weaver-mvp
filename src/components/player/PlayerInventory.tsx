@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Backpack, Coins } from "lucide-react";
+import { AttunementManager } from "@/components/inventory/AttunementManager";
 
 interface Holding {
   id: string;
@@ -158,6 +159,7 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   );
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -197,5 +199,9 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
         </Tabs>
       </CardContent>
     </Card>
+
+    {/* Attunement Manager */}
+    <AttunementManager characterId={characterId} />
+    </>
   );
 }

@@ -12,6 +12,8 @@ import {
   ShieldAlert, Wand2, ChevronDown, Sword, Sparkles, Star, Flame, TrendingUp
 } from "lucide-react";
 import { LevelUpWizard } from "@/components/character/LevelUpWizard";
+import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
+import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
 
 // Type definitions
 interface AncestryTrait {
@@ -114,6 +116,10 @@ interface CharacterData {
   ancestry_id: string | null;
   subancestry_id: string | null;
   portrait_url: string | null;
+  exhaustion_level: number;
+  pact_slots_max: number | null;
+  pact_slots_used: number | null;
+  pact_slot_level: number | null;
 }
 
 interface PlayerCharacterSheetProps {
@@ -430,6 +436,29 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                     style={{ width: `${Math.min(100, getHPPercentage())}%` }}
                   />
                 </div>
+              </div>
+
+              {/* Exhaustion & Warlock Pact Slots */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ExhaustionManager
+                  characterId={character.id}
+                  characterName={character.name}
+                  currentLevel={character.exhaustion_level || 0}
+                  baseSpeed={character.speed || 30}
+                  baseMaxHP={character.max_hp}
+                  onLevelChange={fetchCharacter}
+                  compact
+                />
+                {character.class?.toLowerCase().includes('warlock') && (
+                  <WarlockPactSlots
+                    characterId={character.id}
+                    characterName={character.name}
+                    pactSlotsMax={character.pact_slots_max || 1}
+                    pactSlotsUsed={character.pact_slots_used || 0}
+                    pactSlotLevel={character.pact_slot_level || 1}
+                    compact
+                  />
+                )}
               </div>
 
               {/* Core Stats Grid - Responsive */}

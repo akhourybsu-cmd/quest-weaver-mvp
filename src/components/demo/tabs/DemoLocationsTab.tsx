@@ -48,14 +48,14 @@ export function DemoLocationsTab({ campaign }: DemoLocationsTabProps) {
                   className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url(${location.image_url})` }}
                 />
-                <div className="absolute inset-0 bg-card/85 backdrop-blur-[1px]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/90 to-card/80 backdrop-blur-[1px]" />
               </>
             )}
             
             <CardHeader className="relative z-10">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <CardTitle className="font-cinzel flex items-center gap-2">
+                  <CardTitle className="font-cinzel flex items-center gap-2 drop-shadow-md">
                     <MapPin className="w-5 h-5 text-arcanePurple" />
                     {location.name}
                   </CardTitle>

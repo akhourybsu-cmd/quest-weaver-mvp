@@ -82,7 +82,7 @@ const LocationCard = memo(({
         style={{ backgroundImage: `url(${location.image_url})` }}
       />
     )}
-    <div className={`absolute inset-0 ${location.image_url ? 'bg-card/85 backdrop-blur-[2px]' : 'bg-card/50'}`} />
+    <div className={`absolute inset-0 ${location.image_url ? 'bg-gradient-to-t from-card via-card/90 to-card/80 backdrop-blur-[1px]' : 'bg-card/50'}`} />
     
     {/* Content */}
     <div className="relative z-10">
@@ -91,7 +91,7 @@ const LocationCard = memo(({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+              <CardTitle className="text-base font-cinzel truncate drop-shadow-md">{location.name}</CardTitle>
               {parentName && (
                 <p className="text-xs text-muted-foreground mt-0.5">in {parentName}</p>
               )}

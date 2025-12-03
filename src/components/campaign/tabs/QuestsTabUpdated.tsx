@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,106 @@ interface QuestsTabProps {
   demoCampaign?: DemoCampaign | null;
 }
 
+const getQuestTypeIcon = (type?: string) => {
+  switch(type) {
+    case 'main_quest': return <Sword className="w-3 h-3" />;
+    case 'side_quest': return <Target className="w-3 h-3" />;
+    case 'faction': return <Users className="w-3 h-3" />;
+    case 'personal': return <User className="w-3 h-3" />;
+    default: return <Scroll className="w-3 h-3" />;
+  }
+};
+
+const getDifficultyColor = (difficulty?: string) => {
+  switch(difficulty) {
+    case 'easy': return 'text-buff-green border-buff-green/30';
+    case 'medium': return 'text-warning-amber border-warning-amber/30';
+    case 'hard': return 'text-destructive border-destructive/30';
+    case 'deadly': return 'text-dragon-red border-dragon-red/30';
+    default: return 'text-muted-foreground border-brass/30';
+  }
+};
+
+// Memoized Quest Card Component
+const QuestCard = memo(({ quest, onClick }: { quest: Quest; onClick: (quest: Quest) => void }) => {
+  const objectives = quest.steps || [];
+  const completedObjectives = objectives.filter((o: any) => o.is_completed || o.isCompleted).length;
+  const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
+
+  return (
+    <Card
+      className="hover:shadow-lg transition-all bg-card border-brass/20 cursor-pointer"
+      onClick={() => onClick(quest)}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              {quest.questType && (
+                <Badge variant="outline" className="text-xs border-brass/30">
+                  {getQuestTypeIcon(quest.questType)}
+                  <span className="ml-1">{quest.questType.replace('_', ' ')}</span>
+                </Badge>
+              )}
+              {quest.difficulty && quest.difficulty !== 'none' && (
+                <Badge variant="outline" className={`text-xs ${getDifficultyColor(quest.difficulty)}`}>
+                  {quest.difficulty}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {objectives.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{completedObjectives}/{objectives.length}</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {quest.npc && (
+            <span className="flex items-center gap-1">
+              <User className="w-3 h-3" />
+              {quest.npc.name}
+            </span>
+          )}
+          {quest.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {quest.location.name}
+            </span>
+          )}
+        </div>
+
+        {(quest.rewardXP || quest.rewardGP) && (
+          <div className="flex items-center gap-3 text-xs">
+            {quest.rewardXP && (
+              <span className="flex items-center gap-1 text-warning-amber">
+                <Award className="w-3 h-3" />
+                {quest.rewardXP} XP
+              </span>
+            )}
+            {quest.rewardGP && (
+              <span className="flex items-center gap-1 text-brass">
+                <Coins className="w-3 h-3" />
+                {quest.rewardGP} GP
+              </span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
+QuestCard.displayName = "QuestCard";
+
 export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }: QuestsTabProps) {
   const { toast } = useToast();
   const [view, setView] = useState<"board" | "list">("board");
@@ -59,7 +159,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const fetchQuests = async () => {
+  const fetchQuests = useCallback(async () => {
     setLoading(true);
     try {
       if (demoMode && demoCampaign) {
@@ -105,8 +205,6 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
 
       if (error) throw error;
 
-      // Note counts removed for now
-
       const transformedQuests = (data || []).map((quest: any) => ({
         id: quest.id,
         title: quest.title,
@@ -136,7 +234,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId, demoMode, demoCampaign]);
 
   useEffect(() => {
     fetchQuests();
@@ -162,37 +260,38 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campaignId, demoMode, demoCampaign]);
+  }, [campaignId, demoMode, demoCampaign, fetchQuests]);
 
-  const questsByStatus = {
+  // Memoized quests by status
+  const questsByStatus = useMemo(() => ({
     not_started: quests.filter((q) => q.status === "not_started"),
     in_progress: quests.filter((q) => q.status === "in_progress"),
     completed: quests.filter((q) => q.status === "completed"),
     failed: quests.filter((q) => q.status === "failed"),
-  };
+  }), [quests]);
 
-  const handleQuestClick = (quest: Quest) => {
+  const handleQuestClick = useCallback((quest: Quest) => {
     if (onQuestSelect) {
       onQuestSelect(quest);
     } else {
       setSelectedQuest(quest);
       setDetailDialogOpen(true);
     }
-  };
+  }, [onQuestSelect]);
 
-  const handleEditQuest = () => {
+  const handleEditQuest = useCallback(() => {
     if (selectedQuest) {
       setDetailDialogOpen(false);
       setQuestToEdit(selectedQuest);
       setDialogOpen(true);
     }
-  };
+  }, [selectedQuest]);
 
-  const handleDeleteQuest = () => {
+  const handleDeleteQuest = useCallback(() => {
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDeleteQuest = async () => {
+  const confirmDeleteQuest = useCallback(async () => {
     if (!selectedQuest) return;
 
     const { error } = await supabase
@@ -213,104 +312,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
       setSelectedQuest(null);
       fetchQuests();
     }
-  };
-
-  const QuestCard = ({ quest }: { quest: Quest }) => {
-    const objectives = quest.steps || [];
-    const completedObjectives = objectives.filter((o: any) => o.is_completed || o.isCompleted).length;
-    const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
-
-    const getQuestTypeIcon = (type?: string) => {
-      switch(type) {
-        case 'main_quest': return <Sword className="w-3 h-3" />;
-        case 'side_quest': return <Target className="w-3 h-3" />;
-        case 'faction': return <Users className="w-3 h-3" />;
-        case 'personal': return <User className="w-3 h-3" />;
-        default: return <Scroll className="w-3 h-3" />;
-      }
-    };
-
-    const getDifficultyColor = (difficulty?: string) => {
-      switch(difficulty) {
-        case 'easy': return 'text-buff-green border-buff-green/30';
-        case 'medium': return 'text-warning-amber border-warning-amber/30';
-        case 'hard': return 'text-destructive border-destructive/30';
-        case 'deadly': return 'text-dragon-red border-dragon-red/30';
-        default: return 'text-muted-foreground border-brass/30';
-      }
-    };
-
-    return (
-      <Card
-        className="hover:shadow-lg transition-all bg-card border-brass/20 cursor-pointer"
-        onClick={() => handleQuestClick(quest)}
-      >
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
-              <div className="flex items-center gap-2 flex-wrap mt-2">
-                {quest.questType && (
-                  <Badge variant="outline" className="text-xs border-brass/30">
-                    {getQuestTypeIcon(quest.questType)}
-                    <span className="ml-1">{quest.questType.replace('_', ' ')}</span>
-                  </Badge>
-                )}
-                {quest.difficulty && quest.difficulty !== 'none' && (
-                  <Badge variant="outline" className={`text-xs ${getDifficultyColor(quest.difficulty)}`}>
-                    {quest.difficulty}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {objectives.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">{completedObjectives}/{objectives.length}</span>
-              </div>
-              <Progress value={progress} className="h-1.5" />
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {quest.npc && (
-              <span className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {quest.npc.name}
-              </span>
-            )}
-            {quest.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {quest.location.name}
-              </span>
-            )}
-          </div>
-
-          {(quest.rewardXP || quest.rewardGP) && (
-            <div className="flex items-center gap-3 text-xs">
-              {quest.rewardXP && (
-                <span className="flex items-center gap-1 text-warning-amber">
-                  <Award className="w-3 h-3" />
-                  {quest.rewardXP} XP
-                </span>
-              )}
-              {quest.rewardGP && (
-                <span className="flex items-center gap-1 text-brass">
-                  <Coins className="w-3 h-3" />
-                  {quest.rewardGP} GP
-                </span>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
+  }, [selectedQuest, toast, fetchQuests]);
 
   if (loading) {
     return (
@@ -366,7 +368,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             <ScrollArea className="h-[600px]">
               <div className="space-y-3 pr-4">
                 {questsByStatus.not_started.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} />
+                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
                 ))}
               </div>
             </ScrollArea>
@@ -380,7 +382,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             <ScrollArea className="h-[600px]">
               <div className="space-y-3 pr-4">
                 {questsByStatus.in_progress.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} />
+                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
                 ))}
               </div>
             </ScrollArea>
@@ -394,7 +396,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             <ScrollArea className="h-[600px]">
               <div className="space-y-3 pr-4">
                 {questsByStatus.completed.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} />
+                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
                 ))}
               </div>
             </ScrollArea>
@@ -408,7 +410,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
             <ScrollArea className="h-[600px]">
               <div className="space-y-3 pr-4">
                 {questsByStatus.failed.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} />
+                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
                 ))}
               </div>
             </ScrollArea>
@@ -420,7 +422,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         <ScrollArea className="h-[600px]">
           <div className="space-y-3">
             {quests.map((quest) => (
-              <QuestCard key={quest.id} quest={quest} />
+              <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
             ))}
           </div>
         </ScrollArea>

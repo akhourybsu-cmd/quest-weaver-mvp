@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,97 @@ const terrainColors: Record<string, string> = {
   Wilderness: "bg-green-500/20 text-green-300 border-green-500/30",
 };
 
+// Memoized Location Card Component
+const LocationCard = memo(({ 
+  location, 
+  parentName, 
+  childCount, 
+  onEdit, 
+  onAddSub, 
+  onDelete 
+}: { 
+  location: Location; 
+  parentName: string | null;
+  childCount: number;
+  onEdit: (location: Location) => void;
+  onAddSub: (parentId: string) => void;
+  onDelete: (location: Location) => void;
+}) => (
+  <Card
+    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
+    onClick={() => onEdit(location)}
+  >
+    <CardHeader className="pb-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
+            {parentName && (
+              <p className="text-xs text-muted-foreground mt-0.5">in {parentName}</p>
+            )}
+          </div>
+          {childCount > 0 && (
+            <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
+              {childCount} sub
+            </Badge>
+          )}
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddSub(location.id);
+            }}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Sub
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(location);
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      {location.location_type && (
+        <CardDescription className="text-xs">{location.location_type}</CardDescription>
+      )}
+    </CardHeader>
+    <CardContent className="space-y-3">
+      <p className="text-sm text-muted-foreground line-clamp-2">
+        {location.description || 'No description'}
+      </p>
+      <div className="flex items-center justify-between gap-2">
+        {location.tags && location.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {location.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className={terrainColors[tag] || "border-brass/30"}>
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+        <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
+          <Eye className="w-3 h-3 mr-1" />
+          {location.discovered ? "Discovered" : "Hidden"}
+        </Badge>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+LocationCard.displayName = "LocationCard";
+
 export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTabProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,10 +157,34 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [parentLocationId, setParentLocationId] = useState<string | null>(null);
 
+  const fetchLocations = useCallback(async () => {
+    try {
+      if (demoMode && demoCampaign) {
+        const adaptedLocations = adaptDemoLocations(demoCampaign);
+        setLocations(adaptedLocations as any);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('name');
+
+      if (error) throw error;
+      setLocations(data || []);
+    } catch (error: any) {
+      console.error('Error fetching locations:', error);
+      toast.error('Failed to load locations');
+    } finally {
+      setLoading(false);
+    }
+  }, [campaignId, demoMode, demoCampaign]);
+
   useEffect(() => {
     fetchLocations();
 
-    // Skip real-time subscriptions in demo mode
     if (demoMode) return;
 
     const channel = resilientChannel(supabase, `locations:${campaignId}`);
@@ -87,36 +202,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campaignId, demoMode]);
+  }, [campaignId, demoMode, fetchLocations]);
 
-  const fetchLocations = async () => {
-    try {
-      // Demo mode: Use static demo data
-      if (demoMode && demoCampaign) {
-        const adaptedLocations = adaptDemoLocations(demoCampaign);
-        setLocations(adaptedLocations as any);
-        setLoading(false);
-        return;
-      }
-
-      // Real mode: Fetch from Supabase
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('name');
-
-      if (error) throw error;
-      setLocations(data || []);
-    } catch (error: any) {
-      console.error('Error fetching locations:', error);
-      toast.error('Failed to load locations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!locationToDelete) return;
 
     try {
@@ -134,47 +222,65 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
       console.error('Error deleting location:', error);
       toast.error('Failed to delete location');
     }
-  };
+  }, [locationToDelete]);
 
-  const filteredLocations = locations.filter((loc) =>
-    loc.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Memoized filtered locations
+  const filteredLocations = useMemo(() => 
+    locations.filter((loc) => loc.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [locations, searchQuery]
   );
 
-  // Helper to get parent name
-  const getParentName = (parentId: string | null) => {
+  // Memoized helper functions
+  const getParentName = useCallback((parentId: string | null) => {
     if (!parentId) return null;
-    return locations.find(loc => loc.id === parentId)?.name;
-  };
+    return locations.find(loc => loc.id === parentId)?.name || null;
+  }, [locations]);
 
-  // Get child count for each location
-  const getChildCount = (locationId: string) => {
+  const getChildCount = useCallback((locationId: string) => {
     return locations.filter(loc => loc.parent_location_id === locationId).length;
-  };
+  }, [locations]);
 
-  // Get child locations of selected location for tree view
-  const childLocations = selectedLocation
-    ? locations.filter((loc) => loc.parent_location_id === selectedLocation.id)
-    : locations.filter((loc) => !loc.parent_location_id); // Root locations if none selected
+  // Memoized child locations
+  const childLocations = useMemo(() => 
+    selectedLocation
+      ? locations.filter((loc) => loc.parent_location_id === selectedLocation.id)
+      : locations.filter((loc) => !loc.parent_location_id),
+    [locations, selectedLocation]
+  );
 
-  const displayLocations = viewMode === "tree" && selectedLocation ? childLocations : filteredLocations;
+  // Memoized display locations
+  const displayLocations = useMemo(() => 
+    viewMode === "tree" && selectedLocation ? childLocations : filteredLocations,
+    [viewMode, selectedLocation, childLocations, filteredLocations]
+  );
 
-  const handleLocationSelect = (location: Location) => {
+  const handleLocationSelect = useCallback((location: Location) => {
     setSelectedLocation(location);
-  };
+  }, []);
 
-  const handleAddSubLocation = (parentId: string) => {
+  const handleAddSubLocation = useCallback((parentId: string) => {
     setParentLocationId(parentId);
     setLocationToEdit(undefined);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogClose = (open: boolean) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     setDialogOpen(open);
     if (!open) {
       setLocationToEdit(undefined);
       setParentLocationId(null);
     }
-  };
+  }, []);
+
+  const handleEditLocation = useCallback((location: Location) => {
+    setLocationToEdit(location);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDeleteLocation = useCallback((location: Location) => {
+    setLocationToDelete(location);
+    setDeleteDialogOpen(true);
+  }, []);
 
   return (
     <>
@@ -240,96 +346,17 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
               )}
               <ScrollArea className="h-[calc(100vh-350px)]">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
-                  {displayLocations.map((location) => {
-                    const parentName = getParentName(location.parent_location_id);
-                    const childCount = getChildCount(location.id);
-                    
-                    return (
-                      <Card
-                        key={location.id}
-                        className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-                        onClick={() => {
-                          setLocationToEdit(location);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
-                                {parentName && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    in {parentName}
-                                  </p>
-                                )}
-                              </div>
-                              {childCount > 0 && (
-                                <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
-                                  {childCount} sub
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex gap-1 shrink-0">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-2 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAddSubLocation(location.id);
-                                }}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Sub
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLocationToDelete(location);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          {location.location_type && (
-                            <CardDescription className="text-xs">{location.location_type}</CardDescription>
-                          )}
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {location.description || 'No description'}
-                          </p>
-
-                          <div className="flex items-center justify-between gap-2">
-                            {location.tags && location.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {location.tags.slice(0, 3).map((tag) => (
-                                  <Badge
-                                    key={tag}
-                                    variant="outline"
-                                    className={terrainColors[tag] || "border-brass/30"}
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
-                              <Eye className="w-3 h-3 mr-1" />
-                              {location.discovered ? "Discovered" : "Hidden"}
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                  {displayLocations.map((location) => (
+                    <LocationCard
+                      key={location.id}
+                      location={location}
+                      parentName={getParentName(location.parent_location_id)}
+                      childCount={getChildCount(location.id)}
+                      onEdit={handleEditLocation}
+                      onAddSub={handleAddSubLocation}
+                      onDelete={handleDeleteLocation}
+                    />
+                  ))}
                 </div>
               </ScrollArea>
             </div>
@@ -350,96 +377,17 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-              {displayLocations.map((location) => {
-                const parentName = getParentName(location.parent_location_id);
-                const childCount = getChildCount(location.id);
-                
-                return (
-                  <Card
-                    key={location.id}
-                    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-card/50 border-brass/20"
-                    onClick={() => {
-                      setLocationToEdit(location);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base font-cinzel truncate">{location.name}</CardTitle>
-                            {parentName && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                in {parentName}
-                              </p>
-                            )}
-                          </div>
-                          {childCount > 0 && (
-                            <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-xs">
-                              {childCount} sub
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddSubLocation(location.id);
-                            }}
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Sub
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setLocationToDelete(location);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      {location.location_type && (
-                        <CardDescription className="text-xs">{location.location_type}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {location.description || 'No description'}
-                      </p>
-
-                      <div className="flex items-center justify-between gap-2">
-                        {location.tags && location.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {location.tags.slice(0, 3).map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className={terrainColors[tag] || "border-brass/30"}
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <Badge variant={location.discovered ? "default" : "secondary"} className="shrink-0">
-                          <Eye className="w-3 h-3 mr-1" />
-                          {location.discovered ? "Discovered" : "Hidden"}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {displayLocations.map((location) => (
+                <LocationCard
+                  key={location.id}
+                  location={location}
+                  parentName={getParentName(location.parent_location_id)}
+                  childCount={getChildCount(location.id)}
+                  onEdit={handleEditLocation}
+                  onAddSub={handleAddSubLocation}
+                  onDelete={handleDeleteLocation}
+                />
+              ))}
             </div>
           </ScrollArea>
         )}

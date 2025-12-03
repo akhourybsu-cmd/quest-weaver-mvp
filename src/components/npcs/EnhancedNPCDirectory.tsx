@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,149 @@ interface EnhancedNPCDirectoryProps {
   isDM: boolean;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "alive":
+      return "bg-status-buff";
+    case "dead":
+      return "bg-muted-foreground";
+    case "missing":
+      return "bg-status-warning";
+    default:
+      return "bg-muted";
+  }
+};
+
+// Memoized NPC Card Component
+const NPCCardItem = memo(({ 
+  npc, 
+  isDM, 
+  campaignId, 
+  onView, 
+  onUpdate 
+}: { 
+  npc: NPC; 
+  isDM: boolean; 
+  campaignId: string; 
+  onView: (npc: NPC) => void;
+  onUpdate: () => void;
+}) => (
+  <Card
+    className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
+    onClick={() => onView(npc)}
+  >
+    <CardContent className="p-4">
+      <div className="flex flex-col items-center text-center relative">
+        <div className={`absolute top-0 left-0 w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
+        {isDM && npc.secrets && (
+          <div className="absolute top-0 right-0" title="Has GM secrets">
+            <EyeOff className="w-3 h-3 text-muted-foreground" />
+          </div>
+        )}
+        <div className="relative mb-3">
+          <div className="absolute inset-0 rounded-full border-2 border-brand-brass/70 group-hover:border-brand-brass transition-colors" />
+          <Avatar className="w-16 h-16 relative">
+            <AvatarImage src={npc.portrait_url} alt={npc.name} />
+            <AvatarFallback className="bg-muted">
+              {npc.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        <h3 className="font-cinzel font-semibold truncate w-full">{npc.name}</h3>
+        {npc.role_title && (
+          <p className="text-sm text-muted-foreground truncate w-full">{npc.role_title}</p>
+        )}
+        {npc.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2 justify-center">
+            {npc.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+            ))}
+            {npc.tags.length > 3 && (
+              <Badge variant="secondary" className="text-xs">+{npc.tags.length - 3}</Badge>
+            )}
+          </div>
+        )}
+        {isDM && (
+          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <NPCQuickActions
+              npcId={npc.id}
+              npcName={npc.name}
+              campaignId={campaignId}
+              isPinned={npc.is_pinned}
+              gmNotes={npc.gm_notes}
+              onUpdate={onUpdate}
+            />
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+));
+
+NPCCardItem.displayName = "NPCCardItem";
+
+// Memoized NPC List Item Component
+const NPCListItem = memo(({ 
+  npc, 
+  isDM, 
+  campaignId, 
+  onView, 
+  onUpdate 
+}: { 
+  npc: NPC; 
+  isDM: boolean; 
+  campaignId: string; 
+  onView: (npc: NPC) => void;
+  onUpdate: () => void;
+}) => (
+  <Card
+    className="group cursor-pointer hover:shadow-md hover:border-brand-brass/70 transition-all duration-200 border-2 border-border/50"
+    onClick={() => onView(npc)}
+  >
+    <CardContent className="flex items-center gap-4 p-4">
+      <div className={`w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full border-2 border-brand-brass/70 group-hover:border-brand-brass transition-colors" />
+        <Avatar className="w-12 h-12 relative">
+          <AvatarImage src={npc.portrait_url} alt={npc.name} />
+          <AvatarFallback className="bg-muted">
+            {npc.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-cinzel font-semibold">{npc.name}</h3>
+        {npc.role_title && <p className="text-sm text-muted-foreground">{npc.role_title}</p>}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {npc.tags.slice(0, 3).map((tag) => (
+          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+        ))}
+        {npc.tags.length > 3 && (
+          <Badge variant="secondary" className="text-xs">+{npc.tags.length - 3}</Badge>
+        )}
+      </div>
+      {isDM && npc.secrets && (
+        <div title="Has GM secrets">
+          <EyeOff className="w-4 h-4 text-muted-foreground" />
+        </div>
+      )}
+      {isDM && (
+        <NPCQuickActions
+          npcId={npc.id}
+          npcName={npc.name}
+          campaignId={campaignId}
+          isPinned={npc.is_pinned}
+          gmNotes={npc.gm_notes}
+          onUpdate={onUpdate}
+        />
+      )}
+    </CardContent>
+  </Card>
+));
+
+NPCListItem.displayName = "NPCListItem";
+
 const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) => {
   const [npcs, setNpcs] = useState<NPC[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +202,6 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
   });
   const { toast } = useToast();
 
-  // Persist view mode and sort preference
   useEffect(() => {
     localStorage.setItem("npc-view-mode", viewMode);
   }, [viewMode]);
@@ -67,6 +209,25 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
   useEffect(() => {
     localStorage.setItem("npc-sort-by", sortBy);
   }, [sortBy]);
+
+  const loadNPCs = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("npcs")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("name");
+
+    if (error) {
+      toast({
+        title: "Error loading NPCs",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setNpcs((data || []) as NPC[]);
+  }, [campaignId, toast]);
 
   useEffect(() => {
     loadNPCs();
@@ -88,28 +249,10 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [campaignId]);
+  }, [campaignId, loadNPCs]);
 
-  const loadNPCs = async () => {
-    const { data, error } = await supabase
-      .from("npcs")
-      .select("*")
-      .eq("campaign_id", campaignId)
-      .order("name");
-
-    if (error) {
-      toast({
-        title: "Error loading NPCs",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setNpcs((data || []) as NPC[]);
-  };
-
-  const filteredNPCs = npcs.filter((npc) => {
+  // Memoized filtered NPCs
+  const filteredNPCs = useMemo(() => npcs.filter((npc) => {
     const matchesSearch = searchQuery
       ? npc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         npc.role_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,22 +262,14 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
     const matchesTag = filterTag ? npc.tags.includes(filterTag) : true;
     const matchesFaction = filters.factionId ? npc.faction_id === filters.factionId : true;
     const matchesLocation = filters.locationId ? npc.location_id === filters.locationId : true;
-    const matchesStatus =
-      filters.status.length > 0 ? filters.status.includes(npc.status) : true;
+    const matchesStatus = filters.status.length > 0 ? filters.status.includes(npc.status) : true;
     const matchesPinned = filters.showOnlyPinned ? npc.is_pinned : true;
 
-    return (
-      matchesSearch &&
-      matchesTag &&
-      matchesFaction &&
-      matchesLocation &&
-      matchesStatus &&
-      matchesPinned
-    );
-  });
+    return matchesSearch && matchesTag && matchesFaction && matchesLocation && matchesStatus && matchesPinned;
+  }), [npcs, searchQuery, filterTag, filters]);
 
-  // Sort NPCs
-  const sortedNPCs = [...filteredNPCs].sort((a, b) => {
+  // Memoized sorted NPCs
+  const sortedNPCs = useMemo(() => [...filteredNPCs].sort((a, b) => {
     switch (sortBy) {
       case "name":
         return a.name.localeCompare(b.name);
@@ -147,185 +282,45 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
       default:
         return 0;
     }
-  });
+  }), [filteredNPCs, sortBy]);
 
-  // Split into pinned and unpinned
-  const pinnedNPCs = sortedNPCs.filter((npc) => npc.is_pinned);
-  const unpinnedNPCs = sortedNPCs.filter((npc) => !npc.is_pinned);
+  // Memoized pinned/unpinned split
+  const { pinnedNPCs, unpinnedNPCs } = useMemo(() => ({
+    pinnedNPCs: sortedNPCs.filter((npc) => npc.is_pinned),
+    unpinnedNPCs: sortedNPCs.filter((npc) => !npc.is_pinned),
+  }), [sortedNPCs]);
 
-  const allTags = Array.from(new Set(npcs.flatMap((npc) => npc.tags)));
+  // Memoized all tags
+  const allTags = useMemo(() => 
+    Array.from(new Set(npcs.flatMap((npc) => npc.tags))), 
+    [npcs]
+  );
 
-  const handleNewNPC = () => {
+  const handleNewNPC = useCallback(() => {
     setSelectedNPC(null);
     setEditorOpen(true);
-  };
+  }, []);
 
-  const handleEditNPC = (npc: NPC) => {
+  const handleEditNPC = useCallback((npc: NPC) => {
     setSelectedNPC(npc);
     setEditorOpen(true);
-  };
+  }, []);
 
-  const handleViewNPC = (npc: NPC) => {
+  const handleViewNPC = useCallback((npc: NPC) => {
     setSelectedNPC(npc);
     setDetailOpen(true);
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "alive":
-        return "bg-status-buff";
-      case "dead":
-        return "bg-muted-foreground";
-      case "missing":
-        return "bg-status-warning";
-      default:
-        return "bg-muted";
-    }
-  };
-
-  const renderNPCCard = (npc: NPC) => (
-    <Card
-      key={npc.id}
-      className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
-      onClick={() => handleViewNPC(npc)}
-    >
-      <CardContent className="p-4">
-        <div className="flex flex-col items-center text-center relative">
-          {/* Status Indicator */}
-          <div
-            className={`absolute top-0 left-0 w-2 h-2 rounded-full ${getStatusColor(
-              npc.status
-            )}`}
-          />
-
-          {/* GM-only Badge */}
-          {isDM && npc.secrets && (
-            <div className="absolute top-0 right-0" title="Has GM secrets">
-              <EyeOff className="w-3 h-3 text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Avatar with brass ring */}
-          <div className="relative mb-3">
-            <div className="absolute inset-0 rounded-full border-2 border-brand-brass/70 group-hover:border-brand-brass transition-colors" />
-            <Avatar className="w-16 h-16 relative">
-              <AvatarImage src={npc.portrait_url} alt={npc.name} />
-              <AvatarFallback className="bg-muted">
-                {npc.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-
-          <h3 className="font-cinzel font-semibold truncate w-full">{npc.name}</h3>
-          {npc.role_title && (
-            <p className="text-sm text-muted-foreground truncate w-full">{npc.role_title}</p>
-          )}
-
-          {/* Tags */}
-          {npc.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2 justify-center">
-              {npc.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-              {npc.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{npc.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Quick Actions - Show on hover */}
-          {isDM && (
-            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <NPCQuickActions
-                npcId={npc.id}
-                npcName={npc.name}
-                campaignId={campaignId}
-                isPinned={npc.is_pinned}
-                gmNotes={npc.gm_notes}
-                onUpdate={loadNPCs}
-              />
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderNPCListItem = (npc: NPC) => (
-    <Card
-      key={npc.id}
-      className="group cursor-pointer hover:shadow-md hover:border-brand-brass/70 transition-all duration-200 border-2 border-border/50"
-      onClick={() => handleViewNPC(npc)}
-    >
-      <CardContent className="flex items-center gap-4 p-4">
-        {/* Status Indicator */}
-        <div
-          className={`w-2 h-2 rounded-full ${getStatusColor(npc.status)}`}
-        />
-
-        {/* Avatar with brass ring */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full border-2 border-brand-brass/70 group-hover:border-brand-brass transition-colors" />
-          <Avatar className="w-12 h-12 relative">
-            <AvatarImage src={npc.portrait_url} alt={npc.name} />
-            <AvatarFallback className="bg-muted">
-              {npc.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="font-cinzel font-semibold">{npc.name}</h3>
-          {npc.role_title && <p className="text-sm text-muted-foreground">{npc.role_title}</p>}
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1">
-          {npc.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-          {npc.tags.length > 3 && (
-            <Badge variant="secondary" className="text-xs">
-              +{npc.tags.length - 3}
-            </Badge>
-          )}
-        </div>
-
-        {/* GM Secrets Badge */}
-        {isDM && npc.secrets && (
-          <div title="Has GM secrets">
-            <EyeOff className="w-4 h-4 text-muted-foreground" />
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        {isDM && (
-          <NPCQuickActions
-            npcId={npc.id}
-            npcName={npc.name}
-            campaignId={campaignId}
-            isPinned={npc.is_pinned}
-            gmNotes={npc.gm_notes}
-            onUpdate={loadNPCs}
-          />
-        )}
-      </CardContent>
-    </Card>
-  );
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery("");
+    setFilters({
+      factionId: null,
+      locationId: null,
+      status: [],
+      showOnlyPinned: false,
+    });
+    setFilterTag(null);
+  }, []);
 
   return (
     <div className="flex gap-4">
@@ -472,10 +467,16 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         </div>
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {pinnedNPCs.map(renderNPCCard)}
+                            {pinnedNPCs.map((npc) => (
+                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                            ))}
                           </div>
                         ) : (
-                          <div className="space-y-2">{pinnedNPCs.map(renderNPCListItem)}</div>
+                          <div className="space-y-2">
+                            {pinnedNPCs.map((npc) => (
+                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}
@@ -488,10 +489,16 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         )}
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {unpinnedNPCs.map(renderNPCCard)}
+                            {unpinnedNPCs.map((npc) => (
+                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                            ))}
                           </div>
                         ) : (
-                          <div className="space-y-2">{unpinnedNPCs.map(renderNPCListItem)}</div>
+                          <div className="space-y-2">
+                            {unpinnedNPCs.map((npc) => (
+                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                            ))}
+                          </div>
                         )}
                       </>
                     )}

@@ -195,10 +195,13 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                   >
                     {/* Background Banner with Overlay */}
                     {faction.banner_url && (
-                      <div 
-                        className="absolute inset-0 bg-cover bg-center opacity-20"
-                        style={{ backgroundImage: `url(${faction.banner_url})` }}
-                      />
+                      <>
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center opacity-25"
+                          style={{ backgroundImage: `url(${faction.banner_url})` }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-card/95 via-card/85 to-card/80" />
+                      </>
                     )}
                     
                     <CardContent className="p-4 relative z-10">
@@ -215,7 +218,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                         )}
                         
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold flex items-center gap-2">
+                          <h3 className="font-semibold flex items-center gap-2 drop-shadow-sm">
                             {faction.name}
                             {reputation && (
                               <Badge

@@ -144,12 +144,12 @@ export function DemoOverviewTab({ campaign }: DemoOverviewTabProps) {
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ backgroundImage: `url(${faction.banner_url})` }}
                     />
-                    <div className="absolute inset-0 bg-card/85 backdrop-blur-[1px]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-card/95 via-card/85 to-card/80" />
                   </>
                 )}
                 
                 <div className="relative z-10 p-4">
-                  <h4 className="font-cinzel font-semibold">{faction.name}</h4>
+                  <h4 className="font-cinzel font-semibold drop-shadow-md">{faction.name}</h4>
                   {faction.motto && (
                     <p className="text-xs text-muted-foreground italic mt-1">"{faction.motto}"</p>
                   )}

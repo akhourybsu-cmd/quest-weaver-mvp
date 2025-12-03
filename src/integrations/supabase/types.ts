@@ -2832,6 +2832,7 @@ export type Database = {
           details: Json | null
           discovered: boolean | null
           id: string
+          image_url: string | null
           location_type: string | null
           name: string
           parent_location_id: string | null
@@ -2846,6 +2847,7 @@ export type Database = {
           details?: Json | null
           discovered?: boolean | null
           id?: string
+          image_url?: string | null
           location_type?: string | null
           name: string
           parent_location_id?: string | null
@@ -2860,6 +2862,7 @@ export type Database = {
           details?: Json | null
           discovered?: boolean | null
           id?: string
+          image_url?: string | null
           location_type?: string | null
           name?: string
           parent_location_id?: string | null

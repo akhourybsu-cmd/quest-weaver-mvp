@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface Faction {
   id: string;
@@ -32,6 +33,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [motto, setMotto] = useState("");
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -42,11 +44,13 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setName(faction.name);
       setDescription(faction.description || "");
       setMotto(faction.motto || "");
+      setBannerUrl(faction.banner_url || null);
       setTags(faction.tags || []);
     } else {
       setName("");
       setDescription("");
       setMotto("");
+      setBannerUrl(null);
       setTags([]);
     }
   }, [faction, open]);
@@ -81,6 +85,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         name: name.trim(),
         description: description.trim() || null,
         motto: motto.trim() || null,
+        banner_url: bannerUrl,
         tags,
       };
 
@@ -156,6 +161,16 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
               placeholder="Faction name"
             />
           </div>
+
+          {/* Faction Banner/Emblem Upload */}
+          <ImageUpload
+            bucket="maps"
+            path={`factions/${campaignId}`}
+            currentImageUrl={bannerUrl}
+            onImageUploaded={setBannerUrl}
+            label="Banner / Emblem"
+            aspectRatio="landscape"
+          />
 
           <div>
             <Label htmlFor="motto">Motto</Label>

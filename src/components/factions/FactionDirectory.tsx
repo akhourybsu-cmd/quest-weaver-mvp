@@ -190,11 +190,30 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                 return (
                   <Card
                     key={faction.id}
-                    className="cursor-pointer hover:border-primary/50 transition-colors"
+                    className="cursor-pointer hover:border-primary/50 transition-colors relative overflow-hidden"
                     onClick={() => handleEditFaction(faction)}
                   >
-                    <CardContent className="p-4">
+                    {/* Background Banner with Overlay */}
+                    {faction.banner_url && (
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center opacity-20"
+                        style={{ backgroundImage: `url(${faction.banner_url})` }}
+                      />
+                    )}
+                    
+                    <CardContent className="p-4 relative z-10">
                       <div className="flex items-start justify-between gap-4">
+                        {/* Faction Emblem/Banner Thumbnail */}
+                        {faction.banner_url && (
+                          <div className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-brass/20">
+                            <img 
+                              src={faction.banner_url} 
+                              alt={faction.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold flex items-center gap-2">
                             {faction.name}

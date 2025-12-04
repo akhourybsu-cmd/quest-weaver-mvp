@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Plus, Search, Book } from "lucide-react";
+import { Plus, Search, Book, Clock, List } from "lucide-react";
 import { toast } from "sonner";
 import LoreEditor from "@/components/lore/LoreEditor";
 import LorePageView from "@/components/lore/LorePageView";
@@ -17,6 +17,7 @@ import NPCCreator from "@/components/lore/creators/NPCCreator";
 import HistoryCreator from "@/components/lore/creators/HistoryCreator";
 import MythCreator from "@/components/lore/creators/MythCreator";
 import MagicCreator from "@/components/lore/creators/MagicCreator";
+import HistoryTimeline from "@/components/lore/HistoryTimeline";
 
 interface LorePage {
   id: string;
@@ -24,14 +25,13 @@ interface LorePage {
   title: string;
   slug: string;
   content_md: string;
+  updated_at: string;
   excerpt: string | null;
   tags: string[];
   category: string;
   era: string | null;
   visibility: 'DM_ONLY' | 'SHARED' | 'PUBLIC';
-  author_id: string | null;
-  created_at: string;
-  updated_at: string;
+  details?: Record<string, any> | null;
 }
 
 interface LoreTabProps {
@@ -47,6 +47,7 @@ export function LoreTab({ campaignId }: LoreTabProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<LorePage | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
 
   useEffect(() => {
     loadPages();
@@ -78,6 +79,7 @@ export function LoreTab({ campaignId }: LoreTabProps) {
 
   const handleEditPage = (page: LorePage) => {
     setCurrentPage(page);
+    setActiveCategory(page.category);
     setEditorOpen(true);
   };
 
@@ -117,6 +119,32 @@ export function LoreTab({ campaignId }: LoreTabProps) {
     }
   };
 
+  const renderCreator = () => {
+    const props = {
+      campaignId,
+      page: currentPage,
+      onSave: handleSavePage,
+      onCancel: () => setEditorOpen(false)
+    };
+
+    switch (activeCategory) {
+      case "regions":
+        return <RegionCreator {...props} />;
+      case "factions":
+        return <FactionCreator {...props} />;
+      case "npcs":
+        return <NPCCreator {...props} />;
+      case "history":
+        return <HistoryCreator {...props} />;
+      case "religion":
+        return <MythCreator {...props} />;
+      case "magic":
+        return <MagicCreator {...props} />;
+      default:
+        return <LoreEditor {...props} />;
+    }
+  };
+
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
@@ -146,166 +174,159 @@ export function LoreTab({ campaignId }: LoreTabProps) {
         </TabsList>
       </Tabs>
 
-      {/* Search & Tag Filters */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search lore titles, tags, or summaries..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-card/50 border-brass/20"
-          />
+      {/* History View Mode Toggle */}
+      {activeCategory === "history" && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+          >
+            <List className="h-4 w-4 mr-2" />
+            List
+          </Button>
+          <Button
+            variant={viewMode === "timeline" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("timeline")}
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Timeline
+          </Button>
         </div>
+      )}
 
-        {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={selectedTags.includes(tag) ? "default" : "outline"}
-                className="cursor-pointer hover:bg-arcanePurple/20"
-                onClick={() => {
-                  setSelectedTags(prev =>
-                    prev.includes(tag)
-                      ? prev.filter(t => t !== tag)
-                      : [...prev, tag]
-                  );
-                }}
-              >
-                {tag}
-              </Badge>
-            ))}
+      {/* Timeline View for History */}
+      {activeCategory === "history" && viewMode === "timeline" ? (
+        <HistoryTimeline 
+          campaignId={campaignId} 
+          onViewEvent={(event) => {
+            // Fetch the full page data before viewing
+            const fullPage = pages.find(p => p.id === event.id);
+            if (fullPage) handleViewPage(fullPage);
+          }} 
+        />
+      ) : (
+        <>
+          {/* Search & Tag Filters */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search lore titles, tags, or summaries..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-card/50 border-brass/20"
+              />
+            </div>
+
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-arcanePurple/20"
+                    onClick={() => {
+                      setSelectedTags(prev =>
+                        prev.includes(tag)
+                          ? prev.filter(t => t !== tag)
+                          : [...prev, tag]
+                      );
+                    }}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Lore Cards Grid */}
-      <ScrollArea className="flex-1">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {loading ? (
-            <p className="text-muted-foreground col-span-full text-center py-8">Loading...</p>
-          ) : filteredPages.length === 0 ? (
-            <Card className="col-span-full rounded-2xl border-brass/20 bg-card/50">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Book className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium mb-2">No lore entries yet</p>
-                <p className="text-sm text-muted-foreground mb-4 text-center">
-                  Start worldbuilding by creating your first lore entry.
-                </p>
-                <Button 
-                  onClick={() => handleCreateByCategory(activeCategory)}
-                  className="bg-arcanePurple hover:bg-arcanePurple/90"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create {getCategoryLabel(activeCategory)}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredPages.map((page) => (
-              <Card
-                key={page.id}
-                className="cursor-pointer hover:shadow-lg transition-all rounded-2xl border-brass/20 bg-card/50 hover:border-arcanePurple/40"
-                onClick={() => handleViewPage(page)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-cinzel">{page.title}</CardTitle>
-                    <Badge variant="outline" className="text-xs border-brass/30">
-                      {page.category}
-                    </Badge>
-                  </div>
-                  {page.excerpt && (
-                    <CardDescription className="line-clamp-2">
-                      {page.excerpt}
-                    </CardDescription>
-                  )}
-                  {page.era && (
-                    <p className="text-xs text-muted-foreground mt-1">{page.era}</p>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    {page.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {page.tags.slice(0, 3).map((tag, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {page.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{page.tags.length - 3}
-                          </Badge>
-                        )}
+          {/* Lore Cards Grid */}
+          <ScrollArea className="flex-1">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {loading ? (
+                <p className="text-muted-foreground col-span-full text-center py-8">Loading...</p>
+              ) : filteredPages.length === 0 ? (
+                <Card className="col-span-full rounded-2xl border-brass/20 bg-card/50">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Book className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium mb-2">No lore entries yet</p>
+                    <p className="text-sm text-muted-foreground mb-4 text-center">
+                      Start worldbuilding by creating your first lore entry.
+                    </p>
+                    <Button 
+                      onClick={() => handleCreateByCategory(activeCategory)}
+                      className="bg-arcanePurple hover:bg-arcanePurple/90"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create {getCategoryLabel(activeCategory)}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredPages.map((page) => (
+                  <Card
+                    key={page.id}
+                    className="cursor-pointer hover:shadow-lg transition-all rounded-2xl border-brass/20 bg-card/50 hover:border-arcanePurple/40"
+                    onClick={() => handleViewPage(page)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base font-cinzel">{page.title}</CardTitle>
+                        <Badge variant="outline" className="text-xs border-brass/30">
+                          {page.category}
+                        </Badge>
                       </div>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(page.updated_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </ScrollArea>
+                      {page.excerpt && (
+                        <CardDescription className="line-clamp-2">
+                          {page.excerpt}
+                        </CardDescription>
+                      )}
+                      {page.era && (
+                        <p className="text-xs text-muted-foreground mt-1">{page.era}</p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        {page.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {page.tags.slice(0, 3).map((tag, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {page.tags.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{page.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(page.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </>
+      )}
 
       {/* Editor Drawer */}
       <Drawer open={editorOpen} onOpenChange={setEditorOpen}>
         <DrawerContent className="h-[90vh] flex flex-col">
           <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>{currentPage ? 'Edit Page' : `New ${getCategoryLabel(activeCategory)}`}</DrawerTitle>
+            <DrawerTitle>{currentPage ? `Edit ${getCategoryLabel(currentPage.category)}` : `New ${getCategoryLabel(activeCategory)}`}</DrawerTitle>
             <DrawerDescription>
               Create rich lore content with Markdown and cross-links
             </DrawerDescription>
           </DrawerHeader>
           <div className="flex-1 overflow-hidden min-h-0">
-            {!currentPage && activeCategory === "regions" ? (
-              <RegionCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : !currentPage && activeCategory === "factions" ? (
-              <FactionCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : !currentPage && activeCategory === "npcs" ? (
-              <NPCCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : !currentPage && activeCategory === "history" ? (
-              <HistoryCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : !currentPage && activeCategory === "religion" ? (
-              <MythCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : !currentPage && activeCategory === "magic" ? (
-              <MagicCreator
-                campaignId={campaignId}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            ) : (
-              <LoreEditor
-                campaignId={campaignId}
-                page={currentPage}
-                onSave={handleSavePage}
-                onCancel={() => setEditorOpen(false)}
-              />
-            )}
+            {renderCreator()}
           </div>
         </DrawerContent>
       </Drawer>

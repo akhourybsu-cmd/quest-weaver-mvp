@@ -6,12 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X } from "lucide-react";
+import { Clock, Calendar, BookOpen, Quote } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, HistoryStatBar } from "../ui";
 
 interface HistoryCreatorProps {
   campaignId: string;
@@ -107,9 +105,25 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
   };
 
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="history"
+          visibility={visibility}
+          era={era || date}
+          slug={slug}
+        >
+          <HistoryStatBar
+            date={date}
+            era={era}
+            eventType={eventType}
+          />
+        </LoreHeroHeader>
+
+        {/* When & Where Section */}
+        <LoreSection title="When & Where" icon={Calendar} accentClass="lore-accent-history">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Event Title *</Label>
@@ -118,53 +132,13 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="The Battle of Crimson Fields"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="battle-crimson-fields"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="summary">Summary</Label>
-            <Textarea
-              id="summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="A brief overview..."
-              rows={2}
-            />
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date/Year *</Label>
-              <Input
-                id="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                placeholder="-432 or 30 HA"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="era">Era</Label>
-              <Input
-                id="era"
-                value={era}
-                onChange={(e) => setEra(e.target.value)}
-                placeholder="Halcyon Age"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="eventType">Event Type</Label>
               <Select value={eventType} onValueChange={setEventType}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -181,25 +155,56 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="summary">Summary</Label>
+            <Textarea
+              id="summary"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="A brief overview..."
+              rows={2}
+              className="bg-card/50 border-brass/20"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date/Year *</Label>
+              <Input
+                id="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                placeholder="-432 or 30 HA"
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="era">Era</Label>
+              <Input
+                id="era"
+                value={era}
+                onChange={(e) => setEra(e.target.value)}
+                placeholder="Halcyon Age"
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
               <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 flex items-end">
-              <div className="flex items-center gap-2">
-                <Switch checked={showOnTimeline} onCheckedChange={setShowOnTimeline} />
-                <Label>Show on Timeline</Label>
-              </div>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch checked={showOnTimeline} onCheckedChange={setShowOnTimeline} />
+            <Label>Show on World Timeline</Label>
           </div>
 
           <div className="space-y-2">
@@ -210,84 +215,76 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               placeholder="war, alliance"
+              className="bg-card/50 border-brass/20"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))} />
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Event Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Outcome / Consequences</Label>
-              <Textarea
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-                placeholder="What happened as a result of this event?"
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Sources & Citations (press Enter to add)</Label>
-              <Input
-                placeholder="Book reference, URL, or note"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSource(e.currentTarget.value);
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-              <div className="flex flex-wrap gap-2">
-                {sources.map(src => (
-                  <Badge key={src} variant="outline" className="text-xs">
-                    {src}
-                    <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setSources(sources.filter(s => s !== src))} />
-                  </Badge>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
                 ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </LoreSection>
 
-        <div className="space-y-2">
-          <Label>Full Narrative</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
+        <LoreOrnamentDivider />
+
+        {/* Outcome Section */}
+        <LoreSection title="Outcome & Consequences" icon={BookOpen} accentClass="lore-accent-history">
+          <div className="space-y-2">
+            <Label>Outcome / Consequences</Label>
+            <Textarea
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value)}
+              placeholder="What happened as a result of this event?"
+              rows={4}
+              className="bg-card/50 border-brass/20"
+            />
+          </div>
+        </LoreSection>
+
+        {/* Sources Section */}
+        <LoreSection title="Sources & Citations" icon={Quote} accentClass="lore-accent-history">
+          <div className="space-y-2">
+            <Label>Sources (press Enter to add)</Label>
+            <Input
+              placeholder="Book reference, URL, or note"
+              className="bg-card/50 border-brass/20"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSource(e.currentTarget.value);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+            {sources.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {sources.map(src => (
+                  <RuneTag key={src} variant="outline" onRemove={() => setSources(sources.filter(s => s !== src))}>
+                    {src}
+                  </RuneTag>
+                ))}
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+          </div>
+        </LoreSection>
 
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        <LoreOrnamentDivider />
+
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Full Narrative"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Event"}

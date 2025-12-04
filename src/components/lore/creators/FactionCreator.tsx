@@ -5,13 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus } from "lucide-react";
+import { Flag, Shield, Target, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, FactionStatBar } from "../ui";
 
 interface FactionCreatorProps {
   campaignId: string;
@@ -113,27 +111,47 @@ export default function FactionCreator({ campaignId, onSave, onCancel }: Faction
     }
   };
 
+  const hqRegionName = regions.find(r => r.id === hqRegion)?.title;
+
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="factions"
+          visibility={visibility}
+          slug={slug}
+          subtitle={motto}
+        >
+          <FactionStatBar
+            alignment={alignment}
+            powerLevel={powerLevel[0]}
+            reputation={reputation[0]}
+            headquarters={hqRegionName}
+          />
+        </LoreHeroHeader>
+
+        {/* Banner & Allegiance Section */}
+        <LoreSection title="Banner & Allegiance" icon={Flag} accentClass="lore-accent-factions">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title">Faction Name *</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="The Iron Brotherhood"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="iron-brotherhood"
+              <Label>Motto</Label>
+              <Input 
+                value={motto} 
+                onChange={(e) => setMotto(e.target.value)} 
+                placeholder="Strength in Unity" 
+                className="bg-card/50 border-brass/20"
               />
             </div>
           </div>
@@ -144,16 +162,43 @@ export default function FactionCreator({ campaignId, onSave, onCancel }: Faction
               id="summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="A brief overview..."
+              placeholder="A brief overview of this faction..."
               rows={2}
+              className="bg-card/50 border-brass/20"
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (press Enter to add)</Label>
+            <Input
+              id="tags"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+              placeholder="military, secretive"
+              className="bg-card/50 border-brass/20"
+            />
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
+                ))}
+              </div>
+            )}
+          </div>
+        </LoreSection>
+
+        <LoreOrnamentDivider />
+
+        {/* Structure & Influence Section */}
+        <LoreSection title="Structure & Influence" icon={Shield} accentClass="lore-accent-factions">
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="alignment">Alignment</Label>
               <Select value={alignment} onValueChange={setAlignment}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,20 +219,20 @@ export default function FactionCreator({ campaignId, onSave, onCancel }: Faction
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
               <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hqRegion">Headquarters (optional)</Label>
+              <Label htmlFor="hqRegion">Headquarters</Label>
               <Select value={hqRegion} onValueChange={setHqRegion}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue placeholder="Select headquarters" />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,131 +244,97 @@ export default function FactionCreator({ campaignId, onSave, onCancel }: Faction
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags (press Enter to add)</Label>
-            <Input
-              id="tags"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-              placeholder="military, secretive"
+          <div className="space-y-3">
+            <Label>Power Level: {powerLevel[0]}</Label>
+            <Slider
+              value={powerLevel}
+              onValueChange={setPowerLevel}
+              min={1}
+              max={5}
+              step={1}
+              className="w-full"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))} />
-                </Badge>
-              ))}
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Minor</span>
+              <span>Local</span>
+              <span>Regional</span>
+              <span>Major</span>
+              <span>Continental</span>
             </div>
           </div>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Faction Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Motto</Label>
-              <Input value={motto} onChange={(e) => setMotto(e.target.value)} placeholder="Strength in Unity" />
+          <div className="space-y-3">
+            <Label>Reputation with Party: {reputation[0]}</Label>
+            <Slider
+              value={reputation}
+              onValueChange={setReputation}
+              min={-100}
+              max={100}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Hostile</span>
+              <span>Neutral</span>
+              <span>Allied</span>
             </div>
+          </div>
+        </LoreSection>
 
-            <div className="space-y-2">
-              <Label>Colors (press Enter to add)</Label>
-              <Input
-                placeholder="crimson, gold"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addColor(e.currentTarget.value);
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
+        {/* Colors & Identity Section */}
+        <LoreSection title="Colors & Identity" icon={Palette} accentClass="lore-accent-factions">
+          <div className="space-y-2">
+            <Label>Faction Colors (press Enter to add)</Label>
+            <Input
+              placeholder="crimson, gold"
+              className="bg-card/50 border-brass/20"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addColor(e.currentTarget.value);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+            {colors.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {colors.map(c => (
-                  <Badge key={c} variant="outline">
+                  <RuneTag key={c} variant="accent" onRemove={() => setColors(colors.filter(x => x !== c))}>
                     {c}
-                    <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setColors(colors.filter(x => x !== c))} />
-                  </Badge>
+                  </RuneTag>
                 ))}
               </div>
-            </div>
+            )}
+          </div>
+        </LoreSection>
 
-            <div className="space-y-2">
-              <Label>Power Level: {powerLevel[0]}</Label>
-              <Slider
-                value={powerLevel}
-                onValueChange={setPowerLevel}
-                min={1}
-                max={5}
-                step={1}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Minor</span>
-                <span>Regional</span>
-                <span>Continental</span>
-              </div>
-            </div>
+        {/* Goals & Doctrine Section */}
+        <LoreSection title="Goals & Doctrine" icon={Target} accentClass="lore-accent-factions">
+          <div className="space-y-2">
+            <Label>Goals & Tactics</Label>
+            <Textarea
+              value={goals}
+              onChange={(e) => setGoals(e.target.value)}
+              placeholder="What does this faction want and how do they achieve it?"
+              rows={4}
+              className="bg-card/50 border-brass/20"
+            />
+          </div>
+        </LoreSection>
 
-            <div className="space-y-2">
-              <Label>Reputation with Party: {reputation[0]}</Label>
-              <Slider
-                value={reputation}
-                onValueChange={setReputation}
-                min={-100}
-                max={100}
-                step={1}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Hostile</span>
-                <span>Neutral</span>
-                <span>Allied</span>
-              </div>
-            </div>
+        <LoreOrnamentDivider />
 
-            <div className="space-y-2">
-              <Label>Goals & Tactics</Label>
-              <Textarea
-                value={goals}
-                onChange={(e) => setGoals(e.target.value)}
-                placeholder="What does this faction want and how do they achieve it?"
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Full Description"
+        />
 
-        <div className="space-y-2">
-          <Label>Full Description</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Faction"}

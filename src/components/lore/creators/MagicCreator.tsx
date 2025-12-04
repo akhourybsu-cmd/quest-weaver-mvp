@@ -6,13 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { X, Plus } from "lucide-react";
+import { Wand2, Gem, BookOpen, Scale, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag } from "../ui";
 
 interface PowerTier {
   tier: string;
@@ -146,10 +144,27 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
     setPowers(powers.filter((_, i) => i !== index));
   };
 
+  const entryTypeLabels: Record<string, string> = {
+    artifact: "Artifact",
+    school: "School of Magic",
+    tradition: "Arcane Tradition",
+    law: "Magical Law"
+  };
+
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="magic"
+          visibility={visibility}
+          slug={slug}
+          subtitle={entryTypeLabels[entryType]}
+        />
+
+        {/* Basic Info Section */}
+        <LoreSection title="Basic Information" icon={Wand2} accentClass="lore-accent-magic">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
@@ -158,26 +173,42 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Staff of the Archmagi"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="staff-archmagi"
-              />
+              <Label htmlFor="visibility">Visibility</Label>
+              <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
+                <SelectTrigger className="bg-card/50 border-brass/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DM_ONLY">DM Only</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Entry Type</Label>
-            <ToggleGroup type="single" value={entryType} onValueChange={setEntryType}>
-              <ToggleGroupItem value="artifact">Artifact</ToggleGroupItem>
-              <ToggleGroupItem value="school">School</ToggleGroupItem>
-              <ToggleGroupItem value="tradition">Tradition</ToggleGroupItem>
-              <ToggleGroupItem value="law">Law/Rule</ToggleGroupItem>
+            <ToggleGroup type="single" value={entryType} onValueChange={setEntryType} className="justify-start">
+              <ToggleGroupItem value="artifact" className="gap-1.5">
+                <Gem className="w-3.5 h-3.5" />
+                Artifact
+              </ToggleGroupItem>
+              <ToggleGroupItem value="school" className="gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                School
+              </ToggleGroupItem>
+              <ToggleGroupItem value="tradition" className="gap-1.5">
+                <Wand2 className="w-3.5 h-3.5" />
+                Tradition
+              </ToggleGroupItem>
+              <ToggleGroupItem value="law" className="gap-1.5">
+                <Scale className="w-3.5 h-3.5" />
+                Law/Rule
+              </ToggleGroupItem>
             </ToggleGroup>
           </div>
 
@@ -189,22 +220,8 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
               onChange={(e) => setSummary(e.target.value)}
               placeholder="A brief overview..."
               rows={2}
+              className="bg-card/50 border-brass/20"
             />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -215,228 +232,265 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               placeholder="evocation, legendary"
+              className="bg-card/50 border-brass/20"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))} />
-                </Badge>
-              ))}
-            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        </LoreSection>
 
+        <LoreOrnamentDivider />
+
+        {/* Artifact Section */}
         {entryType === "artifact" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Artifact Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Rarity</Label>
-                  <Select value={rarity} onValueChange={setRarity}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="common">Common</SelectItem>
-                      <SelectItem value="uncommon">Uncommon</SelectItem>
-                      <SelectItem value="rare">Rare</SelectItem>
-                      <SelectItem value="very_rare">Very Rare</SelectItem>
-                      <SelectItem value="legendary">Legendary</SelectItem>
-                      <SelectItem value="artifact">Artifact</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 flex items-end">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={attunement} onCheckedChange={setAttunement} />
-                    <Label>Requires Attunement</Label>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Charges</Label>
-                  <Input type="number" value={charges} onChange={(e) => setCharges(e.target.value)} placeholder="Optional" />
+          <LoreSection title="Artifact Details" icon={Gem} accentClass="lore-accent-magic">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Rarity</Label>
+                <Select value={rarity} onValueChange={setRarity}>
+                  <SelectTrigger className="bg-card/50 border-brass/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="common">Common</SelectItem>
+                    <SelectItem value="uncommon">Uncommon</SelectItem>
+                    <SelectItem value="rare">Rare</SelectItem>
+                    <SelectItem value="very_rare">Very Rare</SelectItem>
+                    <SelectItem value="legendary">Legendary</SelectItem>
+                    <SelectItem value="artifact">Artifact</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 flex items-end">
+                <div className="flex items-center gap-2">
+                  <Switch checked={attunement} onCheckedChange={setAttunement} />
+                  <Label>Requires Attunement</Label>
                 </div>
               </div>
-
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Switch checked={sentience} onCheckedChange={setSentience} />
-                  <Label>Sentient</Label>
+                <Label>Charges</Label>
+                <Input 
+                  type="number" 
+                  value={charges} 
+                  onChange={(e) => setCharges(e.target.value)} 
+                  placeholder="Optional" 
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={sentience} onCheckedChange={setSentience} />
+                <Label>Sentient</Label>
+              </div>
+              {sentience && (
+                <div className="grid grid-cols-4 gap-2 pl-6">
+                  <Input 
+                    type="number" 
+                    value={int} 
+                    onChange={(e) => setInt(e.target.value)} 
+                    placeholder="INT *" 
+                    className="bg-card/50 border-brass/20"
+                  />
+                  <Input 
+                    type="number" 
+                    value={wis} 
+                    onChange={(e) => setWis(e.target.value)} 
+                    placeholder="WIS *" 
+                    className="bg-card/50 border-brass/20"
+                  />
+                  <Input 
+                    type="number" 
+                    value={cha} 
+                    onChange={(e) => setCha(e.target.value)} 
+                    placeholder="CHA *" 
+                    className="bg-card/50 border-brass/20"
+                  />
+                  <Input 
+                    type="number" 
+                    value={ego} 
+                    onChange={(e) => setEgo(e.target.value)} 
+                    placeholder="Ego" 
+                    className="bg-card/50 border-brass/20"
+                  />
                 </div>
-                {sentience && (
-                  <div className="grid grid-cols-4 gap-2 pl-6">
-                    <Input type="number" value={int} onChange={(e) => setInt(e.target.value)} placeholder="INT *" />
-                    <Input type="number" value={wis} onChange={(e) => setWis(e.target.value)} placeholder="WIS *" />
-                    <Input type="number" value={cha} onChange={(e) => setCha(e.target.value)} placeholder="CHA *" />
-                    <Input type="number" value={ego} onChange={(e) => setEgo(e.target.value)} placeholder="Ego" />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Powers by Tier</Label>
+              {powers.map((power, idx) => (
+                <div key={idx} className="flex gap-2 items-start">
+                  <Input
+                    value={power.tier}
+                    onChange={(e) => updatePowerTier(idx, "tier", e.target.value)}
+                    placeholder="Tier label"
+                    className="w-32 bg-card/50 border-brass/20"
+                  />
+                  <Textarea
+                    value={power.description}
+                    onChange={(e) => updatePowerTier(idx, "description", e.target.value)}
+                    placeholder="Power description"
+                    rows={2}
+                    className="flex-1 bg-card/50 border-brass/20"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => removePowerTier(idx)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addPowerTier}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Power Tier
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Curse</Label>
+              <Textarea 
+                value={curse} 
+                onChange={(e) => setCurse(e.target.value)} 
+                placeholder="Any curse or drawback..." 
+                rows={3} 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+          </LoreSection>
+        )}
+
+        {/* School/Tradition Section */}
+        {(entryType === "school" || entryType === "tradition") && (
+          <LoreSection title={`${entryTypeLabels[entryType]} Details`} icon={BookOpen} accentClass="lore-accent-magic">
+            <div className="space-y-2">
+              <Label>Associated Spells</Label>
+              <Input
+                placeholder="Fireball, Lightning Bolt"
+                className="bg-card/50 border-brass/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addToList(e.currentTarget.value, spells, setSpells);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              {spells.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {spells.map(s => (
+                    <RuneTag key={s} variant="outline" onRemove={() => setSpells(spells.filter(x => x !== s))}>
+                      {s}
+                    </RuneTag>
+                  ))}
+                </div>
+              )}
+            </div>
+            {entryType === "school" && (
+              <div className="space-y-2">
+                <Label>Opposed Schools</Label>
+                <Input
+                  placeholder="Necromancy"
+                  className="bg-card/50 border-brass/20"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addToList(e.currentTarget.value, opposedSchools, setOpposedSchools);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
+                {opposedSchools.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {opposedSchools.map(o => (
+                      <RuneTag key={o} variant="accent" onRemove={() => setOpposedSchools(opposedSchools.filter(x => x !== o))}>
+                        {o}
+                      </RuneTag>
+                    ))}
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label>Powers by Tier</Label>
-                {powers.map((power, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <Input
-                      value={power.tier}
-                      onChange={(e) => updatePowerTier(idx, "tier", e.target.value)}
-                      placeholder="Tier label"
-                      className="w-32"
-                    />
-                    <Textarea
-                      value={power.description}
-                      onChange={(e) => updatePowerTier(idx, "description", e.target.value)}
-                      placeholder="Power description"
-                      rows={2}
-                      className="flex-1"
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removePowerTier(idx)}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={addPowerTier}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Power Tier
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Curse</Label>
-                <Textarea value={curse} onChange={(e) => setCurse(e.target.value)} placeholder="Any curse or drawback..." rows={3} />
-              </div>
-            </CardContent>
-          </Card>
+            )}
+            <div className="space-y-2">
+              <Label>Philosophies / Methods</Label>
+              <Textarea 
+                value={philosophy} 
+                onChange={(e) => setPhilosophy(e.target.value)} 
+                rows={4} 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+          </LoreSection>
         )}
 
-        {(entryType === "school" || entryType === "tradition") && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{entryType === "school" ? "School of Magic" : "Arcane Tradition"} Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Associated Spells</Label>
-                <Input
-                  placeholder="Fireball, Lightning Bolt"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addToList(e.currentTarget.value, spells, setSpells);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
-                <div className="flex flex-wrap gap-2">
-                  {spells.map(s => (
-                    <Badge key={s} variant="outline">
-                      {s}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setSpells(spells.filter(x => x !== s))} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              {entryType === "school" && (
-                <div className="space-y-2">
-                  <Label>Opposed Schools</Label>
-                  <Input
-                    placeholder="Necromancy"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addToList(e.currentTarget.value, opposedSchools, setOpposedSchools);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    {opposedSchools.map(o => (
-                      <Badge key={o} variant="destructive">
-                        {o}
-                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setOpposedSchools(opposedSchools.filter(x => x !== o))} />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label>Philosophies / Methods</Label>
-                <Textarea value={philosophy} onChange={(e) => setPhilosophy(e.target.value)} rows={4} />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Law Section */}
         {entryType === "law" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Magical Law Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Rule Text</Label>
-                <Textarea value={ruleText} onChange={(e) => setRuleText(e.target.value)} placeholder="The law as stated..." rows={4} />
-              </div>
-              <div className="space-y-2">
-                <Label>Known Exceptions</Label>
-                <Input
-                  placeholder="Exception case"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addToList(e.currentTarget.value, exceptions, setExceptions);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
+          <LoreSection title="Magical Law Details" icon={Scale} accentClass="lore-accent-magic">
+            <div className="space-y-2">
+              <Label>Rule Text</Label>
+              <Textarea 
+                value={ruleText} 
+                onChange={(e) => setRuleText(e.target.value)} 
+                placeholder="The law as stated..." 
+                rows={4} 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Known Exceptions</Label>
+              <Input
+                placeholder="Exception case"
+                className="bg-card/50 border-brass/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addToList(e.currentTarget.value, exceptions, setExceptions);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              {exceptions.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {exceptions.map(ex => (
-                    <Badge key={ex} variant="secondary">
+                    <RuneTag key={ex} onRemove={() => setExceptions(exceptions.filter(x => x !== ex))}>
                       {ex}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setExceptions(exceptions.filter(x => x !== ex))} />
-                    </Badge>
+                    </RuneTag>
                   ))}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>World Impact</Label>
-                <Textarea value={impact} onChange={(e) => setImpact(e.target.value)} placeholder="How this affects the world..." rows={4} />
-              </div>
-            </CardContent>
-          </Card>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>World Impact</Label>
+              <Textarea 
+                value={impact} 
+                onChange={(e) => setImpact(e.target.value)} 
+                placeholder="How this affects the world..." 
+                rows={4} 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+          </LoreSection>
         )}
 
-        <div className="space-y-2">
-          <Label>Full Description</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+        <LoreOrnamentDivider />
 
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Full Description"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Entry"}

@@ -5,13 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { X } from "lucide-react";
+import { Sparkles, Star, Moon, Flame, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag } from "../ui";
 
 interface MythCreatorProps {
   campaignId: string;
@@ -35,8 +33,6 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
   const [colors, setColors] = useState<string[]>([]);
   const [edicts, setEdicts] = useState<string[]>([]);
   const [anathema, setAnathema] = useState<string[]>([]);
-  const [clergyTitles, setClergyTitles] = useState<string[]>([]);
-  const [cultures, setCultures] = useState<string[]>([]);
   const [tradition, setTradition] = useState("");
   const [components, setComponents] = useState<string[]>([]);
   const [observanceDate, setObservanceDate] = useState("");
@@ -74,8 +70,6 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
         colors: entryType === "deity" ? colors : null,
         edicts: entryType === "deity" ? edicts : null,
         anathema: entryType === "deity" ? anathema : null,
-        clergyTitles: entryType === "deity" ? clergyTitles : null,
-        cultures: entryType === "deity" ? cultures : null,
         tradition: entryType !== "deity" ? tradition : null,
         components: entryType !== "deity" ? components : null,
         observanceDate: entryType === "holy_day" ? observanceDate : null,
@@ -117,10 +111,27 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
     }
   };
 
+  const entryTypeLabels: Record<string, string> = {
+    deity: "Deity",
+    myth: "Myth",
+    ritual: "Ritual",
+    holy_day: "Holy Day"
+  };
+
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="religion"
+          visibility={visibility}
+          slug={slug}
+          subtitle={entryTypeLabels[entryType]}
+        />
+
+        {/* Basic Info Section */}
+        <LoreSection title="Basic Information" icon={Sparkles} accentClass="lore-accent-religion">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
@@ -129,26 +140,42 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Solara, Goddess of Dawn"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="solara"
-              />
+              <Label htmlFor="visibility">Visibility</Label>
+              <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
+                <SelectTrigger className="bg-card/50 border-brass/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DM_ONLY">DM Only</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Entry Type</Label>
-            <ToggleGroup type="single" value={entryType} onValueChange={setEntryType}>
-              <ToggleGroupItem value="deity">Deity</ToggleGroupItem>
-              <ToggleGroupItem value="myth">Myth</ToggleGroupItem>
-              <ToggleGroupItem value="ritual">Ritual</ToggleGroupItem>
-              <ToggleGroupItem value="holy_day">Holy Day</ToggleGroupItem>
+            <ToggleGroup type="single" value={entryType} onValueChange={setEntryType} className="justify-start">
+              <ToggleGroupItem value="deity" className="gap-1.5">
+                <Star className="w-3.5 h-3.5" />
+                Deity
+              </ToggleGroupItem>
+              <ToggleGroupItem value="myth" className="gap-1.5">
+                <Moon className="w-3.5 h-3.5" />
+                Myth
+              </ToggleGroupItem>
+              <ToggleGroupItem value="ritual" className="gap-1.5">
+                <Flame className="w-3.5 h-3.5" />
+                Ritual
+              </ToggleGroupItem>
+              <ToggleGroupItem value="holy_day" className="gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                Holy Day
+              </ToggleGroupItem>
             </ToggleGroup>
           </div>
 
@@ -160,22 +187,8 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
               onChange={(e) => setSummary(e.target.value)}
               placeholder="A brief overview..."
               rows={2}
+              className="bg-card/50 border-brass/20"
             />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -186,224 +199,223 @@ export default function MythCreator({ campaignId, onSave, onCancel }: MythCreato
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               placeholder="light, renewal"
+              className="bg-card/50 border-brass/20"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))} />
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {entryType === "deity" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Deity Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Alignment</Label>
-                <Select value={alignment} onValueChange={setAlignment}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LG">Lawful Good</SelectItem>
-                    <SelectItem value="NG">Neutral Good</SelectItem>
-                    <SelectItem value="CG">Chaotic Good</SelectItem>
-                    <SelectItem value="LN">Lawful Neutral</SelectItem>
-                    <SelectItem value="N">True Neutral</SelectItem>
-                    <SelectItem value="CN">Chaotic Neutral</SelectItem>
-                    <SelectItem value="LE">Lawful Evil</SelectItem>
-                    <SelectItem value="NE">Neutral Evil</SelectItem>
-                    <SelectItem value="CE">Chaotic Evil</SelectItem>
-                  </SelectContent>
-                </Select>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
+                ))}
               </div>
+            )}
+          </div>
+        </LoreSection>
 
-              <div className="space-y-2">
-                <Label>Domains * (press Enter to add)</Label>
-                <Input
-                  placeholder="Life, Light, Nature..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addToList(e.currentTarget.value, domains, setDomains);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
+        <LoreOrnamentDivider />
+
+        {/* Deity-specific Section */}
+        {entryType === "deity" && (
+          <LoreSection title="Deity Details" icon={Star} accentClass="lore-accent-religion">
+            <div className="space-y-2">
+              <Label>Alignment</Label>
+              <Select value={alignment} onValueChange={setAlignment}>
+                <SelectTrigger className="bg-card/50 border-brass/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LG">Lawful Good</SelectItem>
+                  <SelectItem value="NG">Neutral Good</SelectItem>
+                  <SelectItem value="CG">Chaotic Good</SelectItem>
+                  <SelectItem value="LN">Lawful Neutral</SelectItem>
+                  <SelectItem value="N">True Neutral</SelectItem>
+                  <SelectItem value="CN">Chaotic Neutral</SelectItem>
+                  <SelectItem value="LE">Lawful Evil</SelectItem>
+                  <SelectItem value="NE">Neutral Evil</SelectItem>
+                  <SelectItem value="CE">Chaotic Evil</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Domains * (press Enter to add)</Label>
+              <Input
+                placeholder="Life, Light, Nature..."
+                className="bg-card/50 border-brass/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addToList(e.currentTarget.value, domains, setDomains);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              {domains.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {domains.map(d => (
-                    <Badge key={d} variant="default">
+                    <RuneTag key={d} variant="accent" onRemove={() => setDomains(domains.filter(x => x !== d))}>
                       {d}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setDomains(domains.filter(x => x !== d))} />
-                    </Badge>
+                    </RuneTag>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
 
+            <div className="space-y-2">
+              <Label>Holy Colors</Label>
+              <Input
+                placeholder="Gold, white"
+                className="bg-card/50 border-brass/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addToList(e.currentTarget.value, colors, setColors);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              {colors.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {colors.map(c => (
+                    <RuneTag key={c} variant="outline" onRemove={() => setColors(colors.filter(x => x !== c))}>
+                      {c}
+                    </RuneTag>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Holy Colors</Label>
+                <Label>Edicts</Label>
                 <Input
-                  placeholder="Gold, white"
+                  placeholder="Protect the innocent"
+                  className="bg-card/50 border-brass/20"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      addToList(e.currentTarget.value, colors, setColors);
+                      addToList(e.currentTarget.value, edicts, setEdicts);
                       e.currentTarget.value = "";
                     }
                   }}
                 />
-                <div className="flex flex-wrap gap-2">
-                  {colors.map(c => (
-                    <Badge key={c} variant="outline">
-                      {c}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setColors(colors.filter(x => x !== c))} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Edicts</Label>
-                  <Input
-                    placeholder="Protect the innocent"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addToList(e.currentTarget.value, edicts, setEdicts);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
+                {edicts.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {edicts.map(e => (
-                      <Badge key={e} variant="secondary" className="text-xs">
-                        {e}
-                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setEdicts(edicts.filter(x => x !== e))} />
-                      </Badge>
+                    {edicts.map(edict => (
+                      <RuneTag key={edict} onRemove={() => setEdicts(edicts.filter(x => x !== edict))}>
+                        {edict}
+                      </RuneTag>
                     ))}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Anathema</Label>
-                  <Input
-                    placeholder="Cause needless harm"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addToList(e.currentTarget.value, anathema, setAnathema);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Anathema</Label>
+                <Input
+                  placeholder="Cause needless harm"
+                  className="bg-card/50 border-brass/20"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addToList(e.currentTarget.value, anathema, setAnathema);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
+                {anathema.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {anathema.map(a => (
-                      <Badge key={a} variant="secondary" className="text-xs">
+                      <RuneTag key={a} variant="outline" onRemove={() => setAnathema(anathema.filter(x => x !== a))}>
                         {a}
-                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setAnathema(anathema.filter(x => x !== a))} />
-                      </Badge>
+                      </RuneTag>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </LoreSection>
         )}
 
+        {/* Non-deity Section */}
         {entryType !== "deity" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{entryType === "holy_day" ? "Holy Day" : entryType === "ritual" ? "Ritual" : "Myth"} Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <LoreSection 
+            title={`${entryTypeLabels[entryType]} Details`} 
+            icon={entryType === "holy_day" ? Calendar : Flame} 
+            accentClass="lore-accent-religion"
+          >
+            <div className="space-y-2">
+              <Label>Tradition</Label>
+              <Input 
+                value={tradition} 
+                onChange={(e) => setTradition(e.target.value)} 
+                placeholder="Ancient practice..." 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+            {entryType === "holy_day" && (
               <div className="space-y-2">
-                <Label>Tradition</Label>
-                <Input value={tradition} onChange={(e) => setTradition(e.target.value)} placeholder="Ancient practice..." />
+                <Label>Observance Date *</Label>
+                <Input
+                  value={observanceDate}
+                  onChange={(e) => setObservanceDate(e.target.value)}
+                  placeholder="Spring Equinox"
+                  className="bg-card/50 border-brass/20"
+                />
               </div>
-              {entryType === "holy_day" && (
-                <div className="space-y-2">
-                  <Label>Observance Date *</Label>
-                  <Input
-                    value={observanceDate}
-                    onChange={(e) => setObservanceDate(e.target.value)}
-                    placeholder="Spring Equinox"
-                  />
-                </div>
-              )}
-              {(entryType === "ritual" || entryType === "holy_day") && (
-                <div className="space-y-2">
-                  <Label>Components / Offerings</Label>
-                  <Input
-                    placeholder="Incense, flowers"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addToList(e.currentTarget.value, components, setComponents);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
+            )}
+            {(entryType === "ritual" || entryType === "holy_day") && (
+              <div className="space-y-2">
+                <Label>Components / Offerings</Label>
+                <Input
+                  placeholder="Incense, flowers"
+                  className="bg-card/50 border-brass/20"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addToList(e.currentTarget.value, components, setComponents);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
+                {components.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {components.map(c => (
-                      <Badge key={c} variant="outline">
+                      <RuneTag key={c} variant="outline" onRemove={() => setComponents(components.filter(x => x !== c))}>
                         {c}
-                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setComponents(components.filter(x => x !== c))} />
-                      </Badge>
+                      </RuneTag>
                     ))}
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </div>
+            )}
+          </LoreSection>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Miracles / Interventions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={miracles}
-              onChange={(e) => setMiracles(e.target.value)}
-              placeholder="Known miracles or divine interventions..."
-              rows={4}
-            />
-          </CardContent>
-        </Card>
+        {/* Miracles Section */}
+        <LoreSection title="Miracles / Interventions" icon={Sparkles} accentClass="lore-accent-religion">
+          <Textarea
+            value={miracles}
+            onChange={(e) => setMiracles(e.target.value)}
+            placeholder="Known miracles or divine interventions..."
+            rows={4}
+            className="bg-card/50 border-brass/20"
+          />
+        </LoreSection>
 
-        <div className="space-y-2">
-          <Label>Full Description</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+        <LoreOrnamentDivider />
 
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Full Description"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Entry"}

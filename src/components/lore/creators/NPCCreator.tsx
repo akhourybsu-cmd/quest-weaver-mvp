@@ -5,12 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X } from "lucide-react";
+import { User, Heart, Lock, Mic } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, NPCStatBar } from "../ui";
 
 interface NPCCreatorProps {
   campaignId: string;
@@ -67,7 +65,7 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
 
   const handleSave = async () => {
     if (!title.trim()) {
-      toast.error("Title is required");
+      toast.error("Name is required");
       return;
     }
     if (!race.trim()) {
@@ -123,10 +121,30 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
     }
   };
 
+  const homeRegionName = regions.find(r => r.id === homeRegion)?.title;
+
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="npcs"
+          visibility={visibility}
+          slug={slug}
+          subtitle={role ? `${role}${race ? ` • ${race}` : ''}` : race}
+        >
+          <NPCStatBar
+            race={race}
+            age={age}
+            role={role}
+            cr={cr}
+            homeRegion={homeRegionName}
+          />
+        </LoreHeroHeader>
+
+        {/* Identity Section */}
+        <LoreSection title="Identity" icon={User} accentClass="lore-accent-npcs">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Name *</Label>
@@ -135,15 +153,17 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Garrick Ironforge"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
+              <Label htmlFor="race">Race/Species *</Label>
               <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="garrick-ironforge"
+                id="race"
+                value={race}
+                onChange={(e) => setRace(e.target.value)}
+                placeholder="Dwarf"
+                className="bg-card/50 border-brass/20"
               />
             </div>
           </div>
@@ -156,19 +176,11 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
               onChange={(e) => setSummary(e.target.value)}
               placeholder="A brief overview..."
               rows={2}
+              className="bg-card/50 border-brass/20"
             />
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="race">Race/Species *</Label>
-              <Input
-                id="race"
-                value={race}
-                onChange={(e) => setRace(e.target.value)}
-                placeholder="Dwarf"
-              />
-            </div>
+          <div className="grid md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="age">Age</Label>
               <Input
@@ -176,6 +188,7 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="150"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
@@ -185,11 +198,9 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
                 placeholder="He/Him"
+                className="bg-card/50 border-brass/20"
               />
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="role">Occupation/Role</Label>
               <Input
@@ -197,10 +208,11 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 placeholder="Blacksmith"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cr">CR (optional)</Label>
+              <Label htmlFor="cr">CR</Label>
               <Input
                 id="cr"
                 type="number"
@@ -208,12 +220,16 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 onChange={(e) => setCr(e.target.value)}
                 placeholder="5"
                 min="0"
+                className="bg-card/50 border-brass/20"
               />
             </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="homeRegion">Home Region (optional)</Label>
+              <Label htmlFor="homeRegion">Home Region</Label>
               <Select value={homeRegion} onValueChange={setHomeRegion}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue placeholder="Select home region" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,18 +239,15 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
               <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -245,6 +258,7 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
                 value={statBlockUrl}
                 onChange={(e) => setStatBlockUrl(e.target.value)}
                 placeholder="https://..."
+                className="bg-card/50 border-brass/20"
               />
             </div>
           </div>
@@ -257,96 +271,104 @@ export default function NPCCreator({ campaignId, onSave, onCancel }: NPCCreatorP
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               placeholder="merchant, ally"
+              className="bg-card/50 border-brass/20"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))} />
-                </Badge>
-              ))}
-            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        </LoreSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Personality</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Traits</Label>
-                <Input value={traits} onChange={(e) => setTraits(e.target.value)} placeholder="Gruff but kind" />
-              </div>
-              <div className="space-y-2">
-                <Label>Ideals</Label>
-                <Input value={ideals} onChange={(e) => setIdeals(e.target.value)} placeholder="Honor, Craftsmanship" />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Bonds</Label>
-                <Input value={bonds} onChange={(e) => setBonds(e.target.value)} placeholder="Family forge" />
-              </div>
-              <div className="space-y-2">
-                <Label>Flaws</Label>
-                <Input value={flaws} onChange={(e) => setFlaws(e.target.value)} placeholder="Stubborn" />
-              </div>
+        <LoreOrnamentDivider />
+
+        {/* Personality Section */}
+        <LoreSection title="Personality" icon={Heart} accentClass="lore-accent-npcs">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Traits</Label>
+              <Input 
+                value={traits} 
+                onChange={(e) => setTraits(e.target.value)} 
+                placeholder="Gruff but kind" 
+                className="bg-card/50 border-brass/20"
+              />
             </div>
             <div className="space-y-2">
-              <Label>Voice & Quirks</Label>
-              <Textarea
-                value={voice}
-                onChange={(e) => setVoice(e.target.value)}
-                placeholder="Deep voice, often hums while working..."
-                rows={2}
+              <Label>Ideals</Label>
+              <Input 
+                value={ideals} 
+                onChange={(e) => setIdeals(e.target.value)} 
+                placeholder="Honor, Craftsmanship" 
+                className="bg-card/50 border-brass/20"
               />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Secrets (DM Only)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={secrets}
-              onChange={(e) => setSecrets(e.target.value)}
-              placeholder="Hidden information, plot hooks..."
-              rows={4}
-            />
-          </CardContent>
-        </Card>
-
-        <div className="space-y-2">
-          <Label>Biography</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Bonds</Label>
+              <Input 
+                value={bonds} 
+                onChange={(e) => setBonds(e.target.value)} 
+                placeholder="Family forge" 
+                className="bg-card/50 border-brass/20"
               />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Flaws</Label>
+              <Input 
+                value={flaws} 
+                onChange={(e) => setFlaws(e.target.value)} 
+                placeholder="Stubborn" 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+          </div>
+        </LoreSection>
 
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        {/* Voice & Manner Section */}
+        <LoreSection title="Voice & Manner" icon={Mic} accentClass="lore-accent-npcs">
+          <div className="space-y-2">
+            <Label>Voice & Quirks</Label>
+            <Textarea
+              value={voice}
+              onChange={(e) => setVoice(e.target.value)}
+              placeholder="Deep voice, often hums while working..."
+              rows={3}
+              className="bg-card/50 border-brass/20"
+            />
+          </div>
+        </LoreSection>
+
+        {/* Secrets Section */}
+        <LoreSection title="Secrets (DM Only)" icon={Lock} accentClass="lore-accent-npcs">
+          <Textarea
+            value={secrets}
+            onChange={(e) => setSecrets(e.target.value)}
+            placeholder="Hidden information, plot hooks..."
+            rows={4}
+            className="bg-card/50 border-brass/20"
+          />
+        </LoreSection>
+
+        <LoreOrnamentDivider />
+
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Biography"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save NPC"}

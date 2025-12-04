@@ -7,17 +7,40 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Calendar, BookOpen, Quote } from "lucide-react";
+import { Clock, Calendar, BookOpen, Quote, Settings, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, HistoryStatBar } from "../ui";
+import EraManager from "../EraManager";
+
+interface LorePage {
+  id: string;
+  campaign_id: string;
+  title: string;
+  slug: string;
+  content_md: string;
+  excerpt: string | null;
+  tags: string[];
+  category: string;
+  era: string | null;
+  visibility: 'DM_ONLY' | 'SHARED' | 'PUBLIC';
+  details?: Record<string, any> | null;
+}
 
 interface HistoryCreatorProps {
   campaignId: string;
+  page?: LorePage | null;
   onSave: () => void;
   onCancel: () => void;
 }
 
-export default function HistoryCreator({ campaignId, onSave, onCancel }: HistoryCreatorProps) {
+interface Era {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
+export default function HistoryCreator({ campaignId, page, onSave, onCancel }: HistoryCreatorProps) {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [summary, setSummary] = useState("");
@@ -34,14 +57,52 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
   const [showOnTimeline, setShowOnTimeline] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
   
+  const [eras, setEras] = useState<Era[]>([]);
+  const [eraManagerOpen, setEraManagerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Load existing page data when editing
+  useEffect(() => {
+    if (page) {
+      setTitle(page.title || "");
+      setSlug(page.slug || "");
+      setSummary(page.excerpt || "");
+      setContent(page.content_md || "");
+      setTags(page.tags || []);
+      setVisibility((page.visibility as "DM_ONLY" | "SHARED") || "DM_ONLY");
+      
+      // Load history-specific details
+      const details = page.details || {};
+      setDate(details.date || "");
+      setEra(details.era || page.era || "");
+      setEventType(details.type || "other");
+      setOutcome(details.outcome || "");
+      setShowOnTimeline(details.showOnTimeline || false);
+      setSources(details.sources || []);
+    }
+  }, [page]);
+
+  // Load campaign eras
+  useEffect(() => {
+    loadEras();
+  }, [campaignId]);
+
+  const loadEras = async () => {
+    const { data } = await supabase
+      .from("campaign_eras")
+      .select("id, name, sort_order")
+      .eq("campaign_id", campaignId)
+      .order("sort_order", { ascending: true });
+    setEras(data || []);
+  };
 
   useEffect(() => {
-    if (title && !slug) {
+    if (title && !slug && !page) {
       setSlug(title.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
     }
-  }, [title]);
+  }, [title, page]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -50,10 +111,6 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
     }
     if (!date.trim()) {
       toast.error("Date/Year is required");
-      return;
-    }
-    if (showOnTimeline && !date && !era) {
-      toast.error("Timeline anchor requires date or era");
       return;
     }
 
@@ -68,7 +125,7 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
         sources
       };
 
-      const { error } = await supabase.from("lore_pages").insert({
+      const pageData = {
         campaign_id: campaignId,
         title,
         slug,
@@ -79,15 +136,43 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
         visibility,
         era,
         details
-      });
+      };
 
-      if (error) throw error;
-      toast.success("Historical event created successfully");
+      if (page) {
+        const { error } = await supabase
+          .from("lore_pages")
+          .update(pageData)
+          .eq("id", page.id);
+        if (error) throw error;
+        toast.success("Event updated successfully");
+      } else {
+        const { error } = await supabase.from("lore_pages").insert(pageData);
+        if (error) throw error;
+        toast.success("Event created successfully");
+      }
+      
       onSave();
     } catch (error: any) {
       toast.error("Failed to save: " + error.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!page) return;
+    
+    try {
+      const { error } = await supabase
+        .from("lore_pages")
+        .delete()
+        .eq("id", page.id);
+      
+      if (error) throw error;
+      toast.success("Event deleted");
+      onSave();
+    } catch (error: any) {
+      toast.error("Failed to delete: " + error.message);
     }
   };
 
@@ -105,11 +190,11 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
   };
 
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)]">
-      <div className="lore-form-container space-y-6 pb-6 pr-4">
+    <ScrollArea className="h-full">
+      <div className="lore-form-container space-y-6 p-4 pb-8">
         {/* Hero Header */}
         <LoreHeroHeader
-          title={title}
+          title={title || "New Historical Event"}
           category="history"
           visibility={visibility}
           era={era || date}
@@ -179,14 +264,37 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="era">Era</Label>
-              <Input
-                id="era"
-                value={era}
-                onChange={(e) => setEra(e.target.value)}
-                placeholder="Halcyon Age"
-                className="bg-card/50 border-brass/20"
-              />
+              <Label htmlFor="era" className="flex items-center gap-2">
+                Era
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5" 
+                  onClick={() => setEraManagerOpen(true)}
+                >
+                  <Settings className="h-3 w-3" />
+                </Button>
+              </Label>
+              {eras.length > 0 ? (
+                <Select value={era} onValueChange={setEra}>
+                  <SelectTrigger className="bg-card/50 border-brass/20">
+                    <SelectValue placeholder="Select an era" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eras.map(e => (
+                      <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="era"
+                  value={era}
+                  onChange={(e) => setEra(e.target.value)}
+                  placeholder="Halcyon Age"
+                  className="bg-card/50 border-brass/20"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
@@ -284,13 +392,47 @@ export default function HistoryCreator({ campaignId, onSave, onCancel }: History
         />
 
         {/* Actions */}
-        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Event"}
-          </Button>
+        <div className="flex gap-2 justify-between pt-4 border-t border-brass/20">
+          <div>
+            {page && (
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : page ? "Update Event" : "Save Event"}
+            </Button>
+          </div>
         </div>
       </div>
+
+      <EraManager
+        campaignId={campaignId}
+        open={eraManagerOpen}
+        onOpenChange={setEraManagerOpen}
+        onErasChange={loadEras}
+      />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="fantasy-border-brass">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Historical Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollArea>
   );
 }

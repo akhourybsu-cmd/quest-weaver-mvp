@@ -3,6 +3,7 @@ import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerNavigation } from '@/components/player/PlayerNavigation';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
+import { CharacterPortraitEditor } from '@/components/character/CharacterPortraitEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -94,23 +95,34 @@ const PlayerCharacterViewPage = () => {
               Back to Characters
             </Button>
             
-            <h1 className="text-4xl font-cinzel font-bold text-foreground">
-              {character.name}
-            </h1>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="text-muted-foreground">
-                Level {character.level} {character.class}
-              </p>
-              {character.subclass_name && (
-                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                  {character.subclass_name}
-                </Badge>
-              )}
-              {character.level >= 3 && !character.subclass_name && (
-                <Badge variant="outline" className="border-amber-500/50 text-amber-500 animate-pulse">
-                  Subclass Available!
-                </Badge>
-              )}
+            <div className="flex items-start gap-4">
+              <CharacterPortraitEditor
+                characterId={character.id}
+                characterName={character.name}
+                currentPortraitUrl={character.portrait_url}
+                onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
+              />
+              
+              <div>
+                <h1 className="text-4xl font-cinzel font-bold text-foreground">
+                  {character.name}
+                </h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-muted-foreground">
+                    Level {character.level} {character.class}
+                  </p>
+                  {character.subclass_name && (
+                    <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                      {character.subclass_name}
+                    </Badge>
+                  )}
+                  {character.level >= 3 && !character.subclass_name && (
+                    <Badge variant="outline" className="border-amber-500/50 text-amber-500 animate-pulse">
+                      Subclass Available!
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Wand2, Gem, BookOpen, Scale, Plus, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Wand2, Gem, BookOpen, Scale, Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag } from "../ui";
 
@@ -17,13 +17,27 @@ interface PowerTier {
   description: string;
 }
 
+interface LorePage {
+  id: string;
+  title: string;
+  slug?: string;
+  excerpt?: string;
+  content_md?: string;
+  tags?: string[];
+  visibility?: string;
+  details?: any;
+}
+
 interface MagicCreatorProps {
   campaignId: string;
+  page?: LorePage;
   onSave: () => void;
   onCancel: () => void;
 }
 
-export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCreatorProps) {
+export default function MagicCreator({ campaignId, page, onSave, onCancel }: MagicCreatorProps) {
+  const isEditing = !!page;
+
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [summary, setSummary] = useState("");
@@ -52,13 +66,48 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
   const [impact, setImpact] = useState("");
   
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
 
+  // Load existing page data when editing
   useEffect(() => {
-    if (title && !slug) {
+    if (page) {
+      setTitle(page.title || "");
+      setSlug(page.slug || "");
+      setSummary(page.excerpt || "");
+      setContent(page.content_md || "");
+      setTags(page.tags || []);
+      setVisibility((page.visibility as "DM_ONLY" | "SHARED") || "DM_ONLY");
+      
+      const details = page.details || {};
+      setEntryType(details.entryType || "artifact");
+      setRarity(details.rarity || "uncommon");
+      setAttunement(details.attunement || false);
+      setCharges(details.charges?.toString() || "");
+      setCurse(details.curse || "");
+      setPowers(details.powers || []);
+      setSpells(details.spells || []);
+      setOpposedSchools(details.opposedSchools || []);
+      setPhilosophy(details.philosophy || "");
+      setRuleText(details.ruleText || "");
+      setExceptions(details.exceptions || []);
+      setImpact(details.impact || "");
+      
+      if (details.sentience) {
+        setSentience(true);
+        setInt(details.sentience.int?.toString() || "");
+        setWis(details.sentience.wis?.toString() || "");
+        setCha(details.sentience.cha?.toString() || "");
+        setEgo(details.sentience.ego?.toString() || "");
+      }
+    }
+  }, [page]);
+
+  useEffect(() => {
+    if (title && !slug && !isEditing) {
       setSlug(title.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
     }
-  }, [title]);
+  }, [title, isEditing]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -95,7 +144,7 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
         impact: entryType === "law" ? impact : null
       };
 
-      const { error } = await supabase.from("lore_pages").insert([{
+      const pageData = {
         campaign_id: campaignId,
         title,
         slug,
@@ -105,15 +154,43 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
         category: "magic",
         visibility,
         details: details as any
-      }]);
+      };
 
-      if (error) throw error;
-      toast.success("Magic entry created successfully");
+      if (isEditing && page) {
+        const { error } = await supabase
+          .from("lore_pages")
+          .update(pageData)
+          .eq("id", page.id);
+        if (error) throw error;
+        toast.success("Magic entry updated successfully");
+      } else {
+        const { error } = await supabase.from("lore_pages").insert([pageData]);
+        if (error) throw error;
+        toast.success("Magic entry created successfully");
+      }
       onSave();
     } catch (error: any) {
       toast.error("Failed to save: " + error.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!page) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("lore_pages")
+        .delete()
+        .eq("id", page.id);
+      if (error) throw error;
+      toast.success("Magic entry deleted");
+      onSave();
+    } catch (error: any) {
+      toast.error("Failed to delete: " + error.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -152,351 +229,379 @@ export default function MagicCreator({ campaignId, onSave, onCancel }: MagicCrea
   };
 
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)]">
-      <div className="lore-form-container space-y-6 pb-6 pr-4">
-        {/* Hero Header */}
-        <LoreHeroHeader
-          title={title}
-          category="magic"
-          visibility={visibility}
-          slug={slug}
-          subtitle={entryTypeLabels[entryType]}
-        />
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4">
+        <div className="lore-form-container space-y-6 pb-6">
+          {/* Hero Header */}
+          <LoreHeroHeader
+            title={title}
+            category="magic"
+            visibility={visibility}
+            slug={slug}
+            subtitle={entryTypeLabels[entryType]}
+          />
 
-        {/* Basic Info Section */}
-        <LoreSection title="Basic Information" icon={Wand2} accentClass="lore-accent-magic">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Staff of the Archmagi"
-                className="bg-card/50 border-brass/20"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger className="bg-card/50 border-brass/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Shared</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Entry Type</Label>
-            <ToggleGroup type="single" value={entryType} onValueChange={setEntryType} className="justify-start">
-              <ToggleGroupItem value="artifact" className="gap-1.5">
-                <Gem className="w-3.5 h-3.5" />
-                Artifact
-              </ToggleGroupItem>
-              <ToggleGroupItem value="school" className="gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" />
-                School
-              </ToggleGroupItem>
-              <ToggleGroupItem value="tradition" className="gap-1.5">
-                <Wand2 className="w-3.5 h-3.5" />
-                Tradition
-              </ToggleGroupItem>
-              <ToggleGroupItem value="law" className="gap-1.5">
-                <Scale className="w-3.5 h-3.5" />
-                Law/Rule
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="summary">Summary</Label>
-            <Textarea
-              id="summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="A brief overview..."
-              rows={2}
-              className="bg-card/50 border-brass/20"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags (press Enter to add)</Label>
-            <Input
-              id="tags"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-              placeholder="evocation, legendary"
-              className="bg-card/50 border-brass/20"
-            />
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map(tag => (
-                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
-                    {tag}
-                  </RuneTag>
-                ))}
-              </div>
-            )}
-          </div>
-        </LoreSection>
-
-        <LoreOrnamentDivider />
-
-        {/* Artifact Section */}
-        {entryType === "artifact" && (
-          <LoreSection title="Artifact Details" icon={Gem} accentClass="lore-accent-magic">
-            <div className="grid md:grid-cols-3 gap-4">
+          {/* Basic Info Section */}
+          <LoreSection title="Basic Information" icon={Wand2} accentClass="lore-accent-magic">
+            <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Rarity</Label>
-                <Select value={rarity} onValueChange={setRarity}>
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Staff of the Archmagi"
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
                   <SelectTrigger className="bg-card/50 border-brass/20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="common">Common</SelectItem>
-                    <SelectItem value="uncommon">Uncommon</SelectItem>
-                    <SelectItem value="rare">Rare</SelectItem>
-                    <SelectItem value="very_rare">Very Rare</SelectItem>
-                    <SelectItem value="legendary">Legendary</SelectItem>
-                    <SelectItem value="artifact">Artifact</SelectItem>
+                    <SelectItem value="DM_ONLY">DM Only</SelectItem>
+                    <SelectItem value="SHARED">Shared</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 flex items-end">
-                <div className="flex items-center gap-2">
-                  <Switch checked={attunement} onCheckedChange={setAttunement} />
-                  <Label>Requires Attunement</Label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Charges</Label>
-                <Input 
-                  type="number" 
-                  value={charges} 
-                  onChange={(e) => setCharges(e.target.value)} 
-                  placeholder="Optional" 
-                  className="bg-card/50 border-brass/20"
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Switch checked={sentience} onCheckedChange={setSentience} />
-                <Label>Sentient</Label>
-              </div>
-              {sentience && (
-                <div className="grid grid-cols-4 gap-2 pl-6">
-                  <Input 
-                    type="number" 
-                    value={int} 
-                    onChange={(e) => setInt(e.target.value)} 
-                    placeholder="INT *" 
-                    className="bg-card/50 border-brass/20"
-                  />
-                  <Input 
-                    type="number" 
-                    value={wis} 
-                    onChange={(e) => setWis(e.target.value)} 
-                    placeholder="WIS *" 
-                    className="bg-card/50 border-brass/20"
-                  />
-                  <Input 
-                    type="number" 
-                    value={cha} 
-                    onChange={(e) => setCha(e.target.value)} 
-                    placeholder="CHA *" 
-                    className="bg-card/50 border-brass/20"
-                  />
-                  <Input 
-                    type="number" 
-                    value={ego} 
-                    onChange={(e) => setEgo(e.target.value)} 
-                    placeholder="Ego" 
-                    className="bg-card/50 border-brass/20"
-                  />
-                </div>
-              )}
+              <Label>Entry Type</Label>
+              <ToggleGroup type="single" value={entryType} onValueChange={(v) => v && setEntryType(v)} className="justify-start">
+                <ToggleGroupItem value="artifact" className="gap-1.5">
+                  <Gem className="w-3.5 h-3.5" />
+                  Artifact
+                </ToggleGroupItem>
+                <ToggleGroupItem value="school" className="gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  School
+                </ToggleGroupItem>
+                <ToggleGroupItem value="tradition" className="gap-1.5">
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Tradition
+                </ToggleGroupItem>
+                <ToggleGroupItem value="law" className="gap-1.5">
+                  <Scale className="w-3.5 h-3.5" />
+                  Law/Rule
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
 
             <div className="space-y-2">
-              <Label>Powers by Tier</Label>
-              {powers.map((power, idx) => (
-                <div key={idx} className="flex gap-2 items-start">
-                  <Input
-                    value={power.tier}
-                    onChange={(e) => updatePowerTier(idx, "tier", e.target.value)}
-                    placeholder="Tier label"
-                    className="w-32 bg-card/50 border-brass/20"
-                  />
-                  <Textarea
-                    value={power.description}
-                    onChange={(e) => updatePowerTier(idx, "description", e.target.value)}
-                    placeholder="Power description"
-                    rows={2}
-                    className="flex-1 bg-card/50 border-brass/20"
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => removePowerTier(idx)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button variant="outline" size="sm" onClick={addPowerTier}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Power Tier
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Curse</Label>
-              <Textarea 
-                value={curse} 
-                onChange={(e) => setCurse(e.target.value)} 
-                placeholder="Any curse or drawback..." 
-                rows={3} 
+              <Label htmlFor="summary">Summary</Label>
+              <Textarea
+                id="summary"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="A brief overview..."
+                rows={2}
                 className="bg-card/50 border-brass/20"
               />
             </div>
-          </LoreSection>
-        )}
 
-        {/* School/Tradition Section */}
-        {(entryType === "school" || entryType === "tradition") && (
-          <LoreSection title={`${entryTypeLabels[entryType]} Details`} icon={BookOpen} accentClass="lore-accent-magic">
             <div className="space-y-2">
-              <Label>Associated Spells</Label>
+              <Label htmlFor="tags">Tags (press Enter to add)</Label>
               <Input
-                placeholder="Fireball, Lightning Bolt"
+                id="tags"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                placeholder="evocation, legendary"
                 className="bg-card/50 border-brass/20"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addToList(e.currentTarget.value, spells, setSpells);
-                    e.currentTarget.value = "";
-                  }
-                }}
               />
-              {spells.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {spells.map(s => (
-                    <RuneTag key={s} variant="outline" onRemove={() => setSpells(spells.filter(x => x !== s))}>
-                      {s}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map(tag => (
+                    <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                      {tag}
                     </RuneTag>
                   ))}
                 </div>
               )}
             </div>
-            {entryType === "school" && (
+          </LoreSection>
+
+          <LoreOrnamentDivider />
+
+          {/* Artifact Section */}
+          {entryType === "artifact" && (
+            <LoreSection title="Artifact Details" icon={Gem} accentClass="lore-accent-magic">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Rarity</Label>
+                  <Select value={rarity} onValueChange={setRarity}>
+                    <SelectTrigger className="bg-card/50 border-brass/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="common">Common</SelectItem>
+                      <SelectItem value="uncommon">Uncommon</SelectItem>
+                      <SelectItem value="rare">Rare</SelectItem>
+                      <SelectItem value="very_rare">Very Rare</SelectItem>
+                      <SelectItem value="legendary">Legendary</SelectItem>
+                      <SelectItem value="artifact">Artifact</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 flex items-end">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={attunement} onCheckedChange={setAttunement} />
+                    <Label>Requires Attunement</Label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Charges</Label>
+                  <Input 
+                    type="number" 
+                    value={charges} 
+                    onChange={(e) => setCharges(e.target.value)} 
+                    placeholder="Optional" 
+                    className="bg-card/50 border-brass/20"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label>Opposed Schools</Label>
+                <div className="flex items-center gap-2">
+                  <Switch checked={sentience} onCheckedChange={setSentience} />
+                  <Label>Sentient</Label>
+                </div>
+                {sentience && (
+                  <div className="grid grid-cols-4 gap-2 pl-6">
+                    <Input 
+                      type="number" 
+                      value={int} 
+                      onChange={(e) => setInt(e.target.value)} 
+                      placeholder="INT *" 
+                      className="bg-card/50 border-brass/20"
+                    />
+                    <Input 
+                      type="number" 
+                      value={wis} 
+                      onChange={(e) => setWis(e.target.value)} 
+                      placeholder="WIS *" 
+                      className="bg-card/50 border-brass/20"
+                    />
+                    <Input 
+                      type="number" 
+                      value={cha} 
+                      onChange={(e) => setCha(e.target.value)} 
+                      placeholder="CHA *" 
+                      className="bg-card/50 border-brass/20"
+                    />
+                    <Input 
+                      type="number" 
+                      value={ego} 
+                      onChange={(e) => setEgo(e.target.value)} 
+                      placeholder="Ego" 
+                      className="bg-card/50 border-brass/20"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Powers by Tier</Label>
+                {powers.map((power, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <Input
+                      value={power.tier}
+                      onChange={(e) => updatePowerTier(idx, "tier", e.target.value)}
+                      placeholder="Tier label"
+                      className="w-32 bg-card/50 border-brass/20"
+                    />
+                    <Textarea
+                      value={power.description}
+                      onChange={(e) => updatePowerTier(idx, "description", e.target.value)}
+                      placeholder="Power description"
+                      rows={2}
+                      className="flex-1 bg-card/50 border-brass/20"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removePowerTier(idx)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addPowerTier}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Power Tier
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Curse</Label>
+                <Textarea 
+                  value={curse} 
+                  onChange={(e) => setCurse(e.target.value)} 
+                  placeholder="Any curse or drawback..." 
+                  rows={3} 
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+            </LoreSection>
+          )}
+
+          {/* School/Tradition Section */}
+          {(entryType === "school" || entryType === "tradition") && (
+            <LoreSection title={`${entryTypeLabels[entryType]} Details`} icon={BookOpen} accentClass="lore-accent-magic">
+              <div className="space-y-2">
+                <Label>Associated Spells</Label>
                 <Input
-                  placeholder="Necromancy"
+                  placeholder="Fireball, Lightning Bolt"
                   className="bg-card/50 border-brass/20"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      addToList(e.currentTarget.value, opposedSchools, setOpposedSchools);
+                      addToList(e.currentTarget.value, spells, setSpells);
                       e.currentTarget.value = "";
                     }
                   }}
                 />
-                {opposedSchools.length > 0 && (
+                {spells.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {opposedSchools.map(o => (
-                      <RuneTag key={o} variant="accent" onRemove={() => setOpposedSchools(opposedSchools.filter(x => x !== o))}>
-                        {o}
+                    {spells.map(s => (
+                      <RuneTag key={s} variant="outline" onRemove={() => setSpells(spells.filter(x => x !== s))}>
+                        {s}
                       </RuneTag>
                     ))}
                   </div>
                 )}
               </div>
-            )}
-            <div className="space-y-2">
-              <Label>Philosophies / Methods</Label>
-              <Textarea 
-                value={philosophy} 
-                onChange={(e) => setPhilosophy(e.target.value)} 
-                rows={4} 
-                className="bg-card/50 border-brass/20"
-              />
-            </div>
-          </LoreSection>
-        )}
-
-        {/* Law Section */}
-        {entryType === "law" && (
-          <LoreSection title="Magical Law Details" icon={Scale} accentClass="lore-accent-magic">
-            <div className="space-y-2">
-              <Label>Rule Text</Label>
-              <Textarea 
-                value={ruleText} 
-                onChange={(e) => setRuleText(e.target.value)} 
-                placeholder="The law as stated..." 
-                rows={4} 
-                className="bg-card/50 border-brass/20"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Known Exceptions</Label>
-              <Input
-                placeholder="Exception case"
-                className="bg-card/50 border-brass/20"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addToList(e.currentTarget.value, exceptions, setExceptions);
-                    e.currentTarget.value = "";
-                  }
-                }}
-              />
-              {exceptions.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {exceptions.map(ex => (
-                    <RuneTag key={ex} onRemove={() => setExceptions(exceptions.filter(x => x !== ex))}>
-                      {ex}
-                    </RuneTag>
-                  ))}
+              {entryType === "school" && (
+                <div className="space-y-2">
+                  <Label>Opposed Schools</Label>
+                  <Input
+                    placeholder="Necromancy"
+                    className="bg-card/50 border-brass/20"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addToList(e.currentTarget.value, opposedSchools, setOpposedSchools);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                  {opposedSchools.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {opposedSchools.map(o => (
+                        <RuneTag key={o} variant="accent" onRemove={() => setOpposedSchools(opposedSchools.filter(x => x !== o))}>
+                          {o}
+                        </RuneTag>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <Label>World Impact</Label>
-              <Textarea 
-                value={impact} 
-                onChange={(e) => setImpact(e.target.value)} 
-                placeholder="How this affects the world..." 
-                rows={4} 
-                className="bg-card/50 border-brass/20"
-              />
-            </div>
-          </LoreSection>
-        )}
+              <div className="space-y-2">
+                <Label>Philosophies / Methods</Label>
+                <Textarea 
+                  value={philosophy} 
+                  onChange={(e) => setPhilosophy(e.target.value)} 
+                  rows={4} 
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+            </LoreSection>
+          )}
 
-        <LoreOrnamentDivider />
+          {/* Law Section */}
+          {entryType === "law" && (
+            <LoreSection title="Magical Law Details" icon={Scale} accentClass="lore-accent-magic">
+              <div className="space-y-2">
+                <Label>Rule Text</Label>
+                <Textarea 
+                  value={ruleText} 
+                  onChange={(e) => setRuleText(e.target.value)} 
+                  placeholder="The law as stated..." 
+                  rows={4} 
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Known Exceptions</Label>
+                <Input
+                  placeholder="Exception case"
+                  className="bg-card/50 border-brass/20"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addToList(e.currentTarget.value, exceptions, setExceptions);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                />
+                {exceptions.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {exceptions.map(ex => (
+                      <RuneTag key={ex} onRemove={() => setExceptions(exceptions.filter(x => x !== ex))}>
+                        {ex}
+                      </RuneTag>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>World Impact</Label>
+                <Textarea 
+                  value={impact} 
+                  onChange={(e) => setImpact(e.target.value)} 
+                  placeholder="How does this law affect the world?" 
+                  rows={4} 
+                  className="bg-card/50 border-brass/20"
+                />
+              </div>
+            </LoreSection>
+          )}
 
-        {/* Chronicle Section */}
-        <LoreChronicle
-          content={content}
-          onChange={setContent}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          label="Full Description"
-        />
+          <LoreOrnamentDivider />
 
-        {/* Actions */}
-        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
+          {/* Chronicle Section */}
+          <LoreChronicle
+            content={content}
+            onChange={setContent}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            label="Full Description"
+          />
+        </div>
+      </div>
+
+      {/* Actions - Sticky Footer */}
+      <div className="flex-shrink-0 flex gap-2 justify-between p-4 border-t border-brass/20 bg-card">
+        {isEditing ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={deleting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Magic Entry?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete "{title}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : <div />}
+        <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Entry"}
+            {saving ? "Saving..." : isEditing ? "Update Entry" : "Save Entry"}
           </Button>
         </div>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

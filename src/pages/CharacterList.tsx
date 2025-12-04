@@ -47,16 +47,22 @@ const CharacterList = () => {
         return;
       }
 
-      // Load user's characters for this campaign
+      // Load user's characters for this campaign with subclass info
       const { data, error } = await supabase
         .from("characters")
-        .select("*")
+        .select("*, srd_subclasses(name)")
         .eq("campaign_id", campaignId)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCharacters(data || []);
+      
+      // Transform data to include subclass_name
+      const transformedData = (data || []).map((char: any) => ({
+        ...char,
+        subclass_name: char.srd_subclasses?.name || null
+      }));
+      setCharacters(transformedData);
     } catch (error) {
       console.error("Error loading characters:", error);
       toast({

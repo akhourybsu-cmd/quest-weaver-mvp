@@ -115,11 +115,13 @@ interface CharacterData {
   spell_attack_mod: number | null;
   ancestry_id: string | null;
   subancestry_id: string | null;
+  subclass_id: string | null;
   portrait_url: string | null;
   exhaustion_level: number;
   pact_slots_max: number | null;
   pact_slots_used: number | null;
   pact_slot_level: number | null;
+  subclass_name?: string | null;
 }
 
 interface PlayerCharacterSheetProps {
@@ -188,12 +190,15 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const fetchCharacter = async () => {
     const { data } = await supabase
       .from("characters")
-      .select("*, srd_ancestries(name, traits), srd_subancestries(name, traits)")
+      .select("*, srd_ancestries(name, traits), srd_subancestries(name, traits), srd_subclasses(name)")
       .eq("id", characterId)
       .single();
 
     if (data) {
-      setCharacter(data as CharacterData);
+      setCharacter({
+        ...data,
+        subclass_name: (data as any).srd_subclasses?.name || null
+      } as CharacterData);
       // Extract ancestry traits (they come as [{name, description}])
       if ((data as any).srd_ancestries?.traits) {
         setAncestryTraits((data as any).srd_ancestries.traits as AncestryTrait[]);

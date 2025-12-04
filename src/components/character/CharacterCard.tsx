@@ -31,6 +31,7 @@ interface CharacterCardProps {
     ac: number;
     temp_hp?: number;
     creation_status?: 'draft' | 'complete';
+    subclass_name?: string | null;
   };
   campaignId: string;
   onResumeCreation?: (characterId: string) => void;
@@ -81,7 +82,15 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
             </div>
             <p className="text-sm text-muted-foreground">
               Level {character.level} {character.class}
+              {character.subclass_name && (
+                <span className="text-primary"> • {character.subclass_name}</span>
+              )}
             </p>
+            {character.level >= 3 && !character.subclass_name && (
+              <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500 mt-1">
+                Subclass Available
+              </Badge>
+            )}
           </div>
           <User className="h-8 w-8 text-muted-foreground" />
         </div>

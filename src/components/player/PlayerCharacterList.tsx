@@ -38,6 +38,7 @@ interface Character {
   portrait_url?: string;
   creation_status: string;
   campaign_id?: string;
+  subclass_name?: string | null;
   campaign?: {
     id: string;
     name: string;
@@ -74,13 +75,20 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
         .from('characters')
         .select(`
           *,
-          campaign:campaigns(id, name)
+          campaign:campaigns(id, name),
+          srd_subclasses(name)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCharacters(data || []);
+      
+      // Transform data to include subclass_name
+      const transformedData = (data || []).map((char: any) => ({
+        ...char,
+        subclass_name: char.srd_subclasses?.name || null
+      }));
+      setCharacters(transformedData);
     } catch (error) {
       console.error('Error loading characters:', error);
     } finally {
@@ -224,8 +232,18 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                     <CardTitle className="font-cinzel text-xl truncate">
                       {character.name}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
+                    <CardDescription className="flex flex-col gap-1 mt-1">
                       <span>Level {character.level} {character.class}</span>
+                      {character.subclass_name && (
+                        <Badge variant="secondary" className="w-fit bg-primary/20 text-primary border-primary/30 text-xs">
+                          {character.subclass_name}
+                        </Badge>
+                      )}
+                      {character.level >= 3 && !character.subclass_name && (
+                        <Badge variant="outline" className="w-fit border-amber-500/50 text-amber-500 text-xs animate-pulse">
+                          Subclass Available!
+                        </Badge>
+                      )}
                     </CardDescription>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {character.creation_status === 'draft' && (

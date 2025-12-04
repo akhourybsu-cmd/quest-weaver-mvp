@@ -6,12 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X } from "lucide-react";
+import { Map, Landmark, Users, Crown, Thermometer, Package, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, RegionStatBar } from "../ui";
 
 interface RegionCreatorProps {
   campaignId: string;
@@ -123,10 +121,6 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
     }
   };
 
-  const removeTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag));
-  };
-
   const addChip = (value: string, list: string[], setter: (v: string[]) => void) => {
     if (value.trim() && !list.includes(value.trim())) {
       setter([...list, value.trim()]);
@@ -134,9 +128,27 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
   };
 
   return (
-    <ScrollArea className="h-[calc(90vh-12rem)] pr-4">
-      <div className="space-y-6 pb-6">
-        <div className="grid gap-4">
+    <ScrollArea className="h-[calc(90vh-12rem)]">
+      <div className="lore-form-container space-y-6 pb-6 pr-4">
+        {/* Hero Header */}
+        <LoreHeroHeader
+          title={title}
+          category="regions"
+          visibility={visibility}
+          era={era}
+          slug={slug}
+        >
+          <RegionStatBar
+            regionType={regionType}
+            population={population}
+            government={government}
+            era={era}
+            climate={climate}
+          />
+        </LoreHeroHeader>
+
+        {/* Basic Info Section */}
+        <LoreSection title="Basic Information" icon={Map} accentClass="lore-accent-regions">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
@@ -145,15 +157,17 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="The Emerald Coast"
+                className="bg-card/50 border-brass/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
+              <Label htmlFor="era">Era / Date</Label>
               <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="emerald-coast"
+                id="era"
+                value={era}
+                onChange={(e) => setEra(e.target.value)}
+                placeholder="3rd Age"
+                className="bg-card/50 border-brass/20"
               />
             </div>
           </div>
@@ -164,16 +178,17 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
               id="summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="A brief overview..."
+              placeholder="A brief overview of this region..."
               rows={2}
+              className="bg-card/50 border-brass/20"
             />
           </div>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="regionType">Region Type *</Label>
               <Select value={regionType} onValueChange={setRegionType}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,9 +204,9 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="parentRegion">Parent Region (optional)</Label>
+              <Label htmlFor="parentRegion">Parent Region</Label>
               <Select value={parentRegion} onValueChange={setParentRegion}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue placeholder="Select parent region" />
                 </SelectTrigger>
                 <SelectContent>
@@ -205,24 +220,14 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
             <div className="space-y-2">
               <Label htmlFor="visibility">Visibility</Label>
               <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-brass/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="DM_ONLY">DM Only</SelectItem>
-                  <SelectItem value="SHARED">Public</SelectItem>
+                  <SelectItem value="SHARED">Shared</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="era">Era / Date</Label>
-              <Input
-                id="era"
-                value={era}
-                onChange={(e) => setEra(e.target.value)}
-                placeholder="3rd Age"
-              />
             </div>
           </div>
 
@@ -234,153 +239,174 @@ export default function RegionCreator({ campaignId, onSave, onCancel }: RegionCr
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
               placeholder="coastal, trade-hub"
+              className="bg-card/50 border-brass/20"
             />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => removeTag(tag)} />
-                </Badge>
-              ))}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <RuneTag key={tag} onRemove={() => setTags(tags.filter(t => t !== tag))}>
+                    {tag}
+                  </RuneTag>
+                ))}
+              </div>
+            )}
+          </div>
+        </LoreSection>
+
+        <LoreOrnamentDivider />
+
+        {/* Realm & Rule Section */}
+        <LoreSection title="Realm & Rule" icon={Crown} accentClass="lore-accent-regions">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Population</Label>
+              <Input 
+                value={population} 
+                onChange={(e) => setPopulation(e.target.value)} 
+                placeholder="~50,000" 
+                className="bg-card/50 border-brass/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Government Type</Label>
+              <Input 
+                value={government} 
+                onChange={(e) => setGovernment(e.target.value)} 
+                placeholder="Republic" 
+                className="bg-card/50 border-brass/20"
+              />
             </div>
           </div>
-        </div>
+        </LoreSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Region Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Population</Label>
-                <Input value={population} onChange={(e) => setPopulation(e.target.value)} placeholder="~50,000" />
+        {/* Land & Climate Section */}
+        <LoreSection title="Land & Climate" icon={Thermometer} accentClass="lore-accent-regions">
+          <div className="space-y-2">
+            <Label>Climate & Terrain (press Enter to add)</Label>
+            <Input
+              placeholder="temperate, coastal, forest"
+              className="bg-card/50 border-brass/20"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addChip(e.currentTarget.value, climate, setClimate);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+            {climate.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {climate.map(c => (
+                  <RuneTag key={c} variant="outline" onRemove={() => setClimate(climate.filter(x => x !== c))}>
+                    {c}
+                  </RuneTag>
+                ))}
               </div>
-              <div className="space-y-2">
-                <Label>Government Type</Label>
-                <Input value={government} onChange={(e) => setGovernment(e.target.value)} placeholder="Republic" />
-              </div>
-            </div>
+            )}
+          </div>
 
+          <div className="space-y-2">
+            <Label>Travel Notes</Label>
+            <Textarea
+              value={travelNotes}
+              onChange={(e) => setTravelNotes(e.target.value)}
+              placeholder="2 days south of the capital..."
+              rows={3}
+              className="bg-card/50 border-brass/20"
+            />
+          </div>
+        </LoreSection>
+
+        {/* Trade & Ties Section */}
+        <LoreSection title="Trade & Ties" icon={Package} accentClass="lore-accent-regions">
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Climate & Terrain (comma separated)</Label>
+              <Label>Exports</Label>
               <Input
-                placeholder="temperate, coastal, forest"
+                placeholder="wine, silk"
+                className="bg-card/50 border-brass/20"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    addChip(e.currentTarget.value, climate, setClimate);
+                    addChip(e.currentTarget.value, exports, setExports);
                     e.currentTarget.value = "";
                   }
                 }}
               />
-              <div className="flex flex-wrap gap-2">
-                {climate.map(c => (
-                  <Badge key={c} variant="outline">
-                    {c}
-                    <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setClimate(climate.filter(x => x !== c))} />
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Exports</Label>
-                <Input
-                  placeholder="wine, silk"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addChip(e.currentTarget.value, exports, setExports);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
+              {exports.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {exports.map(exp => (
-                    <Badge key={exp} variant="secondary" className="text-xs">
+                    <RuneTag key={exp} variant="accent" onRemove={() => setExports(exports.filter(x => x !== exp))}>
                       {exp}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setExports(exports.filter(x => x !== exp))} />
-                    </Badge>
+                    </RuneTag>
                   ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Imports</Label>
-                <Input
-                  placeholder="iron, grain"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addChip(e.currentTarget.value, imports, setImports);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
-                <div className="flex flex-wrap gap-1">
-                  {imports.map(imp => (
-                    <Badge key={imp} variant="secondary" className="text-xs">
-                      {imp}
-                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => setImports(imports.filter(x => x !== imp))} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Switch checked={addToMap} onCheckedChange={setAddToMap} />
-                <Label>Add to Campaign Map</Label>
-              </div>
-              {addToMap && (
-                <div className="grid grid-cols-2 gap-2 pl-6">
-                  <Input type="number" placeholder="X" value={mapX} onChange={(e) => setMapX(e.target.value)} />
-                  <Input type="number" placeholder="Y" value={mapY} onChange={(e) => setMapY(e.target.value)} />
                 </div>
               )}
             </div>
-
             <div className="space-y-2">
-              <Label>Travel Notes</Label>
-              <Textarea
-                value={travelNotes}
-                onChange={(e) => setTravelNotes(e.target.value)}
-                placeholder="2 days south of the capital..."
-                rows={3}
+              <Label>Imports</Label>
+              <Input
+                placeholder="iron, grain"
+                className="bg-card/50 border-brass/20"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addChip(e.currentTarget.value, imports, setImports);
+                    e.currentTarget.value = "";
+                  }
+                }}
               />
+              {imports.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {imports.map(imp => (
+                    <RuneTag key={imp} variant="outline" onRemove={() => setImports(imports.filter(x => x !== imp))}>
+                      {imp}
+                    </RuneTag>
+                  ))}
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="space-y-2">
-          <Label>Full Description</Label>
-          <p className="text-xs text-muted-foreground">
-            Use: [[Page]], @NPC, #Location, %Faction, !Quest, $Item
-          </p>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="edit">Edit</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="font-mono"
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="prose prose-sm max-w-none p-4 border rounded-md min-h-[300px]">
-                {content || <span className="text-muted-foreground">No content yet...</span>}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Switch checked={addToMap} onCheckedChange={setAddToMap} />
+              <Label>Add to Campaign Map</Label>
+            </div>
+            {addToMap && (
+              <div className="grid grid-cols-2 gap-2 pl-6">
+                <Input 
+                  type="number" 
+                  placeholder="X" 
+                  value={mapX} 
+                  onChange={(e) => setMapX(e.target.value)} 
+                  className="bg-card/50 border-brass/20"
+                />
+                <Input 
+                  type="number" 
+                  placeholder="Y" 
+                  value={mapY} 
+                  onChange={(e) => setMapY(e.target.value)} 
+                  className="bg-card/50 border-brass/20"
+                />
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+          </div>
+        </LoreSection>
 
-        <div className="flex gap-2 justify-end pt-4 border-t">
+        <LoreOrnamentDivider />
+
+        {/* Chronicle Section */}
+        <LoreChronicle
+          content={content}
+          onChange={setContent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          label="Full Description"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end pt-4 border-t border-brass/20">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Region"}

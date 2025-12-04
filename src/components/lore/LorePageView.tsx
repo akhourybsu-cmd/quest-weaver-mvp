@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, X, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LoreHeroHeader, LoreOrnamentDivider, RuneTag } from "./ui";
 
 interface LorePageViewProps {
   page: any;
@@ -68,63 +67,78 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
     return acc;
   }, {} as Record<string, any[]>);
 
+  const categoryAccentClass: Record<string, string> = {
+    regions: "lore-accent-regions",
+    factions: "lore-accent-factions",
+    npcs: "lore-accent-npcs",
+    history: "lore-accent-history",
+    religion: "lore-accent-religion",
+    magic: "lore-accent-magic",
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold">{page.title}</h2>
-            <Badge variant="outline">{page.visibility.replace('_', ' ')}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Updated {new Date(page.updated_at).toLocaleDateString()}
-          </p>
-          {page.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {page.tags.map((tag: string, idx: number) => (
-                <Badge key={idx} variant="secondary">{tag}</Badge>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {onEdit && (
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
+      {/* Header with close/edit buttons */}
+      <div className="p-4 flex justify-end gap-2 border-b border-brass/20">
+        {onEdit && (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
           </Button>
-        </div>
+        )}
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-6">
-          <div className="prose prose-sm dark:prose-invert max-w-none mb-8">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {page.content_md}
-            </ReactMarkdown>
+        <div className={`p-6 space-y-6 ${categoryAccentClass[page.category] || ''}`}>
+          {/* Hero Header */}
+          <LoreHeroHeader
+            title={page.title}
+            category={page.category}
+            visibility={page.visibility}
+            era={page.era}
+            slug={page.slug}
+          >
+            {page.tags && page.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {page.tags.map((tag: string, idx: number) => (
+                  <RuneTag key={idx}>{tag}</RuneTag>
+                ))}
+              </div>
+            )}
+          </LoreHeroHeader>
+
+          <LoreOrnamentDivider />
+
+          {/* Main Content */}
+          <div className="fantasy-chronicle p-6">
+            <div className="prose prose-sm dark:prose-invert max-w-none fantasy-drop-cap">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {page.content_md || "*No content available*"}
+              </ReactMarkdown>
+            </div>
           </div>
 
+          {/* Linked Entities */}
           {Object.keys(groupedLinks).length > 0 && (
             <>
-              <Separator className="my-6" />
+              <LoreOrnamentDivider />
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Linked Entities</h3>
+                <h3 className="lore-section-title">Linked Entities</h3>
                 {Object.entries(groupedLinks).map(([type, items]) => (
-                  <Card key={type}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{type.replace('_', ' ')}</CardTitle>
+                  <Card key={type} className="fantasy-section">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm font-medium">{type.replace('_', ' ')}</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-0">
                       <div className="flex flex-wrap gap-2">
                         {(items as any[]).map((item: any) => (
-                          <Badge key={item.id} variant="outline">
+                          <RuneTag key={item.id} variant="outline">
                             {item.label}
                             {item.target_id && <ExternalLink className="h-3 w-3 ml-1" />}
-                          </Badge>
+                          </RuneTag>
                         ))}
                       </div>
                     </CardContent>
@@ -134,22 +148,23 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
             </>
           )}
 
+          {/* Backlinks */}
           {backlinks.length > 0 && (
             <>
-              <Separator className="my-6" />
+              <LoreOrnamentDivider />
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Referenced By</h3>
-                <Card>
-                  <CardHeader>
+                <h3 className="lore-section-title">Referenced By</h3>
+                <Card className="fantasy-section">
+                  <CardHeader className="py-3">
                     <CardDescription>
                       {backlinks.length} {backlinks.length === 1 ? 'reference' : 'references'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
                     <div className="space-y-2">
                       {backlinks.map((link) => (
                         <div key={link.id} className="flex items-center gap-2">
-                          <Badge variant="secondary">{link.from_type}</Badge>
+                          <RuneTag variant="accent">{link.from_type}</RuneTag>
                           <span className="text-sm">{link.label}</span>
                         </div>
                       ))}

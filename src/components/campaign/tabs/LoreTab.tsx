@@ -148,17 +148,17 @@ export function LoreTab({ campaignId }: LoreTabProps) {
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <Book className="h-5 w-5 text-arcanePurple" />
+          <Book className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-cinzel font-bold text-foreground">World Lore</h2>
         </div>
         <Button 
           onClick={() => handleCreateByCategory(activeCategory)}
-          className="bg-arcanePurple hover:bg-arcanePurple/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Lore Entry
+          New {getCategoryLabel(activeCategory)}
         </Button>
       </div>
 
@@ -257,7 +257,7 @@ export function LoreTab({ campaignId }: LoreTabProps) {
                     </p>
                     <Button 
                       onClick={() => handleCreateByCategory(activeCategory)}
-                      className="bg-arcanePurple hover:bg-arcanePurple/90"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Create {getCategoryLabel(activeCategory)}

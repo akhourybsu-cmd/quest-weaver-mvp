@@ -205,7 +205,7 @@ export default function FactionCreator({ campaignId, page, onSave, onCancel }: F
           <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-factions">
             <ImageUpload
               bucket="maps"
-              path={`lore/${campaignId}/factions`}
+              path={`${campaignId}/lore/factions`}
               currentImageUrl={imageUrl}
               onImageUploaded={setImageUrl}
               label="Faction Banner"

@@ -229,7 +229,7 @@ export default function RegionCreator({ campaignId, page, onSave, onCancel }: Re
           <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-regions">
             <ImageUpload
               bucket="maps"
-              path={`lore/${campaignId}/regions`}
+              path={`${campaignId}/lore/regions`}
               currentImageUrl={imageUrl}
               onImageUploaded={setImageUrl}
               label="Region Banner"

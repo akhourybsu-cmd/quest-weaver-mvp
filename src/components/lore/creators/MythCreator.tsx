@@ -206,7 +206,7 @@ export default function MythCreator({ campaignId, page, onSave, onCancel }: Myth
           <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-religion">
             <ImageUpload
               bucket="maps"
-              path={`lore/${campaignId}/religion`}
+              path={`${campaignId}/lore/religion`}
               currentImageUrl={imageUrl}
               onImageUploaded={setImageUrl}
               label="Entry Banner"

@@ -231,29 +231,86 @@ export async function applyFeature(application: FeatureApplication): Promise<{
 }
 
 /**
- * Evaluate a formula string (e.g., "level", "floor((level+1)/2)")
- * Very basic implementation - can be enhanced
+ * Safely evaluate a mathematical formula string (e.g., "level", "floor((level+1)/2)")
+ * Uses a safe parser instead of eval() to prevent code injection
  */
 function evaluateFormula(formula: string, level: number): number {
   try {
     // Replace 'level' with actual value
-    const expr = formula.replace(/level/g, level.toString());
+    let expr = formula.replace(/level/g, level.toString());
     
     // Handle floor function
-    if (expr.includes('floor')) {
-      const match = expr.match(/floor\((.*?)\)/);
-      if (match) {
-        const inner = match[1];
-        const result = eval(inner);
-        return Math.floor(result);
-      }
-    }
+    expr = expr.replace(/floor\(([^)]+)\)/g, (_, inner) => {
+      const result = safeEvaluateMath(inner);
+      return Math.floor(result).toString();
+    });
     
-    // Simple evaluation
-    return eval(expr);
+    // Handle ceil function
+    expr = expr.replace(/ceil\(([^)]+)\)/g, (_, inner) => {
+      const result = safeEvaluateMath(inner);
+      return Math.ceil(result).toString();
+    });
+    
+    return safeEvaluateMath(expr);
   } catch {
     return 0;
   }
+}
+
+/**
+ * Safely evaluate a simple mathematical expression
+ * Only allows numbers, basic operators (+, -, *, /), and parentheses
+ */
+function safeEvaluateMath(expr: string): number {
+  // Remove all whitespace
+  expr = expr.replace(/\s/g, '');
+  
+  // Validate: only allow numbers, operators, parentheses, and decimal points
+  if (!/^[\d+\-*/().]+$/.test(expr)) {
+    throw new Error('Invalid characters in expression');
+  }
+  
+  // Tokenize
+  const tokens = expr.match(/(\d+\.?\d*|[+\-*/()])/g) || [];
+  
+  // Parse and evaluate using recursive descent parser
+  let pos = 0;
+  
+  function parseExpression(): number {
+    let result = parseTerm();
+    while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+      const op = tokens[pos++];
+      const term = parseTerm();
+      result = op === '+' ? result + term : result - term;
+    }
+    return result;
+  }
+  
+  function parseTerm(): number {
+    let result = parseFactor();
+    while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+      const op = tokens[pos++];
+      const factor = parseFactor();
+      result = op === '*' ? result * factor : result / factor;
+    }
+    return result;
+  }
+  
+  function parseFactor(): number {
+    if (tokens[pos] === '(') {
+      pos++; // skip '('
+      const result = parseExpression();
+      pos++; // skip ')'
+      return result;
+    }
+    if (tokens[pos] === '-') {
+      pos++;
+      return -parseFactor();
+    }
+    return parseFloat(tokens[pos++]);
+  }
+  
+  return parseExpression();
 }
 
 /**

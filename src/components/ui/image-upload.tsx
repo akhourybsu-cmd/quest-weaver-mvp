@@ -224,7 +224,7 @@ export function ImageUpload({
       <div className={`space-y-2 ${className}`}>
         <Label>{label}</Label>
         <div
-          className={`relative border-2 border-dashed border-brass/30 rounded-lg overflow-hidden bg-background/50 ${aspectClasses[aspectRatio]}`}
+          className={`relative border-2 border-dashed border-brass/30 rounded-lg overflow-hidden bg-background/50 max-w-xs ${aspectClasses[aspectRatio]}`}
         >
           {previewUrl ? (
             <>

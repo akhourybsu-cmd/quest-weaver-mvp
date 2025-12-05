@@ -2,3 +2,6 @@ project_id = "wgdiwkwprcxltkggyhmm"
 
 [functions.parse-campaign-document]
 verify_jwt = true
+
+[functions.import-srd-core]
+verify_jwt = true

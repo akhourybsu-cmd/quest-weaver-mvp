@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Plus, Search, Book, Clock, List } from "lucide-react";
+import { Plus, Search, Book, Clock, List, Mountain, Users, Scroll, Sparkles, User, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import LoreEditor from "@/components/lore/LoreEditor";
 import LorePageView from "@/components/lore/LorePageView";
@@ -32,11 +32,21 @@ interface LorePage {
   era: string | null;
   visibility: 'DM_ONLY' | 'SHARED' | 'PUBLIC';
   details?: Record<string, any> | null;
+  image_url?: string | null;
 }
 
 interface LoreTabProps {
   campaignId: string;
 }
+
+const categoryConfig: Record<string, { label: string; singularLabel: string; icon: React.ReactNode; color: string }> = {
+  regions: { label: "Regions", singularLabel: "Region", icon: <Mountain className="w-4 h-4" />, color: "text-emerald-400" },
+  factions: { label: "Factions", singularLabel: "Faction", icon: <Users className="w-4 h-4" />, color: "text-red-400" },
+  npcs: { label: "NPCs", singularLabel: "NPC", icon: <User className="w-4 h-4" />, color: "text-teal-400" },
+  history: { label: "History", singularLabel: "Event", icon: <Clock className="w-4 h-4" />, color: "text-amber-400" },
+  religion: { label: "Myth & Faith", singularLabel: "Deity/Myth", icon: <Scroll className="w-4 h-4" />, color: "text-blue-400" },
+  magic: { label: "Magic", singularLabel: "Magic Entry", icon: <Sparkles className="w-4 h-4" />, color: "text-purple-400" },
+};
 
 export function LoreTab({ campaignId }: LoreTabProps) {
   const [pages, setPages] = useState<LorePage[]>([]);
@@ -108,15 +118,11 @@ export function LoreTab({ campaignId }: LoreTabProps) {
   const allTags = Array.from(new Set(pages.flatMap(p => p.tags)));
 
   const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case "regions": return "Region";
-      case "factions": return "Faction";
-      case "npcs": return "NPC";
-      case "history": return "Event";
-      case "religion": return "Deity/Myth";
-      case "magic": return "Magic Entry";
-      default: return "Entry";
-    }
+    return categoryConfig[category]?.singularLabel || "Entry";
+  };
+
+  const getCategoryConfig = (category: string) => {
+    return categoryConfig[category] || { label: "Other", singularLabel: "Entry", icon: <HelpCircle className="w-4 h-4" />, color: "text-muted-foreground" };
   };
 
   const renderCreator = () => {
@@ -265,51 +271,71 @@ export function LoreTab({ campaignId }: LoreTabProps) {
                   </CardContent>
                 </Card>
               ) : (
-                filteredPages.map((page) => (
-                  <Card
-                    key={page.id}
-                    className="cursor-pointer hover:shadow-lg transition-all rounded-2xl border-brass/20 bg-card/50 hover:border-arcanePurple/40"
-                    onClick={() => handleViewPage(page)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-2">
+                filteredPages.map((page) => {
+                  const config = getCategoryConfig(page.category);
+                  // Try to get image from details.image_url or page.image_url
+                  const imageUrl = page.image_url || (page.details as any)?.image_url;
+                  
+                  return (
+                    <Card
+                      key={page.id}
+                      className="cursor-pointer hover:shadow-lg transition-all border-brass/20 bg-card/50 hover:border-brass/40 overflow-hidden"
+                      onClick={() => handleViewPage(page)}
+                    >
+                      {/* Image Banner */}
+                      {imageUrl && (
+                        <div className="w-full h-32 overflow-hidden">
+                          <img
+                            src={imageUrl}
+                            alt={page.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <CardHeader className={imageUrl ? "pt-3 pb-2" : "pb-2"}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className={`${config.color} text-xs flex items-center gap-1`}>
+                            {config.icon}
+                            <span>{config.singularLabel}</span>
+                          </Badge>
+                          {page.visibility === 'SHARED' && (
+                            <Badge variant="secondary" className="text-xs">Shared</Badge>
+                          )}
+                        </div>
                         <CardTitle className="text-base font-cinzel">{page.title}</CardTitle>
-                        <Badge variant="outline" className="text-xs border-brass/30">
-                          {page.category}
-                        </Badge>
-                      </div>
-                      {page.excerpt && (
-                        <CardDescription className="line-clamp-2">
-                          {page.excerpt}
-                        </CardDescription>
-                      )}
-                      {page.era && (
-                        <p className="text-xs text-muted-foreground mt-1">{page.era}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        {page.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {page.tags.slice(0, 3).map((tag, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {page.tags.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{page.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
+                      </CardHeader>
+                      <CardContent>
+                        {page.excerpt && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {page.excerpt}
+                          </p>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(page.updated_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                        {page.era && (
+                          <p className="text-xs text-muted-foreground mb-2">{page.era}</p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          {page.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {page.tags.slice(0, 3).map((tag, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {page.tags.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{page.tags.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(page.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
           </ScrollArea>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -320,16 +321,14 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
           </div>
 
           {/* Bio */}
-          <div>
-            <Label htmlFor="bio">Public Bio</Label>
-            <Textarea
-              id="bio"
-              value={publicBio}
-              onChange={(e) => setPublicBio(e.target.value)}
-              placeholder="What players can see about this NPC..."
-              className="min-h-[100px]"
-            />
-          </div>
+          <MarkdownEditor
+            value={publicBio}
+            onChange={setPublicBio}
+            label="Public Bio"
+            placeholder="What players can see about this NPC..."
+            rows={4}
+            showPreview={false}
+          />
 
           {/* GM-Only Fields */}
           <div>

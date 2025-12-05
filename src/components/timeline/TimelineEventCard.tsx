@@ -105,7 +105,11 @@ export function TimelineEventCard({
           )}
           
           <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-            <span>{format(new Date(event.occurred_at), "MMM d, h:mm a")}</span>
+            {event.in_game_date ? (
+              <span>{event.in_game_date}</span>
+            ) : (
+              <span>{format(new Date(event.occurred_at), "MMM d, h:mm a")}</span>
+            )}
             {event.ref_type && (
               <Badge variant="secondary" className="text-xs">
                 {event.ref_type}

@@ -642,18 +642,18 @@ const CampaignHub = () => {
       >
         {/* Header Bar with optional banner image */}
         <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4 relative overflow-hidden">
-          {/* Background banner image with fade effect */}
+        {/* Background banner image with fade effect */}
           {activeCampaign?.banner_url && (
             <div className="absolute inset-0 pointer-events-none">
               <div 
-                className="absolute right-0 top-0 bottom-0 w-2/3"
+                className="absolute right-0 top-0 bottom-0 w-1/2 opacity-60"
                 style={{ 
                   backgroundImage: `url(${activeCampaign.banner_url})`, 
                   backgroundSize: 'cover', 
                   backgroundPosition: 'center' 
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/95 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-obsidian from-40% via-obsidian/80 via-70% to-transparent" />
             </div>
           )}
           <div className="flex items-center justify-between mb-3 relative z-10">
@@ -672,7 +672,7 @@ const CampaignHub = () => {
               </BreadcrumbList>
             </Breadcrumb>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 bg-obsidian/70 backdrop-blur-sm rounded-lg px-2 py-1">
               {activeCampaign && <SessionControl campaignId={activeCampaign.id} />}
               <Button onClick={handleInvitePlayers} variant="outline" size="sm" className="hidden sm:flex">
                 <Users className="w-4 h-4 mr-2" />

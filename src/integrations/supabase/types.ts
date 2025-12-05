@@ -407,6 +407,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          banner_url: string | null
           code: string
           created_at: string | null
           dm_user_id: string
@@ -416,6 +417,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          banner_url?: string | null
           code: string
           created_at?: string | null
           dm_user_id: string
@@ -425,6 +427,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          banner_url?: string | null
           code?: string
           created_at?: string | null
           dm_user_id?: string

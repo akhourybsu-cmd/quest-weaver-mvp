@@ -108,6 +108,8 @@ import { SessionTimer } from "@/components/campaign/SessionTimer";
 import { SessionControl } from "@/components/campaign/SessionControl";
 import { resilientChannel } from "@/lib/realtime";
 import { DocumentImportDialog } from "@/components/campaign/DocumentImportDialog";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { ImagePlus } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -115,6 +117,7 @@ interface Campaign {
   code: string;
   dm_user_id: string;
   live_session_id: string | null;
+  banner_url: string | null;
 }
 
 const CampaignHub = () => {
@@ -139,6 +142,7 @@ const CampaignHub = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showBannerUpload, setShowBannerUpload] = useState(false);
   const [playerData, setPlayerData] = useState<{ count: number; players: any[] }>({ count: 0, players: [] });
   const [sessionCount, setSessionCount] = useState(0);
   const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0);
@@ -481,6 +485,37 @@ const CampaignHub = () => {
     }
   };
 
+  const handleBannerUpload = async (url: string) => {
+    if (!activeCampaign) return;
+    
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ banner_url: url })
+        .eq('id', activeCampaign.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setActiveCampaign({ ...activeCampaign, banner_url: url });
+      setCampaigns(campaigns.map(c => 
+        c.id === activeCampaign.id ? { ...c, banner_url: url } : c
+      ));
+      
+      toast({
+        title: "Banner updated!",
+        description: "Your campaign banner has been set",
+      });
+      setShowBannerUpload(false);
+    } catch (error: any) {
+      toast({
+        title: "Failed to update banner",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Removed handleQuestSelect - quests now use QuestDetailDialog directly
 
   const handleQuickAdd = (type: string) => {
@@ -605,9 +640,23 @@ const CampaignHub = () => {
         onInspectorClose={() => setInspectorOpen(false)}
         inspectorContent={null}
       >
-        {/* Header Bar */}
-        <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
+        {/* Header Bar with optional banner image */}
+        <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4 relative overflow-hidden">
+          {/* Background banner image with fade effect */}
+          {activeCampaign?.banner_url && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div 
+                className="absolute right-0 top-0 bottom-0 w-2/3"
+                style={{ 
+                  backgroundImage: `url(${activeCampaign.banner_url})`, 
+                  backgroundSize: 'cover', 
+                  backgroundPosition: 'center' 
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/95 to-transparent" />
+            </div>
+          )}
+          <div className="flex items-center justify-between mb-3 relative z-10">
             {/* Breadcrumb - hidden on mobile */}
             <Breadcrumb className="hidden sm:block">
               <BreadcrumbList>
@@ -643,6 +692,10 @@ const CampaignHub = () => {
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Join Code
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBannerUpload(true)}>
+                    <ImagePlus className="w-4 h-4 mr-2" />
+                    Set Banner Image
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
                     <Upload className="w-4 h-4 mr-2" />
                     Import Content (AI)
@@ -669,7 +722,7 @@ const CampaignHub = () => {
           </div>
 
           {/* Campaign name and badges - responsive */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 relative z-10">
             <h1 className="text-lg sm:text-2xl font-cinzel font-bold text-ink truncate">{activeCampaign?.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="border-brass/30 text-brass text-xs">
@@ -721,7 +774,7 @@ const CampaignHub = () => {
           </div>
 
           {/* Quick Command - hide kbd on mobile */}
-          <div className="mt-2 sm:mt-4 flex items-center gap-2">
+          <div className="mt-2 sm:mt-4 flex items-center gap-2 relative z-10">
             <Button
               variant="ghost"
               size="sm"
@@ -1022,6 +1075,56 @@ const CampaignHub = () => {
           onOpenChange={setShowImportDialog}
           campaignId={activeCampaign.id}
         />
+      )}
+
+      {/* Banner Image Upload Dialog */}
+      {activeCampaign && showBannerUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-brass/30 rounded-lg p-6 max-w-md w-full mx-4 fantasy-border-brass">
+            <h3 className="font-cinzel text-lg font-bold mb-4">Set Campaign Banner</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload an image to display in the campaign header. The image will fade in from the right.
+            </p>
+            <ImageUpload
+              currentImageUrl={activeCampaign.banner_url}
+              onImageUploaded={(url) => {
+                if (url) {
+                  handleBannerUpload(url);
+                }
+              }}
+              bucket="maps"
+              path={`${activeCampaign.id}/banners`}
+              aspectRatio="landscape"
+              label="Banner Image"
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              {activeCampaign.banner_url && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await supabase
+                      .from('campaigns')
+                      .update({ banner_url: null })
+                      .eq('id', activeCampaign.id);
+                    setActiveCampaign({ ...activeCampaign, banner_url: null });
+                    setCampaigns(campaigns.map(c => 
+                      c.id === activeCampaign.id ? { ...c, banner_url: null } : c
+                    ));
+                    setShowBannerUpload(false);
+                    toast({ title: "Banner removed" });
+                  }}
+                  className="text-destructive"
+                >
+                  Remove Banner
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setShowBannerUpload(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

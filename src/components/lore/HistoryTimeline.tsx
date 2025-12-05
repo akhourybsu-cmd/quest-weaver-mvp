@@ -22,6 +22,7 @@ interface HistoryEvent {
     outcome?: string;
     showOnTimeline?: boolean;
     era_id?: string;
+    image_url?: string;
   } | null;
   updated_at: string;
 }
@@ -200,10 +201,24 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
                     return (
                       <Card
                         key={event.id}
-                        className="cursor-pointer hover:shadow-lg transition-all border-brass/20 bg-card/50 hover:border-amber-500/40"
+                        className="cursor-pointer hover:shadow-lg transition-all border-brass/20 bg-card/50 hover:border-amber-500/40 relative overflow-hidden"
                         onClick={() => onViewEvent(event)}
                       >
-                        <CardHeader className="py-3 px-4">
+                        {/* Background image with fade effect */}
+                        {event.details?.image_url && (
+                          <div className="absolute inset-0 pointer-events-none">
+                            <div 
+                              className="absolute right-0 top-0 bottom-0 w-2/3"
+                              style={{ 
+                                backgroundImage: `url(${event.details.image_url})`, 
+                                backgroundSize: 'cover', 
+                                backgroundPosition: 'center' 
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/95 to-transparent" />
+                          </div>
+                        )}
+                        <CardHeader className="py-3 px-4 relative z-10">
                           <div className="flex items-start gap-3">
                             <div className="p-1.5 rounded bg-amber-500/10 text-amber-500">
                               <EventIcon className="h-4 w-4" />
@@ -212,7 +227,7 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
                               <div className="flex items-center justify-between gap-2">
                                 <CardTitle className="text-sm font-medium">{event.title}</CardTitle>
                                 {event.details?.date && (
-                                  <Badge variant="outline" className="text-xs shrink-0 border-amber-500/30 text-amber-600">
+                                  <Badge variant="outline" className="text-xs shrink-0 border-amber-500/30 text-amber-600 bg-card/80">
                                     {event.details.date}
                                   </Badge>
                                 )}
@@ -226,7 +241,7 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
                           </div>
                         </CardHeader>
                         {event.tags.length > 0 && (
-                          <CardContent className="py-2 px-4 pt-0">
+                          <CardContent className="py-2 px-4 pt-0 relative z-10">
                             <div className="flex flex-wrap gap-1">
                               {event.tags.slice(0, 3).map((tag, idx) => (
                                 <Badge key={idx} variant="secondary" className="text-xs">

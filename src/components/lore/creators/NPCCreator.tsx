@@ -225,7 +225,7 @@ export default function NPCCreator({ campaignId, page, onSave, onCancel }: NPCCr
           <LoreSection title="Portrait" icon={ImageIcon} accentClass="lore-accent-npcs">
             <ImageUpload
               bucket="maps"
-              path={`lore/${campaignId}/npcs`}
+              path={`${campaignId}/lore/npcs`}
               currentImageUrl={imageUrl}
               onImageUploaded={setImageUrl}
               label="NPC Portrait"

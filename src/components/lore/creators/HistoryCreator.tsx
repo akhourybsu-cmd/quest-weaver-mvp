@@ -215,7 +215,7 @@ export default function HistoryCreator({ campaignId, page, onSave, onCancel }: H
         <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-history">
           <ImageUpload
             bucket="maps"
-            path={`lore/${campaignId}/history`}
+            path={`${campaignId}/lore/history`}
             currentImageUrl={imageUrl}
             onImageUploaded={setImageUrl}
             label="Event Banner"

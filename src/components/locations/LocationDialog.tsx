@@ -430,7 +430,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                 {/* Location Image Upload */}
                 <ImageUpload
                   bucket="maps"
-                  path={`locations/${campaignId}`}
+                  path={`${campaignId}/locations`}
                   currentImageUrl={imageUrl}
                   onImageUploaded={setImageUrl}
                   label="Location Image"

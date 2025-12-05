@@ -249,7 +249,7 @@ export default function MagicCreator({ campaignId, page, onSave, onCancel }: Mag
           <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-magic">
             <ImageUpload
               bucket="maps"
-              path={`lore/${campaignId}/magic`}
+              path={`${campaignId}/lore/magic`}
               currentImageUrl={imageUrl}
               onImageUploaded={setImageUrl}
               label="Magic Entry Banner"

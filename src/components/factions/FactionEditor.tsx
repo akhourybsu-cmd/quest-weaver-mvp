@@ -190,7 +190,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
           {/* Faction Banner/Emblem Upload */}
           <ImageUpload
             bucket="maps"
-            path={`factions/${campaignId}`}
+            path={`${campaignId}/factions`}
             currentImageUrl={bannerUrl}
             onImageUploaded={setBannerUrl}
             label="Banner / Emblem"

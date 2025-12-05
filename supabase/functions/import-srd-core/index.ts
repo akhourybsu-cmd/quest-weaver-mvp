@@ -27,6 +27,55 @@ serve(async (req) => {
   }
 
   try {
+    // Create authenticated client to verify user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.error('Auth error:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - valid authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: adminRole, error: roleError } = await supabaseAuth
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError) {
+      console.error('Role check error:', roleError.message);
+    }
+
+    // If no user_roles table or user isn't admin, fall back to checking if they're the first user (temporary)
+    // In production, you should have proper admin role management
+    if (!adminRole) {
+      console.warn(`User ${user.id} attempted SRD import without admin role`);
+      return new Response(
+        JSON.stringify({ error: 'Admin privileges required for SRD import' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Admin user ${user.id} authorized for SRD import`);
+
     const { categories = [] } = await req.json().catch(() => ({ categories: [] }));
     
     console.log("Starting SRD import in background...");

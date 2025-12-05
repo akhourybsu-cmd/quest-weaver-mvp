@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Sparkles, Star, Moon, Flame, Calendar, Trash2 } from "lucide-react";
+import { Sparkles, Star, Moon, Flame, Calendar, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag } from "../ui";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LorePage {
   id: string;
@@ -39,6 +40,7 @@ export default function MythCreator({ campaignId, page, onSave, onCancel }: Myth
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // Myth-specific fields
   const [entryType, setEntryType] = useState("deity");
@@ -77,6 +79,7 @@ export default function MythCreator({ campaignId, page, onSave, onCancel }: Myth
       setComponents(details.components || []);
       setObservanceDate(details.observanceDate || "");
       setMiracles(details.miracles || "");
+      setImageUrl(details.image_url || null);
     }
   }, [page]);
 
@@ -112,7 +115,8 @@ export default function MythCreator({ campaignId, page, onSave, onCancel }: Myth
         tradition: entryType !== "deity" ? tradition : null,
         components: entryType !== "deity" ? components : null,
         observanceDate: entryType === "holy_day" ? observanceDate : null,
-        miracles
+        miracles,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -197,6 +201,18 @@ export default function MythCreator({ campaignId, page, onSave, onCancel }: Myth
             slug={slug}
             subtitle={entryTypeLabels[entryType]}
           />
+
+          {/* Banner Image */}
+          <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-religion">
+            <ImageUpload
+              bucket="maps"
+              path={`lore/${campaignId}/religion`}
+              currentImageUrl={imageUrl}
+              onImageUploaded={setImageUrl}
+              label="Entry Banner"
+              aspectRatio="landscape"
+            />
+          </LoreSection>
 
           {/* Basic Info Section */}
           <LoreSection title="Basic Information" icon={Sparkles} accentClass="lore-accent-religion">

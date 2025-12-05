@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Flag, Shield, Target, Palette, Trash2 } from "lucide-react";
+import { Flag, Shield, Target, Palette, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, FactionStatBar } from "../ui";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LorePage {
   id: string;
@@ -39,6 +40,7 @@ export default function FactionCreator({ campaignId, page, onSave, onCancel }: F
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // Faction-specific fields
   const [alignment, setAlignment] = useState("N");
@@ -72,6 +74,7 @@ export default function FactionCreator({ campaignId, page, onSave, onCancel }: F
       setHqRegion(details.hqRegionId || "");
       setReputation([details.reputation || 0]);
       setGoals(details.goals || "");
+      setImageUrl(details.image_url || null);
     }
   }, [page]);
 
@@ -109,7 +112,8 @@ export default function FactionCreator({ campaignId, page, onSave, onCancel }: F
         powerLevel: powerLevel[0],
         hqRegionId: hqRegion || null,
         reputation: reputation[0],
-        goals
+        goals,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -196,6 +200,18 @@ export default function FactionCreator({ campaignId, page, onSave, onCancel }: F
               headquarters={hqRegionName}
             />
           </LoreHeroHeader>
+
+          {/* Banner Image */}
+          <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-factions">
+            <ImageUpload
+              bucket="maps"
+              path={`lore/${campaignId}/factions`}
+              currentImageUrl={imageUrl}
+              onImageUploaded={setImageUrl}
+              label="Faction Banner"
+              aspectRatio="landscape"
+            />
+          </LoreSection>
 
           {/* Banner & Allegiance Section */}
           <LoreSection title="Banner & Allegiance" icon={Flag} accentClass="lore-accent-factions">

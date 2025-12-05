@@ -2176,6 +2176,7 @@ export type Database = {
           campaign_id: string
           created_at: string | null
           description: string | null
+          goals: string[] | null
           id: string
           influence_score: number | null
           motto: string | null
@@ -2188,6 +2189,7 @@ export type Database = {
           campaign_id: string
           created_at?: string | null
           description?: string | null
+          goals?: string[] | null
           id?: string
           influence_score?: number | null
           motto?: string | null
@@ -2200,6 +2202,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string | null
           description?: string | null
+          goals?: string[] | null
           id?: string
           influence_score?: number | null
           motto?: string | null

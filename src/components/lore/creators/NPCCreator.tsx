@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Heart, Lock, Mic, Trash2 } from "lucide-react";
+import { User, Heart, Lock, Mic, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, NPCStatBar } from "../ui";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LorePage {
   id: string;
@@ -38,6 +39,7 @@ export default function NPCCreator({ campaignId, page, onSave, onCancel }: NPCCr
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // NPC-specific fields
   const [race, setRace] = useState("");
@@ -77,6 +79,7 @@ export default function NPCCreator({ campaignId, page, onSave, onCancel }: NPCCr
       setCr(details.cr?.toString() || "");
       setStatBlockUrl(details.statBlockUrl || "");
       setHomeRegion(details.homeRegionId || "");
+      setImageUrl(details.image_url || null);
       
       const personality = details.personality || {};
       setTraits(personality.traits || "");
@@ -134,7 +137,8 @@ export default function NPCCreator({ campaignId, page, onSave, onCancel }: NPCCr
         homeRegionId: homeRegion || null,
         personality: { traits, ideals, bonds, flaws },
         voice,
-        secrets
+        secrets,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -216,6 +220,18 @@ export default function NPCCreator({ campaignId, page, onSave, onCancel }: NPCCr
               homeRegion={homeRegionName}
             />
           </LoreHeroHeader>
+
+          {/* Portrait Image */}
+          <LoreSection title="Portrait" icon={ImageIcon} accentClass="lore-accent-npcs">
+            <ImageUpload
+              bucket="maps"
+              path={`lore/${campaignId}/npcs`}
+              currentImageUrl={imageUrl}
+              onImageUploaded={setImageUrl}
+              label="NPC Portrait"
+              aspectRatio="portrait"
+            />
+          </LoreSection>
 
           {/* Identity Section */}
           <LoreSection title="Identity" icon={User} accentClass="lore-accent-npcs">

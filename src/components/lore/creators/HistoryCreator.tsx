@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Calendar, BookOpen, Quote, Settings, Trash2 } from "lucide-react";
+import { Clock, Calendar, BookOpen, Quote, Settings, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, HistoryStatBar } from "../ui";
 import EraManager from "../EraManager";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LorePage {
   id: string;
@@ -48,6 +49,7 @@ export default function HistoryCreator({ campaignId, page, onSave, onCancel }: H
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // History-specific fields
   const [date, setDate] = useState("");
@@ -81,6 +83,7 @@ export default function HistoryCreator({ campaignId, page, onSave, onCancel }: H
       setOutcome(details.outcome || "");
       setShowOnTimeline(details.showOnTimeline || false);
       setSources(details.sources || []);
+      setImageUrl(details.image_url || null);
     }
   }, [page]);
 
@@ -122,7 +125,8 @@ export default function HistoryCreator({ campaignId, page, onSave, onCancel }: H
         type: eventType,
         outcome,
         showOnTimeline,
-        sources
+        sources,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -206,6 +210,18 @@ export default function HistoryCreator({ campaignId, page, onSave, onCancel }: H
             eventType={eventType}
           />
         </LoreHeroHeader>
+
+        {/* Banner Image */}
+        <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-history">
+          <ImageUpload
+            bucket="maps"
+            path={`lore/${campaignId}/history`}
+            currentImageUrl={imageUrl}
+            onImageUploaded={setImageUrl}
+            label="Event Banner"
+            aspectRatio="landscape"
+          />
+        </LoreSection>
 
         {/* When & Where Section */}
         <LoreSection title="When & Where" icon={Calendar} accentClass="lore-accent-history">

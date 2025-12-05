@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Map, Crown, Thermometer, Package, Trash2 } from "lucide-react";
+import { Map, Crown, Thermometer, Package, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag, RegionStatBar } from "../ui";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LorePage {
   id: string;
@@ -41,6 +42,7 @@ export default function RegionCreator({ campaignId, page, onSave, onCancel }: Re
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
   const [era, setEra] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // Region-specific fields
   const [regionType, setRegionType] = useState("city");
@@ -81,6 +83,7 @@ export default function RegionCreator({ campaignId, page, onSave, onCancel }: Re
       setExports(details.exports || []);
       setImports(details.imports || []);
       setTravelNotes(details.travelNotes || "");
+      setImageUrl(details.image_url || null);
       if (details.mapPin) {
         setAddToMap(details.mapPin.enabled || false);
         setMapX(details.mapPin.x?.toString() || "");
@@ -133,7 +136,8 @@ export default function RegionCreator({ campaignId, page, onSave, onCancel }: Re
         exports,
         imports,
         mapPin: addToMap ? { x: parseFloat(mapX), y: parseFloat(mapY), enabled: true } : null,
-        travelNotes
+        travelNotes,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -220,6 +224,18 @@ export default function RegionCreator({ campaignId, page, onSave, onCancel }: Re
               climate={climate}
             />
           </LoreHeroHeader>
+
+          {/* Banner Image */}
+          <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-regions">
+            <ImageUpload
+              bucket="maps"
+              path={`lore/${campaignId}/regions`}
+              currentImageUrl={imageUrl}
+              onImageUploaded={setImageUrl}
+              label="Region Banner"
+              aspectRatio="landscape"
+            />
+          </LoreSection>
 
           {/* Basic Info Section */}
           <LoreSection title="Basic Information" icon={Map} accentClass="lore-accent-regions">

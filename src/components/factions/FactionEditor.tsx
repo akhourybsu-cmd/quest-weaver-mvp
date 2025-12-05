@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -19,6 +20,7 @@ interface Faction {
   banner_url?: string;
   influence_score: number;
   tags: string[];
+  goals?: string[];
 }
 
 interface FactionEditorProps {
@@ -36,6 +38,9 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [influenceScore, setInfluenceScore] = useState(50);
+  const [goals, setGoals] = useState<string[]>([]);
+  const [goalInput, setGoalInput] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
@@ -46,12 +51,16 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setMotto(faction.motto || "");
       setBannerUrl(faction.banner_url || null);
       setTags(faction.tags || []);
+      setInfluenceScore(faction.influence_score ?? 50);
+      setGoals(faction.goals || []);
     } else {
       setName("");
       setDescription("");
       setMotto("");
       setBannerUrl(null);
       setTags([]);
+      setInfluenceScore(50);
+      setGoals([]);
     }
   }, [faction, open]);
 
@@ -67,6 +76,20 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
 
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag));
+  };
+
+  const handleAddGoal = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && goalInput.trim()) {
+      e.preventDefault();
+      if (!goals.includes(goalInput.trim())) {
+        setGoals([...goals, goalInput.trim()]);
+      }
+      setGoalInput("");
+    }
+  };
+
+  const handleRemoveGoal = (goal: string) => {
+    setGoals(goals.filter((g) => g !== goal));
   };
 
   const handleSave = async () => {
@@ -87,6 +110,8 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         motto: motto.trim() || null,
         banner_url: bannerUrl,
         tags,
+        influence_score: influenceScore,
+        goals,
       };
 
       if (faction) {
@@ -191,6 +216,49 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
               placeholder="What is this faction about?"
               className="min-h-[100px]"
             />
+          </div>
+
+          {/* Influence Slider */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <Label>Influence</Label>
+              <span className="text-sm text-muted-foreground">{influenceScore}%</span>
+            </div>
+            <Slider
+              value={[influenceScore]}
+              onValueChange={(v) => setInfluenceScore(v[0])}
+              min={0}
+              max={100}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>None</span>
+              <span>Moderate</span>
+              <span>Dominant</span>
+            </div>
+          </div>
+
+          {/* Goals */}
+          <div>
+            <Label htmlFor="goals">Goals</Label>
+            <Input
+              id="goals"
+              value={goalInput}
+              onChange={(e) => setGoalInput(e.target.value)}
+              onKeyDown={handleAddGoal}
+              placeholder="Type a goal and press Enter..."
+            />
+            <div className="flex flex-wrap gap-1 mt-2">
+              {goals.map((goal) => (
+                <Badge key={goal} variant="outline" className="text-xs">
+                  {goal}
+                  <button onClick={() => handleRemoveGoal(goal)} className="ml-1 hover:text-destructive">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
           </div>
 
           <div>

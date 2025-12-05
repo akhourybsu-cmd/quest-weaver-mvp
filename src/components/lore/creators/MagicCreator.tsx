@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Wand2, Gem, BookOpen, Scale, Plus, X, Trash2 } from "lucide-react";
+import { Wand2, Gem, BookOpen, Scale, Plus, X, Trash2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { LoreHeroHeader, LoreSection, LoreChronicle, LoreOrnamentDivider, RuneTag } from "../ui";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface PowerTier {
   tier: string;
@@ -45,6 +46,7 @@ export default function MagicCreator({ campaignId, page, onSave, onCancel }: Mag
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState<"DM_ONLY" | "SHARED">("DM_ONLY");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   // Magic-specific fields
   const [entryType, setEntryType] = useState("artifact");
@@ -92,6 +94,7 @@ export default function MagicCreator({ campaignId, page, onSave, onCancel }: Mag
       setRuleText(details.ruleText || "");
       setExceptions(details.exceptions || []);
       setImpact(details.impact || "");
+      setImageUrl(details.image_url || null);
       
       if (details.sentience) {
         setSentience(true);
@@ -141,7 +144,8 @@ export default function MagicCreator({ campaignId, page, onSave, onCancel }: Mag
         philosophy: entryType === "school" || entryType === "tradition" ? philosophy : null,
         ruleText: entryType === "law" ? ruleText : null,
         exceptions: entryType === "law" ? exceptions : null,
-        impact: entryType === "law" ? impact : null
+        impact: entryType === "law" ? impact : null,
+        image_url: imageUrl
       };
 
       const pageData = {
@@ -240,6 +244,18 @@ export default function MagicCreator({ campaignId, page, onSave, onCancel }: Mag
             slug={slug}
             subtitle={entryTypeLabels[entryType]}
           />
+
+          {/* Banner Image */}
+          <LoreSection title="Banner Image" icon={ImageIcon} accentClass="lore-accent-magic">
+            <ImageUpload
+              bucket="maps"
+              path={`lore/${campaignId}/magic`}
+              currentImageUrl={imageUrl}
+              onImageUploaded={setImageUrl}
+              label="Magic Entry Banner"
+              aspectRatio="landscape"
+            />
+          </LoreSection>
 
           {/* Basic Info Section */}
           <LoreSection title="Basic Information" icon={Wand2} accentClass="lore-accent-magic">

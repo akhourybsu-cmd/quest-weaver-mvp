@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, GripVertical, Trash2, Clock } from "lucide-react";
+import { Plus, GripVertical, Trash2, Clock, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface Era {
@@ -13,6 +13,7 @@ interface Era {
   name: string;
   sort_order: number;
   description: string | null;
+  sort_direction: string;
 }
 
 interface EraManagerProps {
@@ -65,7 +66,8 @@ export default function EraManager({ campaignId, open, onOpenChange, onErasChang
         campaign_id: campaignId,
         name: newEraName.trim(),
         description: newEraDesc.trim() || null,
-        sort_order: maxOrder + 1
+        sort_order: maxOrder + 1,
+        sort_direction: 'asc'
       });
 
       if (error) throw error;
@@ -128,6 +130,24 @@ export default function EraManager({ campaignId, open, onOpenChange, onErasChang
     } catch (error: any) {
       toast.error("Failed to reorder: " + error.message);
       loadEras(); // Reload on error
+    }
+  };
+
+  const handleToggleSortDirection = async (era: Era) => {
+    const newDirection = era.sort_direction === 'asc' ? 'desc' : 'asc';
+    try {
+      const { error } = await supabase
+        .from("campaign_eras")
+        .update({ sort_direction: newDirection })
+        .eq("id", era.id);
+
+      if (error) throw error;
+      
+      setEras(eras.map(e => e.id === era.id ? { ...e, sort_direction: newDirection } : e));
+      onErasChange?.();
+      toast.success(`Era now sorts ${newDirection === 'asc' ? 'ascending' : 'descending'}`);
+    } catch (error: any) {
+      toast.error("Failed to update sort direction: " + error.message);
     }
   };
 
@@ -209,9 +229,25 @@ export default function EraManager({ campaignId, open, onOpenChange, onErasChang
                           <p className="text-xs text-muted-foreground truncate">{era.description}</p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                        #{index + 1}
-                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1 border-brass/30"
+                        onClick={() => handleToggleSortDirection(era)}
+                        title={era.sort_direction === 'asc' ? 'Ascending (1→100)' : 'Descending (100→1)'}
+                      >
+                        {era.sort_direction === 'asc' ? (
+                          <>
+                            <ArrowUp className="h-3 w-3" />
+                            ASC
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDown className="h-3 w-3" />
+                            DESC
+                          </>
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

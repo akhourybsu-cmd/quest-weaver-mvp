@@ -32,6 +32,7 @@ interface Era {
   name: string;
   sort_order: number;
   description: string | null;
+  sort_direction: string;
 }
 
 interface HistoryTimelineProps {
@@ -93,21 +94,32 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
   const groupedEvents = useMemo(() => {
     const groups: Map<string, { era: Era | null; events: HistoryEvent[] }> = new Map();
     
-    // Create era lookup
-    const eraLookup = new Map(eras.map(e => [e.name.toLowerCase(), e]));
+    // Create era lookup by ID
+    const eraLookupById = new Map(eras.map(e => [e.id, e]));
+    const eraLookupByName = new Map(eras.map(e => [e.name.toLowerCase(), e]));
     
-    // Group events
+    // Group events by era_id or era name
     events.forEach(event => {
-      const eventEra = event.details?.era || event.era || "Unknown Era";
-      const eraKey = eventEra.toLowerCase();
+      const eraId = event.details?.era_id;
+      const eraName = event.details?.era || event.era;
       
-      if (!groups.has(eraKey)) {
-        groups.set(eraKey, {
-          era: eraLookup.get(eraKey) || null,
-          events: []
-        });
+      let era: Era | null = null;
+      let groupKey: string;
+      
+      if (eraId && eraLookupById.has(eraId)) {
+        era = eraLookupById.get(eraId)!;
+        groupKey = era.id;
+      } else if (eraName && eraLookupByName.has(eraName.toLowerCase())) {
+        era = eraLookupByName.get(eraName.toLowerCase())!;
+        groupKey = era.id;
+      } else {
+        groupKey = "unknown";
       }
-      groups.get(eraKey)!.events.push(event);
+      
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, { era, events: [] });
+      }
+      groups.get(groupKey)!.events.push(event);
     });
 
     // Sort groups by era sort_order (defined eras first, then unknown)
@@ -117,8 +129,10 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
       return aOrder - bOrder;
     });
 
-    // Sort events within each group by date (attempt numeric parsing)
+    // Sort events within each group by date, respecting era's sort_direction
     sortedGroups.forEach(([_, group]) => {
+      const isDescending = group.era?.sort_direction === 'desc';
+      
       group.events.sort((a, b) => {
         const dateA = a.details?.date || "";
         const dateB = b.details?.date || "";
@@ -127,10 +141,15 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
         const numA = parseInt(dateA.replace(/[^-\d]/g, ""));
         const numB = parseInt(dateB.replace(/[^-\d]/g, ""));
         
+        let comparison = 0;
         if (!isNaN(numA) && !isNaN(numB)) {
-          return numA - numB;
+          comparison = numA - numB;
+        } else {
+          comparison = dateA.localeCompare(dateB);
         }
-        return dateA.localeCompare(dateB);
+        
+        // Reverse if descending
+        return isDescending ? -comparison : comparison;
       });
     });
 
@@ -224,14 +243,12 @@ export default function HistoryTimeline({ campaignId, onViewEvent }: HistoryTime
                               <EventIcon className="h-4 w-4" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <CardTitle className="text-sm font-medium">{event.title}</CardTitle>
-                                {event.details?.date && (
-                                  <Badge variant="outline" className="text-xs shrink-0 border-amber-500/30 text-amber-600 bg-card/80">
-                                    {event.details.date}
-                                  </Badge>
-                                )}
-                              </div>
+                              <CardTitle className="text-sm font-medium">{event.title}</CardTitle>
+                              {event.details?.date && (
+                                <span className="text-xs text-amber-600/80 font-medium">
+                                  {event.details.date}
+                                </span>
+                              )}
                               {event.excerpt && (
                                 <CardDescription className="text-xs line-clamp-2 mt-1">
                                   {event.excerpt}

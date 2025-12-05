@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -551,17 +552,14 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
               </TabsContent>
 
               <TabsContent value="lore" className="space-y-4 px-1">
-                <div className="space-y-2">
-                  <Label htmlFor="lore">History & Lore</Label>
-                  <Textarea
-                    id="lore"
-                    value={details.lore || ""}
-                    onChange={(e) => setDetails({ ...details, lore: e.target.value })}
-                    placeholder="Founded centuries ago by..."
-                    rows={12}
-                    className="border-brass/30"
-                  />
-                </div>
+                <MarkdownEditor
+                  value={details.lore || ""}
+                  onChange={(val) => setDetails({ ...details, lore: val })}
+                  label="History & Lore"
+                  placeholder="Founded centuries ago by..."
+                  rows={10}
+                  showPreview={true}
+                />
                 
                 {isEditing && relatedQuests.length > 0 && (
                   <div className="space-y-2">

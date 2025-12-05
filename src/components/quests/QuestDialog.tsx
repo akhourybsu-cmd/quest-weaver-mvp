@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -433,16 +434,14 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="A local noble has lost their family's ancient sword..."
-                  rows={3}
-                />
-              </div>
+              <MarkdownEditor
+                value={description}
+                onChange={setDescription}
+                label="Description"
+                placeholder="A local noble has lost their family's ancient sword..."
+                rows={4}
+                showPreview={false}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

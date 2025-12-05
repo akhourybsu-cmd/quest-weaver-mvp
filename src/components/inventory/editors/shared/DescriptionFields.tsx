@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 
 interface DescriptionFieldsProps {
   description: string;
@@ -20,15 +21,14 @@ export const DescriptionFields = ({
 }: DescriptionFieldsProps) => {
   return (
     <>
-      <div className="space-y-2">
-        <Label>Description</Label>
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Item description..."
-          rows={3}
-        />
-      </div>
+      <MarkdownEditor
+        value={description}
+        onChange={setDescription}
+        label="Description"
+        placeholder="Item description..."
+        rows={4}
+        showPreview={false}
+      />
       
       <div className="space-y-2">
         <Label>Player Description</Label>

@@ -170,3 +170,57 @@ All colors MUST be HSL.
     display: none;
   }
 }
+
+/* Prose/Typography customizations for markdown preview */
+@layer base {
+  .prose {
+    --tw-prose-body: hsl(var(--foreground));
+    --tw-prose-headings: hsl(var(--foreground));
+    --tw-prose-lead: hsl(var(--muted-foreground));
+    --tw-prose-links: hsl(var(--primary));
+    --tw-prose-bold: hsl(var(--foreground));
+    --tw-prose-counters: hsl(var(--muted-foreground));
+    --tw-prose-bullets: hsl(var(--muted-foreground));
+    --tw-prose-hr: hsl(var(--border));
+    --tw-prose-quotes: hsl(var(--foreground));
+    --tw-prose-quote-borders: hsl(var(--primary));
+    --tw-prose-captions: hsl(var(--muted-foreground));
+    --tw-prose-code: hsl(var(--foreground));
+    --tw-prose-pre-code: hsl(var(--foreground));
+    --tw-prose-pre-bg: hsl(var(--muted));
+    --tw-prose-th-borders: hsl(var(--border));
+    --tw-prose-td-borders: hsl(var(--border));
+  }
+  
+  .prose h1, .prose h2, .prose h3, .prose h4 {
+    @apply font-cinzel;
+  }
+  
+  .prose ul, .prose ol {
+    @apply pl-6;
+  }
+  
+  .prose li {
+    @apply my-1;
+  }
+  
+  .prose p {
+    @apply my-3;
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-primary pl-4 italic;
+  }
+  
+  .prose code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+  }
+  
+  .prose pre {
+    @apply bg-muted p-4 rounded-md overflow-x-auto;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+}

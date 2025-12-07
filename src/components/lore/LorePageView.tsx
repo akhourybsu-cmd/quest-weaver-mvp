@@ -93,6 +93,18 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
 
       <ScrollArea className="flex-1">
         <div className={`p-6 space-y-6 ${categoryAccentClass[page.category] || ''}`}>
+          {/* Banner Image */}
+          {(page.details?.image_url || page.image_url) && (
+            <div className="relative w-full h-48 sm:h-64 rounded-lg overflow-hidden border border-brass/20">
+              <img 
+                src={page.details?.image_url || page.image_url} 
+                alt={page.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
+            </div>
+          )}
+
           {/* Hero Header */}
           <LoreHeroHeader
             title={page.title}
@@ -101,6 +113,12 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
             era={page.era}
             slug={page.slug}
           >
+            {/* Date for History entries */}
+            {page.details?.date && (
+              <div className="text-sm text-amber-600/80 mt-1">
+                {page.details.date}
+              </div>
+            )}
             {page.tags && page.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {page.tags.map((tag: string, idx: number) => (

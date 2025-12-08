@@ -305,33 +305,35 @@ export function LoreTab({ campaignId }: LoreTabProps) {
                         <CardTitle className="text-base font-cinzel">{page.title}</CardTitle>
                       </CardHeader>
                       <CardContent>
+                        {/* Era name */}
+                        {page.era && (
+                          <p className="text-xs text-muted-foreground mb-2">{page.era}</p>
+                        )}
+                        {/* In-game date from details */}
+                        {(page.details as any)?.date && (
+                          <p className="text-xs text-amber-600/80 mb-2">{(page.details as any).date}</p>
+                        )}
+                        {/* Excerpt/Summary */}
                         {page.excerpt && (
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                             {page.excerpt}
                           </p>
                         )}
-                        {page.era && (
-                          <p className="text-xs text-muted-foreground mb-2">{page.era}</p>
+                        {/* Tags */}
+                        {page.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {page.tags.slice(0, 3).map((tag, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {page.tags.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{page.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
                         )}
-                        <div className="flex items-center justify-between">
-                          {page.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {page.tags.slice(0, 3).map((tag, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {page.tags.length > 3 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{page.tags.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(page.updated_at).toLocaleDateString()}
-                          </span>
-                        </div>
                       </CardContent>
                     </Card>
                   );

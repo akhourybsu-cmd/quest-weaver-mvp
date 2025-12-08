@@ -614,16 +614,23 @@ const CampaignHub = () => {
 
   if (campaigns.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-obsidian text-ink p-4">
-        <div className="text-center max-w-md space-y-4">
-          <Sword className="w-16 h-16 text-arcanePurple mx-auto" />
-          <h1 className="text-3xl font-cinzel font-bold">No Campaigns Yet</h1>
-          <p className="text-brass">Create your first campaign to begin your adventure</p>
-          <Button onClick={handleNewCampaign} size="lg" className="mt-4">
-            Create Campaign
-          </Button>
+      <>
+        <div className="flex items-center justify-center h-screen bg-obsidian text-ink p-4">
+          <div className="text-center max-w-md space-y-4">
+            <Sword className="w-16 h-16 text-arcanePurple mx-auto" />
+            <h1 className="text-3xl font-cinzel font-bold">No Campaigns Yet</h1>
+            <p className="text-brass">Create your first campaign to begin your adventure</p>
+            <Button onClick={handleNewCampaign} size="lg" className="mt-4">
+              Create Campaign
+            </Button>
+          </div>
         </div>
-      </div>
+        <NewCampaignDialog 
+          open={showNewCampaignDialog} 
+          onOpenChange={setShowNewCampaignDialog}
+          onSuccess={fetchCampaigns}
+        />
+      </>
     );
   }
 

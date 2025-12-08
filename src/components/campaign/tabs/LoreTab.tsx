@@ -103,17 +103,38 @@ export function LoreTab({ campaignId }: LoreTabProps) {
     setEditorOpen(false);
   };
 
-  const filteredPages = pages.filter((page) => {
-    const matchesCategory = page.category === activeCategory;
-    const matchesSearch = page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      page.content_md.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      page.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.some(tag => page.tags.includes(tag));
-    
-    return matchesCategory && matchesSearch && matchesTags;
-  });
+  const filteredPages = pages
+    .filter((page) => {
+      const matchesCategory = page.category === activeCategory;
+      const matchesSearch = page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.content_md.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesTags = selectedTags.length === 0 || 
+        selectedTags.some(tag => page.tags.includes(tag));
+      
+      return matchesCategory && matchesSearch && matchesTags;
+    })
+    .sort((a, b) => {
+      // Sort by in-game date (details.date) if available
+      const dateA = (a.details as any)?.date || '';
+      const dateB = (b.details as any)?.date || '';
+      
+      // If both have dates, sort by date string
+      if (dateA && dateB) {
+        return dateA.localeCompare(dateB);
+      }
+      // Items with dates come before items without
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
+      
+      // Fall back to era, then title
+      const eraA = a.era || '';
+      const eraB = b.era || '';
+      if (eraA !== eraB) return eraA.localeCompare(eraB);
+      
+      return a.title.localeCompare(b.title);
+    });
 
   const allTags = Array.from(new Set(pages.flatMap(p => p.tags)));
 

@@ -374,17 +374,19 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
               </div>
 
               {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="updated">Recently Updated</SelectItem>
-                  <SelectItem value="faction">Faction</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                </SelectContent>
-              </Select>
+              <div onClick={(e) => e.stopPropagation()}>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="updated">Recently Updated</SelectItem>
+                    <SelectItem value="faction">Faction</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* View Mode Toggle */}
               <Button

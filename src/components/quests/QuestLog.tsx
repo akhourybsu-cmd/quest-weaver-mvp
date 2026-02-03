@@ -312,7 +312,10 @@ const QuestLog = ({ campaignId, isDM }: QuestLogProps) => {
               className="w-48"
             />
             {isDM && (
-              <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Button size="sm" onClick={() => {
+                setQuestToEdit(null);
+                setDialogOpen(true);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Quest
               </Button>

@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Circle, Rect, Polygon, Text, Group } from "fabric";
+import { Circle, Rect, Polygon, Text } from "fabric";
 import type { Canvas as FabricCanvas } from "fabric";
 import type { MapMarker, AoETemplate, FogRegion } from "@/hooks/useMapOverlays";
-import { Mountain, Droplets, Flame, Skull, MapPin } from "lucide-react";
 
 interface MarkerRendererProps {
   canvas: FabricCanvas | null;

@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Users, Eye, EyeOff, ScrollText, MapPin, BookOpen } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Edit, Users, Eye, EyeOff, ScrollText, MapPin, BookOpen, Book } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface NPC {
   id: string;
@@ -19,7 +22,17 @@ interface NPC {
   portrait_url?: string;
   location_id?: string;
   faction_id?: string;
+  lore_page_id?: string;
   tags: string[];
+}
+
+interface LorePage {
+  id: string;
+  title: string;
+  content_md: string;
+  category: string;
+  visibility: string;
+  tags?: string[];
 }
 
 interface NPCDetailDrawerProps {
@@ -38,15 +51,19 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   const [linkedNotes, setLinkedNotes] = useState<any[]>([]);
   const [relatedQuests, setRelatedQuests] = useState<any[]>([]);
   const [relatedLocation, setRelatedLocation] = useState<any>(null);
+  const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
 
   useEffect(() => {
     if (open && npc) {
       loadRelationships();
       loadAppearances();
       loadLinkedNotes();
+      loadLinkedLore();
       loadRelatedQuests();
       if (npc.faction_id) loadFaction();
       if (npc.location_id) loadLocation();
+    } else {
+      setLinkedLore(null);
     }
   }, [open, npc]);
 
@@ -165,6 +182,23 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
     setRelatedLocation(data);
   };
 
+  const loadLinkedLore = async () => {
+    if (!npc.lore_page_id) {
+      setLinkedLore(null);
+      return;
+    }
+    
+    const { data } = await supabase
+      .from("lore_pages")
+      .select("*")
+      .eq("id", npc.lore_page_id)
+      .single();
+    
+    if (data) {
+      setLinkedLore(data as LorePage);
+    }
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
@@ -275,6 +309,32 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
                             ))}
                           </div>
                         </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Linked Lore Content */}
+              {linkedLore && (
+                <Card className="border-brass/20 bg-brass/5">
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Book className="w-4 h-4 text-brass" />
+                      Lore
+                    </h3>
+                    <ScrollArea className="h-48 rounded-lg border border-brass/20 bg-muted/30 p-4">
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {linkedLore.content_md || "*No lore content*"}
+                        </ReactMarkdown>
+                      </div>
+                    </ScrollArea>
+                    {linkedLore.tags && linkedLore.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {linkedLore.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                        ))}
                       </div>
                     )}
                   </CardContent>

@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   Scroll, MapPin, Award, Coins, Target, Sword, User, Users, 
   StickyNote, CheckCircle2, XCircle, ChevronUp, ChevronDown,
-  Edit, Trash2, Calendar, Plus, Minus, Eye, EyeOff
+  Edit, Trash2, Calendar, Plus, Minus, Eye, EyeOff, Book
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Quest {
   id: string;
@@ -35,7 +37,17 @@ interface Quest {
   steps?: any[];
   npc?: { id: string; name: string; };
   location?: { id: string; name: string; location_type?: string; };
+  lore_page_id?: string;
   [key: string]: any;
+}
+
+interface LorePage {
+  id: string;
+  title: string;
+  content_md: string;
+  category: string;
+  visibility: string;
+  tags?: string[];
 }
 
 interface QuestDetailDialogProps {
@@ -64,7 +76,30 @@ const difficultyColors: Record<string, string> = {
 
 export function QuestDetailDialog({ open, onOpenChange, quest, onEdit, onDelete, demoMode }: QuestDetailDialogProps) {
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open && quest?.lore_page_id) {
+      loadLinkedLore();
+    } else {
+      setLinkedLore(null);
+    }
+  }, [open, quest?.lore_page_id]);
+
+  const loadLinkedLore = async () => {
+    if (!quest?.lore_page_id) return;
+    
+    const { data } = await supabase
+      .from("lore_pages")
+      .select("*")
+      .eq("id", quest.lore_page_id)
+      .single();
+    
+    if (data) {
+      setLinkedLore(data as LorePage);
+    }
+  };
 
   if (!quest) return null;
 
@@ -389,6 +424,30 @@ export function QuestDetailDialog({ open, onOpenChange, quest, onEdit, onDelete,
                 <div>
                   <label className="text-sm font-medium mb-2 block">Linked Campaign Notes</label>
                   <Badge variant="secondary">{quest.noteCount} linked notes</Badge>
+                </div>
+              )}
+
+              {/* Linked Lore Content */}
+              {linkedLore && (
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Book className="h-4 w-4 text-brass" />
+                    Quest Lore
+                  </label>
+                  <ScrollArea className="h-48 rounded-lg border border-brass/20 bg-muted/30 p-3">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {linkedLore.content_md || "*No lore content*"}
+                      </ReactMarkdown>
+                    </div>
+                  </ScrollArea>
+                  {linkedLore.tags && linkedLore.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {linkedLore.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>

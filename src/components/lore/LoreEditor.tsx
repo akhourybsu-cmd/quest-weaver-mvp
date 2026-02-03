@@ -85,6 +85,96 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
     return links;
   };
 
+  // Resolve entity references to actual database IDs
+  const resolveEntityLinks = async (links: { type: string; label: string; id?: string }[]): Promise<{ type: string; label: string; id?: string }[]> => {
+    const resolvedLinks: { type: string; label: string; id?: string }[] = [];
+    
+    for (const link of links) {
+      let resolvedId: string | undefined = undefined;
+      
+      try {
+        switch (link.type) {
+          case 'NPC': {
+            const { data } = await supabase
+              .from('npcs')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('name', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+          case 'LOCATION': {
+            const { data } = await supabase
+              .from('locations')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('name', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+          case 'FACTION': {
+            const { data } = await supabase
+              .from('factions')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('name', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+          case 'QUEST': {
+            const { data } = await supabase
+              .from('quests')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('title', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+          case 'ITEM': {
+            const { data } = await supabase
+              .from('items')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('name', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+          case 'LORE': {
+            const { data } = await supabase
+              .from('lore_pages')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .ilike('title', link.label)
+              .limit(1)
+              .single();
+            resolvedId = data?.id;
+            break;
+          }
+        }
+      } catch (error) {
+        // Entity not found, keep link without ID
+        console.log(`Could not resolve ${link.type}: ${link.label}`);
+      }
+      
+      resolvedLinks.push({
+        ...link,
+        id: resolvedId
+      });
+    }
+    
+    return resolvedLinks;
+  };
+
   const handleSave = async (isAutosave = false) => {
     if (!title.trim() || !slug.trim() || !content.trim()) {
       if (!isAutosave) {
@@ -129,8 +219,9 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
         pageId = newPage.id;
       }
 
-      // Parse and save links
-      const links = parseLinks(content);
+      // Parse and resolve links to actual entity IDs
+      const parsedLinks = parseLinks(content);
+      const resolvedLinks = await resolveEntityLinks(parsedLinks);
       
       // Delete existing links
       await supabase
@@ -138,9 +229,9 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
         .delete()
         .eq("source_page", pageId);
 
-      // Insert new links
-      if (links.length > 0) {
-        const linkRecords = links.map(link => ({
+      // Insert new links with resolved IDs
+      if (resolvedLinks.length > 0) {
+        const linkRecords = resolvedLinks.map(link => ({
           campaign_id: campaignId,
           source_page: pageId,
           target_type: link.type,

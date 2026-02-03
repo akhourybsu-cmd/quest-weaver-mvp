@@ -35,9 +35,40 @@ interface LocationDialogProps {
   campaignId: string;
   locationToEdit?: any;
   parentLocationId?: string | null;
+  onSaved?: () => void;
 }
 
-const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parentLocationId }: LocationDialogProps) => {
+// Owner field keys mapped to NPC role titles
+const OWNER_FIELD_MAPPING: Record<string, string> = {
+  owner_npc: "Owner",
+  owner: "Owner",
+  shopkeeper_name: "Shopkeeper",
+  wizard_name: "Wizard",
+  innkeeper: "Innkeeper",
+  guild_master: "Guild Master",
+  captain_name: "Captain",
+  banker_name: "Banker",
+  warden_name: "Warden",
+  smith_name: "Blacksmith",
+  smithy_name: "Blacksmith",
+  librarian_name: "Librarian",
+  healer_name: "Healer",
+  harbor_master: "Harbor Master",
+  stable_master: "Stable Master",
+  proprietor: "Proprietor",
+  bartender: "Bartender",
+  head_priest: "High Priest",
+  master_smith: "Master Smith",
+  master_alchemist: "Master Alchemist",
+  chief_healer: "Chief Healer",
+  headmaster: "Headmaster",
+  archmagister: "Archmagister",
+  guild_leader: "Guild Leader",
+  commander: "Commander",
+  warden: "Warden",
+};
+
+const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parentLocationId, onSaved }: LocationDialogProps) => {
   const isEditing = !!locationToEdit;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

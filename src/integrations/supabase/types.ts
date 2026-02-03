@@ -2185,6 +2185,7 @@ export type Database = {
           goals: string[] | null
           id: string
           influence_score: number | null
+          lore_page_id: string | null
           motto: string | null
           name: string
           tags: string[] | null
@@ -2198,6 +2199,7 @@ export type Database = {
           goals?: string[] | null
           id?: string
           influence_score?: number | null
+          lore_page_id?: string | null
           motto?: string | null
           name: string
           tags?: string[] | null
@@ -2211,6 +2213,7 @@ export type Database = {
           goals?: string[] | null
           id?: string
           influence_score?: number | null
+          lore_page_id?: string | null
           motto?: string | null
           name?: string
           tags?: string[] | null
@@ -2222,6 +2225,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_lore_page_id_fkey"
+            columns: ["lore_page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -2774,6 +2784,7 @@ export type Database = {
           identified: boolean | null
           is_component_pouch: boolean | null
           is_focus: boolean | null
+          lore_page_id: string | null
           name: string
           properties: Json | null
           rarity: string | null
@@ -2790,6 +2801,7 @@ export type Database = {
           identified?: boolean | null
           is_component_pouch?: boolean | null
           is_focus?: boolean | null
+          lore_page_id?: string | null
           name: string
           properties?: Json | null
           rarity?: string | null
@@ -2806,6 +2818,7 @@ export type Database = {
           identified?: boolean | null
           is_component_pouch?: boolean | null
           is_focus?: boolean | null
+          lore_page_id?: string | null
           name?: string
           properties?: Json | null
           rarity?: string | null
@@ -2820,6 +2833,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_lore_page_id_fkey"
+            columns: ["lore_page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -2878,6 +2898,7 @@ export type Database = {
           id: string
           image_url: string | null
           location_type: string | null
+          lore_page_id: string | null
           name: string
           parent_location_id: string | null
           path: string | null
@@ -2893,6 +2914,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_type?: string | null
+          lore_page_id?: string | null
           name: string
           parent_location_id?: string | null
           path?: string | null
@@ -2908,6 +2930,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_type?: string | null
+          lore_page_id?: string | null
           name?: string
           parent_location_id?: string | null
           path?: string | null
@@ -2920,6 +2943,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_lore_page_id_fkey"
+            columns: ["lore_page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
             referencedColumns: ["id"]
           },
           {
@@ -3686,6 +3716,7 @@ export type Database = {
           is_pinned: boolean | null
           location: string | null
           location_id: string | null
+          lore_page_id: string | null
           name: string
           player_visible: boolean | null
           portrait_url: string | null
@@ -3712,6 +3743,7 @@ export type Database = {
           is_pinned?: boolean | null
           location?: string | null
           location_id?: string | null
+          lore_page_id?: string | null
           name: string
           player_visible?: boolean | null
           portrait_url?: string | null
@@ -3738,6 +3770,7 @@ export type Database = {
           is_pinned?: boolean | null
           location?: string | null
           location_id?: string | null
+          lore_page_id?: string | null
           name?: string
           player_visible?: boolean | null
           portrait_url?: string | null
@@ -3778,6 +3811,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_lore_page_id_fkey"
+            columns: ["lore_page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -4192,6 +4232,7 @@ export type Database = {
           legacy_quest_giver: string | null
           location_id: string | null
           locations: string[] | null
+          lore_page_id: string | null
           player_visible: boolean | null
           quest_chain_parent: string | null
           quest_giver_id: string | null
@@ -4218,6 +4259,7 @@ export type Database = {
           legacy_quest_giver?: string | null
           location_id?: string | null
           locations?: string[] | null
+          lore_page_id?: string | null
           player_visible?: boolean | null
           quest_chain_parent?: string | null
           quest_giver_id?: string | null
@@ -4244,6 +4286,7 @@ export type Database = {
           legacy_quest_giver?: string | null
           location_id?: string | null
           locations?: string[] | null
+          lore_page_id?: string | null
           player_visible?: boolean | null
           quest_chain_parent?: string | null
           quest_giver_id?: string | null
@@ -4277,6 +4320,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quests_lore_page_id_fkey"
+            columns: ["lore_page_id"]
+            isOneToOne: false
+            referencedRelation: "lore_pages"
             referencedColumns: ["id"]
           },
           {

@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import { timelineLogger } from "@/hooks/useTimelineLogger";
+import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
 
 interface QuestDialogProps {
   open: boolean;
@@ -63,6 +64,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddToSessionDialog, setShowAddToSessionDialog] = useState(false);
   const [playerVisible, setPlayerVisible] = useState(false);
+  const [lorePageId, setLorePageId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,6 +88,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
         setSelectedCharacters(questToEdit.assignedTo || []);
         setSelectedFaction(questToEdit.factionId || "none");
         setPlayerVisible(questToEdit.playerVisible || false);
+        setLorePageId(questToEdit.lorePageId || null);
         setSteps(questToEdit.steps?.map((s: any) => ({
           id: s.id,
           description: s.description,
@@ -198,6 +201,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           faction_id: selectedFaction !== "none" ? selectedFaction : null,
           dm_notes: dmNotes || null,
           player_visible: playerVisible,
+          lore_page_id: lorePageId,
         })
         .eq("id", questToEdit.id);
 
@@ -252,6 +256,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           dm_notes: dmNotes || null,
           status: 'not_started',
           player_visible: playerVisible,
+          lore_page_id: lorePageId,
         })
         .select()
         .single();
@@ -321,6 +326,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
     setSelectedCharacters([]);
     setSelectedFaction("none");
     setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
+    setLorePageId(null);
     onOpenChange(false);
   };
 
@@ -360,6 +366,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
       setSelectedCharacters([]);
       setSelectedFaction("none");
       setSteps([{ description: "", objectiveType: "other", progressMax: 1 }]);
+      setLorePageId(null);
       onOpenChange(false);
     } catch (error: any) {
       toast({
@@ -705,6 +712,16 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
                   </Select>
                 </div>
               )}
+
+              {/* Lore Link */}
+              <LoreLinkSelector
+                campaignId={campaignId}
+                category="history"
+                value={lorePageId}
+                onChange={setLorePageId}
+                label="Linked Lore Entry"
+                entityName={title.trim() || undefined}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="dm-notes">DM Notes (Hidden from Players)</Label>

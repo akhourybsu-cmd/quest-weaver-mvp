@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
 
 interface ItemEditorProps {
   open: boolean;
@@ -39,6 +40,7 @@ const ItemEditor = ({ open, onOpenChange, campaignId, onSave }: ItemEditorProps)
   const [maxCharges, setMaxCharges] = useState("");
   const [tags, setTags] = useState("");
   const [ownerType, setOwnerType] = useState("PARTY");
+  const [lorePageId, setLorePageId] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!name) {
@@ -77,6 +79,7 @@ const ItemEditor = ({ open, onOpenChange, campaignId, onSave }: ItemEditorProps)
         description,
         properties,
         tags: tags.split(",").map((t) => t.trim()).filter((t) => t),
+        lore_page_id: lorePageId,
       })
       .select()
       .single();
@@ -133,6 +136,7 @@ const ItemEditor = ({ open, onOpenChange, campaignId, onSave }: ItemEditorProps)
     setMaxCharges("");
     setTags("");
     setOwnerType("PARTY");
+    setLorePageId(null);
   };
 
   return (
@@ -263,6 +267,18 @@ const ItemEditor = ({ open, onOpenChange, campaignId, onSave }: ItemEditorProps)
               placeholder="weapon, longsword, silvered"
             />
           </div>
+
+          {/* Lore Link */}
+          {type === "MAGIC" && (
+            <LoreLinkSelector
+              campaignId={campaignId}
+              category="magic"
+              value={lorePageId}
+              onChange={setLorePageId}
+              label="Linked Lore Entry"
+              entityName={name.trim() || undefined}
+            />
+          )}
 
           <Button onClick={handleSave} className="w-full">
             Create Item

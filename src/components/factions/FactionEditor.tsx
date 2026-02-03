@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
+import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
 
 interface Faction {
   id: string;
@@ -21,6 +22,7 @@ interface Faction {
   influence_score: number;
   tags: string[];
   goals?: string[];
+  lore_page_id?: string | null;
 }
 
 interface FactionEditorProps {
@@ -44,6 +46,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [reputationScore, setReputationScore] = useState(0);
   const [existingReputation, setExistingReputation] = useState<{ id: string } | null>(null);
+  const [lorePageId, setLorePageId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,6 +60,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setTags(faction.tags || []);
       setInfluenceScore(faction.influence_score ?? 50);
       setGoals(faction.goals || []);
+      setLorePageId(faction.lore_page_id || null);
       
       // Fetch reputation for this faction
       const fetchReputation = async () => {
@@ -87,6 +91,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setGoals([]);
       setReputationScore(0);
       setExistingReputation(null);
+      setLorePageId(null);
     }
   }, [faction, open, campaignId]);
 
@@ -138,6 +143,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         tags,
         influence_score: influenceScore,
         goals,
+        lore_page_id: lorePageId,
       };
 
       if (faction) {
@@ -307,6 +313,16 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
               </div>
             </div>
           )}
+
+          {/* Lore Link */}
+          <LoreLinkSelector
+            campaignId={campaignId}
+            category="factions"
+            value={lorePageId}
+            onChange={setLorePageId}
+            label="Linked Lore Entry"
+            entityName={name.trim() || undefined}
+          />
 
           {/* Goals */}
           <div>

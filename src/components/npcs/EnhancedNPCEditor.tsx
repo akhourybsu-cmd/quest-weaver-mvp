@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
 
 interface NPC {
   id: string;
@@ -28,6 +29,7 @@ interface NPC {
   alignment?: string;
   location_id?: string | null;
   faction_id?: string | null;
+  lore_page_id?: string | null;
 }
 
 interface Location {
@@ -67,6 +69,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
   const [factionId, setFactionId] = useState<string | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [factions, setFactions] = useState<Faction[]>([]);
+  const [lorePageId, setLorePageId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load locations and factions for dropdowns
@@ -105,6 +108,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setPlayerVisible((npc as any).player_visible || false);
       setLocationId(npc.location_id || null);
       setFactionId(npc.faction_id || null);
+      setLorePageId(npc.lore_page_id || null);
     } else {
       setName("");
       setPronouns("");
@@ -119,6 +123,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setPlayerVisible(false);
       setLocationId(null);
       setFactionId(null);
+      setLorePageId(null);
     }
   }, [npc, open]);
 
@@ -196,6 +201,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
         player_visible: playerVisible,
         location_id: locationId || null,
         faction_id: factionId || null,
+        lore_page_id: lorePageId || null,
       };
 
       if (npc) {
@@ -405,6 +411,16 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
             </div>
           </div>
           </div>
+
+          {/* Lore Link */}
+          <LoreLinkSelector
+            campaignId={campaignId}
+            category="npcs"
+            value={lorePageId}
+            onChange={setLorePageId}
+            label="Linked Lore Entry"
+            entityName={name.trim() || undefined}
+          />
 
           {/* Bio */}
           <MarkdownEditor

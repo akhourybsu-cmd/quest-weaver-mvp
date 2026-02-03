@@ -35,9 +35,40 @@ interface LocationDialogProps {
   campaignId: string;
   locationToEdit?: any;
   parentLocationId?: string | null;
+  onSaved?: () => void;
 }
 
-const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parentLocationId }: LocationDialogProps) => {
+// Owner field keys mapped to NPC role titles
+const OWNER_FIELD_MAPPING: Record<string, string> = {
+  owner_npc: "Owner",
+  owner: "Owner",
+  shopkeeper_name: "Shopkeeper",
+  wizard_name: "Wizard",
+  innkeeper: "Innkeeper",
+  guild_master: "Guild Master",
+  captain_name: "Captain",
+  banker_name: "Banker",
+  warden_name: "Warden",
+  smith_name: "Blacksmith",
+  smithy_name: "Blacksmith",
+  librarian_name: "Librarian",
+  healer_name: "Healer",
+  harbor_master: "Harbor Master",
+  stable_master: "Stable Master",
+  proprietor: "Proprietor",
+  bartender: "Bartender",
+  head_priest: "High Priest",
+  master_smith: "Master Smith",
+  master_alchemist: "Master Alchemist",
+  chief_healer: "Chief Healer",
+  headmaster: "Headmaster",
+  archmagister: "Archmagister",
+  guild_leader: "Guild Leader",
+  commander: "Commander",
+  warden: "Warden",
+};
+
+const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parentLocationId, onSaved }: LocationDialogProps) => {
   const isEditing = !!locationToEdit;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -169,6 +200,61 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setImageUrl(null);
   };
 
+  // Helper function to extract owner names from details and create/link NPCs
+  const linkOrCreateOwnerNPCs = async (locationId: string, locationName: string, locType: string, mergedDetails: Record<string, any>) => {
+    const ownersToProcess: Array<{ name: string; roleTitle: string }> = [];
+    
+    // Extract all owner-related fields
+    for (const [key, roleTitle] of Object.entries(OWNER_FIELD_MAPPING)) {
+      const ownerName = mergedDetails[key];
+      if (ownerName && typeof ownerName === 'string' && ownerName.trim()) {
+        ownersToProcess.push({ name: ownerName.trim(), roleTitle });
+      }
+    }
+    
+    if (ownersToProcess.length === 0) return;
+    
+    for (const { name: ownerName, roleTitle } of ownersToProcess) {
+      try {
+        // Check if NPC with this name already exists in the campaign (case-insensitive)
+        const { data: existingNPCs } = await supabase
+          .from('npcs')
+          .select('id, name')
+          .eq('campaign_id', campaignId)
+          .ilike('name', ownerName);
+        
+        if (existingNPCs && existingNPCs.length > 0) {
+          // Update existing NPC to link to this location
+          await supabase
+            .from('npcs')
+            .update({ 
+              location_id: locationId,
+              location: locationName,
+            })
+            .eq('id', existingNPCs[0].id);
+        } else {
+          // Create new NPC linked to this location
+          const locationTypeLower = locType?.toLowerCase() || 'location';
+          await supabase
+            .from('npcs')
+            .insert({
+              campaign_id: campaignId,
+              name: ownerName,
+              role_title: roleTitle,
+              location_id: locationId,
+              location: locationName,
+              player_visible: false,
+              status: 'alive',
+              tags: ['location-owner', locationTypeLower],
+            });
+        }
+      } catch (err) {
+        console.error(`Failed to create/link NPC "${ownerName}":`, err);
+        // Don't block the save operation if NPC creation fails
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     if (!name) {
       toast.error("Please provide a location name.");
@@ -226,6 +312,9 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         );
       }
 
+      // Auto-index location owners as NPCs
+      await linkOrCreateOwnerNPCs(locationToEdit.id, name, locationType, mergedDetails);
+
       toast.success(`${name} has been updated.`);
     } else {
       const { data, error } = await supabase
@@ -236,6 +325,13 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       if (error) {
         toast.error(`Failed to create location: ${error.message}`);
         return;
+      }
+
+      const newLocationId = data?.[0]?.id;
+
+      // Auto-index location owners as NPCs
+      if (newLocationId) {
+        await linkOrCreateOwnerNPCs(newLocationId, name, locationType, mergedDetails);
       }
 
       // Auto-add city venues if requested
@@ -269,6 +365,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     }
 
     resetForm();
+    onSaved?.();
     onOpenChange(false);
   };
 

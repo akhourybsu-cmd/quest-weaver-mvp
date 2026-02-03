@@ -429,6 +429,7 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
         campaignId={campaignId}
         locationToEdit={locationToEdit}
         parentLocationId={parentLocationId}
+        onSaved={fetchLocations}
       />
     </>
   );

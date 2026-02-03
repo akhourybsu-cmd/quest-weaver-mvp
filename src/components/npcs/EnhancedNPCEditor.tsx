@@ -26,6 +26,18 @@ interface NPC {
   tags: string[];
   status?: string;
   alignment?: string;
+  location_id?: string | null;
+  faction_id?: string | null;
+}
+
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface Faction {
+  id: string;
+  name: string;
 }
 
 interface EnhancedNPCEditorProps {
@@ -51,7 +63,32 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
   const [uploading, setUploading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [playerVisible, setPlayerVisible] = useState(false);
+  const [locationId, setLocationId] = useState<string | null>(null);
+  const [factionId, setFactionId] = useState<string | null>(null);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [factions, setFactions] = useState<Faction[]>([]);
   const { toast } = useToast();
+
+  // Load locations and factions for dropdowns
+  useEffect(() => {
+    const loadOptions = async () => {
+      const [locResult, facResult] = await Promise.all([
+        supabase
+          .from("locations")
+          .select("id, name")
+          .eq("campaign_id", campaignId)
+          .order("name"),
+        supabase
+          .from("factions")
+          .select("id, name")
+          .eq("campaign_id", campaignId)
+          .order("name"),
+      ]);
+      if (locResult.data) setLocations(locResult.data);
+      if (facResult.data) setFactions(facResult.data);
+    };
+    if (open) loadOptions();
+  }, [campaignId, open]);
 
   useEffect(() => {
     if (npc) {
@@ -66,6 +103,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setStatus(npc.status || "alive");
       setAlignment(npc.alignment || "");
       setPlayerVisible((npc as any).player_visible || false);
+      setLocationId(npc.location_id || null);
+      setFactionId(npc.faction_id || null);
     } else {
       setName("");
       setPronouns("");
@@ -77,6 +116,9 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setTags([]);
       setStatus("alive");
       setAlignment("");
+      setPlayerVisible(false);
+      setLocationId(null);
+      setFactionId(null);
     }
   }, [npc, open]);
 
@@ -152,6 +194,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
         status: status || "alive",
         alignment: alignment.trim() || null,
         player_visible: playerVisible,
+        location_id: locationId || null,
+        faction_id: factionId || null,
       };
 
       if (npc) {
@@ -317,7 +361,49 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
                   <SelectItem value="chaotic-evil">Chaotic Evil</SelectItem>
                 </SelectContent>
               </Select>
+          </div>
+
+          {/* Location & Faction Links */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Select 
+                value={locationId || "none"} 
+                onValueChange={(v) => setLocationId(v === "none" ? null : v)}
+              >
+                <SelectTrigger id="location">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <div>
+              <Label htmlFor="faction">Faction</Label>
+              <Select 
+                value={factionId || "none"} 
+                onValueChange={(v) => setFactionId(v === "none" ? null : v)}
+              >
+                <SelectTrigger id="faction">
+                  <SelectValue placeholder="Select faction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {factions.map((fac) => (
+                    <SelectItem key={fac.id} value={fac.id}>
+                      {fac.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           </div>
 
           {/* Bio */}

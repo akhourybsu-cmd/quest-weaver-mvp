@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resilientChannel } from "@/lib/realtime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,11 +56,7 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
   const [addToSessionDialogOpen, setAddToSessionDialogOpen] = useState(false);
   const [addingItem, setAddingItem] = useState<any>(null);
 
-  useEffect(() => {
-    loadItems();
-  }, [campaignId]);
-
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     const { data } = await supabase
       .from("items")
       .select("*")
@@ -67,7 +64,31 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
       .order("name");
 
     if (data) setItems(data);
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    loadItems();
+
+    // Real-time subscription for items
+    const channel = resilientChannel(supabase, `items:${campaignId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "items",
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        () => {
+          loadItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [campaignId, loadItems]);
 
   const handleDeleteClick = (item: any) => {
     setDeletingItem({ id: item.id, name: item.name });

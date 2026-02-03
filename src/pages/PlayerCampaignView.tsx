@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerNPCDirectory } from "@/components/player/PlayerNPCDirectory";
 import { PlayerLocationsView } from "@/components/player/PlayerLocationsView";
+import { PlayerNotesView } from "@/components/player/PlayerNotesView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -219,7 +220,7 @@ export default function PlayerCampaignView() {
         </TabsContent>
 
           <TabsContent value="notes" className="mt-4">
-            <div className="text-center py-8 text-muted-foreground">Campaign notes view coming soon</div>
+            {player && <PlayerNotesView playerId={player.id} />}
           </TabsContent>
         </Tabs>
         </div>

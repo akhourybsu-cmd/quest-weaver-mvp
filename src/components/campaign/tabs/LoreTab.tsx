@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resilientChannel } from "@/lib/realtime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,11 +60,7 @@ export function LoreTab({ campaignId }: LoreTabProps) {
   const [currentPage, setCurrentPage] = useState<LorePage | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
 
-  useEffect(() => {
-    loadPages();
-  }, [campaignId]);
-
-  const loadPages = async () => {
+  const loadPages = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -79,7 +76,31 @@ export function LoreTab({ campaignId }: LoreTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    loadPages();
+
+    // Real-time subscription for lore_pages
+    const channel = resilientChannel(supabase, `lore_pages:${campaignId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "lore_pages",
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        () => {
+          loadPages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [campaignId, loadPages]);
 
   const handleCreateByCategory = (category: string) => {
     setActiveCategory(category);

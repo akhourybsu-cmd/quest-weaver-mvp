@@ -3144,6 +3144,71 @@ export type Database = {
           },
         ]
       }
+      map_markers: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          dm_only: boolean | null
+          height: number | null
+          icon: string | null
+          id: string
+          label: string | null
+          map_id: string
+          marker_type: string
+          metadata: Json | null
+          opacity: number | null
+          rotation: number | null
+          shape: string
+          width: number | null
+          x: number
+          y: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          dm_only?: boolean | null
+          height?: number | null
+          icon?: string | null
+          id?: string
+          label?: string | null
+          map_id: string
+          marker_type?: string
+          metadata?: Json | null
+          opacity?: number | null
+          rotation?: number | null
+          shape?: string
+          width?: number | null
+          x: number
+          y: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          dm_only?: boolean | null
+          height?: number | null
+          icon?: string | null
+          id?: string
+          label?: string | null
+          map_id?: string
+          marker_type?: string
+          metadata?: Json | null
+          opacity?: number | null
+          rotation?: number | null
+          shape?: string
+          width?: number | null
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_markers_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maps: {
         Row: {
           campaign_id: string

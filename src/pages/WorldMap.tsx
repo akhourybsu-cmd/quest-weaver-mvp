@@ -4,19 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Plus } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import MapViewer from "@/components/maps/MapViewer";
 import MapUpload from "@/components/maps/MapUpload";
 
-interface WorldMap {
+interface WorldMapData {
   id: string;
   name: string;
   imageUrl: string;
   width: number;
   height: number;
   isPrimary: boolean;
+  gridSize: number;
 }
 
 const WorldMap = () => {
@@ -27,7 +28,7 @@ const WorldMap = () => {
   const campaignId = searchParams.get("campaign");
   const isDM = searchParams.get("dm") === "true";
   
-  const [maps, setMaps] = useState<WorldMap[]>([]);
+  const [maps, setMaps] = useState<WorldMapData[]>([]);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,6 +83,7 @@ const WorldMap = () => {
         width: m.width,
         height: m.height,
         isPrimary: m.is_primary || false,
+        gridSize: m.grid_size || 50,
       }));
       setMaps(worldMaps);
       
@@ -127,7 +129,7 @@ const WorldMap = () => {
     <div className="min-h-screen pb-20">
       {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -137,7 +139,7 @@ const WorldMap = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold">World Map</h1>
+            <h1 className="text-xl font-bold">World Map</h1>
             {isDM && campaignId && (
               <MapUpload
                 campaignId={campaignId}
@@ -149,8 +151,8 @@ const WorldMap = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="grid lg:grid-cols-5 gap-4">
           {/* Map Selector Sidebar */}
           <div className="lg:col-span-1">
             <Card className="p-4">
@@ -177,9 +179,9 @@ const WorldMap = () => {
                       onClick={() => setSelectedMapId(map.id)}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{map.name}</span>
+                        <span className="font-medium text-sm truncate">{map.name}</span>
                         {map.isPrimary && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs shrink-0">
                             Primary
                           </Badge>
                         )}
@@ -205,7 +207,7 @@ const WorldMap = () => {
           </div>
 
           {/* Map Viewer */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             {!selectedMap ? (
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">
@@ -221,7 +223,7 @@ const WorldMap = () => {
                 width={selectedMap.width}
                 height={selectedMap.height}
                 gridEnabled={false}
-                gridSize={50}
+                gridSize={selectedMap.gridSize}
                 isDM={isDM}
               />
             )}

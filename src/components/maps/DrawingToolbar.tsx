@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   MousePointer2,
+  Hand,
   Pencil,
   Circle,
   Square,
@@ -23,8 +24,6 @@ import {
   ZoomIn,
   ZoomOut,
   Grid3x3,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 
 export type DrawingTool =
@@ -54,7 +53,7 @@ interface DrawingToolbarProps {
 
 const TOOLS: { id: DrawingTool; icon: any; label: string; shortcut?: string }[] = [
   { id: "select", icon: MousePointer2, label: "Select & Move", shortcut: "V" },
-  { id: "pan", icon: MousePointer2, label: "Pan View", shortcut: "H" },
+  { id: "pan", icon: Hand, label: "Pan View", shortcut: "H" },
   { id: "draw", icon: Pencil, label: "Freehand Draw", shortcut: "P" },
   { id: "circle", icon: Circle, label: "Circle/Sphere", shortcut: "C" },
   { id: "rectangle", icon: Square, label: "Rectangle/Cube", shortcut: "R" },

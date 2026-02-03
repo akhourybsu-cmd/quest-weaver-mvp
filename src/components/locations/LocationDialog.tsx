@@ -28,6 +28,7 @@ import { DynamicLocationFields } from "./DynamicLocationFields";
 import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locationSchemas";
 import { timelineLogger } from "@/hooks/useTimelineLogger";
 import { ImageUpload } from "@/components/ui/image-upload";
+import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
 
 interface LocationDialogProps {
   open: boolean;
@@ -87,6 +88,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [relatedNotes, setRelatedNotes] = useState<any[]>([]);
   const [discovered, setDiscovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [lorePageId, setLorePageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -105,6 +107,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setCoordX(locationDetails.coord_x?.toString() || "");
         setCoordY(locationDetails.coord_y?.toString() || "");
         setDiscovered(locationToEdit.discovered || false);
+        setLorePageId(locationToEdit.lore_page_id || null);
         
         // Load related quests
         loadRelatedQuests(locationToEdit.id);
@@ -114,6 +117,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         // Pre-fill parent location when creating sub-location
         setParentLocation(parentLocationId);
         setImageUrl(null);
+        setLorePageId(null);
       }
     }
   }, [open, locationToEdit, parentLocationId]);
@@ -198,6 +202,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setDetails({});
     setAutoAddVenues(false);
     setImageUrl(null);
+    setLorePageId(null);
   };
 
   // Helper function to extract owner names from details and create/link NPCs
@@ -278,6 +283,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       details: mergedDetails,
       discovered,
       image_url: imageUrl,
+      lore_page_id: lorePageId,
     };
 
     if (isEditing) {
@@ -649,6 +655,16 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
               </TabsContent>
 
               <TabsContent value="lore" className="space-y-4 px-1">
+                {/* Lore Link */}
+                <LoreLinkSelector
+                  campaignId={campaignId}
+                  category="regions"
+                  value={lorePageId}
+                  onChange={setLorePageId}
+                  label="Linked Lore Entry"
+                  entityName={name.trim() || undefined}
+                />
+
                 <MarkdownEditor
                   value={details.lore || ""}
                   onChange={(val) => setDetails({ ...details, lore: val })}

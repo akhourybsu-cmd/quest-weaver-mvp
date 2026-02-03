@@ -42,9 +42,13 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [goals, setGoals] = useState<string[]>([]);
   const [goalInput, setGoalInput] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [reputationScore, setReputationScore] = useState(0);
+  const [existingReputation, setExistingReputation] = useState<{ id: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!open) return; // Only run when dialog opens
+    
     if (faction) {
       setName(faction.name);
       setDescription(faction.description || "");
@@ -53,7 +57,27 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setTags(faction.tags || []);
       setInfluenceScore(faction.influence_score ?? 50);
       setGoals(faction.goals || []);
+      
+      // Fetch reputation for this faction
+      const fetchReputation = async () => {
+        const { data } = await supabase
+          .from("faction_reputation")
+          .select("id, score")
+          .eq("faction_id", faction.id)
+          .eq("campaign_id", campaignId)
+          .maybeSingle();
+        
+        if (data) {
+          setReputationScore(data.score);
+          setExistingReputation({ id: data.id });
+        } else {
+          setReputationScore(0);
+          setExistingReputation(null);
+        }
+      };
+      fetchReputation();
     } else {
+      // New faction - clear all fields
       setName("");
       setDescription("");
       setMotto("");
@@ -61,8 +85,10 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setTags([]);
       setInfluenceScore(50);
       setGoals([]);
+      setReputationScore(0);
+      setExistingReputation(null);
     }
-  }, [faction, open]);
+  }, [faction, open, campaignId]);
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -124,6 +150,24 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       } else {
         const { error } = await supabase.from("factions").insert(factionData);
         if (error) throw error;
+      }
+
+      // Save reputation if editing an existing faction
+      if (faction) {
+        if (existingReputation) {
+          await supabase
+            .from("faction_reputation")
+            .update({ score: reputationScore })
+            .eq("id", existingReputation.id);
+        } else {
+          await supabase
+            .from("faction_reputation")
+            .insert({
+              campaign_id: campaignId,
+              faction_id: faction.id,
+              score: reputationScore,
+            });
+        }
       }
 
       toast({
@@ -238,6 +282,31 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
               <span>Dominant</span>
             </div>
           </div>
+
+          {/* Reputation Slider - Only show when editing */}
+          {faction && (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label>Party Reputation</Label>
+                <span className="text-sm text-muted-foreground">
+                  {reputationScore > 0 ? "+" : ""}{reputationScore}
+                </span>
+              </div>
+              <Slider
+                value={[reputationScore]}
+                onValueChange={(v) => setReputationScore(v[0])}
+                min={-100}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Hated</span>
+                <span>Neutral</span>
+                <span>Revered</span>
+              </div>
+            </div>
+          )}
 
           {/* Goals */}
           <div>

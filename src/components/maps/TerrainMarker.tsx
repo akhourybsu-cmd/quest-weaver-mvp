@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mountain, Droplets, Flame, Skull, X, Plus } from "lucide-react";
+import { Mountain, Droplets, Flame, Skull, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface TerrainMarker {
+interface TerrainMarkerData {
   id: string;
   x: number;
   y: number;
@@ -14,6 +16,7 @@ interface TerrainMarker {
 }
 
 interface TerrainMarkerProps {
+  mapId: string;
   isActive: boolean;
   onToggle: () => void;
 }
@@ -25,12 +28,39 @@ const TERRAIN_TYPES = [
   { value: 'hazard', label: 'Hazard/Trap', icon: Skull, color: '#a855f7' },
 ] as const;
 
-export function TerrainMarker({ isActive, onToggle }: TerrainMarkerProps) {
-  const [markers, setMarkers] = useState<TerrainMarker[]>([]);
+export function TerrainMarker({ mapId, isActive, onToggle }: TerrainMarkerProps) {
+  const [markers, setMarkers] = useState<TerrainMarkerData[]>([]);
   const [selectedType, setSelectedType] = useState<'difficult' | 'water' | 'fire' | 'hazard'>('difficult');
+  const { toast } = useToast();
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isActive) return;
+  // Load existing terrain markers
+  useEffect(() => {
+    if (!mapId) return;
+    loadMarkers();
+  }, [mapId]);
+
+  const loadMarkers = async () => {
+    const { data } = await supabase
+      .from("map_markers")
+      .select("*")
+      .eq("map_id", mapId)
+      .eq("marker_type", "terrain");
+
+    if (data) {
+      setMarkers(
+        data.map((m: any) => ({
+          id: m.id,
+          x: m.x,
+          y: m.y,
+          type: m.metadata?.terrain_type || 'difficult',
+          label: m.label || '',
+        }))
+      );
+    }
+  };
+
+  const handleCanvasClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isActive || !mapId) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -39,86 +69,89 @@ export function TerrainMarker({ isActive, onToggle }: TerrainMarkerProps) {
     const terrainType = TERRAIN_TYPES.find(t => t.value === selectedType);
     if (!terrainType) return;
 
-    const newMarker: TerrainMarker = {
-      id: `terrain-${Date.now()}`,
+    // Save to database
+    const { data, error } = await supabase.from("map_markers").insert({
+      map_id: mapId,
+      marker_type: "terrain",
+      shape: "circle",
       x,
       y,
-      type: selectedType,
+      color: terrainType.color,
+      opacity: 0.6,
       label: terrainType.label,
-    };
+      dm_only: false,
+      metadata: { terrain_type: selectedType },
+    }).select().single();
 
-    setMarkers([...markers, newMarker]);
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (data) {
+      setMarkers([...markers, {
+        id: data.id,
+        x,
+        y,
+        type: selectedType,
+        label: terrainType.label,
+      }]);
+      toast({ title: "Terrain marker placed" });
+    }
   };
 
-  const handleRemoveMarker = (id: string) => {
-    setMarkers(markers.filter(m => m.id !== id));
+  const handleRemoveMarker = async (id: string) => {
+    const { error } = await supabase.from("map_markers").delete().eq("id", id);
+    if (!error) {
+      setMarkers(markers.filter(m => m.id !== id));
+      toast({ title: "Marker removed" });
+    }
   };
 
-  const handleClearAll = () => {
-    setMarkers([]);
+  const handleClearAll = async () => {
+    const { error } = await supabase
+      .from("map_markers")
+      .delete()
+      .eq("map_id", mapId)
+      .eq("marker_type", "terrain");
+
+    if (!error) {
+      setMarkers([]);
+      toast({ title: "All terrain markers cleared" });
+    }
   };
 
   const selectedTerrain = TERRAIN_TYPES.find(t => t.value === selectedType);
 
   return (
     <>
-      {/* Terrain Overlay */}
+      {/* Terrain Overlay - rendered by MarkerRenderer now, this is just click handler */}
       {isActive && (
         <div
           className="absolute inset-0 z-40 cursor-crosshair"
           onClick={handleCanvasClick}
           style={{ pointerEvents: isActive ? 'auto' : 'none' }}
-        >
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            {markers.map((marker) => {
-              const terrain = TERRAIN_TYPES.find(t => t.value === marker.type);
-              const Icon = terrain?.icon || Mountain;
-              
-              return (
-                <g key={marker.id}>
-                  {/* Marker Circle */}
-                  <circle
-                    cx={marker.x}
-                    cy={marker.y}
-                    r="20"
-                    fill={terrain?.color}
-                    opacity="0.6"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  
-                  {/* Icon rendered as foreignObject */}
-                  <foreignObject
-                    x={marker.x - 12}
-                    y={marker.y - 12}
-                    width="24"
-                    height="24"
-                  >
-                    <div className="flex items-center justify-center w-full h-full">
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                  </foreignObject>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+        />
       )}
 
       {/* Control Panel */}
-      <div className="absolute top-28 left-4 z-50 space-y-2">
+      <div className="space-y-2">
         <Button
           variant={isActive ? "default" : "outline"}
           size="sm"
           onClick={onToggle}
-          className="shadow-lg"
+          className="w-full"
         >
           <Mountain className="w-4 h-4 mr-2" />
-          Terrain
+          Terrain Markers
         </Button>
 
         {isActive && (
-          <Card className="shadow-lg">
+          <Card>
             <CardContent className="p-3 space-y-3">
               <div className="space-y-2">
                 <label className="text-xs font-medium">Terrain Type</label>
@@ -148,9 +181,9 @@ export function TerrainMarker({ isActive, onToggle }: TerrainMarkerProps) {
               {markers.length > 0 && (
                 <>
                   <div className="space-y-1">
-                    <span className="text-xs font-medium">Active Markers</span>
-                    <div className="flex flex-wrap gap-1">
-                      {markers.map((marker) => {
+                    <span className="text-xs font-medium">Active Markers ({markers.length})</span>
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                      {markers.slice(0, 10).map((marker) => {
                         const terrain = TERRAIN_TYPES.find(t => t.value === marker.type);
                         const Icon = terrain?.icon || Mountain;
                         return (
@@ -165,6 +198,9 @@ export function TerrainMarker({ isActive, onToggle }: TerrainMarkerProps) {
                           </Badge>
                         );
                       })}
+                      {markers.length > 10 && (
+                        <Badge variant="outline">+{markers.length - 10} more</Badge>
+                      )}
                     </div>
                   </div>
                   <Button

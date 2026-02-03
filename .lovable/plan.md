@@ -1,235 +1,154 @@
 
-# Character Creation Wizard & Level-Up System Review
+# Factions Bug Fixes
 
-## Executive Summary
+## Issues Identified
 
-I conducted a thorough review of the character creation wizard and level-up system. The existing implementation is **quite comprehensive** for D&D 5E SRD content, covering all 12 base classes with proper level-up rules, multiclassing, and feature choices. However, I identified several gaps and areas for improvement to ensure the system "knows everything" about 5E classes.
+### Issue 1: Goals Persist When Creating New Faction
+When creating a new faction after editing an existing one, the goals from the previous faction remain populated instead of being cleared.
 
----
+**Root Cause**: The `useEffect` in `FactionEditor.tsx` depends on `[faction, open]`. When clicking "New Faction" multiple times in a row, `faction` remains `null` and the effect doesn't re-run to clear the state.
 
-## Current System Strengths
+**Fix**: Reset all form state whenever `open` becomes `true`, regardless of whether `faction` changed.
 
-### Character Creation Wizard
-- **Full class support**: All 12 SRD classes (Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, Wizard)
-- **Dynamic step generation**: Steps adapt based on level and spellcasting status
-- **Incremental level choices**: When creating characters above level 1, StepLevelChoices walks through each level's decisions
-- **Complete proficiency system**: Skills, tools, languages, armor, weapons, saving throws
-- **Equipment bundles**: Starting equipment per class
-- **Spell selection**: Proper known/prepared model per class type
+### Issue 2: Reputation Scale Appears Read-Only
+The reputation progress bar shown on faction cards is display-only. To change it, DMs must click the "Adjust Reputation" button, which opens a separate dialog.
 
-### Level-Up Wizard
-- **Class-specific rules**: Each class has defined hit die, ASI levels, feature choice levels, resource progression
-- **Spellcasting types**: Supports known casters (Bard, Sorcerer, Warlock, Ranger), prepared casters (Cleric, Druid, Wizard, Paladin), and pact magic (Warlock)
-- **Feature choices**: Fighting Styles, Expertise, Metamagic, Invocations, Pact Boons, Magical Secrets, Favored Enemy/Terrain
-- **Multiclass support**: Prerequisites validation, proficiency gains, spell slot calculation
+**Root Cause**: This is actually by design (reputation is stored in a separate `faction_reputation` table and represents the party's standing with the faction), but the UX is confusing because:
+1. The "Adjust Reputation" button is easy to miss
+2. Users expect the reputation to be editable in the same editor as other faction fields
+
+**Fix**: Add a reputation slider directly in `FactionEditor.tsx` so DMs can set reputation in the same place they edit other faction data.
 
 ---
 
-## Identified Gaps
+## Technical Changes
 
-### 1. Missing Third Caster Subclass Handling
-The system references Eldritch Knight (Fighter) and Arcane Trickster (Rogue) in multiclass rules but doesn't properly detect spellcasting when a character has these subclasses.
+### File: `src/components/factions/FactionEditor.tsx`
 
-**Impact**: Fighter/Rogue with spellcasting subclasses won't get spell selection steps during level-up.
+**Change 1**: Fix state reset for new factions
 
-### 2. Incomplete Cantrip Progression Data
-Some classes missing complete cantrip progression:
-- Warlock missing level 16 entry in some tables
-- Eldritch Knight/Arcane Trickster cantrip progression not defined
+Update the `useEffect` to properly reset all state when the dialog opens fresh:
 
-### 3. Missing Spell Swap for Character Creation
-When creating a known caster at higher levels, the "spell swap on level up" mechanic isn't applied for each level during StepLevelChoices.
+```typescript
+useEffect(() => {
+  if (!open) return; // Only run when dialog opens
+  
+  if (faction) {
+    // Editing existing faction - populate fields
+    setName(faction.name);
+    setDescription(faction.description || "");
+    setMotto(faction.motto || "");
+    setBannerUrl(faction.banner_url || null);
+    setTags(faction.tags || []);
+    setInfluenceScore(faction.influence_score ?? 50);
+    setGoals(faction.goals || []);
+  } else {
+    // New faction - clear all fields
+    setName("");
+    setDescription("");
+    setMotto("");
+    setBannerUrl(null);
+    setTags([]);
+    setInfluenceScore(50);
+    setGoals([]);
+  }
+}, [faction, open]);
+```
 
-### 4. Subclass-Granted Spells Not Fully Integrated
-`subclassSpells.ts` only has Life Domain Cleric. Missing:
-- Land Druid circle spells
-- Other domain spells
-- Oath spells for Paladin subclasses
+The key fix is adding `if (!open) return;` at the start to ensure the effect only runs when the dialog actually opens, and the clear operation happens every time.
 
-### 5. Class Resources Not Created During Character Creation
-StepLevelChoices handles ASI, HP, and feature choices but doesn't initialize class resources (Ki Points, Rage, Sorcery Points, etc.) during character creation.
+**Change 2**: Add reputation slider to FactionEditor
 
-### 6. Warlock Mystic Arcanum Not in Level-Up
-Warlocks gain Mystic Arcanum at levels 11, 13, 15, 17 (one 6th/7th/8th/9th level spell each). This isn't handled in LevelUpWizard.
+Add reputation management directly in the editor:
 
-### 7. Ranger Beast Master Companion Not Handled
-Beast Master ranger subclass (level 3) should allow selecting a beast companion. No UI exists for this.
+1. Add new state for reputation:
+```typescript
+const [reputationScore, setReputationScore] = useState(0);
+const [existingReputation, setExistingReputation] = useState<{id: string} | null>(null);
+```
 
-### 8. Extra Attack and Other Automatic Features Not Highlighted
-While features are loaded, milestone features like Extra Attack (Fighter/Ranger/Paladin/Monk at 5) aren't specifically called out.
+2. Fetch current reputation when editing:
+```typescript
+// Inside useEffect when faction exists:
+const fetchReputation = async () => {
+  const { data } = await supabase
+    .from("faction_reputation")
+    .select("id, score")
+    .eq("faction_id", faction.id)
+    .eq("campaign_id", campaignId)
+    .single();
+  
+  if (data) {
+    setReputationScore(data.score);
+    setExistingReputation({ id: data.id });
+  } else {
+    setReputationScore(0);
+    setExistingReputation(null);
+  }
+};
+fetchReputation();
+```
 
-### 9. Multiclass Spellcasting Ability Conflict
-When multiclassing between classes with different spellcasting abilities (e.g., Cleric WIS + Sorcerer CHA), there's no UI to show which ability applies to which spells.
+3. Add reputation slider UI after the influence slider:
+```tsx
+{/* Reputation Slider - Only show when editing */}
+{faction && (
+  <div className="space-y-3">
+    <div className="flex justify-between items-center">
+      <Label>Party Reputation</Label>
+      <span className="text-sm text-muted-foreground">
+        {reputationScore > 0 ? "+" : ""}{reputationScore}
+      </span>
+    </div>
+    <Slider
+      value={[reputationScore]}
+      onValueChange={(v) => setReputationScore(v[0])}
+      min={-100}
+      max={100}
+      step={1}
+      className="w-full"
+    />
+    <div className="flex justify-between text-xs text-muted-foreground">
+      <span>Hated</span>
+      <span>Neutral</span>
+      <span>Revered</span>
+    </div>
+  </div>
+)}
+```
 
-### 10. Level 20 Capstone Features
-No special handling or highlighting of level 20 capstone abilities for each class.
-
----
-
-## Technical Implementation Plan
-
-### Phase 1: Third Caster Subclass Support (Priority: High)
-
-**Files to modify:**
-- `src/lib/rules/levelUpRules.ts`
-- `src/components/character/LevelUpWizard.tsx`
-
-**Changes:**
-1. Add Eldritch Knight and Arcane Trickster to CLASS_LEVEL_UP_RULES with:
-   - Cantrip progression: { 3: 2, 10: 3 }
-   - Spell known progression for third casters
-   - Spellcasting starts at level 3 for these subclasses
-
-2. Update LevelUpWizard to detect subclass spellcasting:
-   ```typescript
-   const isThirdCaster = (className: string, subclassName: string | null) => {
-     return (className === "Fighter" && subclassName === "Eldritch Knight") ||
-            (className === "Rogue" && subclassName === "Arcane Trickster");
-   };
-   ```
-
-3. Add spell school restrictions for third casters (Abjuration/Evocation for EK, Enchantment/Illusion for AT)
-
-### Phase 2: Mystic Arcanum for Warlocks (Priority: High)
-
-**Files to create:**
-- `src/components/character/levelup/MysticArcanumStep.tsx`
-
-**Files to modify:**
-- `src/components/character/LevelUpWizard.tsx`
-- `src/lib/rules/levelUpRules.ts`
-
-**Changes:**
-1. Add Mystic Arcanum choice to Warlock featureChoiceLevels at 11, 13, 15, 17
-2. Create MysticArcanumStep component for selecting one spell of the appropriate level
-3. Save to character_mystic_arcanum table (already exists)
-
-### Phase 3: Class Resource Initialization (Priority: High)
-
-**Files to modify:**
-- `src/components/character/CharacterWizard.tsx` (handleFinalizeCharacter)
-- `src/components/character/wizard/StepLevelChoices.tsx`
-
-**Changes:**
-1. After character creation finalization, calculate and insert all class resources:
-   - Barbarian: Rage uses
-   - Bard: Bardic Inspiration
-   - Cleric: Channel Divinity
-   - Druid: Wild Shape
-   - Fighter: Second Wind, Action Surge, Indomitable
-   - Monk: Ki Points
-   - Paladin: Lay on Hands, Divine Sense, Channel Divinity
-   - Sorcerer: Sorcery Points
-   - Warlock: (Pact slots handled separately)
-   - Wizard: Arcane Recovery
-
-2. Use the existing resourceProgression data from CLASS_LEVEL_UP_RULES
-
-### Phase 4: Subclass Spell Lists (Priority: Medium)
-
-**Files to modify:**
-- `src/lib/rules/subclassSpells.ts`
-
-**Changes:**
-1. Expand AUTO_PREPARED_BY_SUBCLASS to include all SRD subclasses:
-   - Cleric domains (Life only in SRD)
-   - Druid circles (Land with terrain-based spells)
-   - Paladin oaths (Devotion only in SRD)
-
-2. Update StepSpells to merge subclass auto-prepared spells into the spell list display
-
-### Phase 5: Spell Swap During Character Creation (Priority: Medium)
-
-**Files to modify:**
-- `src/components/character/wizard/StepLevelChoices.tsx`
-
-**Changes:**
-1. For known casters (Bard, Sorcerer, Ranger, Warlock), add spell swap option at each level
-2. Track previous level's spells and allow replacing one with each new level
-3. Display running total of known spells
-
-### Phase 6: Beast Master Companion (Priority: Low)
-
-**Files to create:**
-- `src/components/character/levelup/BeastCompanionStep.tsx`
-
-**Database changes:**
-- May need new table: `character_companions`
-
-**Changes:**
-1. Detect Ranger + Beast Master subclass at level 3
-2. Show beast selection (SRD beasts with CR 1/4 or lower)
-3. Store companion data for character sheet display
-
-### Phase 7: Multiclass Spellcasting Clarity (Priority: Low)
-
-**Files to modify:**
-- `src/components/player/PlayerSpellbook.tsx`
-- `src/components/spells/SpellCastDialog.tsx`
-
-**Changes:**
-1. Show spellcasting ability per class in character sheet
-2. Display separate spell save DCs and attack modifiers for each class
-3. Clarify which slots are shared vs. pact magic
+4. Save reputation in `handleSave`:
+```typescript
+// After faction insert/update succeeds, save reputation if editing
+if (faction) {
+  if (existingReputation) {
+    await supabase
+      .from("faction_reputation")
+      .update({ score: reputationScore })
+      .eq("id", existingReputation.id);
+  } else {
+    await supabase
+      .from("faction_reputation")
+      .insert({
+        campaign_id: campaignId,
+        faction_id: faction.id,
+        score: reputationScore,
+      });
+  }
+}
+```
 
 ---
 
-## Summary of Changes by File
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `levelUpRules.ts` | Add third caster data, Mystic Arcanum levels, cantrip fixes |
-| `LevelUpWizard.tsx` | Add Mystic Arcanum step, third caster detection, subclass spell detection |
-| `CharacterWizard.tsx` | Add class resource initialization on finalization |
-| `StepLevelChoices.tsx` | Add spell swap option for known casters |
-| `subclassSpells.ts` | Expand auto-prepared spell lists |
-| `MysticArcanumStep.tsx` | New component for Warlock 11+ spell selection |
-| `BeastCompanionStep.tsx` | New component for Beast Master ranger |
-| `spellRules.ts` | Add third caster spell slot calculations |
+| File | Change |
+|------|--------|
+| `FactionEditor.tsx` | Fix useEffect to properly clear state when creating new factions |
+| `FactionEditor.tsx` | Add reputation slider for editing existing factions |
+| `FactionEditor.tsx` | Save reputation to `faction_reputation` table on save |
 
----
-
-## Validation Checklist
-
-After implementation, verify these scenarios work correctly:
-
-**Character Creation:**
-- [ ] Level 1 Fighter with no spells (correct)
-- [ ] Level 3 Fighter Eldritch Knight gets spell selection
-- [ ] Level 5 Bard has correct cantrip/spell counts
-- [ ] Level 3 Warlock can select Pact Boon
-- [ ] Level 10 Bard sees Magical Secrets step
-- [ ] Creating a level 5 character walks through all HP/feature choices for levels 1-5
-- [ ] Class resources (Ki, Rage, etc.) are created on finalization
-
-**Level-Up:**
-- [ ] Level 4 ASI/Feat choice appears for all classes
-- [ ] Level 6 Fighter gets extra ASI (Fighter-specific)
-- [ ] Level 11 Warlock gets Mystic Arcanum selection
-- [ ] Multiclass character can choose which class to level
-- [ ] Adding new class shows prerequisite check
-- [ ] Wizard gets 2 spellbook spells per level
-- [ ] Warlock invocations filter by prerequisites
-
-**Multiclass:**
-- [ ] Full caster + Half caster spell slots calculated correctly
-- [ ] Third caster levels contribute properly
-- [ ] Warlock pact slots remain separate
-
----
-
-## Estimated Effort
-
-| Phase | Complexity | Files | Est. Time |
-|-------|------------|-------|-----------|
-| Phase 1 (Third Casters) | Medium | 2 | 2-3 hours |
-| Phase 2 (Mystic Arcanum) | Medium | 3 | 1-2 hours |
-| Phase 3 (Resources) | Low | 2 | 1 hour |
-| Phase 4 (Subclass Spells) | Low | 1 | 30 min |
-| Phase 5 (Spell Swap) | Medium | 1 | 1-2 hours |
-| Phase 6 (Beast Master) | High | 2+ | 2-3 hours |
-| Phase 7 (Multiclass Clarity) | Low | 2 | 1 hour |
-
-**Total: ~8-12 hours of development work**
-
-Would you like me to proceed with implementing these fixes in priority order?
+## Result
+- Creating a new faction will always start with blank fields
+- Editing a faction allows changing reputation directly in the same dialog
+- The separate "Adjust Reputation" button still works for quick changes from the directory view

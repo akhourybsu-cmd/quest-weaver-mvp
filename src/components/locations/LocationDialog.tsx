@@ -312,6 +312,9 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         );
       }
 
+      // Auto-index location owners as NPCs
+      await linkOrCreateOwnerNPCs(locationToEdit.id, name, locationType, mergedDetails);
+
       toast.success(`${name} has been updated.`);
     } else {
       const { data, error } = await supabase
@@ -322,6 +325,13 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
       if (error) {
         toast.error(`Failed to create location: ${error.message}`);
         return;
+      }
+
+      const newLocationId = data?.[0]?.id;
+
+      // Auto-index location owners as NPCs
+      if (newLocationId) {
+        await linkOrCreateOwnerNPCs(newLocationId, name, locationType, mergedDetails);
       }
 
       // Auto-add city venues if requested
@@ -355,6 +365,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     }
 
     resetForm();
+    onSaved?.();
     onOpenChange(false);
   };
 

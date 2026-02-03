@@ -1,154 +1,199 @@
 
-# Factions Bug Fixes
+# Lore Integration Analysis: What's Connected and What's Missing
 
-## Issues Identified
+## Executive Summary
 
-### Issue 1: Goals Persist When Creating New Faction
-When creating a new faction after editing an existing one, the goals from the previous faction remain populated instead of being cleared.
-
-**Root Cause**: The `useEffect` in `FactionEditor.tsx` depends on `[faction, open]`. When clicking "New Faction" multiple times in a row, `faction` remains `null` and the effect doesn't re-run to clear the state.
-
-**Fix**: Reset all form state whenever `open` becomes `true`, regardless of whether `faction` changed.
-
-### Issue 2: Reputation Scale Appears Read-Only
-The reputation progress bar shown on faction cards is display-only. To change it, DMs must click the "Adjust Reputation" button, which opens a separate dialog.
-
-**Root Cause**: This is actually by design (reputation is stored in a separate `faction_reputation` table and represents the party's standing with the faction), but the UX is confusing because:
-1. The "Adjust Reputation" button is easy to miss
-2. Users expect the reputation to be editable in the same editor as other faction fields
-
-**Fix**: Add a reputation slider directly in `FactionEditor.tsx` so DMs can set reputation in the same place they edit other faction data.
+After a thorough review of the Campaign Manager's data architecture, I've identified significant gaps in how various campaign components connect to the Lore system. The Lore system (`lore_pages`) has its own linking mechanism via `lore_links` and `lore_backlinks` tables, but most campaign assets (Factions, NPCs, Locations, Items, Quests) exist in **completely separate tables** with no bidirectional connection to Lore.
 
 ---
 
-## Technical Changes
+## Current Architecture: Two Parallel Systems
 
-### File: `src/components/factions/FactionEditor.tsx`
+### System 1: Core Campaign Assets
+These are stored in dedicated tables and managed through their own editors:
 
-**Change 1**: Fix state reset for new factions
+| Asset | Table | Dedicated Editor |
+|-------|-------|------------------|
+| Factions | `factions` | FactionEditor.tsx |
+| NPCs | `npcs` | EnhancedNPCEditor.tsx |
+| Locations | `locations` | LocationDialog.tsx |
+| Quests | `quests` | QuestDialog.tsx |
+| Items | `items` | ItemEditor.tsx |
+| Notes | `session_notes` | NoteEditor.tsx |
 
-Update the `useEffect` to properly reset all state when the dialog opens fresh:
+### System 2: Lore System
+Rich world-building content stored in `lore_pages` with category-based creators:
 
-```typescript
-useEffect(() => {
-  if (!open) return; // Only run when dialog opens
-  
-  if (faction) {
-    // Editing existing faction - populate fields
-    setName(faction.name);
-    setDescription(faction.description || "");
-    setMotto(faction.motto || "");
-    setBannerUrl(faction.banner_url || null);
-    setTags(faction.tags || []);
-    setInfluenceScore(faction.influence_score ?? 50);
-    setGoals(faction.goals || []);
-  } else {
-    // New faction - clear all fields
-    setName("");
-    setDescription("");
-    setMotto("");
-    setBannerUrl(null);
-    setTags([]);
-    setInfluenceScore(50);
-    setGoals([]);
-  }
-}, [faction, open]);
-```
-
-The key fix is adding `if (!open) return;` at the start to ensure the effect only runs when the dialog actually opens, and the clear operation happens every time.
-
-**Change 2**: Add reputation slider to FactionEditor
-
-Add reputation management directly in the editor:
-
-1. Add new state for reputation:
-```typescript
-const [reputationScore, setReputationScore] = useState(0);
-const [existingReputation, setExistingReputation] = useState<{id: string} | null>(null);
-```
-
-2. Fetch current reputation when editing:
-```typescript
-// Inside useEffect when faction exists:
-const fetchReputation = async () => {
-  const { data } = await supabase
-    .from("faction_reputation")
-    .select("id, score")
-    .eq("faction_id", faction.id)
-    .eq("campaign_id", campaignId)
-    .single();
-  
-  if (data) {
-    setReputationScore(data.score);
-    setExistingReputation({ id: data.id });
-  } else {
-    setReputationScore(0);
-    setExistingReputation(null);
-  }
-};
-fetchReputation();
-```
-
-3. Add reputation slider UI after the influence slider:
-```tsx
-{/* Reputation Slider - Only show when editing */}
-{faction && (
-  <div className="space-y-3">
-    <div className="flex justify-between items-center">
-      <Label>Party Reputation</Label>
-      <span className="text-sm text-muted-foreground">
-        {reputationScore > 0 ? "+" : ""}{reputationScore}
-      </span>
-    </div>
-    <Slider
-      value={[reputationScore]}
-      onValueChange={(v) => setReputationScore(v[0])}
-      min={-100}
-      max={100}
-      step={1}
-      className="w-full"
-    />
-    <div className="flex justify-between text-xs text-muted-foreground">
-      <span>Hated</span>
-      <span>Neutral</span>
-      <span>Revered</span>
-    </div>
-  </div>
-)}
-```
-
-4. Save reputation in `handleSave`:
-```typescript
-// After faction insert/update succeeds, save reputation if editing
-if (faction) {
-  if (existingReputation) {
-    await supabase
-      .from("faction_reputation")
-      .update({ score: reputationScore })
-      .eq("id", existingReputation.id);
-  } else {
-    await supabase
-      .from("faction_reputation")
-      .insert({
-        campaign_id: campaignId,
-        faction_id: faction.id,
-        score: reputationScore,
-      });
-  }
-}
-```
+| Category | Creator Component |
+|----------|-------------------|
+| Regions | RegionCreator.tsx |
+| Factions | FactionCreator.tsx |
+| NPCs | NPCCreator.tsx |
+| History | HistoryCreator.tsx |
+| Myth & Faith | MythCreator.tsx |
+| Magic | MagicCreator.tsx |
 
 ---
 
-## Summary of Changes
+## The Disconnect Problem
 
+### Factions: Complete Disconnect
+- **`factions` table**: Stores name, description, motto, influence_score, goals, banner_url, tags
+- **`lore_pages` (category: "factions")**: Stores rich lore content with alignment, colors, power level, headquarters region links
+- **Problem**: These are **two completely separate systems** with no link between them
+- **Result**: DMs create factions in the Factions tab AND create faction lore in the Lore tab separately
+
+### NPCs: Partial Disconnect  
+- **`npcs` table**: Stores name, pronouns, role_title, public_bio, gm_notes, secrets, portrait_url, tags, status, alignment, `location_id`, `faction_id`
+- **`lore_pages` (category: "npcs")**: Stores rich NPC lore with race, personality traits, voice notes, secrets, home region
+- **Connection that exists**: NPCs have `location_id` (links to locations) and `faction_id` (links to factions)
+- **Problem**: No link between `npcs` table and `lore_pages` NPC entries
+- **Result**: Operational NPC data is separate from rich biographical lore
+
+### Locations: Partial Disconnect
+- **`locations` table**: Stores name, description, location_type, parent_location_id, details JSON, coordinates, discovered status
+- **`lore_pages` (category: "regions")**: Stores rich region lore with population, government, climate, exports/imports, travel notes
+- **Connection that exists**: `locations.parent_location_id` creates hierarchy
+- **Problem**: No link between `locations` table and `lore_pages` region entries
+- **Positive**: LocationDialog already loads related quests and notes via `note_links` table
+
+### Quests: Minimal Connection
+- **`quests` table**: Has `location_id`, `faction_id`, `quest_giver_id` (NPC)
+- **Connection that exists**: Links to locations, factions, and NPCs
+- **Problem**: No link to Lore system for historical context or backstory
+
+### Items: No Connection
+- **`items` table**: Stores item data with properties JSON
+- **Problem**: No link to any other entity or Lore
+
+---
+
+## What Does Work
+
+### Lore Internal Links
+The Lore system has its own linking via markdown syntax:
+- `[[Page Title]]` links to other lore pages
+- `@NPCName` references NPCs (as text labels only)
+- `#LocationName` references locations
+- `%FactionName` references factions  
+- `!QuestName` references quests
+- `$ItemName` references items
+
+These are parsed and stored in `lore_links` table with:
+- `source_page`: The lore page containing the link
+- `target_type`: NPC, LOCATION, FACTION, QUEST, ITEM, LORE
+- `target_id`: The actual entity ID (often NULL - just stores label)
+- `label`: The text of the reference
+
+**Problem**: These links are usually **one-way and unresolved** - they store the label but don't actually look up the real entity ID.
+
+### Note Links
+The `note_links` table connects session notes to entities:
+- Can link notes to LOCATION, NPC, QUEST, FACTION, ITEM
+- LocationDialog loads related notes via this system
+- **This is the only robust cross-entity linking system**
+
+---
+
+## Technical Gaps Summary
+
+| Component | Links TO Lore | Links FROM Lore | Linked to Other Assets |
+|-----------|---------------|-----------------|------------------------|
+| Factions | None | Text-only via `%name` | None |
+| NPCs | None | Text-only via `@name` | location_id, faction_id |
+| Locations | None | Text-only via `#name` | parent_location_id |
+| Quests | None | Text-only via `!name` | location_id, faction_id, quest_giver_id |
+| Items | None | Text-only via `$name` | None |
+| Notes | None | None | via note_links table |
+
+---
+
+## Recommended Solution: Unified Entity Linking
+
+### Phase 1: Add `lore_page_id` to Core Tables
+Add optional foreign key to connect assets with their lore entries:
+
+```text
+ALTER TABLE factions ADD COLUMN lore_page_id UUID REFERENCES lore_pages(id);
+ALTER TABLE npcs ADD COLUMN lore_page_id UUID REFERENCES lore_pages(id);
+ALTER TABLE locations ADD COLUMN lore_page_id UUID REFERENCES lore_pages(id);
+ALTER TABLE quests ADD COLUMN lore_page_id UUID REFERENCES lore_pages(id);
+ALTER TABLE items ADD COLUMN lore_page_id UUID REFERENCES lore_pages(id);
+```
+
+### Phase 2: Update Editors to Link Lore Pages
+1. **FactionEditor**: Add "Link to Lore" dropdown showing lore_pages with category="factions"
+2. **EnhancedNPCEditor**: Add "Link to Lore" dropdown for NPC lore pages
+3. **LocationDialog**: Add "Link to Lore" dropdown for region lore pages
+4. **QuestDialog**: Add "Link to Lore" dropdown
+5. **ItemEditor**: Add "Link to Lore" dropdown
+
+### Phase 3: Resolve Lore Link References
+Update LoreEditor to actually resolve `@NPCName` to real entity IDs:
+- When saving, look up entities by name in their respective tables
+- Store the actual `target_id` in `lore_links` instead of NULL
+- This enables true bidirectional navigation
+
+### Phase 4: Display Linked Lore in Asset Views
+Update detail views to show linked lore content:
+- FactionDirectory detail dialog: Show linked lore page content
+- NPCDetailDrawer: Show linked lore biography
+- LocationDialog: Show linked region lore
+- QuestDetailDialog: Show linked lore context
+
+### Phase 5: Auto-Create Lore from Assets
+Add "Generate Lore Entry" button to editors:
+- Creates a lore_page with matching category
+- Pre-fills data from the asset
+- Auto-links the new lore page to the asset
+
+---
+
+## Files to Modify
+
+### Database Migration
+- Add `lore_page_id` column to 5 tables
+
+### Editors to Update
 | File | Change |
 |------|--------|
-| `FactionEditor.tsx` | Fix useEffect to properly clear state when creating new factions |
-| `FactionEditor.tsx` | Add reputation slider for editing existing factions |
-| `FactionEditor.tsx` | Save reputation to `faction_reputation` table on save |
+| `FactionEditor.tsx` | Add lore page link selector |
+| `FactionDirectory.tsx` | Display linked lore in detail view |
+| `EnhancedNPCEditor.tsx` | Add lore page link selector |
+| `NPCDetailDrawer.tsx` | Display linked lore |
+| `LocationDialog.tsx` | Add lore page link selector |
+| `QuestDialog.tsx` | Add lore page link selector |
+| `QuestDetailDialog.tsx` | Display linked lore |
+| `ItemEditor.tsx` | Add lore page link selector |
 
-## Result
-- Creating a new faction will always start with blank fields
-- Editing a faction allows changing reputation directly in the same dialog
-- The separate "Adjust Reputation" button still works for quick changes from the directory view
+### Lore System Updates
+| File | Change |
+|------|--------|
+| `LoreEditor.tsx` | Resolve entity references to actual IDs |
+| `LorePageView.tsx` | Show linked assets (reverse lookup) |
+| `LoreGraph.tsx` | Include actual entity links in graph |
+
+### New Shared Components
+- `LoreLinkSelector.tsx`: Reusable dropdown for linking lore pages
+
+---
+
+## Implementation Priority
+
+1. **High Priority - Factions**: Most commonly requested, complete disconnect currently
+2. **High Priority - NPCs**: Rich biographical data split between two systems  
+3. **Medium Priority - Locations**: Already has some linking via parent_location_id
+4. **Medium Priority - Quests**: Has faction/NPC/location links but no lore context
+5. **Lower Priority - Items**: Rarely need extensive lore
+
+---
+
+## Outcome
+
+After implementation:
+- DMs can create a faction in the Factions tab and link it to rich lore content
+- Clicking on a faction shows both operational data AND linked lore
+- Creating a faction can auto-generate a lore page stub
+- Lore pages show what entities they're connected to
+- The LoreGraph visualization shows actual entity connections
+- Cross-entity navigation becomes seamless

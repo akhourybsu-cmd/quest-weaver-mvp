@@ -117,7 +117,7 @@ const NPCFilterPanel = ({ campaignId, onFilterChange, currentFilters }: NPCFilte
       </div>
 
       {/* Faction Filter */}
-      <div className="space-y-2">
+      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
         <Label className="text-sm font-semibold">Faction</Label>
         <Select
           value={currentFilters.factionId || "all"}
@@ -140,7 +140,7 @@ const NPCFilterPanel = ({ campaignId, onFilterChange, currentFilters }: NPCFilte
       </div>
 
       {/* Location Filter */}
-      <div className="space-y-2">
+      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
         <Label className="text-sm font-semibold">Location</Label>
         <Select
           value={currentFilters.locationId || "all"}

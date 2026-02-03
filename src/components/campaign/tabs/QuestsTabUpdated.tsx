@@ -331,7 +331,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
           Start your adventure by creating your first quest
         </p>
         {!demoMode && (
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => {
+            setQuestToEdit(undefined);
+            setDialogOpen(true);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             Create Quest
           </Button>
@@ -351,7 +354,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         </Tabs>
 
         {!demoMode && (
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => {
+            setQuestToEdit(undefined);
+            setDialogOpen(true);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             New Quest
           </Button>

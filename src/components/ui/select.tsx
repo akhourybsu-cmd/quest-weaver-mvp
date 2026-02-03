@@ -61,7 +61,7 @@ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayNam
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => (
+>(({ className, children, position = "popper", onPointerDownOutside, ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
@@ -72,6 +72,14 @@ const SelectContent = React.forwardRef<
         className,
       )}
       position={position}
+      onPointerDownOutside={(e) => {
+        // Prevent closing when clicking inside the trigger area
+        const target = e.target as HTMLElement;
+        if (target?.closest('[data-radix-select-trigger]')) {
+          e.preventDefault();
+        }
+        onPointerDownOutside?.(e);
+      }}
       {...props}
     >
       <SelectScrollUpButton />

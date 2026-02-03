@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown, Book } from "lucide-react";
 import FactionEditor from "./FactionEditor";
 import ReputationAdjuster from "./ReputationAdjuster";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Faction {
   id: string;
@@ -20,6 +23,7 @@ interface Faction {
   influence_score: number;
   tags: string[];
   goals?: string[];
+  lore_page_id?: string;
 }
 
 interface Reputation {
@@ -27,6 +31,15 @@ interface Reputation {
   faction_id: string;
   score: number;
   notes?: string;
+}
+
+interface LorePage {
+  id: string;
+  title: string;
+  content_md: string;
+  category: string;
+  visibility: string;
+  tags?: string[];
 }
 
 interface FactionDirectoryProps {
@@ -42,6 +55,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [reputationOpen, setReputationOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -147,9 +161,23 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
     setEditorOpen(true);
   };
 
-  const handleViewFaction = (faction: Faction) => {
+  const handleViewFaction = async (faction: Faction) => {
     setSelectedFaction(faction);
+    setLinkedLore(null);
     setDetailOpen(true);
+    
+    // Load linked lore page if exists
+    if (faction.lore_page_id) {
+      const { data } = await supabase
+        .from("lore_pages")
+        .select("*")
+        .eq("id", faction.lore_page_id)
+        .single();
+      
+      if (data) {
+        setLinkedLore(data as LorePage);
+      }
+    }
   };
 
   const handleAdjustReputation = (faction: Faction, e: React.MouseEvent) => {
@@ -371,6 +399,30 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                     {selectedFaction.tags.map((tag) => (
                       <Badge key={tag} variant="outline">{tag}</Badge>
                     ))}
+                  </div>
+                )}
+
+                {/* Linked Lore Content */}
+                {linkedLore && (
+                  <div className="space-y-2 pt-4 border-t border-brass/20">
+                    <h4 className="font-semibold text-brass flex items-center gap-2">
+                      <Book className="w-4 h-4" />
+                      Lore
+                    </h4>
+                    <ScrollArea className="h-48 rounded-lg border border-brass/20 bg-muted/30 p-4">
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {linkedLore.content_md || "*No lore content*"}
+                        </ReactMarkdown>
+                      </div>
+                    </ScrollArea>
+                    {linkedLore.tags && linkedLore.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {linkedLore.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

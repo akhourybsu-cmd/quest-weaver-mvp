@@ -1,292 +1,235 @@
 
-# Campaign Maps Enhancement Plan
+# Character Creation Wizard & Level-Up System Review
 
-## Overview
+## Executive Summary
 
-This plan enhances the campaign map system with proper sizing/layout, full overlay persistence, and a comprehensive DM toolkit. The goal is to make maps work cleanly for both DMs and players with real-time synchronized overlays.
-
----
-
-## Part 1: Map Viewer Layout & Sizing Improvements
-
-### Current Problems
-- Fixed canvas size (1200x800 DM, 800x600 player) doesn't respect actual map dimensions
-- No pan/drag for navigating large maps
-- Poor mobile responsiveness
-- Canvas doesn't fill available viewport space
-
-### Solution
-
-**A. Responsive Canvas Container**
-- Replace fixed dimensions with viewport-aware sizing using `ResizeObserver`
-- Canvas fills available space while maintaining map aspect ratio
-- Add CSS `max-h-[calc(100vh-200px)]` for proper vertical containment
-
-**B. Pan & Zoom Navigation**
-- Implement canvas panning via Fabric.js viewport transform
-- Click-and-drag to pan (when no tool selected)
-- Mouse wheel zoom centered on cursor position
-- Touch gesture support for mobile (pinch-to-zoom, two-finger pan)
-
-**C. Fit-to-View Options**
-- "Fit Width" button - scales map to fit container width
-- "Fit Height" button - scales map to fit container height  
-- "Fit All" button - scales to show entire map
-- Persist user's preferred view per map in localStorage
+I conducted a thorough review of the character creation wizard and level-up system. The existing implementation is **quite comprehensive** for D&D 5E SRD content, covering all 12 base classes with proper level-up rules, multiclassing, and feature choices. However, I identified several gaps and areas for improvement to ensure the system "knows everything" about 5E classes.
 
 ---
 
-## Part 2: Overlay Persistence & Real-Time Sync
+## Current System Strengths
 
-### Current Gaps
-- Terrain markers are local state only
-- AoE templates saved to DB but not rendered on canvas
-- Fog regions in DB but not drawn properly
-- Overlays don't sync in real-time between DM and players
+### Character Creation Wizard
+- **Full class support**: All 12 SRD classes (Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, Wizard)
+- **Dynamic step generation**: Steps adapt based on level and spellcasting status
+- **Incremental level choices**: When creating characters above level 1, StepLevelChoices walks through each level's decisions
+- **Complete proficiency system**: Skills, tools, languages, armor, weapons, saving throws
+- **Equipment bundles**: Starting equipment per class
+- **Spell selection**: Proper known/prepared model per class type
 
-### Solution
-
-**A. New Database Table: `map_markers`**
-Unified table for all persistent map annotations:
-
-| Column | Type | Purpose |
-|--------|------|---------|
-| id | UUID | Primary key |
-| map_id | UUID | Foreign key to maps |
-| marker_type | TEXT | "terrain", "note", "light", "effect" |
-| shape | TEXT | "circle", "square", "icon", "polygon" |
-| x, y | REAL | Position coordinates |
-| width, height | REAL | Dimensions (nullable) |
-| rotation | REAL | Rotation angle |
-| color | TEXT | Fill/stroke color |
-| opacity | REAL | Transparency (0-1) |
-| icon | TEXT | Lucide icon name (nullable) |
-| label | TEXT | Display label |
-| dm_only | BOOLEAN | Hide from players |
-| metadata | JSONB | Additional properties |
-| created_at | TIMESTAMPTZ | Creation time |
-
-**B. Render All Overlays on Canvas**
-Update `MapViewer.tsx` to:
-1. Load and render `aoe_templates` as colored shapes on canvas
-2. Load and render `map_markers` (terrain, notes, effects)
-3. Load and render `fog_regions` as black polygons
-4. Subscribe to real-time changes for all three tables
-5. Apply `dm_only` filtering for player views
-
-**C. Real-Time Synchronization**
-- Add `resilientChannel` subscriptions for overlay tables
-- DM changes propagate instantly to player views
-- Token movements sync in real-time (already partially implemented)
+### Level-Up Wizard
+- **Class-specific rules**: Each class has defined hit die, ASI levels, feature choice levels, resource progression
+- **Spellcasting types**: Supports known casters (Bard, Sorcerer, Warlock, Ranger), prepared casters (Cleric, Druid, Wizard, Paladin), and pact magic (Warlock)
+- **Feature choices**: Fighting Styles, Expertise, Metamagic, Invocations, Pact Boons, Magical Secrets, Favored Enemy/Terrain
+- **Multiclass support**: Prerequisites validation, proficiency gains, spell slot calculation
 
 ---
 
-## Part 3: DM Overlay Toolkit
+## Identified Gaps
 
-### Enhanced Tools
+### 1. Missing Third Caster Subclass Handling
+The system references Eldritch Knight (Fighter) and Arcane Trickster (Rogue) in multiclass rules but doesn't properly detect spellcasting when a character has these subclasses.
 
-**A. Token Management Improvements**
-- Drag tokens directly on canvas (not just add dialog)
-- Right-click context menu: Edit, Delete, Toggle Visibility, Rotate
-- Token labels displayed above circles
-- Support for custom token images (uploaded portraits)
-- Initiative order numbers displayed on tokens during combat
+**Impact**: Fighter/Rogue with spellcasting subclasses won't get spell selection steps during level-up.
 
-**B. Drawing Tools Panel**
-New unified toolbar for DM:
+### 2. Incomplete Cantrip Progression Data
+Some classes missing complete cantrip progression:
+- Warlock missing level 16 entry in some tables
+- Eldritch Knight/Arcane Trickster cantrip progression not defined
 
-| Tool | Function |
-|------|----------|
-| Select | Click to select/move objects |
-| Freeform Draw | Draw paths/arrows |
-| Shape | Rectangle, circle, line placement |
-| Text | Add text labels anywhere |
-| Measure | Distance measurement (existing) |
-| Range | Range radius indicator (existing) |
+### 3. Missing Spell Swap for Character Creation
+When creating a known caster at higher levels, the "spell swap on level up" mechanic isn't applied for each level during StepLevelChoices.
 
-**C. Terrain & Environment Markers**
-Persist `TerrainMarker` data to `map_markers` table:
-- Difficult terrain (halves movement)
-- Water/liquid hazards
-- Fire/lava (damage zones)
-- Darkness/dim light areas
-- Traps (hidden from players until triggered)
+### 4. Subclass-Granted Spells Not Fully Integrated
+`subclassSpells.ts` only has Life Domain Cleric. Missing:
+- Land Druid circle spells
+- Other domain spells
+- Oath spells for Paladin subclasses
 
-**D. Effect Zones**
-Enhance `AoETools` with:
-- Spell effect persistence (duration tracking)
-- Custom colors and opacity
-- Damage type indicators
-- Auto-cleanup when spell ends
-- Layer ordering (above/below tokens)
+### 5. Class Resources Not Created During Character Creation
+StepLevelChoices handles ASI, HP, and feature choices but doesn't initialize class resources (Ki Points, Rage, Sorcery Points, etc.) during character creation.
 
-**E. Note Pins**
-Add map annotation system:
-- Click to place numbered pins
-- Each pin links to a note/description
-- DM-only or player-visible options
-- Pop-up tooltip on hover
+### 6. Warlock Mystic Arcanum Not in Level-Up
+Warlocks gain Mystic Arcanum at levels 11, 13, 15, 17 (one 6th/7th/8th/9th level spell each). This isn't handled in LevelUpWizard.
 
-**F. Light & Vision** (Future consideration)
-- Light source markers with radius
-- Darkness zones
-- Line-of-sight blocking (walls)
+### 7. Ranger Beast Master Companion Not Handled
+Beast Master ranger subclass (level 3) should allow selecting a beast companion. No UI exists for this.
+
+### 8. Extra Attack and Other Automatic Features Not Highlighted
+While features are loaded, milestone features like Extra Attack (Fighter/Ranger/Paladin/Monk at 5) aren't specifically called out.
+
+### 9. Multiclass Spellcasting Ability Conflict
+When multiclassing between classes with different spellcasting abilities (e.g., Cleric WIS + Sorcerer CHA), there's no UI to show which ability applies to which spells.
+
+### 10. Level 20 Capstone Features
+No special handling or highlighting of level 20 capstone abilities for each class.
 
 ---
 
-## Part 4: Player Map Experience
+## Technical Implementation Plan
 
-### Improvements for Players
+### Phase 1: Third Caster Subclass Support (Priority: High)
 
-**A. Cleaner Player View**
-- Full responsive canvas sizing (match DM improvements)
-- Smooth pan/zoom navigation
-- Their token highlighted (gold border - existing)
-- Other player tokens visible
-- Revealed fog regions only
+**Files to modify:**
+- `src/lib/rules/levelUpRules.ts`
+- `src/components/character/LevelUpWizard.tsx`
 
-**B. Player Measurement Tool**
-- Allow players to measure distances
-- Range indicator for their character's attacks
-- No editing capabilities (view-only for overlays)
+**Changes:**
+1. Add Eldritch Knight and Arcane Trickster to CLASS_LEVEL_UP_RULES with:
+   - Cantrip progression: { 3: 2, 10: 3 }
+   - Spell known progression for third casters
+   - Spellcasting starts at level 3 for these subclasses
 
-**C. Visible Overlays**
-Players see (when not `dm_only`):
-- AoE spell effects
-- Terrain markers
-- Public note pins
-- Revealed areas (no fog)
+2. Update LevelUpWizard to detect subclass spellcasting:
+   ```typescript
+   const isThirdCaster = (className: string, subclassName: string | null) => {
+     return (className === "Fighter" && subclassName === "Eldritch Knight") ||
+            (className === "Rogue" && subclassName === "Arcane Trickster");
+   };
+   ```
 
----
+3. Add spell school restrictions for third casters (Abjuration/Evocation for EK, Enchantment/Illusion for AT)
 
-## Technical Implementation
+### Phase 2: Mystic Arcanum for Warlocks (Priority: High)
 
-### Files to Create
-- `src/components/maps/DrawingToolbar.tsx` - Unified DM toolbar
-- `src/components/maps/MarkerRenderer.tsx` - Renders all marker types
-- `src/components/maps/TokenContextMenu.tsx` - Right-click token actions
-- `src/components/maps/NotePinDialog.tsx` - Create/edit note pins
-- `src/hooks/useMapOverlays.ts` - Centralized overlay data hook
+**Files to create:**
+- `src/components/character/levelup/MysticArcanumStep.tsx`
 
-### Files to Modify
-1. **MapViewer.tsx** - Major refactor:
-   - Responsive sizing with ResizeObserver
-   - Pan/zoom navigation
-   - Render all overlay types
-   - Real-time subscriptions
-   - DM vs player mode rendering
+**Files to modify:**
+- `src/components/character/LevelUpWizard.tsx`
+- `src/lib/rules/levelUpRules.ts`
 
-2. **PlayerMapViewer.tsx** - Align with MapViewer improvements:
-   - Same responsive sizing
-   - Add pan/zoom
-   - Add measurement tool for players
-   - Render visible overlays
+**Changes:**
+1. Add Mystic Arcanum choice to Warlock featureChoiceLevels at 11, 13, 15, 17
+2. Create MysticArcanumStep component for selecting one spell of the appropriate level
+3. Save to character_mystic_arcanum table (already exists)
 
-3. **CombatMap.tsx** - UI reorganization:
-   - Floating toolbar instead of sidebar
-   - Better tool state management
-   - Fullscreen option
+### Phase 3: Class Resource Initialization (Priority: High)
 
-4. **WorldMap.tsx** - Apply same improvements:
-   - Responsive canvas
-   - Pan/zoom for large world maps
-   - Location pin markers
+**Files to modify:**
+- `src/components/character/CharacterWizard.tsx` (handleFinalizeCharacter)
+- `src/components/character/wizard/StepLevelChoices.tsx`
 
-5. **TerrainMarker.tsx** - Persist to database:
-   - Save markers to `map_markers` table
-   - Load existing markers on init
+**Changes:**
+1. After character creation finalization, calculate and insert all class resources:
+   - Barbarian: Rage uses
+   - Bard: Bardic Inspiration
+   - Cleric: Channel Divinity
+   - Druid: Wild Shape
+   - Fighter: Second Wind, Action Surge, Indomitable
+   - Monk: Ki Points
+   - Paladin: Lay on Hands, Divine Sense, Channel Divinity
+   - Sorcerer: Sorcery Points
+   - Warlock: (Pact slots handled separately)
+   - Wizard: Arcane Recovery
 
-6. **AoETools.tsx** - Enhance rendering:
-   - Render existing templates on canvas
-   - Drag to reposition
-   - Click to delete
+2. Use the existing resourceProgression data from CLASS_LEVEL_UP_RULES
 
-### Database Migration
-```sql
--- Create unified markers table
-CREATE TABLE map_markers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  map_id UUID REFERENCES maps(id) ON DELETE CASCADE NOT NULL,
-  marker_type TEXT NOT NULL DEFAULT 'note',
-  shape TEXT NOT NULL DEFAULT 'circle',
-  x REAL NOT NULL,
-  y REAL NOT NULL,
-  width REAL,
-  height REAL,
-  rotation REAL DEFAULT 0,
-  color TEXT DEFAULT '#ffffff',
-  opacity REAL DEFAULT 1,
-  icon TEXT,
-  label TEXT,
-  dm_only BOOLEAN DEFAULT true,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+### Phase 4: Subclass Spell Lists (Priority: Medium)
 
--- Enable realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE map_markers;
+**Files to modify:**
+- `src/lib/rules/subclassSpells.ts`
 
--- RLS policies
-ALTER TABLE map_markers ENABLE ROW LEVEL SECURITY;
+**Changes:**
+1. Expand AUTO_PREPARED_BY_SUBCLASS to include all SRD subclasses:
+   - Cleric domains (Life only in SRD)
+   - Druid circles (Land with terrain-based spells)
+   - Paladin oaths (Devotion only in SRD)
 
-CREATE POLICY "DMs can manage markers"
-  ON map_markers FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM maps m
-      JOIN campaigns c ON m.campaign_id = c.id
-      WHERE m.id = map_markers.map_id
-      AND c.dm_user_id = auth.uid()
-    )
-  );
+2. Update StepSpells to merge subclass auto-prepared spells into the spell list display
 
-CREATE POLICY "Players can view non-DM-only markers"
-  ON map_markers FOR SELECT
-  USING (
-    dm_only = false OR
-    EXISTS (
-      SELECT 1 FROM maps m
-      JOIN campaigns c ON m.campaign_id = c.id
-      WHERE m.id = map_markers.map_id
-      AND c.dm_user_id = auth.uid()
-    )
-  );
+### Phase 5: Spell Swap During Character Creation (Priority: Medium)
 
--- Enable realtime for existing overlay tables
-ALTER PUBLICATION supabase_realtime ADD TABLE aoe_templates;
-ALTER PUBLICATION supabase_realtime ADD TABLE fog_regions;
-```
+**Files to modify:**
+- `src/components/character/wizard/StepLevelChoices.tsx`
+
+**Changes:**
+1. For known casters (Bard, Sorcerer, Ranger, Warlock), add spell swap option at each level
+2. Track previous level's spells and allow replacing one with each new level
+3. Display running total of known spells
+
+### Phase 6: Beast Master Companion (Priority: Low)
+
+**Files to create:**
+- `src/components/character/levelup/BeastCompanionStep.tsx`
+
+**Database changes:**
+- May need new table: `character_companions`
+
+**Changes:**
+1. Detect Ranger + Beast Master subclass at level 3
+2. Show beast selection (SRD beasts with CR 1/4 or lower)
+3. Store companion data for character sheet display
+
+### Phase 7: Multiclass Spellcasting Clarity (Priority: Low)
+
+**Files to modify:**
+- `src/components/player/PlayerSpellbook.tsx`
+- `src/components/spells/SpellCastDialog.tsx`
+
+**Changes:**
+1. Show spellcasting ability per class in character sheet
+2. Display separate spell save DCs and attack modifiers for each class
+3. Clarify which slots are shared vs. pact magic
 
 ---
 
-## User Experience Summary
+## Summary of Changes by File
 
-### For DMs
-- Maps automatically fit available screen space
-- Pan and zoom large maps easily
-- Unified floating toolbar for all drawing/marking tools
-- All overlays persist and sync to players in real-time
-- Right-click tokens for quick actions
-- Place terrain, effects, and note markers anywhere
-
-### For Players
-- Maps scale to their viewport
-- Easy pan/zoom navigation
-- Measure distances and ranges
-- See all revealed overlays from DM
-- Their token clearly highlighted
+| File | Changes |
+|------|---------|
+| `levelUpRules.ts` | Add third caster data, Mystic Arcanum levels, cantrip fixes |
+| `LevelUpWizard.tsx` | Add Mystic Arcanum step, third caster detection, subclass spell detection |
+| `CharacterWizard.tsx` | Add class resource initialization on finalization |
+| `StepLevelChoices.tsx` | Add spell swap option for known casters |
+| `subclassSpells.ts` | Expand auto-prepared spell lists |
+| `MysticArcanumStep.tsx` | New component for Warlock 11+ spell selection |
+| `BeastCompanionStep.tsx` | New component for Beast Master ranger |
+| `spellRules.ts` | Add third caster spell slot calculations |
 
 ---
 
-## Implementation Order
+## Validation Checklist
 
-1. Database migration (map_markers table)
-2. MapViewer responsive sizing + pan/zoom
-3. Overlay rendering (markers, AoE, fog)
-4. Real-time subscriptions
-5. Drawing toolbar for DM
-6. Token drag/context menu
-7. PlayerMapViewer alignment
-8. Terrain/Effect persistence
-9. Note pin system
-10. WorldMap integration
+After implementation, verify these scenarios work correctly:
+
+**Character Creation:**
+- [ ] Level 1 Fighter with no spells (correct)
+- [ ] Level 3 Fighter Eldritch Knight gets spell selection
+- [ ] Level 5 Bard has correct cantrip/spell counts
+- [ ] Level 3 Warlock can select Pact Boon
+- [ ] Level 10 Bard sees Magical Secrets step
+- [ ] Creating a level 5 character walks through all HP/feature choices for levels 1-5
+- [ ] Class resources (Ki, Rage, etc.) are created on finalization
+
+**Level-Up:**
+- [ ] Level 4 ASI/Feat choice appears for all classes
+- [ ] Level 6 Fighter gets extra ASI (Fighter-specific)
+- [ ] Level 11 Warlock gets Mystic Arcanum selection
+- [ ] Multiclass character can choose which class to level
+- [ ] Adding new class shows prerequisite check
+- [ ] Wizard gets 2 spellbook spells per level
+- [ ] Warlock invocations filter by prerequisites
+
+**Multiclass:**
+- [ ] Full caster + Half caster spell slots calculated correctly
+- [ ] Third caster levels contribute properly
+- [ ] Warlock pact slots remain separate
+
+---
+
+## Estimated Effort
+
+| Phase | Complexity | Files | Est. Time |
+|-------|------------|-------|-----------|
+| Phase 1 (Third Casters) | Medium | 2 | 2-3 hours |
+| Phase 2 (Mystic Arcanum) | Medium | 3 | 1-2 hours |
+| Phase 3 (Resources) | Low | 2 | 1 hour |
+| Phase 4 (Subclass Spells) | Low | 1 | 30 min |
+| Phase 5 (Spell Swap) | Medium | 1 | 1-2 hours |
+| Phase 6 (Beast Master) | High | 2+ | 2-3 hours |
+| Phase 7 (Multiclass Clarity) | Low | 2 | 1 hour |
+
+**Total: ~8-12 hours of development work**
+
+Would you like me to proceed with implementing these fixes in priority order?

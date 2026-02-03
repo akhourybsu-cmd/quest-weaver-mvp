@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, X, ExternalLink } from "lucide-react";
+import { Edit, X, ExternalLink, MapPin, Users, User, Scroll, Package } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { LoreHeroHeader, LoreOrnamentDivider, RuneTag } from "./ui";
@@ -22,13 +22,21 @@ interface Backlink {
   label: string;
 }
 
+interface LinkedAsset {
+  id: string;
+  name: string;
+  type: 'faction' | 'npc' | 'location' | 'quest' | 'item';
+}
+
 export default function LorePageView({ page, campaignId, onEdit, onClose }: LorePageViewProps) {
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [links, setLinks] = useState<any[]>([]);
+  const [linkedAssets, setLinkedAssets] = useState<LinkedAsset[]>([]);
 
   useEffect(() => {
     loadBacklinks();
     loadLinks();
+    loadLinkedAssets();
   }, [page.id]);
 
   const loadBacklinks = async () => {
@@ -56,6 +64,77 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
       setLinks(data || []);
     } catch (error) {
       console.error("Error loading links:", error);
+    }
+  };
+
+  // Load assets that link TO this lore page (reverse lookup)
+  const loadLinkedAssets = async () => {
+    const assets: LinkedAsset[] = [];
+    
+    try {
+      // Check factions
+      const { data: factions } = await supabase
+        .from("factions")
+        .select("id, name")
+        .eq("lore_page_id", page.id);
+      
+      if (factions) {
+        factions.forEach(f => assets.push({ id: f.id, name: f.name, type: 'faction' }));
+      }
+      
+      // Check NPCs
+      const { data: npcs } = await supabase
+        .from("npcs")
+        .select("id, name")
+        .eq("lore_page_id", page.id);
+      
+      if (npcs) {
+        npcs.forEach(n => assets.push({ id: n.id, name: n.name, type: 'npc' }));
+      }
+      
+      // Check Locations
+      const { data: locations } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("lore_page_id", page.id);
+      
+      if (locations) {
+        locations.forEach(l => assets.push({ id: l.id, name: l.name, type: 'location' }));
+      }
+      
+      // Check Quests
+      const { data: quests } = await supabase
+        .from("quests")
+        .select("id, title")
+        .eq("lore_page_id", page.id);
+      
+      if (quests) {
+        quests.forEach(q => assets.push({ id: q.id, name: q.title, type: 'quest' }));
+      }
+      
+      // Check Items
+      const { data: items } = await supabase
+        .from("items")
+        .select("id, name")
+        .eq("lore_page_id", page.id);
+      
+      if (items) {
+        items.forEach(i => assets.push({ id: i.id, name: i.name, type: 'item' }));
+      }
+      
+      setLinkedAssets(assets);
+    } catch (error) {
+      console.error("Error loading linked assets:", error);
+    }
+  };
+
+  const getAssetIcon = (type: LinkedAsset['type']) => {
+    switch (type) {
+      case 'faction': return <Users className="h-3 w-3" />;
+      case 'npc': return <User className="h-3 w-3" />;
+      case 'location': return <MapPin className="h-3 w-3" />;
+      case 'quest': return <Scroll className="h-3 w-3" />;
+      case 'item': return <Package className="h-3 w-3" />;
     }
   };
 
@@ -162,6 +241,34 @@ export default function LorePageView({ page, campaignId, onEdit, onClose }: Lore
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* Linked Assets (Reverse Lookup) */}
+          {linkedAssets.length > 0 && (
+            <>
+              <LoreOrnamentDivider />
+              <div className="space-y-4">
+                <h3 className="lore-section-title">Linked From</h3>
+                <Card className="fantasy-section">
+                  <CardHeader className="py-3">
+                    <CardDescription>
+                      {linkedAssets.length} campaign {linkedAssets.length === 1 ? 'asset links' : 'assets link'} to this lore entry
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-2">
+                      {linkedAssets.map((asset) => (
+                        <RuneTag key={`${asset.type}-${asset.id}`} variant="accent">
+                          {getAssetIcon(asset.type)}
+                          <span className="ml-1 capitalize">{asset.type}:</span>
+                          <span className="ml-1">{asset.name}</span>
+                        </RuneTag>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}

@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Plus, Trash2, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { X, Plus, Trash2, Calendar, Book } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
@@ -29,6 +30,17 @@ import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locat
 import { timelineLogger } from "@/hooks/useTimelineLogger";
 import { ImageUpload } from "@/components/ui/image-upload";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+interface LorePage {
+  id: string;
+  title: string;
+  content_md: string;
+  category: string;
+  visibility: string;
+  tags?: string[];
+}
 
 interface LocationDialogProps {
   open: boolean;
@@ -89,6 +101,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
   const [discovered, setDiscovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [lorePageId, setLorePageId] = useState<string | null>(null);
+  const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -109,6 +122,13 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setDiscovered(locationToEdit.discovered || false);
         setLorePageId(locationToEdit.lore_page_id || null);
         
+        // Load linked lore content
+        if (locationToEdit.lore_page_id) {
+          loadLinkedLore(locationToEdit.lore_page_id);
+        } else {
+          setLinkedLore(null);
+        }
+        
         // Load related quests
         loadRelatedQuests(locationToEdit.id);
         // Load related notes
@@ -118,7 +138,17 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         setParentLocation(parentLocationId);
         setImageUrl(null);
         setLorePageId(null);
+        setLinkedLore(null);
       }
+    }
+  }, [open, locationToEdit, parentLocationId]);
+
+  // Load linked lore when lorePageId changes
+  useEffect(() => {
+    if (lorePageId && open) {
+      loadLinkedLore(lorePageId);
+    } else {
+      setLinkedLore(null);
     }
   }, [open, locationToEdit, parentLocationId]);
 
@@ -180,6 +210,18 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setRelatedNotes(notes || []);
   };
 
+  const loadLinkedLore = async (pageId: string) => {
+    const { data } = await supabase
+      .from("lore_pages")
+      .select("*")
+      .eq("id", pageId)
+      .single();
+    
+    if (data) {
+      setLinkedLore(data as LorePage);
+    }
+  };
+
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
@@ -203,6 +245,7 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
     setAutoAddVenues(false);
     setImageUrl(null);
     setLorePageId(null);
+    setLinkedLore(null);
   };
 
   // Helper function to extract owner names from details and create/link NPCs
@@ -665,10 +708,36 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
                   entityName={name.trim() || undefined}
                 />
 
+                {/* Linked Lore Content Display */}
+                {linkedLore && (
+                  <Card className="border-brass/20 bg-brass/5">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Book className="w-4 h-4 text-brass" />
+                        <span className="text-sm font-medium">Region Lore: {linkedLore.title}</span>
+                      </div>
+                      <ScrollArea className="h-40 rounded-lg border border-brass/20 bg-muted/30 p-3">
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {linkedLore.content_md || "*No lore content*"}
+                          </ReactMarkdown>
+                        </div>
+                      </ScrollArea>
+                      {linkedLore.tags && linkedLore.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {linkedLore.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 <MarkdownEditor
                   value={details.lore || ""}
                   onChange={(val) => setDetails({ ...details, lore: val })}
-                  label="History & Lore"
+                  label="Additional History & Lore"
                   placeholder="Founded centuries ago by..."
                   rows={10}
                   showPreview={true}

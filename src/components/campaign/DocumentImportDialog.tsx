@@ -218,8 +218,8 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
               </div>
 
               {/* Categories */}
-              <ScrollArea className="flex-1 min-h-0 mt-2" style={{ maxHeight: 'calc(60vh - 200px)' }}>
-                <div className="space-y-3 pr-4 pb-2">
+              <ScrollArea className="flex-1 min-h-0 max-h-[45vh] sm:max-h-[50vh]">
+                <div className="space-y-3 pr-4 pb-4">
                   {categories.map((category) => {
                     const categoryEntities = getCategoryEntities(category);
                     if (categoryEntities.length === 0) return null;

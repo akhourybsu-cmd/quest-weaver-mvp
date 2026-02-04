@@ -1,164 +1,172 @@
 
 
-# Fix: Faction Goals State Reset and Persistence Bug
+# Fix: Hotkey Interference with Dropdown Menus and Other Interactive Elements
 
 ## Problem Summary
 
-Two issues were identified in the FactionEditor:
+When interacting with dropdown menus (specifically the parent location Select), pressing 'S' triggers the global hotkey to start a session. This happens because the keyboard event handler in `SessionControl.tsx` only checks for `HTMLInputElement` and `HTMLTextAreaElement` targets, but Radix UI components (Select, Dialog, Command) use different element types like `<button>` or `<div>` with ARIA roles.
 
-1. **Input field carryover**: When editing Faction 1, then switching to edit/create Faction 2, the `goalInput` field (and `tagInput`) retains text from the previous session because these fields are **not being reset** in the `useEffect`.
+## Root Cause
 
-2. **Goals not persisted**: Database query confirms all factions have `goals: []` - goals appear to not be saving. This is likely because users type goals but don't press Enter to add them, or there's a state timing issue.
+In `SessionControl.tsx` (lines 104-109):
 
----
-
-## Root Cause Analysis
-
-### Issue 1: Missing State Resets
-
-In `FactionEditor.tsx` lines 83-95, the reset block for new factions is missing:
-- `setGoalInput("")`
-- `setTagInput("")`
-
-Similarly, when editing an existing faction (lines 55-63), these input fields are not reset.
-
-**Current Code (missing resets):**
-```tsx
-} else {
-  // New faction - clear all fields
-  setName("");
-  setDescription("");
-  setMotto("");
-  setBannerUrl(null);
-  setTags([]);
-  setInfluenceScore(50);
-  setGoals([]);  // ✓ Goals array reset
-  // ✗ goalInput NOT reset!
-  // ✗ tagInput NOT reset!
-  setReputationScore(0);
-  setExistingReputation(null);
-  setLorePageId(null);
+```typescript
+const handleKeyPress = (e: KeyboardEvent) => {
+  // Don't trigger if user is typing in an input
+  if (e.target instanceof HTMLInputElement || 
+      e.target instanceof HTMLTextAreaElement) {
+    return;
+  }
+  // ... hotkeys fire for S, P, E
 }
 ```
 
-### Issue 2: Goals Not Saving
+This check is incomplete. Radix UI Select items render as `<div role="option">` elements, and the trigger is a `<button>`. Neither of these match the check, so hotkeys fire during dropdown interaction.
 
-Goals require pressing Enter to be added to the array. Users may be typing goals and clicking "Save" without pressing Enter first. The current `goalInput` value is lost because it's never committed to the `goals` array.
+## Affected Components
 
----
+| Component | File | Hotkeys | Issue |
+|-----------|------|---------|-------|
+| SessionControl | `src/components/campaign/SessionControl.tsx` | S, P, E | Fires during Select/Dialog interaction |
+| InitiativeTracker | `src/components/combat/InitiativeTracker.tsx` | [, ] | Same incomplete check |
+| Sidebar | `src/components/ui/sidebar.tsx` | Ctrl/Cmd+B | Uses modifier key - less likely to conflict |
+| QuickCaptureModal | `src/components/notes/QuickCaptureModal.tsx` | Ctrl/Cmd+J | Uses modifier key - less likely to conflict |
+| CommandPalette | `src/components/campaign/CommandPalette.tsx` | Ctrl/Cmd+K | Uses modifier key - less likely to conflict |
 
 ## Solution
 
-### Fix 1: Reset Input Fields on Dialog Open
+Create a reusable utility function to detect when the user is interacting with any interactive UI element that should suppress global hotkeys. Then update all affected keyboard handlers to use this function.
 
-Add `setGoalInput("")` and `setTagInput("")` to both branches of the `useEffect`:
+### Step 1: Create Utility Function
 
-```tsx
-useEffect(() => {
-  if (!open) return;
+Create a new utility in `src/lib/hotkeys.ts`:
+
+```typescript
+/**
+ * Check if the current event target is an interactive element
+ * that should suppress global keyboard shortcuts.
+ */
+export function shouldSuppressHotkey(event: KeyboardEvent): boolean {
+  const target = event.target as HTMLElement;
   
-  if (faction) {
-    setName(faction.name);
-    setDescription(faction.description || "");
-    setMotto(faction.motto || "");
-    setBannerUrl(faction.banner_url || null);
-    setTags(faction.tags || []);
-    setInfluenceScore(faction.influence_score ?? 50);
-    setGoals(faction.goals || []);
-    setLorePageId(faction.lore_page_id || null);
-    setTagInput("");    // ADD THIS
-    setGoalInput("");   // ADD THIS
-    
-    // ... reputation fetch
-  } else {
-    // New faction - clear all fields
-    setName("");
-    setDescription("");
-    setMotto("");
-    setBannerUrl(null);
-    setTags([]);
-    setInfluenceScore(50);
-    setGoals([]);
-    setReputationScore(0);
-    setExistingReputation(null);
-    setLorePageId(null);
-    setTagInput("");    // ADD THIS
-    setGoalInput("");   // ADD THIS
+  if (!target) return false;
+  
+  // Standard form inputs
+  if (target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement) {
+    return true;
   }
-}, [faction, open, campaignId]);
+  
+  // Contenteditable elements
+  if (target.isContentEditable) {
+    return true;
+  }
+  
+  // Radix UI interactive elements (Select, Dialog, Popover, etc.)
+  // These use data-radix-* attributes
+  if (target.closest('[data-radix-select-viewport]') ||
+      target.closest('[data-radix-select-content]') ||
+      target.closest('[data-radix-popper-content-wrapper]') ||
+      target.closest('[data-radix-menu-content]') ||
+      target.closest('[data-radix-dialog-content]') ||
+      target.closest('[data-radix-popover-content]') ||
+      target.closest('[data-radix-dropdown-menu-content]') ||
+      target.closest('[data-radix-context-menu-content]') ||
+      target.closest('[cmdk-root]') ||
+      target.closest('[cmdk-input]')) {
+    return true;
+  }
+  
+  // ARIA roles that indicate interactive content
+  const role = target.getAttribute('role');
+  if (role && ['listbox', 'option', 'menu', 'menuitem', 'combobox', 'textbox', 'searchbox'].includes(role)) {
+    return true;
+  }
+  
+  return false;
+}
 ```
 
-### Fix 2: Auto-commit Pending Input Before Save
+### Step 2: Update SessionControl.tsx
 
-Modify `handleSave()` to automatically add any uncommitted goal/tag before saving:
+Update the keyboard handler to use the new utility:
 
-```tsx
-const handleSave = async () => {
-  if (!name.trim()) {
-    toast({
-      title: "Name required",
-      description: "Please enter a name for the faction",
-      variant: "destructive",
-    });
+```typescript
+import { shouldSuppressHotkey } from "@/lib/hotkeys";
+
+// Inside useEffect
+const handleKeyPress = (e: KeyboardEvent) => {
+  // Don't trigger during interactive element interaction
+  if (shouldSuppressHotkey(e)) {
     return;
   }
 
-  // Auto-commit any pending goal input
-  const finalGoals = [...goals];
-  if (goalInput.trim() && !goals.includes(goalInput.trim())) {
-    finalGoals.push(goalInput.trim());
-  }
-
-  // Auto-commit any pending tag input
-  const finalTags = [...tags];
-  if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-    finalTags.push(tagInput.trim());
-  }
-
-  try {
-    const factionData = {
-      campaign_id: campaignId,
-      name: name.trim(),
-      description: description.trim() || null,
-      motto: motto.trim() || null,
-      banner_url: bannerUrl,
-      tags: finalTags,           // Use finalTags
-      influence_score: influenceScore,
-      goals: finalGoals,         // Use finalGoals
-      lore_page_id: lorePageId,
-    };
-    // ... rest of save logic
+  const key = e.key.toLowerCase();
+  
+  if (key === 's' && !session && !loading) {
+    e.preventDefault();
+    handleStart();
+  } else if (key === 'p' && session?.status === 'live') {
+    // ... rest unchanged
   }
 };
 ```
 
----
+### Step 3: Update InitiativeTracker.tsx
+
+Apply the same fix:
+
+```typescript
+import { shouldSuppressHotkey } from "@/lib/hotkeys";
+
+const handleKeyPress = (e: KeyboardEvent) => {
+  // Don't trigger during interactive element interaction
+  if (shouldSuppressHotkey(e)) {
+    return;
+  }
+
+  if (initiative.length === 0) return;
+
+  if (e.key === '[') {
+    e.preventDefault();
+    previousTurn();
+  } else if (e.key === ']') {
+    e.preventDefault();
+    nextTurn();
+  }
+};
+```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/factions/FactionEditor.tsx` | Add input field resets in useEffect + auto-commit pending inputs before save |
+| `src/lib/hotkeys.ts` | **Create new file** with `shouldSuppressHotkey` utility |
+| `src/components/campaign/SessionControl.tsx` | Import utility, replace instance checks with `shouldSuppressHotkey(e)` |
+| `src/components/combat/InitiativeTracker.tsx` | Import utility, replace instance checks with `shouldSuppressHotkey(e)` |
 
----
+## Interactive Elements Covered
 
-## Technical Changes Summary
-
-1. **Line ~63** (editing faction): Add `setTagInput("")` and `setGoalInput("")`
-2. **Line ~94** (new faction): Add `setTagInput("")` and `setGoalInput("")`
-3. **Line ~126** (handleSave): Auto-commit pending goal/tag inputs before building factionData
-
----
+The utility will suppress hotkeys when interacting with:
+- Standard form inputs (`<input>`, `<textarea>`, `<select>`)
+- Contenteditable elements
+- Radix UI Select dropdowns
+- Radix UI Dialog content
+- Radix UI Popover content
+- Radix UI Dropdown menus
+- Radix UI Context menus
+- cmdk Command palette
+- Any element with ARIA roles: listbox, option, menu, menuitem, combobox, textbox, searchbox
 
 ## Testing Checklist
 
 After implementation:
-1. Create Faction 1 with goals "Goal A", "Goal B"
-2. Save Faction 1
-3. Open Faction 2 or create new faction
-4. Verify goal input field is empty (not showing old text)
-5. Add goals to Faction 2 and save
-6. Verify both Faction 1 and Faction 2 have their correct goals in database
-7. Test typing a goal but NOT pressing Enter, then clicking Save - verify it still gets saved
-8. Test editing an existing faction - verify existing goals load and new ones can be added
+1. Open Location Dialog and use the parent location dropdown - pressing S should NOT start a session
+2. Open NPC Editor and use any Select dropdown - pressing S/P/E should NOT trigger session controls
+3. Open Faction Editor and use dropdowns - same behavior
+4. Press S outside of any interactive element - should start session (if no active session)
+5. Open Command Palette (Cmd/Ctrl+K) and type - hotkeys should not fire
+6. Edit in any contenteditable field - hotkeys should not fire
+7. During combat, use Initiative Tracker - [ and ] should only work when not in an interactive element
 

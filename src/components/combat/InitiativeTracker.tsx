@@ -22,6 +22,7 @@ import { CombatSummary } from "@/components/combat/CombatSummary";
 import CombatModifierManager from "./CombatModifierManager";
 import CoverSelector from "./CoverSelector";
 import { LegendaryTracker } from "@/components/combat/LegendaryTracker";
+import { shouldSuppressHotkey } from "@/lib/hotkeys";
 
 interface InitiativeTrackerProps {
   encounterId: string;
@@ -99,8 +100,8 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Only trigger if not typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      // Don't trigger during interactive element interaction
+      if (shouldSuppressHotkey(e)) {
         return;
       }
 

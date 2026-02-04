@@ -22,6 +22,7 @@ import { CombatSummary } from "@/components/combat/CombatSummary";
 import CombatModifierManager from "./CombatModifierManager";
 import CoverSelector from "./CoverSelector";
 import { LegendaryTracker } from "@/components/combat/LegendaryTracker";
+import { shouldSuppressHotkey } from "@/lib/hotkeys";
 
 interface InitiativeTrackerProps {
   encounterId: string;

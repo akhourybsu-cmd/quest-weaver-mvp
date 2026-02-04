@@ -1,226 +1,257 @@
 
-# Complete Overhaul: AI Document Import Dialog
 
-## Problem Summary
+# AI Document Import - Entity Linking Fixes
 
-The AI document import results page has critical usability issues:
-1. **Content not scrollable** - Users cannot scroll to view all extracted entities
-2. **Layout overflow** - Content extends beyond the dialog bounds
-3. **ScrollArea height constraints are incorrect** - Using `flex-1` with `max-h-[45vh]` doesn't work properly with Radix ScrollArea
+## Summary
 
-## Root Cause Analysis
-
-The Radix UI ScrollArea component requires a **defined height** (not max-height with flex) to enable scrolling. The current implementation uses:
-
-```tsx
-<ScrollArea className="flex-1 min-h-0 max-h-[45vh] sm:max-h-[50vh]">
-```
-
-This conflicts with the flex layout because:
-- `flex-1` tells it to grow to fill space
-- `max-h-[45vh]` caps it, but Radix ScrollArea's internal Viewport uses `h-full w-full`
-- When the parent doesn't have a resolved height, the Viewport expands infinitely instead of constraining and scrolling
-
-**Working pattern** (from `QuestDetailDialog`):
-```tsx
-<ScrollArea className="h-[50vh] sm:h-[60vh]">
-```
-Fixed heights work correctly with Radix ScrollArea.
+The AI document import feature successfully extracts entities but has several gaps in properly linking them to related database tables. This plan addresses all identified issues to ensure entities are properly connected.
 
 ---
 
-## Solution: Complete Layout Restructure
+## Issues to Fix
 
-### Approach
+### 1. NPCs: Link faction_id and location_id
 
-1. **Replace flex-based height calculation with explicit heights**
-2. **Restructure dialog into fixed-height sections** (header, body, footer)
-3. **Use proper height constraints for ScrollArea**
-4. **Add better visual organization for many entities**
-5. **Ensure footer buttons are always visible and accessible**
+**Problem**: NPC's `faction` and `location` are extracted as text but not resolved to foreign keys.
 
----
+**Solution**: After importing factions and locations, resolve NPC references:
 
-## Technical Changes
-
-### File: `src/components/campaign/DocumentImportDialog.tsx`
-
-#### Change 1: DialogContent Layout
-
-Update the dialog container to use a more predictable height structure:
-
-```tsx
-// Line 134 - Update DialogContent
-<DialogContent 
-  className="w-[95vw] max-w-2xl h-[85vh] max-h-[700px] flex flex-col bg-card" 
-  variant="ornaments"
->
-```
-
-- Use `h-[85vh]` with `max-h-[700px]` to ensure the dialog has a known height
-- Remove `overflow-hidden` from here (let children handle overflow)
-
-#### Change 2: Remove Gap from Main Container
-
-```tsx
-// Line 145 - Simplify the content wrapper
-<div className="flex-1 flex flex-col min-h-0">
-```
-
-Remove `gap-2` since we'll handle spacing within sections.
-
-#### Change 3: Fix ScrollArea with Explicit Height
-
-The most critical fix - replace the current ScrollArea with proper height constraints:
-
-```tsx
-// Line 221 - Replace the ScrollArea
-<div className="flex-1 min-h-0 overflow-hidden">
-  <ScrollArea className="h-full">
-    <div className="space-y-3 pr-4 pb-4">
-      {categories.map((category) => {
-        // ... existing category rendering
-      })}
-    </div>
-  </ScrollArea>
-</div>
-```
-
-**Key insight**: Wrap ScrollArea in a `div` with `flex-1 min-h-0 overflow-hidden`. This div will properly calculate its height from the flex container, then ScrollArea uses `h-full` to fill it.
-
-#### Change 4: Reorganize Entity Selection Section
-
-Restructure the entity selection area for better hierarchy:
-
-```tsx
-{/* Entity Selection - Full restructure for scrollability */}
-{hasEntities && !isProcessing && (
-  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-    {/* Fixed Header: Selection Controls */}
-    <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 border-b border-border bg-muted/30 px-3 rounded-t-lg">
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="bg-primary/20 text-primary-foreground border-primary/30">
-          {selectedCount} of {totalCount} selected
-        </Badge>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={selectAll}>Select All</Button>
-        <Button variant="ghost" size="sm" onClick={deselectAll}>Deselect All</Button>
-      </div>
-    </div>
-
-    {/* Scrollable Content Area */}
-    <div className="flex-1 min-h-0 overflow-hidden border-x border-border">
-      <ScrollArea className="h-full">
-        <div className="space-y-3 p-3">
-          {categories.map((category) => {
-            // ... category collapsibles
-          })}
-        </div>
-      </ScrollArea>
-    </div>
-
-    {/* Import Progress - Fixed at bottom of content area */}
-    {isImporting && (
-      <div className="flex-shrink-0 py-4 border-t border-border bg-muted/30 px-3 rounded-b-lg">
-        <div className="flex items-center gap-2 mb-2">
-          <Loader2 className="w-4 h-4 animate-spin text-primary" />
-          <span className="text-foreground font-medium">Importing entities...</span>
-        </div>
-        <Progress value={progress} />
-      </div>
-    )}
-  </div>
-)}
-```
-
-#### Change 5: Footer Always Visible
-
-Update footer to be properly positioned:
-
-```tsx
-{/* Footer Actions - Always visible, sticky at bottom */}
-{hasEntities && !isProcessing && (
-  <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border bg-card">
-    <Button variant="ghost" onClick={reset} className="text-muted-foreground hover:text-foreground w-full sm:w-auto">
-      Upload Different File
-    </Button>
-    <div className="flex items-center gap-2 w-full sm:w-auto">
-      <Button variant="outline" onClick={handleClose} className="flex-1 sm:flex-none">
-        Cancel
-      </Button>
-      <Button onClick={handleImport} disabled={selectedCount === 0 || isImporting} className="flex-1 sm:flex-none">
-        {isImporting ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Importing...
-          </>
-        ) : (
-          <>
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            Import {selectedCount}
-          </>
-        )}
-      </Button>
-    </div>
-  </div>
-)}
-```
-
-Remove the negative margin hack (`-mx-6 -mb-6`) and keep footer within normal flow.
-
----
-
-## Visual Layout Diagram
-
-```text
-+----------------------------------+
-|  Dialog Header (fixed)           |
-|  - Title & Description           |
-+----------------------------------+
-|  Upload Area / Processing        |  <- Only visible during upload/processing
-|  OR                              |
-+----------------------------------+
-|  Selection Header (fixed)        |  <- "3 of 12 selected" + buttons
-+----------------------------------+
-|  [SCROLLABLE CONTENT AREA]       |
-|  ┌───────────────────────────┐   |
-|  │ ▶ NPCs (3/5)              │   |
-|  │   └ NPC Card 1            │   |
-|  │   └ NPC Card 2            │   |
-|  │ ▶ Locations (2/4)         │   |  <- This area scrolls
-|  │   └ Location Card 1       │   |
-|  │   └ Location Card 2       │   |
-|  │ ▶ Items (1/3)             │   |
-|  │   ...                     │   |
-|  └───────────────────────────┘   |
-+----------------------------------+
-|  Import Progress (if importing)  |
-+----------------------------------+
-|  Footer Actions (fixed)          |
-|  [Upload Different] [Cancel] [Import 6]
-+----------------------------------+
+```typescript
+case 'npcs': {
+  const npc = entity as ExtractedNPC;
+  
+  // Resolve faction_id by name if faction text is provided
+  let factionId: string | null = null;
+  if (npc.faction) {
+    const { data: matchedFaction } = await supabase
+      .from('factions')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .ilike('name', npc.faction)
+      .limit(1)
+      .single();
+    factionId = matchedFaction?.id || null;
+  }
+  
+  // Resolve location_id by name if location text is provided
+  let locationId: string | null = null;
+  if (npc.location) {
+    const { data: matchedLocation } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .ilike('name', npc.location)
+      .limit(1)
+      .single();
+    locationId = matchedLocation?.id || null;
+  }
+  
+  await supabase.from('npcs').insert({
+    campaign_id: campaignId,
+    name: npc.name,
+    role: npc.role || null,
+    description: npc.description || null,
+    location: npc.location || null,  // Keep text for display
+    location_id: locationId,          // Add FK reference
+    faction_id: factionId,            // Add FK reference
+    alignment: npc.alignment || null,
+    pronouns: npc.pronouns || null,
+    tags: npc.tags || [],
+    player_visible: false,
+  });
+  break;
+}
 ```
 
 ---
 
-## Files to Modify
+### 2. Locations: Link parent_location_id
+
+**Problem**: Location's `parent_location` text is not resolved to `parent_location_id` FK.
+
+**Solution**: Implement two-pass import for locations:
+
+```typescript
+case 'locations': {
+  const loc = entity as ExtractedLocation;
+  
+  // First pass: Insert without parent
+  const { data: insertedLoc } = await supabase
+    .from('locations')
+    .insert({
+      campaign_id: campaignId,
+      name: loc.name,
+      location_type: loc.location_type || null,
+      description: loc.description || null,
+      tags: loc.tags || [],
+      discovered: false,
+    })
+    .select('id')
+    .single();
+  
+  // Store for second pass parent resolution
+  if (loc.parent_location && insertedLoc) {
+    pendingParentLinks.push({
+      id: insertedLoc.id,
+      parentName: loc.parent_location
+    });
+  }
+  break;
+}
+
+// After all locations imported, resolve parent links:
+for (const pending of pendingParentLinks) {
+  const { data: parentLoc } = await supabase
+    .from('locations')
+    .select('id')
+    .eq('campaign_id', campaignId)
+    .ilike('name', pending.parentName)
+    .limit(1)
+    .single();
+  
+  if (parentLoc) {
+    await supabase
+      .from('locations')
+      .update({ parent_location_id: parentLoc.id })
+      .eq('id', pending.id);
+  }
+}
+```
+
+---
+
+### 3. Quests: Import objectives as quest_steps
+
+**Problem**: `objectives[]` and `rewards` are extracted but not imported.
+
+**Solution**: Create quest_steps from objectives:
+
+```typescript
+case 'quests': {
+  const quest = entity as ExtractedQuest;
+  
+  // Parse rewards text to extract values
+  let rewardGp: number | null = null;
+  let rewardXp: number | null = null;
+  if (quest.rewards) {
+    const gpMatch = quest.rewards.match(/(\d+)\s*(?:gp|gold)/i);
+    const xpMatch = quest.rewards.match(/(\d+)\s*(?:xp|experience)/i);
+    if (gpMatch) rewardGp = parseInt(gpMatch[1]);
+    if (xpMatch) rewardXp = parseInt(xpMatch[1]);
+  }
+  
+  const { data: insertedQuest } = await supabase
+    .from('quests')
+    .insert({
+      campaign_id: campaignId,
+      title: quest.title,
+      description: quest.description || null,
+      difficulty: quest.difficulty || null,
+      quest_type: quest.quest_type || null,
+      tags: quest.tags || [],
+      player_visible: false,
+      status: 'not_started',
+      reward_gp: rewardGp,
+      reward_xp: rewardXp,
+    })
+    .select('id')
+    .single();
+  
+  // Create quest_steps from objectives
+  if (insertedQuest && quest.objectives?.length) {
+    const steps = quest.objectives.map((obj, index) => ({
+      quest_id: insertedQuest.id,
+      description: obj,
+      step_order: index + 1,
+      is_completed: false,
+    }));
+    
+    await supabase.from('quest_steps').insert(steps);
+  }
+  break;
+}
+```
+
+---
+
+### 4. Items: Store is_magical in properties
+
+**Problem**: `is_magical` boolean is extracted but not stored.
+
+**Solution**: Include in properties JSON:
+
+```typescript
+case 'items': {
+  const item = entity as ExtractedItem;
+  
+  // Merge is_magical into properties
+  const properties = {
+    ...(item.properties || {}),
+    is_magical: item.is_magical || false,
+  };
+  
+  await supabase.from('items').insert({
+    campaign_id: campaignId,
+    name: item.name,
+    type: item.type || null,
+    rarity: item.rarity || 'common',
+    description: item.description || null,
+    properties: properties,
+    tags: item.tags || [],
+  });
+  break;
+}
+```
+
+---
+
+## Implementation Summary
+
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/campaign/DocumentImportDialog.tsx` | Complete layout restructure with proper ScrollArea height handling |
+| `src/hooks/useDocumentImport.ts` | Update `importEntity()` function with FK resolution logic |
+
+### Import Order (Already Correct)
+
+The current import order is already optimal for resolving references:
+1. **Locations** - Import first (needed by NPCs)
+2. **Factions** - Import second (needed by NPCs)
+3. **NPCs** - Can now resolve location_id and faction_id
+4. **Items** - No dependencies
+5. **Lore** - No dependencies
+6. **Quests** - Import with objectives → quest_steps
+
+### Edge Cases to Handle
+
+1. **Name matching**: Use `ilike` for case-insensitive matching
+2. **Multiple matches**: Take first match (`.limit(1)`)
+3. **No match found**: Leave FK as null, keep text reference
+4. **Circular references**: Parent location may not exist yet
+
+---
+
+## Technical Implementation
+
+The `importEntity()` function in `useDocumentImport.ts` will be refactored to:
+
+1. Accept an optional `context` parameter with previously imported entity IDs
+2. Perform name-based lookups to resolve foreign keys
+3. Handle the two-pass location parent resolution
+4. Create quest_steps entries for quest objectives
+5. Parse reward strings to extract GP/XP values
 
 ---
 
 ## Testing Checklist
 
 After implementation:
-1. Upload a document that extracts many entities (10+ across categories)
-2. Verify the ScrollArea scrolls smoothly
-3. Verify all entities are visible when scrolling to the bottom
-4. Verify footer buttons remain visible at all times
-5. Test Select All / Deselect All functionality after scrolling
-6. Test on mobile viewport - ensure responsive behavior works
-7. Test with very few entities (1-2) - ensure layout doesn't break
-8. Test the expand/collapse category behavior while scrolling
-9. Verify import progress bar displays correctly during import
+1. Upload a document with NPCs that reference locations and factions by name
+2. Verify NPCs have `faction_id` and `location_id` populated correctly
+3. Verify locations with parent references have `parent_location_id` set
+4. Verify quest objectives create corresponding `quest_steps` entries
+5. Verify quest rewards are parsed into `reward_gp` and `reward_xp`
+6. Verify items with `is_magical: true` have that stored in properties
+7. Test with non-matching references (should not error, just leave FK null)
+

@@ -94,6 +94,8 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setReputationScore(0);
       setExistingReputation(null);
       setLorePageId(null);
+      setTagInput("");
+      setGoalInput("");
     }
   }, [faction, open, campaignId]);
 

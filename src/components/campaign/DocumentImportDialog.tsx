@@ -142,7 +142,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden gap-2">
           {/* Upload Area */}
           {!hasEntities && !isProcessing && (
             <div

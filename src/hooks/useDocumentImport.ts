@@ -6,7 +6,6 @@ import {
   SelectableEntity,
   EntityCategory,
   validateExtractedEntities,
-  generateSlug,
   ExtractedNPC,
   ExtractedLocation,
   ExtractedItem,
@@ -15,6 +14,16 @@ import {
   ExtractedQuest,
 } from '@/lib/documentImportSchema';
 import { nanoid } from 'nanoid';
+import {
+  importNPC,
+  importLocation,
+  importFaction,
+  importItem,
+  importLore,
+  importQuest,
+  resolveLocationParents,
+  PendingParentLink,
+} from '@/lib/documentImportHelpers';
 
 type AnyEntity = ExtractedNPC | ExtractedLocation | ExtractedItem | ExtractedFaction | ExtractedLore | ExtractedQuest;
 
@@ -165,24 +174,96 @@ export function useDocumentImport(): UseDocumentImportResult {
 
     const results = { success: 0, failed: 0 };
     const totalItems = selected.length;
+    const pendingLocationParents: PendingParentLink[] = [];
 
     try {
       // Import in order: locations -> factions -> npcs -> items -> lore -> quests
-      const categories: EntityCategory[] = ['locations', 'factions', 'npcs', 'items', 'lore', 'quests'];
+      // This order ensures FKs can be resolved correctly
 
-      for (const category of categories) {
-        const categoryItems = selected.filter((e) => e.type === category);
-
-        for (const item of categoryItems) {
-          try {
-            await importEntity(campaignId, category, item.entity);
-            results.success++;
-          } catch (err) {
-            console.error(`Failed to import ${category}:`, err);
-            results.failed++;
+      // 1. Import Locations (first pass)
+      const locationItems = selected.filter((e) => e.type === 'locations');
+      for (const item of locationItems) {
+        try {
+          const pendingLink = await importLocation(campaignId, item.entity as ExtractedLocation);
+          if (pendingLink) {
+            pendingLocationParents.push(pendingLink);
           }
-          setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import location:', err);
+          results.failed++;
         }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+      }
+
+      // 1b. Resolve location parent links (second pass)
+      if (pendingLocationParents.length > 0) {
+        await resolveLocationParents(campaignId, pendingLocationParents);
+      }
+
+      // 2. Import Factions
+      const factionItems = selected.filter((e) => e.type === 'factions');
+      for (const item of factionItems) {
+        try {
+          await importFaction(campaignId, item.entity as ExtractedFaction);
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import faction:', err);
+          results.failed++;
+        }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+      }
+
+      // 3. Import NPCs (after locations and factions for FK resolution)
+      const npcItems = selected.filter((e) => e.type === 'npcs');
+      for (const item of npcItems) {
+        try {
+          await importNPC(campaignId, item.entity as ExtractedNPC);
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import NPC:', err);
+          results.failed++;
+        }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+      }
+
+      // 4. Import Items
+      const itemItems = selected.filter((e) => e.type === 'items');
+      for (const item of itemItems) {
+        try {
+          await importItem(campaignId, item.entity as ExtractedItem);
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import item:', err);
+          results.failed++;
+        }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+      }
+
+      // 5. Import Lore
+      const loreItems = selected.filter((e) => e.type === 'lore');
+      for (const item of loreItems) {
+        try {
+          await importLore(campaignId, item.entity as ExtractedLore);
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import lore:', err);
+          results.failed++;
+        }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
+      }
+
+      // 6. Import Quests (with objectives -> quest_steps)
+      const questItems = selected.filter((e) => e.type === 'quests');
+      for (const item of questItems) {
+        try {
+          await importQuest(campaignId, item.entity as ExtractedQuest);
+          results.success++;
+        } catch (err) {
+          console.error('Failed to import quest:', err);
+          results.failed++;
+        }
+        setProgress(Math.round(((results.success + results.failed) / totalItems) * 100));
       }
 
       toast({
@@ -253,95 +334,4 @@ async function readFileContent(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
-}
-
-// Import a single entity to the database
-async function importEntity(
-  campaignId: string,
-  category: EntityCategory,
-  entity: AnyEntity
-): Promise<void> {
-  switch (category) {
-    case 'npcs': {
-      const npc = entity as ExtractedNPC;
-      await supabase.from('npcs').insert({
-        campaign_id: campaignId,
-        name: npc.name,
-        role: npc.role || null,
-        description: npc.description || null,
-        location: npc.location || null,
-        alignment: npc.alignment || null,
-        pronouns: npc.pronouns || null,
-        tags: npc.tags || [],
-        player_visible: false,
-      });
-      break;
-    }
-    case 'locations': {
-      const loc = entity as ExtractedLocation;
-      await supabase.from('locations').insert({
-        campaign_id: campaignId,
-        name: loc.name,
-        location_type: loc.location_type || null,
-        description: loc.description || null,
-        tags: loc.tags || [],
-        discovered: false,
-      });
-      break;
-    }
-    case 'items': {
-      const item = entity as ExtractedItem;
-      await supabase.from('items').insert({
-        campaign_id: campaignId,
-        name: item.name,
-        type: item.type || null,
-        rarity: item.rarity || 'common',
-        description: item.description || null,
-        properties: item.properties || {},
-        tags: item.tags || [],
-      });
-      break;
-    }
-    case 'factions': {
-      const faction = entity as ExtractedFaction;
-      await supabase.from('factions').insert({
-        campaign_id: campaignId,
-        name: faction.name,
-        description: faction.description || null,
-        motto: faction.motto || null,
-        influence_score: faction.influence_score || 50,
-        tags: faction.tags || [],
-      });
-      break;
-    }
-    case 'lore': {
-      const lore = entity as ExtractedLore;
-      await supabase.from('lore_pages').insert({
-        campaign_id: campaignId,
-        title: lore.title,
-        slug: generateSlug(lore.title),
-        content_md: lore.content,
-        excerpt: lore.excerpt || lore.content.substring(0, 200),
-        category: lore.category || 'other',
-        era: lore.era || null,
-        tags: lore.tags || [],
-        visibility: 'DM',
-      });
-      break;
-    }
-    case 'quests': {
-      const quest = entity as ExtractedQuest;
-      await supabase.from('quests').insert({
-        campaign_id: campaignId,
-        title: quest.title,
-        description: quest.description || null,
-        difficulty: quest.difficulty || null,
-        quest_type: quest.quest_type || null,
-        tags: quest.tags || [],
-        player_visible: false,
-        status: 'not_started',
-      });
-      break;
-    }
-  }
 }

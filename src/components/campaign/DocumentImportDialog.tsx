@@ -131,7 +131,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col bg-card" variant="ornaments">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] flex flex-col overflow-hidden bg-card" variant="ornaments">
         <DialogHeader>
           <DialogTitle className="font-cinzel flex items-center gap-2 text-foreground">
             <Upload className="w-5 h-5 text-primary" />

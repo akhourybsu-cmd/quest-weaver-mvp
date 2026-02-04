@@ -521,6 +521,8 @@ const CampaignHub = () => {
   const handleQuickAdd = (type: string) => {
     if (type === "quest") {
       setActiveTab("quests");
+      // Signal the Quests tab to open the creation dialog once it is active.
+      window.dispatchEvent(new CustomEvent("qw:create-quest"));
     }
   };
 

@@ -159,6 +159,20 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Allow other parts of the Campaign Hub (Overview / Quick Add / command palette)
+  // to request opening the Quest creation dialog.
+  useEffect(() => {
+    if (demoMode) return;
+
+    const onCreateQuest = () => {
+      setQuestToEdit(undefined);
+      setDialogOpen(true);
+    };
+
+    window.addEventListener("qw:create-quest", onCreateQuest as EventListener);
+    return () => window.removeEventListener("qw:create-quest", onCreateQuest as EventListener);
+  }, [demoMode]);
+
   const fetchQuests = useCallback(async () => {
     setLoading(true);
     try {
@@ -324,22 +338,33 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
 
   if (!loading && quests.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <Scroll className="h-16 w-16 text-muted-foreground" />
-        <h3 className="text-xl font-semibold">No Quests Yet</h3>
-        <p className="text-muted-foreground text-center max-w-md">
-          Start your adventure by creating your first quest
-        </p>
+      <>
+        <div className="flex flex-col items-center justify-center h-96 space-y-4">
+          <Scroll className="h-16 w-16 text-muted-foreground" />
+          <h3 className="text-xl font-semibold">No Quests Yet</h3>
+          <p className="text-muted-foreground text-center max-w-md">
+            Start your adventure by creating your first quest
+          </p>
+          {!demoMode && (
+            <Button onClick={() => {
+              setQuestToEdit(undefined);
+              setDialogOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Quest
+            </Button>
+          )}
+        </div>
+
         {!demoMode && (
-          <Button onClick={() => {
-            setQuestToEdit(undefined);
-            setDialogOpen(true);
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Quest
-          </Button>
+          <QuestDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            campaignId={campaignId}
+            questToEdit={questToEdit}
+          />
         )}
-      </div>
+      </>
     );
   }
 

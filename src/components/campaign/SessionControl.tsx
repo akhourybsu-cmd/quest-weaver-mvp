@@ -8,7 +8,7 @@ import { resilientChannel } from "@/lib/realtime";
 import { toast } from "@/hooks/use-toast";
 import { EndSessionDialog } from "./EndSessionDialog";
 import { timelineLogger } from "@/hooks/useTimelineLogger";
-
+import { shouldSuppressHotkey } from "@/lib/hotkeys";
 interface SessionData {
   id: string;
   campaign_id: string;

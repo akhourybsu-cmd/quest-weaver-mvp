@@ -61,6 +61,8 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setInfluenceScore(faction.influence_score ?? 50);
       setGoals(faction.goals || []);
       setLorePageId(faction.lore_page_id || null);
+      setTagInput("");
+      setGoalInput("");
       
       // Fetch reputation for this faction
       const fetchReputation = async () => {

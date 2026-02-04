@@ -131,8 +131,11 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] flex flex-col overflow-hidden bg-card" variant="ornaments">
-        <DialogHeader>
+      <DialogContent 
+        className="w-[95vw] max-w-2xl h-[85vh] max-h-[700px] flex flex-col bg-card" 
+        variant="ornaments"
+      >
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="font-cinzel flex items-center gap-2 text-foreground">
             <Upload className="w-5 h-5 text-primary" />
             Import Campaign Content
@@ -142,7 +145,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden gap-2">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Upload Area */}
           {!hasEntities && !isProcessing && (
             <div
@@ -199,9 +202,9 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
           {/* Entity Selection */}
           {hasEntities && !isProcessing && (
-            <>
-              {/* Selection Controls */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 border-b border-border bg-muted/30 px-3 rounded-t-lg">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Fixed Header: Selection Controls */}
+              <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 border-b border-border bg-muted/30 px-3 rounded-t-lg">
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-primary/20 text-primary-foreground border-primary/30">
                     {selectedCount} of {totalCount} selected
@@ -217,63 +220,65 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
                 </div>
               </div>
 
-              {/* Categories */}
-              <ScrollArea className="flex-1 min-h-0 max-h-[45vh] sm:max-h-[50vh]">
-                <div className="space-y-3 pr-4 pb-4">
-                  {categories.map((category) => {
-                    const categoryEntities = getCategoryEntities(category);
-                    if (categoryEntities.length === 0) return null;
+              {/* Scrollable Content Area */}
+              <div className="flex-1 min-h-0 overflow-hidden border-x border-border">
+                <ScrollArea className="h-full">
+                  <div className="space-y-3 p-3">
+                    {categories.map((category) => {
+                      const categoryEntities = getCategoryEntities(category);
+                      if (categoryEntities.length === 0) return null;
 
-                    const selectedInCategory = categoryEntities.filter((e) => e.selected).length;
-                    const isExpanded = expandedCategories.has(category);
-                    const allSelected = selectedInCategory === categoryEntities.length;
-                    const someSelected = selectedInCategory > 0 && selectedInCategory < categoryEntities.length;
+                      const selectedInCategory = categoryEntities.filter((e) => e.selected).length;
+                      const isExpanded = expandedCategories.has(category);
+                      const allSelected = selectedInCategory === categoryEntities.length;
+                      const someSelected = selectedInCategory > 0 && selectedInCategory < categoryEntities.length;
 
-                    return (
-                      <Collapsible key={category} open={isExpanded} onOpenChange={() => toggleCategory(category)}>
-                        <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-accent/50 border border-border hover:bg-accent/70 transition-colors">
-                          <Checkbox
-                            checked={allSelected}
-                            ref={(el) => {
-                              if (el) (el as any).indeterminate = someSelected;
-                            }}
-                            onCheckedChange={(checked) => toggleAllInCategory(category, !!checked)}
-                            className="shrink-0 border-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                          />
-                          <CollapsibleTrigger className="flex-1 flex items-center gap-1.5 sm:gap-2 text-left min-w-0">
-                            {isExpanded ? (
-                              <ChevronDown className="w-4 h-4 text-foreground shrink-0" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-foreground shrink-0" />
-                            )}
-                            <span className="text-primary shrink-0">{CATEGORY_ICONS[category]}</span>
-                            <span className="font-medium text-foreground text-sm sm:text-base truncate">{ENTITY_LABELS[category]}</span>
-                            <Badge variant="outline" className="ml-auto bg-background/80 text-foreground border-border shrink-0 text-xs">
-                              {selectedInCategory}/{categoryEntities.length}
-                            </Badge>
-                          </CollapsibleTrigger>
-                        </div>
-
-                        <CollapsibleContent>
-                          <div className="ml-4 sm:ml-8 mt-2 space-y-2">
-                            {categoryEntities.map((item) => (
-                              <EntityRow
-                                key={item.id}
-                                entity={item}
-                                onToggle={() => toggleSelection(item.id)}
-                              />
-                            ))}
+                      return (
+                        <Collapsible key={category} open={isExpanded} onOpenChange={() => toggleCategory(category)}>
+                          <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-accent/50 border border-border hover:bg-accent/70 transition-colors">
+                            <Checkbox
+                              checked={allSelected}
+                              ref={(el) => {
+                                if (el) (el as any).indeterminate = someSelected;
+                              }}
+                              onCheckedChange={(checked) => toggleAllInCategory(category, !!checked)}
+                              className="shrink-0 border-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            <CollapsibleTrigger className="flex-1 flex items-center gap-1.5 sm:gap-2 text-left min-w-0">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-foreground shrink-0" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-foreground shrink-0" />
+                              )}
+                              <span className="text-primary shrink-0">{CATEGORY_ICONS[category]}</span>
+                              <span className="font-medium text-foreground text-sm sm:text-base truncate">{ENTITY_LABELS[category]}</span>
+                              <Badge variant="outline" className="ml-auto bg-background/80 text-foreground border-border shrink-0 text-xs">
+                                {selectedInCategory}/{categoryEntities.length}
+                              </Badge>
+                            </CollapsibleTrigger>
                           </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
 
-              {/* Import Progress */}
+                          <CollapsibleContent>
+                            <div className="ml-4 sm:ml-8 mt-2 space-y-2">
+                              {categoryEntities.map((item) => (
+                                <EntityRow
+                                  key={item.id}
+                                  entity={item}
+                                  onToggle={() => toggleSelection(item.id)}
+                                />
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* Import Progress - Fixed at bottom of content area */}
               {isImporting && (
-                <div className="py-4 border-t border-border bg-muted/30 px-3 rounded-b-lg mt-2">
+                <div className="flex-shrink-0 py-4 border-t border-x border-border bg-muted/30 px-3 rounded-b-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     <span className="text-foreground font-medium">Importing entities...</span>
@@ -281,13 +286,13 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
                   <Progress value={progress} />
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions - Always visible */}
         {hasEntities && !isProcessing && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border bg-muted/20 -mx-6 -mb-6 px-4 sm:px-6 pb-4 sm:pb-6 mt-4">
+          <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border bg-card">
             <Button variant="ghost" onClick={reset} className="text-muted-foreground hover:text-foreground w-full sm:w-auto">
               Upload Different File
             </Button>

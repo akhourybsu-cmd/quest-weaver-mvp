@@ -131,7 +131,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col bg-card" variant="ornaments">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] flex flex-col overflow-hidden bg-card" variant="ornaments">
         <DialogHeader>
           <DialogTitle className="font-cinzel flex items-center gap-2 text-foreground">
             <Upload className="w-5 h-5 text-primary" />
@@ -142,7 +142,7 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden gap-2">
           {/* Upload Area */}
           {!hasEntities && !isProcessing && (
             <div
@@ -218,8 +218,8 @@ export function DocumentImportDialog({ open, onOpenChange, campaignId }: Documen
               </div>
 
               {/* Categories */}
-              <ScrollArea className="flex-1 min-h-0 mt-2" style={{ maxHeight: 'calc(60vh - 200px)' }}>
-                <div className="space-y-3 pr-4 pb-2">
+              <ScrollArea className="flex-1 min-h-0 max-h-[45vh] sm:max-h-[50vh]">
+                <div className="space-y-3 pr-4 pb-4">
                   {categories.map((category) => {
                     const categoryEntities = getCategoryEntities(category);
                     if (categoryEntities.length === 0) return null;

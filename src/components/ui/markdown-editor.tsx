@@ -200,7 +200,7 @@ const MarkdownEditor = React.forwardRef<HTMLTextAreaElement, MarkdownEditorProps
       {
         icon: <ListOrdered className="h-4 w-4" />,
         label: "Numbered List",
-        action: () => insertAtLineStart("1. "),
+        action: () => insertAtLineStart("1. ", true),
       },
       {
         icon: <CheckSquare className="h-4 w-4" />,

@@ -61,6 +61,8 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setInfluenceScore(faction.influence_score ?? 50);
       setGoals(faction.goals || []);
       setLorePageId(faction.lore_page_id || null);
+      setTagInput("");
+      setGoalInput("");
       
       // Fetch reputation for this faction
       const fetchReputation = async () => {
@@ -92,6 +94,8 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setReputationScore(0);
       setExistingReputation(null);
       setLorePageId(null);
+      setTagInput("");
+      setGoalInput("");
     }
   }, [faction, open, campaignId]);
 
@@ -133,6 +137,18 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       return;
     }
 
+    // Auto-commit any pending goal input
+    const finalGoals = [...goals];
+    if (goalInput.trim() && !goals.includes(goalInput.trim())) {
+      finalGoals.push(goalInput.trim());
+    }
+
+    // Auto-commit any pending tag input
+    const finalTags = [...tags];
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      finalTags.push(tagInput.trim());
+    }
+
     try {
       const factionData = {
         campaign_id: campaignId,
@@ -140,9 +156,9 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         description: description.trim() || null,
         motto: motto.trim() || null,
         banner_url: bannerUrl,
-        tags,
+        tags: finalTags,
         influence_score: influenceScore,
-        goals,
+        goals: finalGoals,
         lore_page_id: lorePageId,
       };
 

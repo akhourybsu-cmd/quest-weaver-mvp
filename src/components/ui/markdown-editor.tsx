@@ -97,21 +97,40 @@ const MarkdownEditor = React.forwardRef<HTMLTextAreaElement, MarkdownEditorProps
       }, 0);
     };
 
-    const insertAtLineStart = (prefix: string) => {
+    const insertAtLineStart = (prefix: string, isNumberedList: boolean = false) => {
       const textarea = textareaRef.current;
       if (!textarea) return;
 
       const start = textarea.selectionStart;
-      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-
-      const newValue =
-        value.substring(0, lineStart) + prefix + value.substring(lineStart);
+      const end = textarea.selectionEnd;
+      
+      // Find the start of the first selected line
+      const firstLineStart = value.lastIndexOf("\n", start - 1) + 1;
+      // Find the end of the last selected line
+      const lastLineEnd = value.indexOf("\n", end);
+      const actualEnd = lastLineEnd === -1 ? value.length : lastLineEnd;
+      
+      // Get the selected lines as text
+      const selectedText = value.substring(firstLineStart, actualEnd);
+      const lines = selectedText.split("\n");
+      
+      // Add prefix to each line
+      const modifiedLines = lines.map((line, index) => {
+        // For numbered lists, use sequential numbers
+        const linePrefix = isNumberedList ? `${index + 1}. ` : prefix;
+        return linePrefix + line;
+      });
+      
+      const newText = modifiedLines.join("\n");
+      const newValue = value.substring(0, firstLineStart) + newText + value.substring(actualEnd);
 
       onChange(newValue);
 
       setTimeout(() => {
         textarea.focus();
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+        // Select all the modified text
+        const newEnd = firstLineStart + newText.length;
+        textarea.setSelectionRange(firstLineStart, newEnd);
       }, 0);
     };
 
@@ -181,7 +200,7 @@ const MarkdownEditor = React.forwardRef<HTMLTextAreaElement, MarkdownEditorProps
       {
         icon: <ListOrdered className="h-4 w-4" />,
         label: "Numbered List",
-        action: () => insertAtLineStart("1. "),
+        action: () => insertAtLineStart("1. ", true),
       },
       {
         icon: <CheckSquare className="h-4 w-4" />,

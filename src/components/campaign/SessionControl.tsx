@@ -102,9 +102,8 @@ export function SessionControl({ campaignId }: SessionControlProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (e.target instanceof HTMLInputElement || 
-          e.target instanceof HTMLTextAreaElement) {
+      // Don't trigger during interactive element interaction
+      if (shouldSuppressHotkey(e)) {
         return;
       }
 

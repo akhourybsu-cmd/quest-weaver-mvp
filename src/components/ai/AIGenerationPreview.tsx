@@ -1,4 +1,4 @@
- import { useState, useMemo } from "react";
+import { useState } from "react";
  import {
    Dialog,
    DialogContent,
@@ -92,7 +92,7 @@
  
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>
-       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] h-[85vh] flex flex-col">
          <DialogHeader>
            <DialogTitle className="flex items-center gap-2">
              <Sparkles className="w-5 h-5 text-primary" />
@@ -103,7 +103,7 @@
            </DialogDescription>
          </DialogHeader>
  
-         <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
            <div className="space-y-6 py-4">
              {/* Field Suggestions */}
              <div className="space-y-2">
@@ -258,7 +258,7 @@
            </div>
          </ScrollArea>
  
-         <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">
            <Button type="button" variant="outline" onClick={onCancel}>
              Cancel
            </Button>

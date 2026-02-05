@@ -238,15 +238,15 @@
                        key={i}
                        className={cn(
                          "p-2 rounded text-sm",
-                         check.result === 'pass' && "bg-green-500/10",
-                         check.result === 'adjusted' && "bg-yellow-500/10",
-                         check.result === 'potential_conflict' && "bg-red-500/10"
+                         check.result === 'pass' && "bg-primary/10",
+                         check.result === 'adjusted' && "bg-accent",
+                         check.result === 'potential_conflict' && "bg-destructive/10"
                        )}
                      >
                        <div className="flex items-center gap-2 font-medium">
-                         {check.result === 'pass' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                         {check.result === 'adjusted' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                         {check.result === 'potential_conflict' && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                         {check.result === 'pass' && <CheckCircle className="w-4 h-4 text-primary" />}
+                         {check.result === 'adjusted' && <AlertTriangle className="w-4 h-4 text-accent-foreground" />}
+                         {check.result === 'potential_conflict' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                          {check.check}
                        </div>
                        <p className="text-muted-foreground ml-6">{check.details}</p>

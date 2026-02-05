@@ -209,9 +209,9 @@
                    <Button variant="ghost" className="w-full justify-between p-2">
                      <span className="flex items-center gap-2">
                        {hasConflicts ? (
-                         <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                          <AlertTriangle className="w-4 h-4 text-destructive" />
                        ) : (
-                         <CheckCircle className="w-4 h-4 text-green-500" />
+                          <CheckCircle className="w-4 h-4 text-primary" />
                        )}
                        Consistency Checks ({result.consistency_checks.length})
                        {hasConflicts && (

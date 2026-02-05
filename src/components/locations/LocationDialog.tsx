@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { X, Plus, Trash2, Calendar, Book } from "lucide-react";
+ import { X, Plus, Trash2, Calendar, Book, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
@@ -30,6 +30,7 @@ import { LOCATION_SCHEMAS, CITY_VENUE_TEMPLATE, LocationType } from "@/lib/locat
 import { timelineLogger } from "@/hooks/useTimelineLogger";
 import { ImageUpload } from "@/components/ui/image-upload";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
+ import { AIGenerateButton } from "@/components/ai/AIGenerateButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -443,6 +444,34 @@ const LocationDialog = ({ open, onOpenChange, campaignId, locationToEdit, parent
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="font-cinzel">{isEditing ? "Edit Location" : "Create Location"}</DialogTitle>
+             <AIGenerateButton
+               campaignId={campaignId}
+               assetType="location"
+               getFormValues={() => ({
+                 name,
+                 description,
+                 location_type: locationType,
+                 tags,
+                 ...details,
+               })}
+               onApply={(fields) => {
+                 if (fields.name) setName(fields.name);
+                 if (fields.description) setDescription(fields.description);
+                 if (fields.sensory_description) setDescription(prev => prev ? `${prev}\n\n${fields.sensory_description}` : fields.sensory_description);
+                 if (fields.atmosphere) setDetails(prev => ({ ...prev, atmosphere: fields.atmosphere }));
+                 if (fields.history) setDetails(prev => ({ ...prev, history: fields.history }));
+                 if (fields.purpose) setDetails(prev => ({ ...prev, purpose: fields.purpose }));
+                 if (fields.dangers) setDetails(prev => ({ ...prev, dangers: fields.dangers }));
+                 if (fields.secrets) setDetails(prev => ({ ...prev, secrets: fields.secrets }));
+                 if (fields.adventure_hooks && Array.isArray(fields.adventure_hooks)) {
+                   setDescription(prev => {
+                     const hooks = fields.adventure_hooks.map((h: string, i: number) => `${i + 1}. ${h}`).join('\n');
+                     return prev ? `${prev}\n\n**Adventure Hooks:**\n${hooks}` : `**Adventure Hooks:**\n${hooks}`;
+                   });
+                 }
+               }}
+               className="ml-auto"
+             />
             <DialogDescription>
               {isEditing ? "Update location details and information." : "Create a new location for your campaign world."}
             </DialogDescription>

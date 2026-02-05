@@ -10,10 +10,11 @@ import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, X, Trash2 } from "lucide-react";
+ import { Upload, X, Trash2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
+ import { AIGenerateButton } from "@/components/ai/AIGenerateButton";
 
 interface NPC {
   id: string;
@@ -264,6 +265,41 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{npc ? "Edit NPC" : "New NPC"}</DialogTitle>
+           <AIGenerateButton
+             campaignId={campaignId}
+             assetType="npc"
+             getFormValues={() => ({
+               name,
+               pronouns,
+               role: roleTitle,
+               public_bio: publicBio,
+               gm_notes: gmNotes,
+               secrets,
+               tags,
+               status,
+               alignment,
+             })}
+             onApply={(fields) => {
+               if (fields.name) setName(fields.name);
+               if (fields.pronouns) setPronouns(fields.pronouns);
+               if (fields.role) setRoleTitle(fields.role);
+               if (fields.appearance) setPublicBio(prev => prev ? `${prev}\n\n**Appearance:** ${fields.appearance}` : fields.appearance);
+               if (fields.personality) setPublicBio(prev => prev ? `${prev}\n\n**Personality:** ${fields.personality}` : fields.personality);
+               if (fields.public_bio) setPublicBio(fields.public_bio);
+               if (fields.background) setGmNotes(prev => prev ? `${prev}\n\n**Background:** ${fields.background}` : fields.background);
+               if (fields.goals) setGmNotes(prev => prev ? `${prev}\n\n**Goals:** ${fields.goals}` : fields.goals);
+               if (fields.fears) setGmNotes(prev => prev ? `${prev}\n\n**Fears:** ${fields.fears}` : fields.fears);
+               if (fields.gm_notes) setGmNotes(fields.gm_notes);
+               if (fields.secrets) setSecrets(fields.secrets);
+               if (fields.plot_hooks && Array.isArray(fields.plot_hooks)) {
+                 setGmNotes(prev => {
+                   const hooks = fields.plot_hooks.map((h: string, i: number) => `${i + 1}. ${h}`).join('\n');
+                   return prev ? `${prev}\n\n**Plot Hooks:**\n${hooks}` : `**Plot Hooks:**\n${hooks}`;
+                 });
+               }
+             }}
+             className="ml-auto"
+           />
         </DialogHeader>
 
         <div className="space-y-4">

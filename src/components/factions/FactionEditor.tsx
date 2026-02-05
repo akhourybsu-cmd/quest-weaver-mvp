@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { X, Trash2 } from "lucide-react";
+ import { X, Trash2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
+ import { AIGenerateButton } from "@/components/ai/AIGenerateButton";
 
 interface Faction {
   id: string;
@@ -240,6 +241,40 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{faction ? "Edit Faction" : "New Faction"}</DialogTitle>
+           <AIGenerateButton
+             campaignId={campaignId}
+             assetType="faction"
+             getFormValues={() => ({
+               name,
+               description,
+               motto,
+               tags,
+               goals,
+               influence_score: influenceScore,
+             })}
+             onApply={(fields) => {
+               if (fields.name) setName(fields.name);
+               if (fields.description) setDescription(fields.description);
+               if (fields.motto) setMotto(fields.motto);
+               if (fields.public_goal) setDescription(prev => prev ? `${prev}\n\n**Public Goal:** ${fields.public_goal}` : fields.public_goal);
+               if (fields.true_goal) setDescription(prev => prev ? `${prev}\n\n**True Goal:** ${fields.true_goal}` : fields.true_goal);
+               if (fields.leadership) setDescription(prev => prev ? `${prev}\n\n**Leadership:** ${fields.leadership}` : fields.leadership);
+               if (fields.weakness) setDescription(prev => prev ? `${prev}\n\n**Weakness:** ${fields.weakness}` : fields.weakness);
+               if (fields.goals && Array.isArray(fields.goals)) {
+                 setGoals(prev => [...prev, ...fields.goals.filter((g: string) => !prev.includes(g))]);
+               }
+               if (fields.quest_hooks && Array.isArray(fields.quest_hooks)) {
+                 setGoals(prev => [...prev, ...fields.quest_hooks.filter((g: string) => !prev.includes(g))]);
+               }
+               if (fields.rumors && Array.isArray(fields.rumors)) {
+                 setDescription(prev => {
+                   const rumors = fields.rumors.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n');
+                   return prev ? `${prev}\n\n**Rumors:**\n${rumors}` : `**Rumors:**\n${rumors}`;
+                 });
+               }
+             }}
+             className="ml-auto"
+           />
         </DialogHeader>
 
         <div className="space-y-4">

@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.import-srd-core]
 verify_jwt = true
+ 
+ [functions.generate-asset]
+ verify_jwt = true

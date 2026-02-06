@@ -1,241 +1,133 @@
 
-# Obsidian Notes System: Critical Fixes and Structural Hardening
 
-## Critical Bugs Found During Audit
+# Comprehensive Notes System Audit and Polish
 
-### Bug 1: Wikilinks Are Silently Broken
-The `note_links` table has a CHECK constraint that only allows: `NPC`, `LOCATION`, `QUEST`, `ITEM`, `FACTION`, `ENCOUNTER`. It does **not** include `NOTE` or `CHARACTER`. Every attempt to save a `[[wikilink]]` (which uses `link_type = 'NOTE'`) or an @mention of a character (which uses `link_type = 'CHARACTER'`) is silently failing. The `note_links` table currently has **zero rows** -- nothing has been able to save.
+## Audit Findings
 
-### Bug 2: Player Notes View Shows Nothing
-`PlayerNotesView.tsx` queries for `visibility = 'players'`, but the actual visibility values in the database are `DM_ONLY`, `SHARED`, and `PRIVATE` (enforced by a CHECK constraint). The realtime subscription also filters on `visibility=eq.players`. This means the player notes view is permanently empty.
+After inspecting every file, database table, constraint, trigger, RLS policy, and route, here is what I found:
 
----
+### Database: Healthy
+- `note_links` CHECK constraint correctly includes `NOTE` and `CHARACTER`
+- `note_links_unique_link` UNIQUE constraint is in place
+- `session_notes` has `version`, `folder`, and `deleted_at` columns
+- `trg_check_note_version` trigger is active
+- `note_revisions` table exists with proper RLS
+- `session_notes` is in the `supabase_realtime` publication
+- Visibility CHECK constraint enforces `DM_ONLY`, `SHARED`, `PRIVATE`
+- RLS policies are correct for all three tables
 
-## Implementation Plan
-
-### Phase 1: Fix Critical Bugs
-
-**1a. Fix `note_links` CHECK constraint**
-
-SQL migration to drop the old constraint and replace it with one that includes `NOTE` and `CHARACTER`:
-
-```sql
-ALTER TABLE public.note_links DROP CONSTRAINT note_links_link_type_check;
-ALTER TABLE public.note_links ADD CONSTRAINT note_links_link_type_check 
-  CHECK (link_type = ANY (ARRAY['NPC','LOCATION','QUEST','ITEM','FACTION','ENCOUNTER','NOTE','CHARACTER']));
-```
-
-**1b. Fix `PlayerNotesView.tsx`**
-
-- Change `.eq('visibility', 'players')` to `.eq('visibility', 'SHARED')` in the query
-- Change the realtime filter from `visibility=eq.players` to `visibility=eq.SHARED`
+### Data State: 15 notes exist, 0 links saved, 0 revisions
+The link-saving code looks correct now, but there is a critical bug preventing links from actually being persisted (see Bug 1 below).
 
 ---
 
-### Phase 2: Concurrency Protection (Prevent Last-Write-Wins)
+## Bugs Found
 
-**2a. Add `version` column to `session_notes`**
+### Bug 1: `note_links` insert silently fails due to UNIQUE constraint + null `link_id`
+The UNIQUE constraint is `(note_id, link_type, link_id, label)`. When `link_id` is `NULL` (dangling wikilinks), PostgreSQL treats each `NULL` as distinct, so duplicates are technically allowed there. However, when two entity links of the same type reference the same entity, the delete-then-reinsert pattern should handle it. The real problem is that the code in `performSave` calls `.select("version")` on the update, but the version trigger modifies the `version` field. If the update returns the version correctly, the insert should follow. Let me check the actual flow more carefully -- the 0 links in the database with 15 notes means the save-links block is either erroring silently or being skipped. Looking at the code:
 
-```sql
-ALTER TABLE public.session_notes ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
-```
-
-**2b. Add a validation trigger** that increments `version` on every update and rejects stale writes:
-
-```sql
-CREATE OR REPLACE FUNCTION check_note_version()
-RETURNS trigger AS $$
-BEGIN
-  IF OLD.version != NEW.version THEN
-    RAISE EXCEPTION 'Conflict: note was modified by another user (expected version %, got %)', OLD.version, NEW.version;
-  END IF;
-  NEW.version := OLD.version + 1;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_note_version
-  BEFORE UPDATE ON public.session_notes
-  FOR EACH ROW EXECUTE FUNCTION check_note_version();
-```
-
-**2c. Update `NoteEditor.tsx`**
-
-- Track `version` in state alongside other note fields
-- On save, include `version` in the update payload (sends the version we loaded)
-- The trigger will reject if someone else saved in between
-- On conflict (error containing "Conflict: note was modified"), show a toast: "This note was modified by someone else. Please refresh and try again."
-- After successful save, update local `version` state to the new value
-
----
-
-### Phase 3: Revision History
-
-**3a. Create `note_revisions` table**
-
-```sql
-CREATE TABLE public.note_revisions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  note_id UUID NOT NULL REFERENCES public.session_notes(id) ON DELETE CASCADE,
-  version INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  content_markdown TEXT,
-  tags TEXT[] DEFAULT '{}',
-  visibility TEXT,
-  folder TEXT,
-  saved_by UUID NOT NULL,
-  saved_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_note_revisions_note ON public.note_revisions(note_id, version DESC);
-
--- RLS
-ALTER TABLE public.note_revisions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Campaign members can view revisions"
-  ON public.note_revisions FOR SELECT
-  USING (note_id IN (
-    SELECT id FROM session_notes WHERE campaign_id IN (
-      SELECT c.id FROM campaigns c WHERE c.dm_user_id = auth.uid()
-      UNION
-      SELECT cm.campaign_id FROM campaign_members cm WHERE cm.user_id = auth.uid()
-    )
-  ));
-
-CREATE POLICY "Authors and DMs can create revisions"
-  ON public.note_revisions FOR INSERT
-  WITH CHECK (saved_by = auth.uid());
-```
-
-**3b. Create revision on save in `NoteEditor.tsx`**
-
-After a successful save (manual or autosave), insert a revision row with the current state. For autosave, only create a revision every 5th autosave (or every 60 seconds) to avoid flooding the table.
-
-**3c. Add "Version History" button in `NoteEditor.tsx`**
-
-- Shows a scrollable list of revisions (title, saved_at, saved_by)
-- Clicking a revision shows the content in a read-only preview
-- "Restore this version" button that loads revision data into the editor fields
-
----
-
-### Phase 4: Soft Delete
-
-**4a. Add `deleted_at` column to `session_notes`**
-
-```sql
-ALTER TABLE public.session_notes ADD COLUMN deleted_at TIMESTAMPTZ DEFAULT NULL;
-CREATE INDEX idx_session_notes_deleted ON public.session_notes(deleted_at) WHERE deleted_at IS NOT NULL;
-```
-
-**4b. Update all queries to exclude soft-deleted notes**
-
-- `NotesBoard.tsx` `loadNotes`: add `.is('deleted_at', null)`
-- `NoteGraph.tsx` `loadGraphData`: add `.is('deleted_at', null)`
-- `PlayerNotesView.tsx` `loadSharedNotes`: add `.is('deleted_at', null)`
-- `WikilinkAutocomplete.tsx`: add `.is('deleted_at', null)`
-- `NoteBacklinks.tsx`: add `.is('deleted_at', null)`
-- `NoteFolderSelector.tsx`: add `.is('deleted_at', null)`
-- `QuickCaptureModal.tsx`: no change needed (insert only)
-
-**4c. Change delete to soft delete in `NoteEditor.tsx`**
-
-Instead of `.delete().eq("id", note.id)`, update to `.update({ deleted_at: new Date().toISOString() }).eq("id", note.id)`.
-
-Update the delete confirmation text to say "This note will be moved to trash."
-
-**4d. Add "Trash" view in `NotesBoard.tsx`** (optional, can be done later)
-
-A new tab showing soft-deleted notes with "Restore" and "Permanently Delete" actions.
-
----
-
-### Phase 5: Link Integrity -- Uniqueness Constraint and Transaction Safety
-
-**5a. Add uniqueness constraint on `note_links`**
-
-```sql
-ALTER TABLE public.note_links 
-  ADD CONSTRAINT note_links_unique_link UNIQUE (note_id, link_type, link_id, label);
-```
-
-This prevents duplicate links from being created during concurrent saves or race conditions.
-
-**5b. Wrap save in a transactional pattern**
-
-In `NoteEditor.tsx` `performSave`, use Supabase's `.rpc()` or sequential awaits with error handling. Since Supabase JS doesn't have native transactions, the approach is:
-- Delete old links first
-- Insert new links with `ON CONFLICT DO NOTHING` (via the uniqueness constraint)
-- If any step fails, show error but don't lose the user's content
-
----
-
-### Phase 6: Tags GIN Index (Already Done!) and Normalization
-
-The GIN index on `tags` already exists (`idx_session_notes_tags`). What's missing is normalization.
-
-**6a. Normalize tags to lowercase on save**
-
-In `NoteEditor.tsx` and `QuickCaptureModal.tsx`, normalize tags to lowercase before saving:
 ```typescript
-const normalizedTags = tags.map(t => t.trim().toLowerCase());
+// Line 478: Delete all existing links
+await supabase.from("note_links").delete().eq("note_id", noteId);
+// Line 489: Insert new links  
+await supabase.from("note_links").insert(...)
 ```
 
-This prevents "Loot" vs "loot" drift without needing a separate table.
+These `await` calls don't check for errors. If the insert fails (e.g., a constraint violation), it silently fails. This needs error handling and logging.
+
+### Bug 2: `handleNavigateToNote` doesn't update the parent `note` prop
+When navigating via a wikilink or backlink, `handleNavigateToNote` loads the target note's data into local state (title, content, tags, etc.), but the component's `note` prop still points to the original note. This means:
+- Saving after navigating saves the OLD note's ID with the NEW note's content (data corruption risk)
+- The "Delete" and "History" buttons reference the original note
+- Backlinks panel still shows backlinks for the original note
+
+### Bug 3: `@mention` dropdown positioning is broken
+The mention and wikilink dropdowns use `position: fixed` with `top: rect.bottom + 5` and `left: rect.left + 10` based on the textarea's bounding rect. This places both dropdowns at the bottom-left of the entire textarea, not near the cursor. For long notes, the dropdown appears far from where the user is typing.
+
+### Bug 4: `as any` type casts throughout NoteEditor
+The code uses `(data as any).folder`, `(data as any).version`, `(updatedData as any)?.version` extensively. Since the generated types now include `folder`, `version`, and `deleted_at`, these casts are unnecessary and hide potential type errors.
+
+### Bug 5: `PlayerNotesView` doesn't use `resilientChannel`
+`NotesBoard` uses `resilientChannel` for robust reconnection, but `PlayerNotesView` uses raw `supabase.channel()` which can silently disconnect without reconnecting.
+
+### Bug 6: NoteEditor dialog is too cramped at 1339 lines
+The editor is a single massive component with all state, logic, and UI crammed in. The dialog has `max-w-3xl max-h-[90vh] overflow-y-auto` which creates a very long vertical scroll. The Outline panel, Backlinks panel, and Version History are all stacked vertically, making the editor feel cluttered.
+
+### Bug 7: Predefined tag matching breaks after normalization
+Predefined tags use capitalized names ("NPC", "Quest", "Clue"), but tags are normalized to lowercase on save. When the note reloads, `tags.includes(tagDef.name)` checks `"NPC"` against `["npc"]` and fails -- so predefined tag buttons won't appear selected after reopening.
+
+### Bug 8: QuickCaptureModal uses `nanoid()` for note IDs
+The `session_notes` table uses `gen_random_uuid()` as the default for `id`. QuickCaptureModal overrides this with `nanoid()`, which generates a shorter non-UUID string. This could cause issues with foreign key references and UUID validation.
 
 ---
 
-### Phase 7: Enable Realtime for `session_notes`
+## Polish and UX Improvements
 
-The `session_notes` table is NOT in the `supabase_realtime` publication. The realtime subscriptions in `NotesBoard.tsx` and `PlayerNotesView.tsx` are set up in code but won't actually receive any events.
+### 1. Fix link persistence (silent error handling)
+Add `.throwOnError()` or check `error` on the note_links insert call, and add toast feedback if linking fails.
 
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.session_notes;
-```
+### 2. Fix wikilink/backlink navigation (data corruption risk)
+Instead of mutating local state to "navigate" to a different note inside the same dialog, close the editor and reopen it with the target note from the parent's list. This requires a callback like `onNavigateToNote(noteId)` passed from `NotesBoard`, which calls `handleEditNote` with the right note from the notes array.
+
+### 3. Fix tag normalization consistency
+Compare tags case-insensitively when rendering predefined tag buttons: `tags.some(t => t.toLowerCase() === tagDef.name.toLowerCase())`.
+
+### 4. Fix QuickCapture ID generation
+Remove the `id: noteId` from the insert -- let the database generate its own UUID. Update the link creation to use the returned `data.id`.
+
+### 5. Fix dropdown positioning
+For both `@mention` and `[[wikilink]]` dropdowns, compute position relative to the cursor in the textarea using a mirror div or caret coordinates helper, not relative to the textarea element's bounding rect.
+
+### 6. Remove unnecessary `as any` casts
+The generated types now include `folder`, `version`, and `deleted_at`. Replace all `(data as any).folder` with proper typed access.
+
+### 7. PlayerNotesView: use `resilientChannel`
+Switch from raw `supabase.channel()` to `resilientChannel()` for automatic reconnection.
+
+### 8. NoteEditor layout improvements
+- Use a two-panel layout on desktop: left panel for the editor content (toolbar + textarea/preview), right panel for Outline
+- Move Backlinks into a collapsible section that's more prominent
+- Reduce vertical stacking by using horizontal space better
+- Add visual polish: better section separators, grouped action buttons
+
+### 9. NoteCard content preview improvements
+- Render wikilinks (`[[Title]]`) as highlighted text in the preview, similar to @mentions
+- Strip markdown syntax from preview text for cleaner cards
+
+### 10. Graph view empty state and legend
+- Add a color legend showing what node colors mean (folder colors + entity type colors)
+- Improve empty state with a brief instructional guide
+
+### 11. PlayerNotesView wikilink rendering
+Player notes render raw markdown but don't handle `[[wikilinks]]` -- these show as plain text. Add the same WikilinkText rendering (as read-only styled spans, since players can't edit).
 
 ---
 
-## Summary of Database Changes (Single Migration)
+## Technical Implementation Details
 
-```text
-1. DROP + re-ADD note_links_link_type_check (add NOTE, CHARACTER)
-2. ADD version INTEGER column to session_notes
-3. CREATE check_note_version trigger function + trigger
-4. CREATE note_revisions table + indexes + RLS
-5. ADD deleted_at column to session_notes + index
-6. ADD unique constraint on note_links
-7. ADD session_notes to realtime publication
-```
-
-## Summary of Code Changes
+### File Changes Summary
 
 | File | Changes |
 |------|---------|
-| `NoteEditor.tsx` | Version tracking, conflict detection, soft delete, revision creation, tag normalization, version history UI |
-| `NotesBoard.tsx` | Filter out deleted_at, add Trash tab |
-| `NoteGraph.tsx` | Filter out deleted_at |
-| `PlayerNotesView.tsx` | Fix `players` to `SHARED`, filter out deleted_at |
-| `WikilinkAutocomplete.tsx` | Filter out deleted_at |
-| `NoteBacklinks.tsx` | Filter out deleted_at |
-| `NoteFolderSelector.tsx` | Filter out deleted_at |
+| `NoteEditor.tsx` | Fix navigation (use callback), fix tag comparison, remove `as any` casts, add error handling on link saves, fix dropdown positioning, layout improvements |
+| `NotesBoard.tsx` | Add `onNavigateToNote` handler that finds + opens target note, pass callback to NoteEditor |
+| `NoteCard.tsx` | Strip markdown and render `[[wikilinks]]` in preview |
+| `QuickCaptureModal.tsx` | Remove manual `id` generation, use returned `data.id` for link creation |
+| `WikilinkAutocomplete.tsx` | No changes needed |
+| `NoteBacklinks.tsx` | No changes needed |
+| `NoteOutline.tsx` | No changes needed |
+| `NoteFolderSelector.tsx` | No changes needed |
+| `NoteLinkSelector.tsx` | No changes needed |
+| `NoteGraph.tsx` | Add color legend |
+| `PlayerNotesView.tsx` | Switch to `resilientChannel`, add wikilink rendering in note reader |
 
-## What Is NOT Changed
+### No database changes needed
+All schema, constraints, triggers, and RLS policies are correct.
 
-- All existing UI layout, routing, and component structure
-- All existing @mention and wikilink parsing logic
-- Tags system (predefined + custom)
-- Folder/notebook organization
-- Graph view
-- Outline sidebar
-- Quick capture (Cmd+J)
-- All RLS policies on session_notes (existing ones still apply)
-- AddItemToSessionDialog integration
+### Implementation Order
+1. Fix critical bugs first (link persistence, navigation corruption, tag matching, QuickCapture ID)
+2. Remove type casts and fix `PlayerNotesView` channel
+3. Improve dropdown positioning
+4. Polish NoteEditor layout
+5. Polish NoteCard preview, NoteGraph legend, PlayerNotesView wikilinks
 
-## Implementation Order
-
-1. Database migration (all schema changes in one migration)
-2. Fix PlayerNotesView visibility bug
-3. Add soft-delete filtering to all components
-4. Add version tracking to NoteEditor
-5. Add revision history table writes + UI
-6. Add tag normalization

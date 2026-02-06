@@ -9,6 +9,8 @@ import { Loader2, ScrollText, Search, Pin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format } from 'date-fns';
+import { resilientChannel } from '@/lib/realtime';
+import { WikilinkText } from '@/components/notes/editor/WikilinkText';
 
 interface Note {
   id: string;
@@ -34,9 +36,8 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
   useEffect(() => {
     loadSharedNotes();
 
-    // Subscribe to real-time updates
-    const channel = supabase
-      .channel('player-notes-changes')
+    // Use resilientChannel for automatic reconnection
+    const channel = resilientChannel(supabase, `player-notes-${playerId}`)
       .on(
         'postgres_changes',
         {
@@ -45,20 +46,15 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
           table: 'session_notes',
           filter: `visibility=eq.SHARED`,
         },
-        () => {
-          loadSharedNotes();
-        }
+        () => { loadSharedNotes(); }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [playerId]);
 
   const loadSharedNotes = async () => {
     try {
-      // Get campaigns the player is part of
       const { data: links } = await supabase
         .from('player_campaign_links')
         .select('campaign_id, campaigns(name)')
@@ -70,9 +66,8 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
         return;
       }
 
-      const campaignIds = links.map((l) => l.campaign_id);
+      const campaignIds = links.map(l => l.campaign_id);
 
-      // Get all shared notes from these campaigns
       const { data: notesData, error } = await supabase
         .from('session_notes')
         .select('id, title, content_markdown, tags, is_pinned, updated_at, campaign_id')
@@ -84,9 +79,8 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
 
       if (error) throw error;
 
-      // Add campaign names to notes
-      const notesWithCampaigns = notesData?.map((note) => {
-        const link = links.find((l) => l.campaign_id === note.campaign_id);
+      const notesWithCampaigns = notesData?.map(note => {
+        const link = links.find(l => l.campaign_id === note.campaign_id);
         return {
           id: note.id,
           title: note.title || 'Untitled',
@@ -107,12 +101,12 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
     }
   };
 
-  const filteredNotes = notes.filter((note) => {
+  const filteredNotes = notes.filter(note => {
     const query = searchQuery.toLowerCase();
     return (
       note.title.toLowerCase().includes(query) ||
       note.content.toLowerCase().includes(query) ||
-      note.tags.some((tag) => tag.toLowerCase().includes(query)) ||
+      note.tags.some(tag => tag.toLowerCase().includes(query)) ||
       note.campaign_name?.toLowerCase().includes(query)
     );
   });
@@ -131,12 +125,8 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
       <div className="lg:col-span-1 space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search shared notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Search shared notes..." value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
 
         <ScrollArea className="h-[calc(100vh-16rem)]">
@@ -153,16 +143,12 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
                 </CardContent>
               </Card>
             ) : (
-              filteredNotes.map((note) => (
-                <Card
-                  key={note.id}
+              filteredNotes.map(note => (
+                <Card key={note.id}
                   className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedNote?.id === note.id
-                      ? 'border-brass bg-brass/5'
-                      : 'border-border'
+                    selectedNote?.id === note.id ? 'border-brass bg-brass/5' : 'border-border'
                   }`}
-                  onClick={() => setSelectedNote(note)}
-                >
+                  onClick={() => setSelectedNote(note)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base font-cinzel flex items-center gap-2">
@@ -177,15 +163,11 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
                   {note.tags.length > 0 && (
                     <CardContent className="pt-0">
                       <div className="flex flex-wrap gap-1">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
+                        {note.tags.slice(0, 3).map(tag => (
+                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                         ))}
                         {note.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{note.tags.length - 3}
-                          </Badge>
+                          <Badge variant="secondary" className="text-xs">+{note.tags.length - 3}</Badge>
                         )}
                       </div>
                     </CardContent>
@@ -205,23 +187,18 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <CardTitle className="text-2xl font-cinzel flex items-center gap-2">
-                    {selectedNote.is_pinned && (
-                      <Pin className="w-4 h-4 text-brass fill-brass" />
-                    )}
+                    {selectedNote.is_pinned && <Pin className="w-4 h-4 text-brass fill-brass" />}
                     {selectedNote.title}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    {selectedNote.campaign_name} •{' '}
-                    {format(new Date(selectedNote.updated_at), 'MMMM d, yyyy')}
+                    {selectedNote.campaign_name} • {format(new Date(selectedNote.updated_at), 'MMMM d, yyyy')}
                   </CardDescription>
                 </div>
               </div>
               {selectedNote.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedNote.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
+                  {selectedNote.tags.map(tag => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
                   ))}
                 </div>
               )}
@@ -230,7 +207,14 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
             <CardContent className="pt-6">
               <ScrollArea className="h-[calc(100vh-24rem)]">
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p><WikilinkText>{children}</WikilinkText></p>,
+                      li: ({ children }) => <li><WikilinkText>{children}</WikilinkText></li>,
+                      td: ({ children }) => <td><WikilinkText>{children}</WikilinkText></td>,
+                    }}
+                  >
                     {selectedNote.content}
                   </ReactMarkdown>
                 </div>
@@ -241,9 +225,7 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
           <Card className="h-full border-dashed">
             <CardContent className="flex flex-col items-center justify-center h-full text-center">
               <ScrollText className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="font-cinzel text-lg font-semibold mb-2">
-                Select a note to read
-              </h3>
+              <h3 className="font-cinzel text-lg font-semibold mb-2">Select a note to read</h3>
               <p className="text-sm text-muted-foreground max-w-md">
                 Choose a shared note from the list to view its full content. Your DM shares
                 these notes during sessions to help you follow the story.

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Zap, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { nanoid } from 'nanoid';
+import NoteFolderSelector from './NoteFolderSelector';
 
 interface QuickCaptureModalProps {
   campaignId: string;
@@ -33,6 +34,7 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [folder, setFolder] = useState<string | null>(null);
   const [autoTags, setAutoTags] = useState<string[]>([]);
   const [contextEntity, setContextEntity] = useState<ContextEntity | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -157,6 +159,7 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
         visibility: isDM ? 'DM_ONLY' : 'PRIVATE',
         tags: autoTags,
         is_pinned: false,
+        folder,
       });
 
       if (noteError) throw noteError;
@@ -181,6 +184,7 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
       // Reset and close
       setTitle('');
       setContent('');
+      setFolder(null);
       setAutoTags([]);
       setContextEntity(null);
       setOpen(false);
@@ -260,6 +264,17 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
                   handleSave();
                 }
               }}
+            />
+          </div>
+
+          {/* Notebook */}
+          <div className="space-y-2">
+            <Label>Notebook (optional)</Label>
+            <NoteFolderSelector
+              campaignId={campaignId}
+              value={folder}
+              onChange={setFolder}
+              className="w-full"
             />
           </div>
 

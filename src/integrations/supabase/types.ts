@@ -4858,6 +4858,7 @@ export type Database = {
           content: Json | null
           content_markdown: string | null
           created_at: string | null
+          folder: string | null
           id: string
           is_pinned: boolean | null
           session_id: string | null
@@ -4872,6 +4873,7 @@ export type Database = {
           content?: Json | null
           content_markdown?: string | null
           created_at?: string | null
+          folder?: string | null
           id?: string
           is_pinned?: boolean | null
           session_id?: string | null
@@ -4886,6 +4888,7 @@ export type Database = {
           content?: Json | null
           content_markdown?: string | null
           created_at?: string | null
+          folder?: string | null
           id?: string
           is_pinned?: boolean | null
           session_id?: string | null

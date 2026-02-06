@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pin, Lock, Users, Eye, FolderPlus, Calendar } from "lucide-react";
+import { Pin, Lock, Users, Eye, FolderPlus, Calendar, FolderOpen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
@@ -16,6 +16,7 @@ interface Note {
   created_at: string;
   updated_at: string;
   session_id?: string | null;
+  folder?: string | null;
 }
 
 interface Session {
@@ -126,13 +127,21 @@ const NoteCard = ({ note, onClick, isDM, isOwner, campaignId, session }: NoteCar
         </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* Session pill */}
-        {sessionDisplayName && (
-          <Badge variant="secondary" className="text-xs rounded-full px-2.5 py-0.5 bg-arcanePurple/10 text-arcanePurple border-arcanePurple/20">
-            <Calendar className="w-3 h-3 mr-1" />
-            {sessionDisplayName}
-          </Badge>
-        )}
+        {/* Session + Folder pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {sessionDisplayName && (
+            <Badge variant="secondary" className="text-xs rounded-full px-2.5 py-0.5 bg-arcanePurple/10 text-arcanePurple border-arcanePurple/20">
+              <Calendar className="w-3 h-3 mr-1" />
+              {sessionDisplayName}
+            </Badge>
+          )}
+          {note.folder && (
+            <Badge variant="secondary" className="text-xs rounded-full px-2.5 py-0.5 bg-primary/10 text-primary border-primary/20">
+              <FolderOpen className="w-3 h-3 mr-1" />
+              {note.folder}
+            </Badge>
+          )}
+        </div>
 
         {preview && (
           <p className="text-sm text-muted-foreground line-clamp-2">

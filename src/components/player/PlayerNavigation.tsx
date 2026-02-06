@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Shield, Users, Settings, ChevronLeft, ChevronRight, LogOut, Crown, ScrollText } from 'lucide-react';
+import { Home, Shield, Settings, ChevronLeft, ChevronRight, LogOut, Crown, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlayer } from '@/hooks/usePlayer';
@@ -47,9 +47,8 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
   };
 
   const menuItems = [
-    { icon: Home, label: 'Home', path: '/' },
+    { icon: Home, label: 'Dashboard', path: `/player/${playerId}` },
     { icon: Shield, label: 'My Characters', path: `/player/${playerId}/characters` },
-    { icon: Users, label: 'My Campaigns', path: `/player/${playerId}` },
     { icon: ScrollText, label: 'Shared Notes', path: `/player/${playerId}/notes` },
     { icon: Settings, label: 'Settings', path: `/player/${playerId}/settings` },
   ];
@@ -64,9 +63,6 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
 
   const isActivePath = (path: string) => {
     if (path === `/player/${playerId}`) {
-      return location.pathname === path;
-    }
-    if (path === '/') {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);

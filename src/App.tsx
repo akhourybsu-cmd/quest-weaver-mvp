@@ -26,7 +26,7 @@ import Inventory from "./pages/Inventory";
 import Notes from "./pages/Notes";
 import Lore from "./pages/Lore";
 import NotFound from "./pages/NotFound";
-import { PlayerHome } from "./components/permissions/PlayerHome";
+
 import AuditHarness from "./pages/dev/AuditHarness";
 import AdminTools from "./pages/dev/AdminTools";
 import PlayerHub from "@/pages/PlayerHub";
@@ -101,7 +101,7 @@ const App = () => {
                     <Route path="/session/player" element={<SessionPlayer />} />
                     <Route path="/session/spectator" element={<SessionSpectator />} />
                     <Route path="/player/waiting" element={<PlayerWaitingRoom />} />
-                    <Route path="/player-home" element={<PlayerHome />} />
+                    
                     <Route path="/map" element={<CombatMap />} />
                     <Route path="/world-map" element={<WorldMap />} />
                     <Route path="/timeline" element={<CampaignTimeline />} />

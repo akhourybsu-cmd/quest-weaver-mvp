@@ -2,7 +2,7 @@ import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlayer } from "@/hooks/usePlayer";
-import { PlayerNavigation } from "@/components/player/PlayerNavigation";
+import { PlayerPageLayout } from "@/components/player/PlayerPageLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerNPCDirectory } from "@/components/player/PlayerNPCDirectory";
@@ -10,7 +10,6 @@ import { PlayerLocationsView } from "@/components/player/PlayerLocationsView";
 import { PlayerNotesView } from "@/components/player/PlayerNotesView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Swords, Loader2, User, Shield } from "lucide-react";
@@ -35,27 +34,19 @@ export default function PlayerCampaignView() {
   const loadCampaign = async () => {
     const { data } = await supabase
       .from("campaigns")
-      .select(`
-        *,
-        campaign_sessions!campaigns_live_session_id_fkey(status)
-      `)
+      .select(`*, campaign_sessions!campaigns_live_session_id_fkey(status)`)
       .eq("code", campaignCode)
       .single();
 
     setCampaign(data);
-    
-    // Check session status
+
     if (data?.live_session_id && data.campaign_sessions) {
       const status = data.campaign_sessions.status;
-      if (status === 'live' || status === 'paused') {
-        setSessionStatus(status);
-      } else {
-        setSessionStatus('offline');
-      }
+      setSessionStatus(status === 'live' || status === 'paused' ? status : 'offline');
     } else {
       setSessionStatus('offline');
     }
-    
+
     setLoading(false);
   };
 
@@ -65,11 +56,7 @@ export default function PlayerCampaignView() {
       if (!user) return;
 
       const { data: campaignData } = await supabase
-        .from('campaigns')
-        .select('id')
-        .eq('code', campaignCode)
-        .single();
-
+        .from('campaigns').select('id').eq('code', campaignCode).single();
       if (!campaignData) return;
 
       const { data, error } = await supabase
@@ -102,128 +89,110 @@ export default function PlayerCampaignView() {
     );
   }
 
-  if (!player) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (!campaign) {
-    return <div className="p-8 text-center">Campaign not found</div>;
-  }
+  if (!player) return <Navigate to="/" replace />;
+  if (!campaign) return <div className="p-8 text-center">Campaign not found</div>;
 
   const getStatusBadge = () => {
-    if (sessionStatus === 'live') {
-      return <Badge className="bg-green-500 hover:bg-green-600">🔴 Live</Badge>;
-    } else if (sessionStatus === 'paused') {
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">⏸️ Paused</Badge>;
-    }
+    if (sessionStatus === 'live') return <Badge className="bg-green-500 hover:bg-green-600">🔴 Live</Badge>;
+    if (sessionStatus === 'paused') return <Badge className="bg-yellow-500 hover:bg-yellow-600">⏸️ Paused</Badge>;
     return <Badge variant="outline">Offline</Badge>;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex">
-      <PlayerNavigation playerId={player.id} />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto p-8">
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(`/player/${player.id}`)}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-4xl font-cinzel font-bold text-foreground">
-                  {campaign.name}
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  Campaign Code: <span className="font-mono font-semibold">{campaignCode}</span>
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {getStatusBadge()}
-                {sessionStatus !== 'offline' && (
-                  <Button onClick={handleJoinSession}>
-                    <Swords className="w-4 h-4 mr-2" />
-                    Join Session
-                  </Button>
-                )}
-              </div>
+    <PlayerPageLayout playerId={player.id} mobileTitle={campaign.name}>
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/player/${player.id}`)}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-cinzel font-bold text-foreground">
+                {campaign.name}
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Campaign Code: <span className="font-mono font-semibold">{campaignCode}</span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {getStatusBadge()}
+              {sessionStatus !== 'offline' && (
+                <Button onClick={handleJoinSession}>
+                  <Swords className="w-4 h-4 mr-2" />
+                  Join Session
+                </Button>
+              )}
             </div>
           </div>
+        </div>
 
-          <Card className="mb-6 rounded-2xl shadow-xl border-brass/30">
-            <CardHeader>
-              <CardTitle className="font-cinzel text-xl">Your Character</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {character ? (
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-brass/30">
-                    <AvatarImage src={character.portrait_url} />
-                    <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl">
-                      {character.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{character.name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Shield className="w-4 h-4" />
-                      Level {character.level} {character.class}
-                    </div>
+        <Card className="mb-6 rounded-2xl shadow-xl border-brass/30">
+          <CardHeader>
+            <CardTitle className="font-cinzel text-xl">Your Character</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {character ? (
+              <div className="flex items-center gap-4">
+                <Avatar className="w-16 h-16 border-2 border-brass/30">
+                  <AvatarImage src={character.portrait_url} />
+                  <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl">
+                    {character.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{character.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shield className="w-4 h-4" />
+                    Level {character.level} {character.class}
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCharacterSelect(true)}
-                  >
-                    Change Character
-                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-6">
-                  <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-4">
-                    You haven't assigned a character to this campaign yet
-                  </p>
-                  <Button onClick={() => setShowCharacterSelect(true)}>
-                    <User className="w-4 h-4 mr-2" />
-                    Select Character
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-      
-      <Tabs defaultValue="quests">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="quests">Quests</TabsTrigger>
-          <TabsTrigger value="npcs">NPCs</TabsTrigger>
-          <TabsTrigger value="locations">Locations</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-        </TabsList>
+                <Button variant="outline" onClick={() => setShowCharacterSelect(true)}>
+                  Change Character
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">
+                  You haven't assigned a character to this campaign yet
+                </p>
+                <Button onClick={() => setShowCharacterSelect(true)}>
+                  <User className="w-4 h-4 mr-2" />
+                  Select Character
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="quests" className="mt-4">
-          <PlayerQuestTracker campaignId={campaign.id} />
-        </TabsContent>
+        <Tabs defaultValue="quests">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="quests">Quests</TabsTrigger>
+            <TabsTrigger value="npcs">NPCs</TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="npcs" className="mt-4">
-          <PlayerNPCDirectory campaignId={campaign.id} />
-        </TabsContent>
-
-        <TabsContent value="locations" className="mt-4">
-          <PlayerLocationsView campaignId={campaign.id} />
-        </TabsContent>
-
+          <TabsContent value="quests" className="mt-4">
+            <PlayerQuestTracker campaignId={campaign.id} />
+          </TabsContent>
+          <TabsContent value="npcs" className="mt-4">
+            <PlayerNPCDirectory campaignId={campaign.id} />
+          </TabsContent>
+          <TabsContent value="locations" className="mt-4">
+            <PlayerLocationsView campaignId={campaign.id} />
+          </TabsContent>
           <TabsContent value="notes" className="mt-4">
-            {player && <PlayerNotesView playerId={player.id} />}
+            {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
           </TabsContent>
         </Tabs>
-        </div>
       </div>
 
       {campaign && (
@@ -237,6 +206,6 @@ export default function PlayerCampaignView() {
           onCancel={() => setShowCharacterSelect(false)}
         />
       )}
-    </div>
+    </PlayerPageLayout>
   );
 }

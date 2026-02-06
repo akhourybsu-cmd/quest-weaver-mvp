@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
-import { PlayerNavigation } from '@/components/player/PlayerNavigation';
+import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
 import { CharacterPortraitEditor } from '@/components/character/CharacterPortraitEditor';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,11 +38,7 @@ const PlayerCharacterViewPage = () => {
       if (error) throw error;
 
       if (!data) {
-        toast({
-          title: 'Character Not Found',
-          description: 'This character does not exist or you do not have access to it.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Character Not Found', description: 'This character does not exist or you do not have access to it.', variant: 'destructive' });
         navigate(`/player/${player?.id}/characters`);
         return;
       }
@@ -53,11 +49,7 @@ const PlayerCharacterViewPage = () => {
       });
     } catch (error) {
       console.error('Error loading character:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load character details.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to load character details.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -71,65 +63,51 @@ const PlayerCharacterViewPage = () => {
     );
   }
 
-  if (!player) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (!character) {
-    return <Navigate to={`/player/${player.id}/characters`} replace />;
-  }
+  if (!player) return <Navigate to="/" replace />;
+  if (!character) return <Navigate to={`/player/${player.id}/characters`} replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex">
-      <PlayerNavigation playerId={player.id} />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto p-8">
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(`/player/${player.id}/characters`)}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Characters
-            </Button>
-            
-            <div className="flex items-start gap-4">
-              <CharacterPortraitEditor
-                characterId={character.id}
-                characterName={character.name}
-                currentPortraitUrl={character.portrait_url}
-                onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
-              />
-              
-              <div>
-                <h1 className="text-4xl font-cinzel font-bold text-foreground">
-                  {character.name}
-                </h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-muted-foreground">
-                    Level {character.level} {character.class}
-                  </p>
-                  {character.subclass_name && (
-                    <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-                      {character.subclass_name}
-                    </Badge>
-                  )}
-                  {character.level >= 3 && !character.subclass_name && (
-                    <Badge variant="outline" className="border-amber-500/50 text-amber-500 animate-pulse">
-                      Subclass Available!
-                    </Badge>
-                  )}
-                </div>
+    <PlayerPageLayout playerId={player.id} mobileTitle={character.name}>
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(`/player/${player.id}/characters`)}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Characters
+          </Button>
+
+          <div className="flex items-start gap-4">
+            <CharacterPortraitEditor
+              characterId={character.id}
+              characterName={character.name}
+              currentPortraitUrl={character.portrait_url}
+              onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
+            />
+            <div>
+              <h1 className="text-4xl font-cinzel font-bold text-foreground">{character.name}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-muted-foreground">Level {character.level} {character.class}</p>
+                {character.subclass_name && (
+                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                    {character.subclass_name}
+                  </Badge>
+                )}
+                {character.level >= 3 && !character.subclass_name && (
+                  <Badge variant="outline" className="border-amber-500/50 text-amber-500 animate-pulse">
+                    Subclass Available!
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
-
-          <PlayerCharacterSheet characterId={character.id} />
         </div>
+
+        <PlayerCharacterSheet characterId={character.id} />
       </div>
-    </div>
+    </PlayerPageLayout>
   );
 };
 

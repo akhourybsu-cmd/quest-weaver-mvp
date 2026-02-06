@@ -1,307 +1,222 @@
 
 
-# AI Asset Generator - Campaign-Aware Content Creation
+# Obsidian-Inspired Notes System Overhaul
 
-## Overview
+## Summary
 
-Add an AI-powered "Generate with AI" button to all asset editor dialogs that intelligently fills empty fields while respecting user-provided values and maintaining consistency with existing campaign lore.
+Enhance the existing notes system with Obsidian-style organization features: **wikilink note-to-note linking**, **backlinks panel**, **folder/notebook grouping**, **note graph view**, and **heading outline sidebar**. All existing functionality (session grouping, tags, @mentions, entity links, visibility, pinning, templates, autosave) is preserved unchanged.
 
 ---
 
-## Architecture
+## Database Changes
 
-```text
-+------------------+       +----------------------+       +------------------+
-|  Asset Editor    |  -->  |  AI Generation Hook  |  -->  |  Edge Function   |
-|  (NPC, Location) |       |  (useAIAssetGen)     |       |  generate-asset  |
-+------------------+       +----------------------+       +------------------+
-        |                           |                            |
-        |  existing_fields          |  context_pack              |  AI Response
-        |  locked_fields            |  campaign_snapshot         |  filled_fields
-        +---------------------------+----------------------------+
-                                    |
-                              Campaign Context
-                              (NPCs, Factions, Locations, Lore, Pitch)
+### Migration: Add `folder` column to `session_notes`
+
+```sql
+ALTER TABLE public.session_notes ADD COLUMN folder TEXT DEFAULT NULL;
+CREATE INDEX idx_session_notes_folder ON public.session_notes(campaign_id, folder);
+```
+
+No other database changes needed:
+- `note_links` already supports arbitrary `link_type` text values, so `NOTE` works immediately
+- `idx_note_links_type` index on `(link_type, link_id)` already exists for efficient backlink lookups
+- RLS policies on both tables already cover the new use cases
+
+---
+
+## New Files
+
+### 1. `src/components/notes/NoteBacklinks.tsx`
+Collapsible panel showing notes that reference the current note.
+
+- Queries `note_links` where `link_type = 'NOTE'` and `link_id = currentNoteId`
+- Also does a text search on `session_notes.content_markdown` for `[[Current Note Title]]` as fallback
+- Each backlink shows: title, snippet excerpt, clickable to switch to that note
+- Renders inside the NoteEditor dialog below Linked Entities
+
+### 2. `src/components/notes/NoteOutline.tsx`
+Heading-based table of contents sidebar for the current note.
+
+- Parses markdown content for `#`, `##`, `###` headings in real-time
+- Displays indented clickable list
+- Clicking a heading scrolls the textarea to that position
+- Only shows when the note has 2+ headings (otherwise hidden to reduce clutter)
+- On mobile, renders as a collapsible dropdown above the editor instead of a sidebar
+
+### 3. `src/components/notes/WikilinkAutocomplete.tsx`
+Autocomplete dropdown triggered by typing `[[` in the note editor.
+
+- When user types `[[`, shows a filtered list of existing note titles in the same campaign
+- Queries `session_notes` filtered by campaign_id, matching title against typed text
+- On selection, inserts `[[Note Title]]` and closes the dropdown
+- Pressing `Escape` or `]]` closes without selecting
+- Positioned near the cursor similar to existing @mention dropdown
+
+### 4. `src/components/notes/NoteFolderSelector.tsx`
+Combo-box for selecting or creating a notebook/folder.
+
+- Shows existing folder names from campaign notes (deduplicated)
+- Allows typing a new folder name (creates on save)
+- Suggested defaults displayed as placeholder text: "Session Prep", "World Notes", "Plot Threads"
+- Uses the existing Popover + Command pattern from NoteLinkSelector
+
+### 5. `src/components/notes/NoteGraph.tsx`
+Force-directed graph view of note connections, reusing the pattern from `LoreGraph.tsx`.
+
+- Nodes = notes in the campaign (colored by folder, or by visibility if no folder)
+- Edges = note_links with `link_type = 'NOTE'` (note-to-note links) + entity links
+- Uses `react-force-graph-2d` (already installed)
+- Clicking a node opens that note in the editor
+- Responsive sizing using container ref (same as LoreGraph)
+
+---
+
+## Modified Files
+
+### `src/components/notes/NoteEditor.tsx`
+Changes (all additive, existing code untouched):
+
+1. **Add `folder` state** alongside existing state variables (title, content, visibility, etc.)
+2. **Load/save folder** in existing `loadNoteSession` and `performSave` functions (just add `folder` to select/update/insert)
+3. **Add NoteFolderSelector** in the form, between the Session selector and the Pin/Autosave toggles
+4. **Add `[[` wikilink detection** in `handleContentChange`, similar to existing `@` mention detection:
+   - Detect `[[` pattern, show WikilinkAutocomplete dropdown
+   - On select, insert `[[Note Title]]` into content
+5. **Parse wikilinks on save** in `performSave`:
+   - Extract all `[[Note Title]]` matches from content
+   - Resolve titles to note IDs via a query to `session_notes`
+   - Create `note_links` entries with `link_type = 'NOTE'`
+   - Existing entity links are preserved (the delete-and-reinsert pattern already handles this)
+6. **Render `[[wikilinks]]` in preview** tab:
+   - Custom ReactMarkdown component to render `[[Note Title]]` as styled clickable spans
+7. **Add NoteBacklinks panel** below Linked Entities section
+8. **Add NoteOutline panel** as a collapsible section in the editor (between toolbar and textarea, or as a right-side panel on desktop)
+
+### `src/components/notes/NotesBoard.tsx`
+Changes (all additive):
+
+1. **Add `folder` to Note interface** and to the `loadNotes` query (`.select("*")` already fetches it)
+2. **Add `groupMode` state**: `'session' | 'notebook' | 'flat'` (default: `'session'` to preserve current behavior)
+3. **Add group-by toggle** in the header area, next to the session filter dropdown
+4. **Add notebook grouping logic** alongside existing session grouping:
+   - When `groupMode === 'notebook'`: group by `note.folder` (or "Unfiled")
+   - When `groupMode === 'flat'`: no grouping, just a flat list
+   - When `groupMode === 'session'`: existing behavior (unchanged)
+5. **Add "Graph" toggle button** in the header to switch between list view and graph view
+6. **Render NoteGraph** when graph view is active
+
+### `src/components/notes/NoteCard.tsx`
+Minimal change:
+
+1. **Add `folder` to the Note interface** (optional field)
+2. **Show folder badge** on the card (if present), next to session pill
+
+### `src/components/notes/QuickCaptureModal.tsx`
+Minimal change:
+
+1. **Add optional NoteFolderSelector** between the Content textarea and Auto Tags section
+2. **Include folder in the insert** call when saving
+
+---
+
+## Wikilink Resolution Logic (in NoteEditor save)
+
+```
+On save:
+1. Parse content for all [[...]] matches
+2. Collect unique titles
+3. Query session_notes where campaign_id = X and title IN (titles)
+4. For matched titles, create note_links with link_type='NOTE', link_id=matched_note_id
+5. For unmatched titles, create note_links with link_type='NOTE', link_id=null, label=title
+   (these are "dangling" links -- the note doesn't exist yet, but the reference is preserved)
+6. Merge with existing entity links (NPC, LOCATION, QUEST, CHARACTER types)
+7. Delete old links + insert all new links (existing pattern)
 ```
 
 ---
 
-## Feature Components
+## What Is NOT Changed
 
-### 1. Edge Function: `supabase/functions/generate-asset/index.ts`
+- All existing session-based grouping logic in NotesBoard
+- All existing @mention autocomplete in NoteEditor
+- All existing NoteLinkSelector entity linking
+- All existing tag system (predefined + custom)
+- All existing visibility (DM_ONLY/SHARED/PRIVATE) logic
+- All existing pin/autosave functionality
+- All existing templates
+- All existing RLS policies
+- All existing routes (`/notes`, campaign tabs)
+- PlayerNotesView component
+- QuickCaptureModal keyboard shortcut (Cmd+J)
+- AddItemToSessionDialog integration
+- Realtime subscriptions
 
-Handles AI generation using Lovable AI gateway with campaign context.
+---
 
-**Input payload:**
+## Technical Details
+
+### Outline Parser
 ```typescript
-{
-  asset_type: 'npc' | 'location' | 'faction' | 'item' | 'quest' | 'lore',
-  user_prompt?: string,           // Optional 1-3 sentence guidance
-  existing_fields: Record<string, any>,  // Current form values
-  locked_fields: string[],        // Fields user has filled (immutable)
-  campaign_context: {
-    campaign_id: string,
-    tone?: string,                // From campaign_pitch
-    themes?: string[],            // From campaign_pitch
-    pitch_text?: string,          // Campaign summary
-    canon_entities: {
-      npcs: Array<{ name: string, role?: string, location?: string }>,
-      factions: Array<{ name: string, description?: string }>,
-      locations: Array<{ name: string, type?: string, parent?: string }>,
-      lore_pages: Array<{ title: string, category: string, excerpt?: string }>,
-    },
-    recent_sessions?: Array<{ name: string, notes?: string }>,
+function parseOutline(markdown: string): { level: number; text: string; offset: number }[] {
+  const headings = [];
+  const lines = markdown.split('\n');
+  let offset = 0;
+  for (const line of lines) {
+    const match = line.match(/^(#{1,6})\s+(.+)/);
+    if (match) {
+      headings.push({ level: match[1].length, text: match[2], offset });
+    }
+    offset += line.length + 1;
   }
+  return headings;
 }
 ```
 
-**Output format (strict JSON):**
+### Wikilink Parser
 ```typescript
-{
-  filled_fields: Record<string, any>,  // Only fields that were empty
-  assumptions: string[],               // What AI assumed
-  consistency_checks: Array<{
-    check: string,
-    result: 'pass' | 'adjusted' | 'potential_conflict',
-    details: string
-  }>,
-  followup_questions?: string[]       // Only if absolutely necessary
+function parseWikilinks(markdown: string): string[] {
+  const titles: string[] = [];
+  const matches = markdown.matchAll(/\[\[([^\]]+)\]\]/g);
+  for (const match of matches) {
+    if (!titles.includes(match[1])) titles.push(match[1]);
+  }
+  return titles;
 }
 ```
 
-### 2. React Hook: `src/hooks/useAIAssetGenerator.ts`
-
-Manages generation state, context building, and response handling.
-
+### Group-by Notebook Logic
 ```typescript
-interface UseAIAssetGeneratorOptions {
-  campaignId: string;
-  assetType: AssetType;
-}
-
-interface UseAIAssetGeneratorResult {
-  isGenerating: boolean;
-  error: string | null;
-  lastResult: GenerationResult | null;
-  generate: (
-    existingFields: Record<string, any>,
-    lockedFields: string[],
-    userPrompt?: string
-  ) => Promise<GenerationResult>;
-  clearResult: () => void;
-}
-```
-
-### 3. Context Builder: `src/lib/campaignContextBuilder.ts`
-
-Fetches and compiles campaign context for AI consumption.
-
-```typescript
-interface CampaignContextPack {
-  campaign_id: string;
-  tone?: string;
-  themes?: string[];
-  pitch_text?: string;
-  canon_entities: {
-    npcs: CanonNPC[];
-    factions: CanonFaction[];
-    locations: CanonLocation[];
-    lore_pages: CanonLore[];
-  };
-  recent_sessions?: SessionSummary[];
-}
-
-async function buildCampaignContext(
-  campaignId: string,
-  assetType: AssetType,
-  currentEntityName?: string
-): Promise<CampaignContextPack>
-```
-
-**Context Selection Logic:**
-- Fetches campaign_pitch for tone/themes
-- Fetches top 20 most relevant entities per type (ordered by recency + tags)
-- Limits context to ~4000 tokens to stay within AI context window
-- Excludes the current entity being edited
-
-### 4. UI Component: `src/components/ai/AIGenerateButton.tsx`
-
-Reusable button + preview dialog for all asset editors.
-
-```typescript
-interface AIGenerateButtonProps {
-  campaignId: string;
-  assetType: AssetType;
-  getFormValues: () => Record<string, any>;
-  getLockedFields: () => string[];
-  onApply: (filledFields: Record<string, any>) => void;
-}
-```
-
-**UI Flow:**
-1. Button displays "Generate with AI" with sparkle icon
-2. Click opens modal with optional prompt textarea
-3. On generate: shows loading spinner
-4. On success: shows diff preview (current vs suggested)
-5. User can accept all, accept individual fields, or cancel
-6. On accept: calls `onApply` with selected fields
-
-### 5. Preview Dialog: `src/components/ai/AIGenerationPreview.tsx`
-
-Shows AI suggestions with diff view before applying.
-
-**Features:**
-- Side-by-side comparison of current vs suggested values
-- Checkboxes to select which suggestions to apply
-- "Assumptions Made" collapsible section
-- "Consistency Checks" collapsible section with pass/warning indicators
-- Apply Selected / Apply All / Cancel buttons
-
----
-
-## Asset Type Field Schemas
-
-Each asset type has a defined schema for AI generation:
-
-### NPC Fields
-- name*, role, appearance, personality, voice_quirks
-- background, goals, fears, secrets
-- relationships (references to existing entities)
-- plot_hooks (3-5 suggested)
-- stat_block_suggestion (level/cr, archetype)
-
-### Location Fields
-- name*, location_type, region/parent
-- sensory_description (sights, sounds, smells)
-- purpose, history, atmosphere
-- notable_npcs, factions_present
-- dangers, secrets, adventure_hooks (3-5)
-
-### Faction Fields
-- name*, motto, public_goal, true_goal
-- leadership, ranks, recruitment_method
-- allies, enemies, territory
-- resources, methods, weakness
-- quest_hooks (3), rumors (3)
-
-### Item Fields
-- name*, type, rarity, description
-- properties, attunement_required
-- lore_history, creator
-
-### Quest Fields
-- title*, description, objectives
-- rewards, difficulty, quest_type
-- key_npcs, key_locations
-- complications, twists
-
----
-
-## Integration Points
-
-### EnhancedNPCEditor.tsx
-Add AI button in header, integrate with form state:
-```tsx
-<AIGenerateButton
-  campaignId={campaignId}
-  assetType="npc"
-  getFormValues={() => ({
-    name, pronouns, roleTitle, publicBio, gmNotes, secrets, tags, status, alignment
-  })}
-  getLockedFields={() => getFilledFieldKeys()}
-  onApply={(fields) => applyGeneratedFields(fields)}
-/>
-```
-
-### LocationDialog.tsx
-Add AI button in dialog header with location-specific fields.
-
-### FactionEditor.tsx
-Add AI button for faction-specific generation.
-
-### Lore Creators (NPCCreator, FactionCreator, etc.)
-Add AI generation to lore-specific forms.
-
----
-
-## Files to Create
-
-| File | Description |
-|------|-------------|
-| `supabase/functions/generate-asset/index.ts` | Edge function for AI generation |
-| `src/hooks/useAIAssetGenerator.ts` | React hook for generation state |
-| `src/lib/campaignContextBuilder.ts` | Context aggregation utility |
-| `src/lib/assetFieldSchemas.ts` | Field schemas per asset type |
-| `src/components/ai/AIGenerateButton.tsx` | Trigger button component |
-| `src/components/ai/AIGenerationPreview.tsx` | Diff preview dialog |
-| `src/components/ai/AIGenerationPromptDialog.tsx` | Prompt input dialog |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `supabase/config.toml` | Add generate-asset function config |
-| `src/components/npcs/EnhancedNPCEditor.tsx` | Add AI button |
-| `src/components/locations/LocationDialog.tsx` | Add AI button |
-| `src/components/factions/FactionEditor.tsx` | Add AI button |
-| `src/components/lore/creators/*.tsx` | Add AI button to all creators |
-
----
-
-## AI System Prompt
-
-The edge function uses this system prompt for consistent generation:
-
-```text
-You are the Quest Weaver Campaign Asset Generator. Generate D&D 5e campaign 
-assets that are consistent with the provided campaign canon.
-
-RULES:
-1. NEVER modify locked_fields - they are immutable canon
-2. DO NOT contradict existing campaign lore (NPCs, factions, locations, history)
-3. If a conflict is detected, adjust your output to fit canon and report it
-4. Make reasonable assumptions that fit the campaign's tone and themes
-5. Keep outputs game-usable: actionable hooks, clear motivations, playable secrets
-6. Reference existing entities by exact name when creating relationships
-7. DO NOT invent new world primitives (new planes, magic systems, metals) 
-   unless explicitly requested
-
-OUTPUT: Return only valid JSON matching the schema. No markdown. No commentary.
+const notesByFolder = notes.reduce((acc, note) => {
+  const folder = note.folder || 'Unfiled';
+  if (!acc[folder]) acc[folder] = [];
+  acc[folder].push(note);
+  return acc;
+}, {} as Record<string, Note[]>);
 ```
 
 ---
 
-## Consistency Validation
+## Mobile Responsiveness
 
-After AI responds, the hook performs lightweight validation:
-
-1. **Name Matching**: Ensure referenced entities exist in campaign
-2. **Type Checking**: Verify field types match schema
-3. **Length Limits**: Truncate overly long descriptions
-4. **Sanitization**: Remove markdown formatting if present
-
----
-
-## Rate Limiting & Error Handling
-
-- Button disabled during generation
-- Toast on rate limit (429): "AI is busy, please try again in a moment"
-- Toast on credit exhaustion (402): "AI credits exhausted"
-- Toast on general error with retry option
-- Timeout after 60 seconds with graceful failure
+- **Outline panel**: Collapses into a dropdown/collapsible above the textarea on mobile (not a sidebar)
+- **Graph view**: Full-width, responsive via container ref
+- **Folder selector**: Standard mobile-friendly popover/command pattern
+- **Wikilink autocomplete**: Same positioning strategy as existing @mention dropdown
+- **Group-by toggle**: Small segmented control that wraps on mobile
+- **Backlinks panel**: Collapsible accordion at the bottom of the editor
 
 ---
 
-## Testing Checklist
+## Implementation Order
 
-After implementation:
-1. Open NPC editor, fill in name only, click Generate - verify other fields populate
-2. Verify locked fields (name) are not overwritten
-3. Verify generated NPC references existing locations/factions from campaign
-4. Test with optional prompt: "Make this NPC a secret villain"
-5. Verify preview dialog shows diff correctly
-6. Test Apply Selected vs Apply All
-7. Test generation for Location, Faction, Quest, Lore
-8. Test rate limit handling (spam the button)
-9. Verify assumptions and consistency checks display correctly
+1. Database migration (add `folder` column)
+2. Create `NoteFolderSelector.tsx`
+3. Create `WikilinkAutocomplete.tsx`
+4. Create `NoteOutline.tsx`
+5. Create `NoteBacklinks.tsx`
+6. Create `NoteGraph.tsx`
+7. Update `NoteEditor.tsx` (folder, wikilinks, outline, backlinks)
+8. Update `NotesBoard.tsx` (group-by toggle, graph view)
+9. Update `NoteCard.tsx` (folder badge)
+10. Update `QuickCaptureModal.tsx` (folder selector)
 

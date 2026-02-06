@@ -82,6 +82,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
       .from("session_notes")
       .select("*")
       .eq("campaign_id", campaignId)
+      .is("deleted_at", null)
       .order("is_pinned", { ascending: false })
       .order("updated_at", { ascending: false });
 

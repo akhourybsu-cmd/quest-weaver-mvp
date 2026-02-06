@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Minus, Eye, Copy } from "lucide-react";
+import { Save, Pin, X, Check, Trash2, Swords, Target, Lightbulb, Package, BookOpen, MapPin, Clock, Brain, FolderPlus, Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Minus, Eye, Copy, History } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
@@ -148,6 +150,18 @@ interface NoteEditorProps {
   onSaved: () => void;
 }
 
+interface NoteRevision {
+  id: string;
+  version: number;
+  title: string;
+  content_markdown: string | null;
+  tags: string[];
+  visibility: string | null;
+  folder: string | null;
+  saved_by: string;
+  saved_at: string;
+}
+
 const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSaved }: NoteEditorProps) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -170,11 +184,18 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [showAddToSession, setShowAddToSession] = useState(false);
   const [editorView, setEditorView] = useState<"write" | "preview">("write");
   const [playerPreviewOpen, setPlayerPreviewOpen] = useState(false);
-  // New Obsidian-style state
+  // Obsidian-style state
   const [folder, setFolder] = useState<string | null>(null);
   const [showWikilinks, setShowWikilinks] = useState(false);
   const [wikilinkSearch, setWikilinkSearch] = useState("");
   const [wikilinkPosition, setWikilinkPosition] = useState({ top: 0, left: 0 });
+  // Version tracking & revision history
+  const [version, setVersion] = useState(1);
+  const [autoSaveCount, setAutoSaveCount] = useState(0);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [revisions, setRevisions] = useState<NoteRevision[]>([]);
+  const [selectedRevision, setSelectedRevision] = useState<NoteRevision | null>(null);
+  const [loadingRevisions, setLoadingRevisions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
@@ -191,6 +212,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setTags(note.tags || []);
       loadLinks(note.id);
       loadNoteSession(note.id);
+      loadNoteVersion(note.id);
     } else {
       setTitle("");
       setContent("");
@@ -200,8 +222,12 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setLinks([]);
       setSessionId(null);
       setFolder(null);
+      setVersion(1);
     }
     setLastSaved(null);
+    setAutoSaveCount(0);
+    setShowVersionHistory(false);
+    setSelectedRevision(null);
   }, [note, open, isDM]);
 
   const loadSessions = async () => {
@@ -232,6 +258,53 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     if (data) {
       setSessionId(data.session_id);
       setFolder((data as any).folder || null);
+    }
+  };
+
+  const loadNoteVersion = async (noteId: string) => {
+    const { data } = await supabase
+      .from("session_notes")
+      .select("version")
+      .eq("id", noteId)
+      .single();
+    
+    if (data) {
+      setVersion((data as any).version || 1);
+    }
+  };
+
+  const loadRevisions = async (noteId: string) => {
+    setLoadingRevisions(true);
+    try {
+      const { data } = await supabase
+        .from("note_revisions")
+        .select("*")
+        .eq("note_id", noteId)
+        .order("version", { ascending: false })
+        .limit(50);
+      
+      setRevisions((data as NoteRevision[]) || []);
+    } catch (error) {
+      console.error("Error loading revisions:", error);
+    } finally {
+      setLoadingRevisions(false);
+    }
+  };
+
+  const createRevision = async (noteId: string, currentVersion: number) => {
+    try {
+      await supabase.from("note_revisions").insert({
+        note_id: noteId,
+        version: currentVersion,
+        title,
+        content_markdown: content,
+        tags,
+        visibility,
+        folder,
+        saved_by: userId,
+      });
+    } catch (error) {
+      console.error("Error creating revision:", error);
     }
   };
 
@@ -325,36 +398,59 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     return wikilinkEntries;
   };
 
-  const performSave = async () => {
+  const performSave = async (isAutoSave = false) => {
     if (!title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please add a title to your note",
-        variant: "destructive",
-      });
+      if (!isAutoSave) {
+        toast({
+          title: "Title required",
+          description: "Please add a title to your note",
+          variant: "destructive",
+        });
+      }
       return;
     }
+
+    // Normalize tags
+    const normalizedTags = tags.map(t => t.trim().toLowerCase());
 
     setIsSaving(true);
     try {
       let noteId = note?.id;
+      let newVersion = version;
 
       if (note) {
-        const { error } = await supabase
+        const { data: updatedData, error } = await supabase
           .from("session_notes")
           .update({
             title,
             content_markdown: content,
             visibility,
             is_pinned: isPinned,
-            tags,
+            tags: normalizedTags,
             session_id: sessionId,
             folder,
+            version, // Send current version — trigger will reject if stale
             updated_at: new Date().toISOString(),
           })
-          .eq("id", note.id);
+          .eq("id", note.id)
+          .select("version")
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          // Check for version conflict
+          if (error.message?.includes("Conflict: note was modified")) {
+            toast({
+              title: "Conflict detected",
+              description: "This note was modified by someone else. Please close and reopen to get the latest version.",
+              variant: "destructive",
+            });
+            return;
+          }
+          throw error;
+        }
+
+        newVersion = (updatedData as any)?.version || version + 1;
+        setVersion(newVersion);
       } else {
         const { data, error } = await supabase.from("session_notes").insert({
           campaign_id: campaignId,
@@ -363,14 +459,19 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           content_markdown: content,
           visibility,
           is_pinned: isPinned,
-          tags,
+          tags: normalizedTags,
           session_id: sessionId,
           folder,
-        }).select().single();
+        }).select("id, version").single();
 
         if (error) throw error;
         noteId = data.id;
+        newVersion = (data as any).version || 1;
+        setVersion(newVersion);
       }
+
+      // Update local tags to normalized form
+      setTags(normalizedTags);
 
       // Save links (entity + wikilinks)
       if (noteId) {
@@ -396,12 +497,25 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         }
       }
 
+      // Create revision (every manual save, or every 5th autosave)
+      if (noteId) {
+        const nextAutoSaveCount = autoSaveCount + 1;
+        if (!isAutoSave || nextAutoSaveCount % 5 === 0) {
+          await createRevision(noteId, newVersion);
+        }
+        if (isAutoSave) {
+          setAutoSaveCount(nextAutoSaveCount);
+        }
+      }
+
       setLastSaved(new Date());
       onSaved();
-      toast({
-        title: "Note saved",
-        description: "Your note has been saved successfully",
-      });
+      if (!isAutoSave) {
+        toast({
+          title: "Note saved",
+          description: "Your note has been saved successfully",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error saving note",
@@ -415,9 +529,9 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
 
   const debouncedSave = useCallback(
     debounce(async () => {
-      await performSave();
+      await performSave(true);
     }, 1500),
-    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved, folder]
+    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved, folder, version]
   );
 
   useEffect(() => {
@@ -603,14 +717,14 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     try {
       const { error } = await supabase
         .from("session_notes")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", note.id);
 
       if (error) throw error;
 
       toast({
-        title: "Note deleted",
-        description: "Your note has been deleted successfully",
+        title: "Note moved to trash",
+        description: "Your note has been moved to trash",
       });
       
       onSaved();
@@ -622,6 +736,20 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         variant: "destructive",
       });
     }
+  };
+
+  const handleRestoreRevision = (revision: NoteRevision) => {
+    setTitle(revision.title);
+    setContent(revision.content_markdown || "");
+    setTags(revision.tags || []);
+    if (revision.visibility) setVisibility(revision.visibility as any);
+    if (revision.folder !== undefined) setFolder(revision.folder);
+    setShowVersionHistory(false);
+    setSelectedRevision(null);
+    toast({
+      title: "Revision restored",
+      description: `Restored to version ${revision.version}. Save to keep changes.`,
+    });
   };
 
   const handleCopyAsHandout = () => {
@@ -1013,7 +1141,19 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                     className="mr-auto"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    Trash
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (note) {
+                        loadRevisions(note.id);
+                        setShowVersionHistory(true);
+                      }
+                    }}
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    History
                   </Button>
                   <Button 
                     variant="outline" 
@@ -1042,7 +1182,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                   )}
                 </>
               )}
-              <Button variant="outline" onClick={performSave} disabled={isSaving || !title.trim()}>
+              <Button variant="outline" onClick={() => performSave(false)} disabled={isSaving || !title.trim()}>
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
@@ -1052,12 +1192,85 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
         </div>
       </DialogContent>
 
+      {/* Version History Dialog */}
+      <AlertDialog open={showVersionHistory} onOpenChange={setShowVersionHistory}>
+        <AlertDialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Version History
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div className="md:col-span-1">
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-1 pr-2">
+                  {loadingRevisions ? (
+                    <p className="text-sm text-muted-foreground p-2">Loading...</p>
+                  ) : revisions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-2">No revisions yet</p>
+                  ) : (
+                    revisions.map((rev) => (
+                      <button
+                        key={rev.id}
+                        onClick={() => setSelectedRevision(rev)}
+                        className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                          selectedRevision?.id === rev.id
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-accent/50"
+                        }`}
+                      >
+                        <div className="font-medium truncate">{rev.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          v{rev.version} • {format(new Date(rev.saved_at), "MMM d, h:mm a")}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+            <div className="md:col-span-2">
+              {selectedRevision ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{selectedRevision.title}</h4>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRestoreRevision(selectedRevision)}
+                    >
+                      Restore this version
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-[350px] border rounded-md p-3">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {selectedRevision.content_markdown || "*No content*"}
+                      </ReactMarkdown>
+                    </div>
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  Select a revision to preview
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowVersionHistory(false)}>
+              Close
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogTitle>Move to Trash</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{note?.title}"? This action cannot be undone.
+              Are you sure you want to move "{note?.title}" to trash? You can restore it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

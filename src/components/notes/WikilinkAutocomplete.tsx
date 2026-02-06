@@ -63,6 +63,7 @@ const WikilinkAutocomplete = ({
       .from("session_notes")
       .select("id, title, folder")
       .eq("campaign_id", campaignId)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .limit(10);
 

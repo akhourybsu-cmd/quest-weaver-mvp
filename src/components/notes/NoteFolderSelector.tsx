@@ -27,6 +27,7 @@ const NoteFolderSelector = ({ campaignId, value, onChange, className }: NoteFold
       .from("session_notes")
       .select("folder")
       .eq("campaign_id", campaignId)
+      .is("deleted_at", null)
       .not("folder", "is", null);
 
     if (data) {

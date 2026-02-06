@@ -3606,6 +3606,53 @@ export type Database = {
           },
         ]
       }
+      note_revisions: {
+        Row: {
+          content_markdown: string | null
+          folder: string | null
+          id: string
+          note_id: string
+          saved_at: string
+          saved_by: string
+          tags: string[] | null
+          title: string
+          version: number
+          visibility: string | null
+        }
+        Insert: {
+          content_markdown?: string | null
+          folder?: string | null
+          id?: string
+          note_id: string
+          saved_at?: string
+          saved_by: string
+          tags?: string[] | null
+          title: string
+          version: number
+          visibility?: string | null
+        }
+        Update: {
+          content_markdown?: string | null
+          folder?: string | null
+          id?: string
+          note_id?: string
+          saved_at?: string
+          saved_by?: string
+          tags?: string[] | null
+          title?: string
+          version?: number
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_revisions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "session_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       npc_appearances: {
         Row: {
           campaign_id: string
@@ -4858,6 +4905,7 @@ export type Database = {
           content: Json | null
           content_markdown: string | null
           created_at: string | null
+          deleted_at: string | null
           folder: string | null
           id: string
           is_pinned: boolean | null
@@ -4865,6 +4913,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string | null
+          version: number
           visibility: string | null
         }
         Insert: {
@@ -4873,6 +4922,7 @@ export type Database = {
           content?: Json | null
           content_markdown?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           folder?: string | null
           id?: string
           is_pinned?: boolean | null
@@ -4880,6 +4930,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string | null
+          version?: number
           visibility?: string | null
         }
         Update: {
@@ -4888,6 +4939,7 @@ export type Database = {
           content?: Json | null
           content_markdown?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           folder?: string | null
           id?: string
           is_pinned?: boolean | null
@@ -4895,6 +4947,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+          version?: number
           visibility?: string | null
         }
         Relationships: [

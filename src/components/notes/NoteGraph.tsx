@@ -70,7 +70,8 @@ export default function NoteGraph({ campaignId, onNoteSelect }: NoteGraphProps) 
       const { data: notes, error: notesError } = await supabase
         .from("session_notes")
         .select("id, title, folder")
-        .eq("campaign_id", campaignId);
+        .eq("campaign_id", campaignId)
+        .is("deleted_at", null);
 
       if (notesError) throw notesError;
 

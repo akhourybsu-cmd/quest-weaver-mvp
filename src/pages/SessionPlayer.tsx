@@ -32,7 +32,8 @@ import {
   Scroll,
   Zap,
   MessageSquare,
-  UserCircle
+  UserCircle,
+  ArrowLeft
 } from "lucide-react";
 
 interface Character {
@@ -77,7 +78,7 @@ const SessionPlayer = () => {
 
   useEffect(() => {
     if (!campaignCode) {
-      navigate("/campaign-hub");
+      navigate("/player-hub");
       return;
     }
 
@@ -228,7 +229,7 @@ const SessionPlayer = () => {
         description: "Invalid campaign code",
         variant: "destructive",
       });
-      navigate("/campaign-hub");
+      navigate("/player-hub");
       return;
     }
 
@@ -407,7 +408,7 @@ const SessionPlayer = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg mb-4">No character found</p>
-          <Button onClick={() => navigate("/campaign-hub")}>Back to Campaign Hub</Button>
+          <Button onClick={() => navigate("/player-hub")}>Back to Dashboard</Button>
         </div>
       </div>
     );
@@ -422,14 +423,26 @@ const SessionPlayer = () => {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="text-center">
-            <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Level {character.level} {character.class} • Campaign: {campaignCode}
-            </p>
-            {activeEncounter && (
-              <p className="text-xs text-primary font-semibold">⚔️ In Combat</p>
-            )}
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/player-hub')}
+              className="shrink-0 text-muted-foreground hover:text-foreground mr-2"
+            >
+              <ArrowLeft className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Exit</span>
+            </Button>
+            <div className="text-center flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Level {character.level} {character.class} • Campaign: {campaignCode}
+              </p>
+              {activeEncounter && (
+                <p className="text-xs text-primary font-semibold">⚔️ In Combat</p>
+              )}
+            </div>
+            <div className="w-16 shrink-0" />
           </div>
         </div>
       </header>
@@ -445,7 +458,7 @@ const SessionPlayer = () => {
               setShowCharacterSelection(false);
               fetchCharacter();
             }}
-            onCancel={() => navigate("/campaign-hub")}
+            onCancel={() => navigate("/player-hub")}
           />
         )}
 

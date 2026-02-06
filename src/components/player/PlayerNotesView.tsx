@@ -25,9 +25,10 @@ interface Note {
 
 interface PlayerNotesViewProps {
   playerId: string;
+  campaignId?: string;
 }
 
-export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
+export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -36,8 +37,7 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
   useEffect(() => {
     loadSharedNotes();
 
-    // Use resilientChannel for automatic reconnection
-    const channel = resilientChannel(supabase, `player-notes-${playerId}`)
+    const channel = resilientChannel(supabase, `player-notes-${playerId}-${campaignId || 'all'}`)
       .on(
         'postgres_changes',
         {
@@ -51,22 +51,42 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [playerId]);
+  }, [playerId, campaignId]);
 
   const loadSharedNotes = async () => {
     try {
-      const { data: links } = await supabase
-        .from('player_campaign_links')
-        .select('campaign_id, campaigns(name)')
-        .eq('player_id', playerId);
+      let campaignIds: string[];
+      let campaignNameMap: Record<string, string> = {};
 
-      if (!links || links.length === 0) {
-        setNotes([]);
-        setLoading(false);
-        return;
+      if (campaignId) {
+        // Single campaign mode — filter to this campaign only
+        campaignIds = [campaignId];
+        const { data: campaignData } = await supabase
+          .from('campaigns')
+          .select('name')
+          .eq('id', campaignId)
+          .single();
+        if (campaignData) {
+          campaignNameMap[campaignId] = campaignData.name;
+        }
+      } else {
+        // All campaigns mode — used on the dedicated Notes page
+        const { data: links } = await supabase
+          .from('player_campaign_links')
+          .select('campaign_id, campaigns(name)')
+          .eq('player_id', playerId);
+
+        if (!links || links.length === 0) {
+          setNotes([]);
+          setLoading(false);
+          return;
+        }
+
+        campaignIds = links.map(l => l.campaign_id);
+        links.forEach(l => {
+          campaignNameMap[l.campaign_id] = (l.campaigns as any)?.name || 'Unknown Campaign';
+        });
       }
-
-      const campaignIds = links.map(l => l.campaign_id);
 
       const { data: notesData, error } = await supabase
         .from('session_notes')
@@ -79,19 +99,16 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
 
       if (error) throw error;
 
-      const notesWithCampaigns = notesData?.map(note => {
-        const link = links.find(l => l.campaign_id === note.campaign_id);
-        return {
-          id: note.id,
-          title: note.title || 'Untitled',
-          content: note.content_markdown || '',
-          tags: note.tags || [],
-          is_pinned: note.is_pinned || false,
-          updated_at: note.updated_at,
-          campaign_id: note.campaign_id,
-          campaign_name: (link?.campaigns as any)?.name || 'Unknown Campaign',
-        };
-      }) || [];
+      const notesWithCampaigns = notesData?.map(note => ({
+        id: note.id,
+        title: note.title || 'Untitled',
+        content: note.content_markdown || '',
+        tags: note.tags || [],
+        is_pinned: note.is_pinned || false,
+        updated_at: note.updated_at,
+        campaign_id: note.campaign_id,
+        campaign_name: campaignNameMap[note.campaign_id] || 'Unknown Campaign',
+      })) || [];
 
       setNotes(notesWithCampaigns);
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,13 +11,19 @@ export const PlayerWaitingRoom = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const campaignCode = searchParams.get('campaign');
-  
+
   const [checking, setChecking] = useState(true);
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     initializeWaitingRoom();
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
   }, []);
 
   const initializeWaitingRoom = async () => {
@@ -32,40 +38,28 @@ export const PlayerWaitingRoom = () => {
       .from('players')
       .select('id, name')
       .eq('user_id', user.id);
-    
+
     const existingPlayer = existingPlayers && existingPlayers.length > 0 ? existingPlayers[0] : null;
 
     if (playerFetchError) {
       console.error('Failed to load player profile:', playerFetchError);
-      toast({
-        title: 'Connection error',
-        description: 'Could not load your player profile. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Connection error', description: 'Could not load your player profile. Please try again.', variant: 'destructive' });
       navigate('/');
       return;
     }
 
     let playerRecord = existingPlayer;
 
-    // Auto-create a player profile if one does not exist yet
     if (!playerRecord) {
       const { data: newPlayer, error: createError } = await supabase
         .from('players')
-        .insert({
-          user_id: user.id,
-          name: user.email || 'Player',
-        })
+        .insert({ user_id: user.id, name: user.email || 'Player' })
         .select('id, name')
         .single();
 
       if (createError || !newPlayer) {
         console.error('Failed to create player profile:', createError);
-        toast({
-          title: 'Connection error',
-          description: 'Could not create your player profile. Please try again.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Connection error', description: 'Could not create your player profile. Please try again.', variant: 'destructive' });
         navigate('/');
         return;
       }
@@ -76,11 +70,7 @@ export const PlayerWaitingRoom = () => {
     setPlayerId(playerRecord.id);
 
     if (!campaignCode) {
-      toast({
-        title: 'Invalid link',
-        description: 'No campaign code provided',
-        variant: 'destructive',
-      });
+      toast({ title: 'Invalid link', description: 'No campaign code provided', variant: 'destructive' });
       navigate(`/player/${playerRecord.id}`);
       return;
     }
@@ -93,11 +83,7 @@ export const PlayerWaitingRoom = () => {
       .maybeSingle();
 
     if (!campaign) {
-      toast({
-        title: 'Campaign not found',
-        description: 'Invalid campaign code',
-        variant: 'destructive',
-      });
+      toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });
       navigate(`/player/${playerRecord.id}`);
       return;
     }
@@ -124,17 +110,26 @@ export const PlayerWaitingRoom = () => {
 
       if (linkError) {
         console.error('Failed to link player to campaign:', linkError);
-        toast({
-          title: 'Connection error',
-          description: 'Failed to join campaign. Please try again.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Connection error', description: 'Failed to join campaign. Please try again.', variant: 'destructive' });
         return;
       }
 
-      toast({
-        title: 'Campaign joined!',
-        description: 'Waiting for DM to start session...',
+      toast({ title: 'Campaign joined!', description: 'Waiting for DM to start session...' });
+    }
+
+    // Also ensure campaign_members entry exists for session context
+    const { data: existingMember } = await supabase
+      .from('campaign_members')
+      .select('id')
+      .eq('campaign_id', campaign.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!existingMember) {
+      await supabase.from('campaign_members').insert({
+        campaign_id: campaign.id,
+        user_id: user.id,
+        role: 'player',
       });
     }
 
@@ -153,21 +148,16 @@ export const PlayerWaitingRoom = () => {
         },
         (payload) => {
           if (payload.new.live_session_id) {
-            // Session started! Redirect to player view
-            toast({
-              title: 'Session started!',
-              description: 'Joining now...',
-            });
+            toast({ title: 'Session started!', description: 'Joining now...' });
             navigate(`/session/player?campaign=${campaignCode}`);
           }
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    channelRef.current = channel;
   };
+
   const checkForLiveSession = async (campId: string) => {
     const { data, error } = await supabase
       .from('campaigns')
@@ -182,7 +172,6 @@ export const PlayerWaitingRoom = () => {
     }
 
     if (data?.live_session_id) {
-      // Session is active, redirect
       navigate(`/session/player?campaign=${campaignCode}`);
     } else {
       setChecking(false);
@@ -213,13 +202,13 @@ export const PlayerWaitingRoom = () => {
                 Campaign code: <span className="font-mono font-semibold">{campaignCode}</span>
               </p>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate(playerId ? `/player/${playerId}` : '/')}
                 >
                   Back to Dashboard
                 </Button>
-                <Button 
+                <Button
                   onClick={() => campaignId && checkForLiveSession(campaignId)}
                   disabled={checking}
                 >

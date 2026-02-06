@@ -43,7 +43,7 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
           event: '*',
           schema: 'public',
           table: 'session_notes',
-          filter: `visibility=eq.players`,
+          filter: `visibility=eq.SHARED`,
         },
         () => {
           loadSharedNotes();
@@ -77,7 +77,8 @@ export function PlayerNotesView({ playerId }: PlayerNotesViewProps) {
         .from('session_notes')
         .select('id, title, content_markdown, tags, is_pinned, updated_at, campaign_id')
         .in('campaign_id', campaignIds)
-        .eq('visibility', 'players')
+        .eq('visibility', 'SHARED')
+        .is('deleted_at', null)
         .order('is_pinned', { ascending: false })
         .order('updated_at', { ascending: false });
 

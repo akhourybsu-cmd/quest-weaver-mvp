@@ -49,6 +49,7 @@ const NoteBacklinks = ({ noteId, noteTitle, campaignId, onNavigateToNote }: Note
         .from("session_notes")
         .select("id, title, content_markdown, folder")
         .eq("campaign_id", campaignId)
+        .is("deleted_at", null)
         .ilike("content_markdown", `%[[${noteTitle}]]%`)
         .neq("id", noteId)
         .limit(20);
@@ -66,7 +67,8 @@ const NoteBacklinks = ({ noteId, noteTitle, campaignId, onNavigateToNote }: Note
         const { data: linkedNotes } = await supabase
           .from("session_notes")
           .select("id, title, content_markdown, folder")
-          .in("id", linkNoteIds);
+          .in("id", linkNoteIds)
+          .is("deleted_at", null);
 
         if (linkedNotes) {
           backlinkNotes = linkedNotes.map((n: any) => ({

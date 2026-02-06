@@ -148,6 +148,7 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
     setIsSaving(true);
     try {
       const noteId = nanoid();
+      const normalizedTags = autoTags.map(t => t.trim().toLowerCase());
 
       // Create note
       const { error: noteError } = await supabase.from('session_notes').insert({
@@ -157,7 +158,7 @@ export function QuickCaptureModal({ campaignId, userId, isDM }: QuickCaptureModa
         title: title.trim(),
         content_markdown: content.trim(),
         visibility: isDM ? 'DM_ONLY' : 'PRIVATE',
-        tags: autoTags,
+        tags: normalizedTags,
         is_pinned: false,
         folder,
       });

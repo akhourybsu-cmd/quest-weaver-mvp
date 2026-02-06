@@ -14,6 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import NoteLinkSelector from "./NoteLinkSelector";
+import NoteFolderSelector from "./NoteFolderSelector";
+import WikilinkAutocomplete from "./WikilinkAutocomplete";
+import NoteOutline from "./NoteOutline";
+import NoteBacklinks from "./NoteBacklinks";
 import { AddItemToSessionDialog } from "@/components/campaign/AddItemToSessionDialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -97,7 +101,6 @@ const NOTE_TEMPLATES = {
   }
 };
 
-// Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -107,6 +110,16 @@ function debounce<T extends (...args: any[]) => any>(
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
+}
+
+// Wikilink parser utility
+function parseWikilinks(markdown: string): string[] {
+  const titles: string[] = [];
+  const matches = markdown.matchAll(/\[\[([^\]]+)\]\]/g);
+  for (const match of matches) {
+    if (!titles.includes(match[1])) titles.push(match[1]);
+  }
+  return titles;
 }
 
 interface NoteLink {
@@ -157,6 +170,11 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const [showAddToSession, setShowAddToSession] = useState(false);
   const [editorView, setEditorView] = useState<"write" | "preview">("write");
   const [playerPreviewOpen, setPlayerPreviewOpen] = useState(false);
+  // New Obsidian-style state
+  const [folder, setFolder] = useState<string | null>(null);
+  const [showWikilinks, setShowWikilinks] = useState(false);
+  const [wikilinkSearch, setWikilinkSearch] = useState("");
+  const [wikilinkPosition, setWikilinkPosition] = useState({ top: 0, left: 0 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
@@ -181,12 +199,12 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       setTags([]);
       setLinks([]);
       setSessionId(null);
+      setFolder(null);
     }
     setLastSaved(null);
   }, [note, open, isDM]);
 
   const loadSessions = async () => {
-    // Query campaign_sessions instead of sessions table
     const { data } = await supabase
       .from("campaign_sessions")
       .select("id, name, started_at, status")
@@ -194,7 +212,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       .order("started_at", { ascending: false });
     
     if (data) {
-      // Transform to match expected format
       setSessions(data.map((s, index) => ({
         id: s.id,
         title: s.name || (s.started_at ? new Date(s.started_at).toLocaleDateString() : `Session`),
@@ -208,12 +225,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const loadNoteSession = async (noteId: string) => {
     const { data } = await supabase
       .from("session_notes")
-      .select("session_id")
+      .select("session_id, folder")
       .eq("id", noteId)
       .single();
     
     if (data) {
       setSessionId(data.session_id);
+      setFolder((data as any).folder || null);
     }
   };
 
@@ -236,7 +254,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   const loadMentionOptions = async (search: string) => {
     const options: Array<{ id: string; name: string; type: string }> = [];
 
-    // Fetch NPCs
     const { data: npcs } = await supabase
       .from("npcs")
       .select("id, name")
@@ -248,7 +265,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       options.push(...npcs.map(npc => ({ id: npc.id, name: npc.name, type: "NPC" })));
     }
 
-    // Fetch Characters
     const { data: characters } = await supabase
       .from("characters")
       .select("id, name")
@@ -260,7 +276,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       options.push(...characters.map(char => ({ id: char.id, name: char.name, type: "CHARACTER" })));
     }
 
-    // Fetch Locations
     const { data: locations } = await supabase
       .from("locations")
       .select("id, name")
@@ -272,7 +287,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       options.push(...locations.map(loc => ({ id: loc.id, name: loc.name, type: "LOCATION" })));
     }
 
-    // Fetch Quests
     const { data: quests } = await supabase
       .from("quests")
       .select("id, title")
@@ -287,7 +301,30 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setMentionOptions(options);
   };
 
-  // Save function
+  // Resolve wikilinks to note_links entries on save
+  const resolveWikilinks = async (noteId: string, contentText: string) => {
+    const wikilinkTitles = parseWikilinks(contentText);
+    if (wikilinkTitles.length === 0) return;
+
+    // Resolve titles to IDs
+    const { data: matchedNotes } = await supabase
+      .from("session_notes")
+      .select("id, title")
+      .eq("campaign_id", campaignId)
+      .in("title", wikilinkTitles);
+
+    const titleToId = new Map((matchedNotes || []).map((n: any) => [n.title, n.id]));
+
+    // Build wikilink entries (merged with entity links later)
+    const wikilinkEntries: NoteLink[] = wikilinkTitles.map((title) => ({
+      link_type: "NOTE",
+      link_id: titleToId.get(title) || null,
+      label: title,
+    }));
+
+    return wikilinkEntries;
+  };
+
   const performSave = async () => {
     if (!title.trim()) {
       toast({
@@ -303,7 +340,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
       let noteId = note?.id;
 
       if (note) {
-        // Update existing note
         const { error } = await supabase
           .from("session_notes")
           .update({
@@ -313,13 +349,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             is_pinned: isPinned,
             tags,
             session_id: sessionId,
+            folder,
             updated_at: new Date().toISOString(),
           })
           .eq("id", note.id);
 
         if (error) throw error;
       } else {
-        // Create new note
         const { data, error } = await supabase.from("session_notes").insert({
           campaign_id: campaignId,
           author_id: userId,
@@ -329,21 +365,28 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
           is_pinned: isPinned,
           tags,
           session_id: sessionId,
+          folder,
         }).select().single();
 
         if (error) throw error;
         noteId = data.id;
       }
 
-      // Save links
+      // Save links (entity + wikilinks)
       if (noteId) {
-        // Delete existing links
         await supabase.from("note_links").delete().eq("note_id", noteId);
 
-        // Insert new links
-        if (links.length > 0) {
+        // Get entity links (non-NOTE types)
+        const entityLinks = links.filter((l) => l.link_type !== "NOTE");
+
+        // Resolve wikilinks from content
+        const wikilinkEntries = await resolveWikilinks(noteId, content) || [];
+
+        const allLinks = [...entityLinks, ...wikilinkEntries];
+
+        if (allLinks.length > 0) {
           await supabase.from("note_links").insert(
-            links.map(link => ({
+            allLinks.map(link => ({
               note_id: noteId,
               link_type: link.link_type,
               link_id: link.link_id,
@@ -370,15 +413,13 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     }
   };
 
-  // Autosave with debounce (only when enabled)
   const debouncedSave = useCallback(
     debounce(async () => {
       await performSave();
     }, 1500),
-    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved]
+    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved, folder]
   );
 
-  // Trigger autosave on content change (only when enabled)
   useEffect(() => {
     if (open && autoSaveEnabled && title.trim()) {
       debouncedSave();
@@ -410,7 +451,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     const newContent = content.substring(0, start) + before + selectedText + after + content.substring(end);
     setContent(newContent);
     
-    // Set cursor position after inserted text
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
@@ -423,19 +463,33 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setContent(newContent);
     setCursorPosition(newCursorPosition);
 
-    // Check for @ mention
     const textBeforeCursor = newContent.substring(0, newCursorPosition);
+
+    // Check for [[ wikilink trigger
+    const lastDoubleBracket = textBeforeCursor.lastIndexOf("[[");
+    if (lastDoubleBracket !== -1) {
+      const textAfterBracket = textBeforeCursor.substring(lastDoubleBracket + 2);
+      // Check no closing ]] yet and no newlines
+      if (!textAfterBracket.includes("]]") && !textAfterBracket.includes("\n")) {
+        setWikilinkSearch(textAfterBracket);
+        setShowWikilinks(true);
+        setShowMentions(false);
+        const textarea = e.target;
+        const rect = textarea.getBoundingClientRect();
+        setWikilinkPosition({ top: rect.bottom + 5, left: rect.left + 10 });
+        return;
+      }
+    }
+    setShowWikilinks(false);
+
+    // Check for @ mention (existing logic)
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
-    
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-      // Check if there's no space after @ (still typing the mention)
       if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         setMentionSearch(textAfterAt);
         setShowMentions(true);
         loadMentionOptions(textAfterAt);
-        
-        // Position dropdown near cursor (improved positioning)
         const textarea = e.target;
         const rect = textarea.getBoundingClientRect();
         setMentionPosition({ top: rect.bottom + 5, left: rect.left + 10 });
@@ -444,6 +498,66 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     }
     
     setShowMentions(false);
+  };
+
+  const handleWikilinkSelect = (noteTitle: string) => {
+    const textBeforeCursor = content.substring(0, cursorPosition);
+    const lastDoubleBracket = textBeforeCursor.lastIndexOf("[[");
+
+    const beforeLink = content.substring(0, lastDoubleBracket);
+    const afterCursor = content.substring(cursorPosition);
+    const newContent = beforeLink + `[[${noteTitle}]]` + afterCursor;
+
+    setContent(newContent);
+    setShowWikilinks(false);
+
+    // Focus back on textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newPos = lastDoubleBracket + noteTitle.length + 4; // [[ + title + ]]
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  const handleScrollToOffset = (offset: number) => {
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    textarea.focus();
+    textarea.setSelectionRange(offset, offset);
+
+    // Approximate scroll position
+    const lineHeight = 20;
+    const linesBefore = content.substring(0, offset).split("\n").length;
+    textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
+  };
+
+  const handleNavigateToNote = async (targetNoteId: string) => {
+    // Load the target note and switch to it
+    const { data } = await supabase
+      .from("session_notes")
+      .select("*")
+      .eq("id", targetNoteId)
+      .single();
+
+    if (data) {
+      // Reset state with the new note
+      setTitle(data.title);
+      setContent(data.content_markdown || "");
+      setVisibility(data.visibility as any);
+      setIsPinned(data.is_pinned);
+      setTags(data.tags || []);
+      setFolder((data as any).folder || null);
+      loadLinks(data.id);
+      loadNoteSession(data.id);
+      // Update the parent's note reference isn't possible directly,
+      // but the user can save and reopen. For now, toast feedback:
+      toast({
+        title: "Navigated to note",
+        description: `Now viewing "${data.title}"`,
+      });
+    }
   };
 
   const applyTemplate = (templateKey: keyof typeof NOTE_TEMPLATES) => {
@@ -459,11 +573,9 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   };
 
   const handleMentionSelect = (option: { id: string; name: string; type: string }) => {
-    // Find the @ position
     const textBeforeCursor = content.substring(0, cursorPosition);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
     
-    // Replace @mention with the name
     const beforeMention = content.substring(0, lastAtIndex);
     const afterCursor = content.substring(cursorPosition);
     const newContent = beforeMention + `@${option.name}` + afterCursor;
@@ -471,7 +583,6 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     setContent(newContent);
     setShowMentions(false);
     
-    // Add to links if not already there
     const linkExists = links.some(link => link.link_id === option.id && link.link_type === option.type);
     if (!linkExists) {
       setLinks([...links, {
@@ -523,9 +634,55 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
   };
 
   const getPlayerPreviewContent = () => {
-    // For now, just show the content as-is
-    // In the future, could filter out DM-only sections
     return content;
+  };
+
+  // Custom renderer for wikilinks in preview
+  const renderMarkdownWithWikilinks = (text: string) => {
+    // Replace [[Note Title]] with styled spans before rendering
+    const processed = text.replace(
+      /\[\[([^\]]+)\]\]/g,
+      '<span class="wikilink" data-title="$1">$1</span>'
+    );
+    return processed;
+  };
+
+  // Custom component for wikilink rendering in ReactMarkdown
+  const WikilinkText = ({ children }: { children: React.ReactNode }) => {
+    const text = String(children);
+    const parts = text.split(/(\[\[[^\]]+\]\])/g);
+    
+    return (
+      <>
+        {parts.map((part, i) => {
+          const match = part.match(/^\[\[([^\]]+)\]\]$/);
+          if (match) {
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  // Try to find and navigate to the note
+                  const searchTitle = match[1];
+                  supabase
+                    .from("session_notes")
+                    .select("id")
+                    .eq("campaign_id", campaignId)
+                    .eq("title", searchTitle)
+                    .single()
+                    .then(({ data }) => {
+                      if (data) handleNavigateToNote(data.id);
+                    });
+                }}
+                className="text-primary font-medium hover:underline cursor-pointer bg-primary/10 px-1 rounded"
+              >
+                {match[1]}
+              </button>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </>
+    );
   };
 
   return (
@@ -639,26 +796,37 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             )}
           </div>
 
-          <div>
-            <Label htmlFor="session">Session</Label>
-            <Select value={sessionId || "none"} onValueChange={(v) => setSessionId(v === "none" ? null : v)}>
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Select a session (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No session</SelectItem>
-                {sessions.map((session: any) => (
-                  <SelectItem key={session.id} value={session.id}>
-                    {session.title}
-                    {session.status && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        ({session.status})
-                      </span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Session + Notebook row */}
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="flex-1 min-w-[180px]">
+              <Label htmlFor="session">Session</Label>
+              <Select value={sessionId || "none"} onValueChange={(v) => setSessionId(v === "none" ? null : v)}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select a session (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No session</SelectItem>
+                  {sessions.map((session: any) => (
+                    <SelectItem key={session.id} value={session.id}>
+                      {session.title}
+                      {session.status && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({session.status})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">Notebook</Label>
+              <NoteFolderSelector
+                campaignId={campaignId}
+                value={folder}
+                onChange={setFolder}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -700,6 +868,12 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               </Select>
             </div>
 
+            {/* Outline panel (shows when 2+ headings exist) */}
+            <NoteOutline
+              content={content}
+              onScrollToOffset={handleScrollToOffset}
+            />
+
             <Tabs value={editorView} onValueChange={(v) => setEditorView(v as "write" | "preview")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="write">Write</TabsTrigger>
@@ -709,94 +883,31 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
               <TabsContent value="write" className="relative mt-2 space-y-2">
                 {/* Markdown Toolbar */}
                 <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("**", "**")}
-                    title="Bold"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("**", "**")} title="Bold">
                     <Bold className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("*", "*")}
-                    title="Italic"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("*", "*")} title="Italic">
                     <Italic className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("# ")}
-                    title="Heading 1"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("# ")} title="Heading 1">
                     <Heading1 className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("## ")}
-                    title="Heading 2"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("## ")} title="Heading 2">
                     <Heading2 className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("### ")}
-                    title="Heading 3"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("### ")} title="Heading 3">
                     <Heading3 className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("- ")}
-                    title="Bullet List"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("- ")} title="Bullet List">
                     <List className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("1. ")}
-                    title="Numbered List"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("1. ")} title="Numbered List">
                     <ListOrdered className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("`", "`")}
-                    title="Code"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("`", "`")} title="Code">
                     <Code className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => insertMarkdown("\n---\n")}
-                    title="Horizontal Rule"
-                  >
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => insertMarkdown("\n---\n")} title="Horizontal Rule">
                     <Minus className="w-4 h-4" />
                   </Button>
                 </div>
@@ -806,10 +917,11 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                   id="content"
                   value={content}
                   onChange={handleContentChange}
-                  placeholder="Write your note here... Type @ to mention NPCs, characters, locations, or quests"
+                  placeholder="Write your note here... Type @ to mention entities, [[ to link notes"
                   className="min-h-[300px] font-mono"
                 />
                 
+                {/* @mention dropdown */}
                 {showMentions && mentionOptions.length > 0 && (
                   <div 
                     className="fixed z-[100] w-64 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto"
@@ -829,11 +941,29 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                     ))}
                   </div>
                 )}
+
+                {/* [[wikilink autocomplete dropdown */}
+                {showWikilinks && (
+                  <WikilinkAutocomplete
+                    campaignId={campaignId}
+                    searchText={wikilinkSearch}
+                    position={wikilinkPosition}
+                    onSelect={handleWikilinkSelect}
+                    onClose={() => setShowWikilinks(false)}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="preview" className="mt-2">
                 <div className="min-h-[300px] p-4 border rounded-md bg-muted/10 prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p><WikilinkText>{children}</WikilinkText></p>,
+                      li: ({ children }) => <li><WikilinkText>{children}</WikilinkText></li>,
+                      td: ({ children }) => <td><WikilinkText>{children}</WikilinkText></td>,
+                    }}
+                  >
                     {content || "*No content to preview*"}
                   </ReactMarkdown>
                 </div>
@@ -841,15 +971,28 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
             </Tabs>
           </div>
 
-
           <div>
             <Label>Linked Entities</Label>
             <NoteLinkSelector
               campaignId={campaignId}
-              links={links}
-              onChange={setLinks}
+              links={links.filter(l => l.link_type !== "NOTE")}
+              onChange={(entityLinks) => {
+                // Preserve existing NOTE-type links from wikilinks
+                const noteLinks = links.filter(l => l.link_type === "NOTE");
+                setLinks([...entityLinks, ...noteLinks]);
+              }}
             />
           </div>
+
+          {/* Backlinks panel */}
+          {note && (
+            <NoteBacklinks
+              noteId={note.id}
+              noteTitle={title}
+              campaignId={campaignId}
+              onNavigateToNote={handleNavigateToNote}
+            />
+          )}
 
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-muted-foreground">
@@ -861,7 +1004,7 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {note && (
                 <>
                   <Button 

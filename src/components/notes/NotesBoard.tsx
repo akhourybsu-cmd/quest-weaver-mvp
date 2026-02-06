@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pin, Calendar } from "lucide-react";
+import { Plus, Search, Pin, Calendar, FolderOpen, Network, LayoutList } from "lucide-react";
 import NoteCard from "./NoteCard";
 import NoteEditor from "./NoteEditor";
+import NoteGraph from "./NoteGraph";
 import { useToast } from "@/hooks/use-toast";
 import { resilientChannel } from "@/lib/realtime";
 
@@ -23,6 +24,7 @@ interface Note {
   updated_at: string;
   author_id: string;
   session_id: string | null;
+  folder: string | null;
 }
 
 interface Session {
@@ -38,6 +40,9 @@ interface NotesBoardProps {
   userId: string;
 }
 
+type GroupMode = "session" | "notebook" | "flat";
+type ViewMode = "list" | "graph";
+
 const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -46,6 +51,8 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "mine" | "dm" | "shared" | "private" | "pinned">("all");
   const [sessionFilter, setSessionFilter] = useState<string>("all");
+  const [groupMode, setGroupMode] = useState<GroupMode>("session");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -91,7 +98,6 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   };
 
   const loadSessions = async () => {
-    // Query campaign_sessions instead of sessions table
     const { data, error } = await supabase
       .from("campaign_sessions")
       .select("id, name, started_at, status")
@@ -110,10 +116,8 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     setSessions((data || []) as Session[]);
   };
 
-  // Build session lookup map
   const sessionMap = new Map(sessions.map(s => [s.id, s]));
 
-  // Get session display name
   const getSessionDisplayName = (session: Session | undefined) => {
     if (!session) return "No Session";
     if (session.name) return session.name;
@@ -128,7 +132,6 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   };
 
   const filteredNotes = notes.filter((note) => {
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch =
@@ -138,7 +141,6 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
       if (!matchesSearch) return false;
     }
 
-    // Apply tab filter
     switch (filter) {
       case "mine":
         if (note.author_id !== userId) return false;
@@ -157,7 +159,6 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
         break;
     }
 
-    // Apply session filter
     if (sessionFilter === "none") {
       if (note.session_id !== null) return false;
     } else if (sessionFilter !== "all") {
@@ -167,17 +168,22 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     return true;
   });
 
-  // Separate pinned and unpinned notes
   const pinnedNotes = filteredNotes.filter(note => note.is_pinned);
   const unpinnedNotes = filteredNotes.filter(note => !note.is_pinned);
 
-  // Group unpinned notes by session
+  // Group by session (existing behavior)
   const notesBySession = unpinnedNotes.reduce((acc, note) => {
     const sessionId = note.session_id || "no-session";
-    if (!acc[sessionId]) {
-      acc[sessionId] = [];
-    }
+    if (!acc[sessionId]) acc[sessionId] = [];
     acc[sessionId].push(note);
+    return acc;
+  }, {} as Record<string, Note[]>);
+
+  // Group by notebook/folder
+  const notesByFolder = unpinnedNotes.reduce((acc, note) => {
+    const folder = note.folder || "Unfiled";
+    if (!acc[folder]) acc[folder] = [];
+    acc[folder].push(note);
     return acc;
   }, {} as Record<string, Note[]>);
 
@@ -191,15 +197,141 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
     setEditorOpen(true);
   };
 
+  const handleGraphNoteSelect = (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      handleEditNote(note);
+    }
+  };
+
+  const renderGroupedNotes = () => {
+    if (groupMode === "flat") {
+      return (
+        <div className="grid gap-3">
+          {unpinnedNotes.map((note) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              onClick={() => handleEditNote(note)}
+              isDM={isDM}
+              isOwner={note.author_id === userId}
+              campaignId={campaignId}
+              session={note.session_id ? sessionMap.get(note.session_id) : null}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (groupMode === "notebook") {
+      // Sort folders: "Unfiled" last
+      const sortedFolders = Object.keys(notesByFolder).sort((a, b) => {
+        if (a === "Unfiled") return 1;
+        if (b === "Unfiled") return -1;
+        return a.localeCompare(b);
+      });
+
+      return (
+        <div className="space-y-6">
+          {sortedFolders.map((folder) => (
+            <div key={folder} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-primary" />
+                <div className="text-sm font-semibold text-foreground">{folder}</div>
+                <Badge variant="secondary" className="text-xs">
+                  {notesByFolder[folder].length}
+                </Badge>
+              </div>
+              <div className="grid gap-3">
+                {notesByFolder[folder].map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onClick={() => handleEditNote(note)}
+                    isDM={isDM}
+                    isOwner={note.author_id === userId}
+                    campaignId={campaignId}
+                    session={note.session_id ? sessionMap.get(note.session_id) : null}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Default: group by session (existing behavior)
+    return (
+      <div className="space-y-6">
+        {filter === "all" && pinnedNotes.length > 0 && (
+          <div className="text-sm font-medium text-muted-foreground pt-3 border-t">
+            Recent Notes
+          </div>
+        )}
+        {Object.entries(notesBySession).map(([sessionId, sessionNotes]) => {
+          const session = sessionId !== "no-session" ? sessionMap.get(sessionId) : undefined;
+          return (
+            <div key={sessionId} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-brass" />
+                <div className="text-sm font-semibold text-foreground">
+                  {session ? getSessionDisplayName(session) : "General Notes"}
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {sessionNotes.length}
+                </Badge>
+              </div>
+              <div className="grid gap-3">
+                {sessionNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onClick={() => handleEditNote(note)}
+                    isDM={isDM}
+                    isOwner={note.author_id === userId}
+                    campaignId={campaignId}
+                    session={session}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <Card className="border-border/50 shadow-sm bg-card/50 border-brass/20">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="font-cinzel">Session Notes</CardTitle>
-          <Button size="sm" onClick={handleNewNote}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Note
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View mode toggle: List / Graph */}
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                className="h-8 rounded-none px-2.5"
+                onClick={() => setViewMode("list")}
+              >
+                <LayoutList className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "graph" ? "default" : "ghost"}
+                className="h-8 rounded-none px-2.5"
+                onClick={() => setViewMode("graph")}
+              >
+                <Network className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button size="sm" onClick={handleNewNote}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Note
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 mt-4">
@@ -232,99 +364,104 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Group-by toggle */}
+            {viewMode === "list" && (
+              <div className="flex items-center border rounded-md overflow-hidden">
+                <Button
+                  size="sm"
+                  variant={groupMode === "session" ? "default" : "ghost"}
+                  className="h-8 rounded-none text-xs px-2.5"
+                  onClick={() => setGroupMode("session")}
+                >
+                  <Calendar className="w-3 h-3 mr-1" />
+                  Session
+                </Button>
+                <Button
+                  size="sm"
+                  variant={groupMode === "notebook" ? "default" : "ghost"}
+                  className="h-8 rounded-none text-xs px-2.5"
+                  onClick={() => setGroupMode("notebook")}
+                >
+                  <FolderOpen className="w-3 h-3 mr-1" />
+                  Notebook
+                </Button>
+                <Button
+                  size="sm"
+                  variant={groupMode === "flat" ? "default" : "ghost"}
+                  className="h-8 rounded-none text-xs px-2.5"
+                  onClick={() => setGroupMode("flat")}
+                >
+                  <LayoutList className="w-3 h-3 mr-1" />
+                  Flat
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 rounded-lg">
-            <TabsTrigger value="all" className="rounded-md text-xs">All</TabsTrigger>
-            <TabsTrigger value="mine" className="rounded-md text-xs">Mine</TabsTrigger>
-            {isDM && <TabsTrigger value="dm" className="rounded-md text-xs">DM</TabsTrigger>}
-            <TabsTrigger value="shared" className="rounded-md text-xs">Shared</TabsTrigger>
-            <TabsTrigger value="private" className="rounded-md text-xs">Private</TabsTrigger>
-            <TabsTrigger value="pinned" className="rounded-md text-xs">
-              <Pin className="w-4 h-4" />
-            </TabsTrigger>
-          </TabsList>
+        {viewMode === "graph" ? (
+          <NoteGraph
+            campaignId={campaignId}
+            onNoteSelect={handleGraphNoteSelect}
+          />
+        ) : (
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-6 rounded-lg">
+              <TabsTrigger value="all" className="rounded-md text-xs">All</TabsTrigger>
+              <TabsTrigger value="mine" className="rounded-md text-xs">Mine</TabsTrigger>
+              {isDM && <TabsTrigger value="dm" className="rounded-md text-xs">DM</TabsTrigger>}
+              <TabsTrigger value="shared" className="rounded-md text-xs">Shared</TabsTrigger>
+              <TabsTrigger value="private" className="rounded-md text-xs">Private</TabsTrigger>
+              <TabsTrigger value="pinned" className="rounded-md text-xs">
+                <Pin className="w-4 h-4" />
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value={filter} className="mt-0 space-y-6">
-            {filteredNotes.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="text-lg">No notes found</p>
-                {filter !== "all" && (
-                  <p className="text-sm mt-2">Try a different filter or create a new note</p>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Pinned Section */}
-                {pinnedNotes.length > 0 && filter === "all" && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                      <Pin className="w-4 h-4 text-amber-600 fill-amber-500" />
-                      <span>Pinned</span>
-                    </div>
-                    <div className="grid gap-3">
-                      {pinnedNotes.map((note) => (
-                        <NoteCard
-                          key={note.id}
-                          note={note}
-                          onClick={() => handleEditNote(note)}
-                          isDM={isDM}
-                          isOwner={note.author_id === userId}
-                          campaignId={campaignId}
-                          session={note.session_id ? sessionMap.get(note.session_id) : null}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes Grouped by Session */}
-                {Object.keys(notesBySession).length > 0 && (
-                  <div className="space-y-6">
-                    {filter === "all" && pinnedNotes.length > 0 && (
-                      <div className="text-sm font-medium text-muted-foreground pt-3 border-t">
-                        Recent Notes
+            <TabsContent value={filter} className="mt-0 space-y-6">
+              {filteredNotes.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p className="text-lg">No notes found</p>
+                  {filter !== "all" && (
+                    <p className="text-sm mt-2">Try a different filter or create a new note</p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Pinned Section */}
+                  {pinnedNotes.length > 0 && filter === "all" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Pin className="w-4 h-4 text-amber-600 fill-amber-500" />
+                        <span>Pinned</span>
                       </div>
-                    )}
-                    {Object.entries(notesBySession).map(([sessionId, sessionNotes]) => {
-                      const session = sessionId !== "no-session" ? sessionMap.get(sessionId) : undefined;
-                      return (
-                        <div key={sessionId} className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-brass" />
-                            <div className="text-sm font-semibold text-foreground">
-                              {session ? getSessionDisplayName(session) : "General Notes"}
-                            </div>
-                            <Badge variant="secondary" className="text-xs">
-                              {sessionNotes.length}
-                            </Badge>
-                          </div>
-                          <div className="grid gap-3">
-                            {sessionNotes.map((note) => (
-                              <NoteCard
-                                key={note.id}
-                                note={note}
-                                onClick={() => handleEditNote(note)}
-                                isDM={isDM}
-                                isOwner={note.author_id === userId}
-                                campaignId={campaignId}
-                                session={session}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+                      <div className="grid gap-3">
+                        {pinnedNotes.map((note) => (
+                          <NoteCard
+                            key={note.id}
+                            note={note}
+                            onClick={() => handleEditNote(note)}
+                            isDM={isDM}
+                            isOwner={note.author_id === userId}
+                            campaignId={campaignId}
+                            session={note.session_id ? sessionMap.get(note.session_id) : null}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grouped Notes */}
+                  {Object.keys(groupMode === "notebook" ? notesByFolder : groupMode === "flat" ? { all: unpinnedNotes } : notesBySession).length > 0 && (
+                    renderGroupedNotes()
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
       </CardContent>
 
       <NoteEditor

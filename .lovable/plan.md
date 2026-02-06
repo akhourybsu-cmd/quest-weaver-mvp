@@ -1,133 +1,200 @@
 
 
-# Comprehensive Notes System Audit and Polish
+# Player Hub Comprehensive Audit and Polish
 
-## Audit Findings
+## Current State Summary
 
-After inspecting every file, database table, constraint, trigger, RLS policy, and route, here is what I found:
+The Player Hub consists of 12 routes, 24+ components, and 2 hooks. The core flow is:
 
-### Database: Healthy
-- `note_links` CHECK constraint correctly includes `NOTE` and `CHARACTER`
-- `note_links_unique_link` UNIQUE constraint is in place
-- `session_notes` has `version`, `folder`, and `deleted_at` columns
-- `trg_check_note_version` trigger is active
-- `note_revisions` table exists with proper RLS
-- `session_notes` is in the `supabase_realtime` publication
-- Visibility CHECK constraint enforces `DM_ONLY`, `SHARED`, `PRIVATE`
-- RLS policies are correct for all three tables
-
-### Data State: 15 notes exist, 0 links saved, 0 revisions
-The link-saving code looks correct now, but there is a critical bug preventing links from actually being persisted (see Bug 1 below).
+1. `/player-hub` -- Auth gate + auto-redirect to dashboard
+2. `/player/:playerId` -- Main dashboard (Characters tab + Campaigns tab)
+3. `/player/:playerId/characters` -- Dedicated characters page
+4. `/player/:playerId/characters/:characterId` -- Character sheet view
+5. `/player/:playerId/settings` -- Player profile settings
+6. `/player/:playerId/notes` -- Shared notes reader
+7. `/player/campaign/:campaignCode` -- Out-of-session campaign browser
+8. `/player/waiting?campaign=X` -- Waiting room for session start
+9. `/session/player?campaign=X` -- Live session play
+10. `/player-home` -- Legacy component (dead route)
+11. `/player` -- Redirect to `/player-hub`
 
 ---
 
 ## Bugs Found
 
-### Bug 1: `note_links` insert silently fails due to UNIQUE constraint + null `link_id`
-The UNIQUE constraint is `(note_id, link_type, link_id, label)`. When `link_id` is `NULL` (dangling wikilinks), PostgreSQL treats each `NULL` as distinct, so duplicates are technically allowed there. However, when two entity links of the same type reference the same entity, the delete-then-reinsert pattern should handle it. The real problem is that the code in `performSave` calls `.select("version")` on the update, but the version trigger modifies the `version` field. If the update returns the version correctly, the insert should follow. Let me check the actual flow more carefully -- the 0 links in the database with 15 notes means the save-links block is either erroring silently or being skipped. Looking at the code:
+### Bug 1: `PlayerSettings.tsx` uses `useState()` as an effect (line 26)
 
 ```typescript
-// Line 478: Delete all existing links
-await supabase.from("note_links").delete().eq("note_id", noteId);
-// Line 489: Insert new links  
-await supabase.from("note_links").insert(...)
+useState(() => {
+  if (player) { ... }
+});
 ```
 
-These `await` calls don't check for errors. If the insert fails (e.g., a constraint violation), it silently fails. This needs error handling and logging.
+This is a misuse of `useState`. The callback runs once on mount as an initializer, never re-runs when `player` changes. So if `player` loads after mount (which it always does -- it's async), the name/color/avatar fields stay at their defaults (empty string, `#3b82f6`, null). The settings page shows blank fields until the user manually types.
 
-### Bug 2: `handleNavigateToNote` doesn't update the parent `note` prop
-When navigating via a wikilink or backlink, `handleNavigateToNote` loads the target note's data into local state (title, content, tags, etc.), but the component's `note` prop still points to the original note. This means:
-- Saving after navigating saves the OLD note's ID with the NEW note's content (data corruption risk)
-- The "Delete" and "History" buttons reference the original note
-- Backlinks panel still shows backlinks for the original note
+**Fix:** Replace with `useEffect` that runs when `player` changes.
 
-### Bug 3: `@mention` dropdown positioning is broken
-The mention and wikilink dropdowns use `position: fixed` with `top: rect.bottom + 5` and `left: rect.left + 10` based on the textarea's bounding rect. This places both dropdowns at the bottom-left of the entire textarea, not near the cursor. For long notes, the dropdown appears far from where the user is typing.
+### Bug 2: `PlayerCampaignView` Notes tab shows wrong data
 
-### Bug 4: `as any` type casts throughout NoteEditor
-The code uses `(data as any).folder`, `(data as any).version`, `(updatedData as any)?.version` extensively. Since the generated types now include `folder`, `version`, and `deleted_at`, these casts are unnecessary and hide potential type errors.
+The Notes tab in the campaign view passes `playerId` to `PlayerNotesView`, which loads notes from ALL campaigns the player belongs to. But the user is viewing a specific campaign -- they should only see notes from that campaign.
 
-### Bug 5: `PlayerNotesView` doesn't use `resilientChannel`
-`NotesBoard` uses `resilientChannel` for robust reconnection, but `PlayerNotesView` uses raw `supabase.channel()` which can silently disconnect without reconnecting.
+**Fix:** Add an optional `campaignId` prop to `PlayerNotesView` and filter notes to only that campaign when provided.
 
-### Bug 6: NoteEditor dialog is too cramped at 1339 lines
-The editor is a single massive component with all state, logic, and UI crammed in. The dialog has `max-w-3xl max-h-[90vh] overflow-y-auto` which creates a very long vertical scroll. The Outline panel, Backlinks panel, and Version History are all stacked vertically, making the editor feel cluttered.
+### Bug 3: `PlayerCampaignView` -- no mobile responsive layout
 
-### Bug 7: Predefined tag matching breaks after normalization
-Predefined tags use capitalized names ("NPC", "Quest", "Clue"), but tags are normalized to lowercase on save. When the note reloads, `tags.includes(tagDef.name)` checks `"NPC"` against `["npc"]` and fails -- so predefined tag buttons won't appear selected after reopening.
+Unlike `PlayerDashboardNew` which has mobile header + sheet navigation, `PlayerCampaignView`, `PlayerCharactersPage`, `PlayerCharacterViewPage`, `PlayerSettings`, and `PlayerNotes` all render the desktop sidebar with no mobile handling. On mobile, the fixed-width sidebar takes up 256px, leaving almost no space for content.
 
-### Bug 8: QuickCaptureModal uses `nanoid()` for note IDs
-The `session_notes` table uses `gen_random_uuid()` as the default for `id`. QuickCaptureModal overrides this with `nanoid()`, which generates a shorter non-UUID string. This could cause issues with foreign key references and UUID validation.
+**Fix:** Apply the same mobile pattern from `PlayerDashboardNew` (detect mobile, show hamburger sheet instead of sidebar) to all player pages.
 
----
+### Bug 4: `PlayerWaitingRoom` cleanup function never runs
 
-## Polish and UX Improvements
+The `initializeWaitingRoom` function returns a cleanup function (to unsubscribe from the channel), but since it's called inside a `useEffect` that doesn't return that cleanup, the channel subscription is never cleaned up on unmount.
 
-### 1. Fix link persistence (silent error handling)
-Add `.throwOnError()` or check `error` on the note_links insert call, and add toast feedback if linking fails.
+**Fix:** Restructure so the channel subscription cleanup is properly returned from the `useEffect`.
 
-### 2. Fix wikilink/backlink navigation (data corruption risk)
-Instead of mutating local state to "navigate" to a different note inside the same dialog, close the editor and reopen it with the target note from the parent's list. This requires a callback like `onNavigateToNote(noteId)` passed from `NotesBoard`, which calls `handleEditNote` with the right note from the notes array.
+### Bug 5: `CampaignTile` unlink button deletes directly without confirmation
 
-### 3. Fix tag normalization consistency
-Compare tags case-insensitively when rendering predefined tag buttons: `tags.some(t => t.toLowerCase() === tagDef.name.toLowerCase())`.
+Clicking the unlink icon on a campaign tile calls `onUnlink` which is `refreshLinks`. But looking at the actual flow: `onUnlink` in `PlayerDashboardNew` just calls `refreshLinks()`. The actual unlink button in `CampaignTile` calls `onUnlink` -- but wait, the `Link2Off` button's `onClick` is `onUnlink`, which is `refreshLinks`. This means clicking unlink just refreshes the list but doesn't actually unlink anything. The unlink functionality is broken.
 
-### 4. Fix QuickCapture ID generation
-Remove the `id: noteId` from the insert -- let the database generate its own UUID. Update the link creation to use the returned `data.id`.
+**Fix:** Wire up the unlink button to actually call `unlinkCampaign(link.id)` from `usePlayerLinks`, with a confirmation dialog.
 
-### 5. Fix dropdown positioning
-For both `@mention` and `[[wikilink]]` dropdowns, compute position relative to the cursor in the textarea using a mirror div or caret coordinates helper, not relative to the textarea element's bounding rect.
+### Bug 6: `SessionPlayer` redirects to `/campaign-hub` on errors instead of player dashboard
 
-### 6. Remove unnecessary `as any` casts
-The generated types now include `folder`, `version`, and `deleted_at`. Replace all `(data as any).folder` with proper typed access.
+When `SessionPlayer` can't find the campaign or character, it navigates to `/campaign-hub` (DM route) instead of the player dashboard.
 
-### 7. PlayerNotesView: use `resilientChannel`
-Switch from raw `supabase.channel()` to `resilientChannel()` for automatic reconnection.
-
-### 8. NoteEditor layout improvements
-- Use a two-panel layout on desktop: left panel for the editor content (toolbar + textarea/preview), right panel for Outline
-- Move Backlinks into a collapsible section that's more prominent
-- Reduce vertical stacking by using horizontal space better
-- Add visual polish: better section separators, grouped action buttons
-
-### 9. NoteCard content preview improvements
-- Render wikilinks (`[[Title]]`) as highlighted text in the preview, similar to @mentions
-- Strip markdown syntax from preview text for cleaner cards
-
-### 10. Graph view empty state and legend
-- Add a color legend showing what node colors mean (folder colors + entity type colors)
-- Improve empty state with a brief instructional guide
-
-### 11. PlayerNotesView wikilink rendering
-Player notes render raw markdown but don't handle `[[wikilinks]]` -- these show as plain text. Add the same WikilinkText rendering (as read-only styled spans, since players can't edit).
+**Fix:** Navigate to `/player-hub` or the player dashboard instead.
 
 ---
 
-## Technical Implementation Details
+## Redundancies Found
 
-### File Changes Summary
+### Redundancy 1: `/player-home` route is dead
+
+`PlayerHome` (`src/components/permissions/PlayerHome.tsx`) depends on `useCampaign()` from `CampaignContext`, which requires a `?code=` search param. The route `/player-home` doesn't provide any campaign context, so it always shows "Loading your campaign..." forever. This component was from an older architecture before the Player Hub was built.
+
+**Fix:** Remove the `/player-home` route from `App.tsx`. Keep the `PlayerHome` component if it's used elsewhere, but remove the dead route.
+
+### Redundancy 2: `PlayerCharactersPage` is a wrapper that only adds a header
+
+`PlayerCharactersPage` renders `PlayerNavigation` + a heading + `PlayerCharacterList`. But `PlayerDashboardNew` already has a Characters tab that renders the exact same `PlayerCharacterList`. Both exist as separate routes.
+
+However, the Characters page serves as a standalone view accessible from the sidebar, while the dashboard embeds it in a tab. This is acceptable UX (sidebar link goes to dedicated page). Keep both but ensure consistency.
+
+### Redundancy 3: `campaign_members` vs `player_campaign_links`
+
+Two tables serve similar purposes:
+- `campaign_members` -- Used by `CampaignContext` for session-level role checking (DM/PLAYER)
+- `player_campaign_links` -- Used by Player Hub for campaign membership
+
+The `PlayerWaitingRoom` only creates a `player_campaign_links` entry but never creates a `campaign_members` entry. This means a player who joins via the waiting room may not have the right role in `CampaignContext`. This is a potential session join issue.
+
+**Fix:** When creating a `player_campaign_links` entry in the waiting room, also ensure a `campaign_members` entry exists. Add a note about this dual-table situation for future unification.
+
+### Redundancy 4: Character loading duplicated in 4 places
+
+`CampaignTile`, `PlayerCampaignView`, `SessionPlayer`, and `PlayerHome` all independently fetch the user's character for a campaign. Each has slightly different error handling and query patterns.
+
+**Fix:** This is addressed below in the refactoring section.
+
+---
+
+## UX/Design Improvements
+
+### 1. Unify mobile layout across all player pages
+
+Only `PlayerDashboardNew` has mobile support. Apply a shared layout wrapper:
+
+Create a `PlayerPageLayout` component that:
+- Accepts `playerId`, `title`, `children`
+- On desktop: renders `PlayerNavigation` sidebar + content
+- On mobile: renders sticky header with hamburger menu + Sheet nav + content
+- Used by all 5 player pages (Dashboard, Characters, CharacterView, Settings, Notes, CampaignView)
+
+### 2. Improve PlayerNavigation active state
+
+The "My Campaigns" link goes to `/player/:playerId` (the dashboard) but so does the sidebar "Home" link which goes to `/`. This is confusing. Rename:
+- "Home" to "Landing Page" or remove it (players don't need to go back to the marketing page)
+- "My Campaigns" label stays as the dashboard link
+
+### 3. Campaign view header needs character context
+
+When viewing a campaign out-of-session, the character card is a separate section. Make it more integrated -- show the character avatar and name in the header alongside the campaign name for a more connected feel.
+
+### 4. Empty states need action buttons
+
+Several empty states just show text. Add clear CTAs:
+- Characters empty: "Create Your First Character" (already done)
+- Campaigns empty: "Join Your First Campaign" (already done)
+- Campaign View with no character: Add "Create Character" button alongside "Select Character"
+
+### 5. SessionPlayer needs a back/exit button
+
+Currently there's no way to leave a session from `SessionPlayer` except browser back. Add an "Exit Session" button in the header that navigates back to the player dashboard.
+
+---
+
+## Implementation Plan
+
+### Phase 1: Fix Critical Bugs
+1. Fix `PlayerSettings.tsx` `useState` misuse -- replace with `useEffect`
+2. Fix `PlayerCampaignView` Notes tab to filter by campaign
+3. Fix `CampaignTile` unlink button (add confirmation + actual delete)
+4. Fix `PlayerWaitingRoom` channel cleanup
+5. Fix `SessionPlayer` error redirects (use player routes, not DM routes)
+
+### Phase 2: Create Shared Layout
+1. Create `PlayerPageLayout` component with mobile/desktop handling
+2. Refactor `PlayerDashboardNew` to use it
+3. Refactor `PlayerCharactersPage`, `PlayerCharacterViewPage`, `PlayerSettings`, `PlayerNotes`, `PlayerCampaignView` to use it
+
+### Phase 3: Clean Up Redundancies
+1. Remove dead `/player-home` route from `App.tsx`
+2. Ensure `PlayerWaitingRoom` creates `campaign_members` entry alongside `player_campaign_links`
+
+### Phase 4: UX Polish
+1. Fix `PlayerNavigation` menu items (remove confusing "Home" link, clarify labels)
+2. Add "Exit Session" button to `SessionPlayer` header
+3. Add confirmation dialog to campaign unlink action
+4. Improve `PlayerCampaignView` character card integration in header
+
+---
+
+## Technical Details
+
+### `PlayerPageLayout` Component Structure
+
+```text
+PlayerPageLayout
+  props: { playerId, title, subtitle?, backPath?, children }
+  
+  Desktop:
+    [PlayerNavigation sidebar] [Content area with max-w-7xl mx-auto p-8]
+  
+  Mobile:
+    [Sticky header: hamburger + title]
+    [Sheet with PlayerNavigation]
+    [Content area with p-4]
+```
+
+### Files Changed
 
 | File | Changes |
 |------|---------|
-| `NoteEditor.tsx` | Fix navigation (use callback), fix tag comparison, remove `as any` casts, add error handling on link saves, fix dropdown positioning, layout improvements |
-| `NotesBoard.tsx` | Add `onNavigateToNote` handler that finds + opens target note, pass callback to NoteEditor |
-| `NoteCard.tsx` | Strip markdown and render `[[wikilinks]]` in preview |
-| `QuickCaptureModal.tsx` | Remove manual `id` generation, use returned `data.id` for link creation |
-| `WikilinkAutocomplete.tsx` | No changes needed |
-| `NoteBacklinks.tsx` | No changes needed |
-| `NoteOutline.tsx` | No changes needed |
-| `NoteFolderSelector.tsx` | No changes needed |
-| `NoteLinkSelector.tsx` | No changes needed |
-| `NoteGraph.tsx` | Add color legend |
-| `PlayerNotesView.tsx` | Switch to `resilientChannel`, add wikilink rendering in note reader |
+| `src/components/player/PlayerPageLayout.tsx` | NEW -- shared layout wrapper |
+| `src/pages/PlayerDashboardNew.tsx` | Use PlayerPageLayout, remove inline mobile logic |
+| `src/pages/PlayerCharactersPage.tsx` | Use PlayerPageLayout |
+| `src/pages/PlayerCharacterViewPage.tsx` | Use PlayerPageLayout |
+| `src/pages/PlayerSettings.tsx` | Use PlayerPageLayout, fix useState bug |
+| `src/pages/PlayerNotes.tsx` | Use PlayerPageLayout |
+| `src/pages/PlayerCampaignView.tsx` | Use PlayerPageLayout, fix Notes tab campaign filter |
+| `src/components/player/PlayerNotesView.tsx` | Add optional `campaignId` prop for filtering |
+| `src/components/player/CampaignTile.tsx` | Fix unlink button, add confirmation dialog |
+| `src/components/player/PlayerWaitingRoom.tsx` | Fix channel cleanup, add campaign_members sync |
+| `src/components/player/PlayerNavigation.tsx` | Clean up menu items |
+| `src/pages/SessionPlayer.tsx` | Fix error redirects, add exit button |
+| `src/App.tsx` | Remove `/player-home` dead route |
 
 ### No database changes needed
-All schema, constraints, triggers, and RLS policies are correct.
 
-### Implementation Order
-1. Fix critical bugs first (link persistence, navigation corruption, tag matching, QuickCapture ID)
-2. Remove type casts and fix `PlayerNotesView` channel
-3. Improve dropdown positioning
-4. Polish NoteEditor layout
-5. Polish NoteCard preview, NoteGraph legend, PlayerNotesView wikilinks
+All schema and RLS policies are correct for the Player Hub flow.
 

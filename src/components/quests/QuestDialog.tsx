@@ -281,9 +281,9 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent variant="ornaments" size="xl" className="max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent variant="ornaments" size="full" className="max-h-[90vh] h-[85vh] flex flex-col p-0 gap-0">
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-3">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0">
           <DialogTitle className="font-cinzel text-xl">
             {isEditing ? "Edit Quest" : "Create Quest"}
           </DialogTitle>
@@ -294,7 +294,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 h-[60vh] max-h-[500px]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="px-6 pb-2 space-y-4">
             {/* ─── ESSENTIAL FIELDS (always visible) ─── */}
             <div className="space-y-3">

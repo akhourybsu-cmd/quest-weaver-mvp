@@ -887,6 +887,7 @@ const CampaignHub = () => {
                     campaignCode={activeCampaign.code}
                     onQuickAdd={handleQuickAdd}
                     onReviewSessionPack={() => setActiveTab("sessions")}
+                    onNavigateTab={(tab) => setActiveTab(tab)}
                     refreshTrigger={sessionRefreshTrigger}
                   />
                 ) : (

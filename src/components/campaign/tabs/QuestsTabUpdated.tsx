@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -339,22 +340,16 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
   if (!loading && quests.length === 0) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <Scroll className="h-16 w-16 text-muted-foreground" />
-          <h3 className="text-xl font-semibold">No Quests Yet</h3>
-          <p className="text-muted-foreground text-center max-w-md">
-            Start your adventure by creating your first quest
-          </p>
-          {!demoMode && (
-            <Button onClick={() => {
-              setQuestToEdit(undefined);
-              setDialogOpen(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Quest
-            </Button>
-          )}
-        </div>
+        <DMEmptyState
+          icon={Scroll}
+          title="No Quests Yet"
+          description="Start your adventure by creating your first quest. Track objectives, assign NPCs, and manage rewards."
+          actionLabel={demoMode ? undefined : "Create Quest"}
+          onAction={demoMode ? undefined : () => {
+            setQuestToEdit(undefined);
+            setDialogOpen(true);
+          }}
+        />
 
         {!demoMode && (
           <QuestDialog
@@ -396,11 +391,15 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
               <div className="w-3 h-3 rounded-full bg-secondary" />
               Not Started ({questsByStatus.not_started.length})
             </h3>
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-3 pr-4">
-                {questsByStatus.not_started.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
-                ))}
+                {questsByStatus.not_started.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
+                ) : (
+                  questsByStatus.not_started.map((quest) => (
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                  ))
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -410,11 +409,15 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
               <div className="w-3 h-3 rounded-full bg-blue-500" />
               In Progress ({questsByStatus.in_progress.length})
             </h3>
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-3 pr-4">
-                {questsByStatus.in_progress.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
-                ))}
+                {questsByStatus.in_progress.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
+                ) : (
+                  questsByStatus.in_progress.map((quest) => (
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                  ))
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -424,11 +427,15 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
               <div className="w-3 h-3 rounded-full bg-buff-green" />
               Completed ({questsByStatus.completed.length})
             </h3>
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-3 pr-4">
-                {questsByStatus.completed.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
-                ))}
+                {questsByStatus.completed.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
+                ) : (
+                  questsByStatus.completed.map((quest) => (
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                  ))
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -438,11 +445,15 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
               <div className="w-3 h-3 rounded-full bg-destructive" />
               Failed ({questsByStatus.failed.length})
             </h3>
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-[calc(100vh-20rem)]">
               <div className="space-y-3 pr-4">
-                {questsByStatus.failed.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
-                ))}
+                {questsByStatus.failed.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
+                ) : (
+                  questsByStatus.failed.map((quest) => (
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                  ))
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -450,7 +461,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
       )}
 
       {view === "list" && (
-        <ScrollArea className="h-[600px]">
+        <ScrollArea className="h-[calc(100vh-20rem)]">
           <div className="space-y-3">
             {quests.map((quest) => (
               <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />

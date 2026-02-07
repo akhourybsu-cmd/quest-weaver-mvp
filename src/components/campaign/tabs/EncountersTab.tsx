@@ -157,21 +157,21 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
 
   const getStatusBadge = (encounter: Encounter) => {
     if (encounter.is_active) {
-      return <Badge variant="destructive">Active</Badge>;
+      return <Badge className="bg-dragonRed/20 text-dragonRed border-dragonRed/30">Active</Badge>;
     }
-    return <Badge variant="secondary">Prepared</Badge>;
+    return <Badge variant="outline" className="border-brass/30 text-brass">Prepared</Badge>;
   };
 
   const getDifficultyColor = (difficulty: string | null) => {
     switch (difficulty) {
       case "easy":
-        return "text-green-600";
+        return "text-buff-green";
       case "medium":
-        return "text-yellow-600";
+        return "text-warning-amber";
       case "hard":
-        return "text-orange-600";
+        return "text-orange-500";
       case "deadly":
-        return "text-red-600";
+        return "text-dragonRed";
       default:
         return "text-muted-foreground";
     }
@@ -191,8 +191,8 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Encounters</h2>
-          <p className="text-muted-foreground">Prepare and manage combat encounters</p>
+          <h2 className="text-2xl font-cinzel font-bold">Encounters</h2>
+          <p className="text-muted-foreground text-sm">Prepare and manage combat encounters</p>
         </div>
         <Button onClick={handleCreateEncounter}>
           <Plus className="w-4 h-4 mr-2" />
@@ -226,12 +226,14 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
 
       <div className="grid gap-4">
         {filteredEncounters.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <Swords className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No encounters found</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Create an encounter to get started
+          <Card className="border-dashed border-2 border-brass/30 bg-card/30">
+            <CardContent className="py-16 text-center">
+              <div className="rounded-full bg-brass/10 p-4 mb-4 inline-block">
+                <Swords className="w-10 h-10 text-brass/60" />
+              </div>
+              <h3 className="font-cinzel text-lg font-semibold mb-2">No encounters found</h3>
+              <p className="text-sm text-muted-foreground">
+                Create an encounter to prepare for combat
               </p>
             </CardContent>
           </Card>
@@ -239,17 +241,18 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
           filteredEncounters.map((encounter) => (
             <Card 
               key={encounter.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-0.5 bg-card/50 border-brass/20"
               onClick={() => handleEditEncounter(encounter.id)}
             >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 font-cinzel">
+                      <Swords className="w-4 h-4 text-brass shrink-0" />
                       {encounter.name}
                       {getStatusBadge(encounter)}
                       {encounter.assigned_session && (
-                        <Badge variant="outline" className="gap-1">
+                        <Badge variant="outline" className="gap-1 border-brass/30">
                           <Calendar className="w-3 h-3" />
                           {encounter.assigned_session}
                         </Badge>

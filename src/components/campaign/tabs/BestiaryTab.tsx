@@ -139,11 +139,14 @@ export function BestiaryTab({ demoMode, demoCampaign }: BestiaryTabProps) {
           <Skeleton className="h-48 w-full" />
         </div>
       ) : filteredMonsters.length === 0 ? (
-        <Card className="bg-card/50 border-brass/20">
-          <CardContent className="py-12">
-            <div className="text-center space-y-2">
-              <Flame className="w-12 h-12 mx-auto text-brass/50" />
-              <p className="text-sm text-muted-foreground">
+        <Card className="border-dashed border-2 border-brass/30 bg-card/30">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-brass/10 p-4 mb-4">
+                <Flame className="w-10 h-10 text-brass/60" />
+              </div>
+              <h3 className="font-cinzel text-lg font-semibold mb-2">No Monsters Found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
                 {searchQuery || typeFilter !== "all"
                   ? "No monsters match your filters. Adjust your search criteria."
                   : "No monsters available in the bestiary."}

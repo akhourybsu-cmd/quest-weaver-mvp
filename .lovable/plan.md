@@ -1,118 +1,73 @@
 
 
-# Player Hub Tabs -- Full Connectivity Audit
+# Player Hub -- Scrolling, Empty States, and Note Display Improvements
 
-## Root Cause: Two Critical Blockers
+## Problems Identified
 
-### Blocker 1: `campaign_members` INSERT Policy Blocks Players
+### 1. NPC Tab Shows White Screen When Empty
+The `PlayerNPCDirectory` component renders a minimal empty state ("No NPCs to display") inside a Card, but the message is tiny and buried. Worse, the `NPCDetailDrawer` is always rendered even with no NPCs, and the empty state has no visual cue (no icon, no explanation about what to expect).
 
-The `campaign_members` table only has two RLS policies:
-- **ALL** (DMs only) -- checks `is_dm`
-- **SELECT** (members) -- checks `has_access`
+### 2. Quest Tab Returns `null` When Empty
+`PlayerQuestTracker` literally returns `null` when there are no quests (line 87-89). This means the entire tab content area is completely empty -- a white void with nothing rendered.
 
-There is **no INSERT policy for players**. When `linkCampaign()` tries to insert a `campaign_members` row for the player, it **silently fails** due to RLS. The `player_campaign_links` row is created, but `campaign_members` is not.
+### 3. Note Reader Cuts Off Content
+The note content panel uses a `ScrollArea` with `max-h-[60vh]` (line 225), but it's inside a Card with no flex layout. The outer container also uses `max-h-[calc(100vh-12rem)]` (line 140). These fixed heights stack poorly, cutting off long notes. The note list sidebar `ScrollArea` has `flex-1 min-h-0` but has no explicit height boundary since the parent is inside a grid that doesn't constrain itself.
 
-Proof: Campaign `99DC7S` has a `player_campaign_links` entry for the test player, but **zero** `campaign_members` rows and **zero** `characters` rows.
+### 4. Tab Content Not Contained Within Viewport
+The `PlayerCampaignView` has a large header section (back button, campaign name, character card) before the tabs. When you scroll down to the tabs, the tab content itself (like the 500px ScrollAreas) extends beyond the viewport. The page scrolls as a whole, but the inner ScrollAreas create double-scroll issues.
 
-### Blocker 2: 5 Tables Still Use Old RLS Pattern
-
-Only `lore_pages` and `session_notes` were updated to check `campaign_members` in their SELECT policies. Five other tables still use the old pattern that only checks `dm_user_id` OR `characters.user_id`:
-
-| Table | SELECT Policy Checks | Includes campaign_members? |
-|-------|---------------------|--------------------------|
-| `lore_pages` | dm + characters + campaign_members | Yes |
-| `session_notes` | dm + characters + campaign_members | Yes |
-| `npcs` | dm + characters | **NO** |
-| `locations` | dm + characters | **NO** |
-| `quests` | dm + characters | **NO** |
-| `quest_steps` | (via quests) dm + characters | **NO** |
-| `factions` | dm + characters | **NO** |
-| `timeline_events` | dm + characters | **NO** |
-
-Since the test player has neither DM access nor a character, **all tabs return empty results** even if assets are marked visible.
-
-### Additional Issue: Realtime Not Enabled for 2 Tables
-
-The `factions` and `lore_pages` tables are **not** in the `supabase_realtime` publication. The `PlayerFactionsView` and `PlayerLoreView` components subscribe to realtime changes, but those subscriptions will never fire.
-
----
-
-## Tab-by-Tab Status
-
-| Tab | Component | Query Filter | RLS Issue | Other Issues |
-|-----|-----------|-------------|-----------|------------|
-| Quests | PlayerQuestTracker | `player_visible = true` | Missing `campaign_members` check | None |
-| NPCs | PlayerNPCDirectory | `player_visible = true` | Missing `campaign_members` check | NPCDetailDrawer works with `isDM=false` |
-| Locations | PlayerLocationsView | `discovered = true` | Missing `campaign_members` check | None |
-| Factions | PlayerFactionsView | `player_visible = true` | Missing `campaign_members` check | Realtime not enabled on table |
-| Lore | PlayerLoreView | `visibility = 'SHARED'` | Fixed | Realtime not enabled on table |
-| Timeline | PlayerTimelineView | `player_visible = true` | Missing `campaign_members` check | None |
-| Notes | PlayerNotesView | `visibility = 'SHARED'` | Fixed | Uses `resilientChannel` (good) |
+### 5. Locations, Factions, Lore, and Timeline Empty States
+These have basic text-only empty states ("No factions revealed yet", etc.) with no icons, no context about what the tab is for, and no guidance for the player about why it's empty or what to expect.
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Fix campaign_members INSERT Policy
+### 1. Fix Quest Tab -- Replace `return null` With Rich Empty State
 
-Add an RLS policy allowing authenticated users to insert themselves as a `player` role. This ensures `linkCampaign()` actually creates the row:
+Replace the `return null` at lines 87-89 of `PlayerQuestTracker.tsx` with a proper empty state card featuring:
+- A `ScrollText` icon (already imported)
+- Title: "No Active Quests"
+- Description: "Your DM hasn't assigned any quests yet. Check back after your next session!"
+- Consistent card styling matching the other tabs
 
-```text
-CREATE POLICY "Players can join campaigns"
-ON public.campaign_members
-FOR INSERT
-WITH CHECK (
-  auth.uid() = user_id
-  AND role = 'player'
-);
-```
+### 2. Fix NPC Tab -- Rich Empty State With Icon and Guidance
 
-This restricts self-insertion to the `player` role only -- users cannot assign themselves as DM.
+Update `PlayerNPCDirectory.tsx` empty state (lines 127-130) to include:
+- A `Users` icon (already imported)
+- Title: "No Known NPCs"
+- Description: "You haven't met any NPCs yet. As your DM introduces characters, they'll appear here."
+- Remove the search bar and header when there are no NPCs (show a clean, centered empty state instead)
 
-### Phase 2: Backfill Missing campaign_members Row
+### 3. Fix All Other Empty States (Locations, Factions, Lore, Timeline)
 
-The test player (and possibly others) already has a `player_campaign_links` entry but no `campaign_members` row. Run a one-time backfill:
+Update each component's empty state to follow a consistent pattern:
+- Centered icon (relevant to the tab)
+- Bold title
+- Helpful description text explaining what the player should expect
+- All wrapped in a dashed-border Card for visual consistency
 
-```text
-INSERT INTO campaign_members (campaign_id, user_id, role)
-SELECT pcl.campaign_id, p.user_id, 'player'
-FROM player_campaign_links pcl
-JOIN players p ON p.id = pcl.player_id
-WHERE NOT EXISTS (
-  SELECT 1 FROM campaign_members cm
-  WHERE cm.campaign_id = pcl.campaign_id
-  AND cm.user_id = p.user_id
-);
-```
+Components and their empty state messages:
+- **Locations**: MapPin icon, "No Discovered Locations", "Locations will appear here as you explore the world."
+- **Factions**: Shield icon, "No Known Factions", "Factions will be revealed as you encounter them in your adventures."
+- **Lore**: BookOpen icon, "No Shared Lore", "Your DM will share lore entries as the story unfolds."
+- **Timeline**: Clock icon, "No Timeline Events", "Key events will appear here as your campaign progresses."
 
-### Phase 3: Fix 5 Remaining SELECT Policies
+### 4. Fix Note Display -- Full Content Readable With Proper Scrolling
 
-Update `npcs`, `locations`, `quests`, `quest_steps`, `factions`, and `timeline_events` SELECT policies to include `campaign_members` in the access check UNION, matching the pattern already applied to `lore_pages` and `session_notes`:
+Redesign `PlayerNotesView.tsx` layout:
+- Remove the rigid `max-h-[calc(100vh-12rem)]` on the outer container
+- On mobile: Switch from side-by-side grid to a stacked layout where clicking a note opens a full-screen-like view (using a Dialog or Sheet) so the full note is readable
+- On desktop: Keep the two-column layout but fix the ScrollArea heights to use `h-[calc(100vh-20rem)]` (accounting for header, tabs, and character card) so both the list and content panel are properly bounded and fully scrollable
+- Ensure the note content `ScrollArea` fills the available space without double-scroll issues
+- Add a "Back to list" button on mobile when viewing a note
 
-```text
-campaign_id IN (
-  SELECT campaigns.id FROM campaigns WHERE campaigns.dm_user_id = auth.uid()
-  UNION
-  SELECT characters.campaign_id FROM characters WHERE characters.user_id = auth.uid()
-  UNION
-  SELECT campaign_members.campaign_id FROM campaign_members WHERE campaign_members.user_id = auth.uid()
-)
-```
+### 5. Improve Tab Content Containment
 
-Tables affected:
-- `npcs` -- "Campaign members can view NPCs"
-- `locations` -- "Campaign members can view locations"
-- `quests` -- "Campaign members can view quests"
-- `quest_steps` -- "Campaign members can view quest steps"
-- `factions` -- "Campaign members can view factions"
-- `timeline_events` -- "Campaign members can view timeline events"
-
-### Phase 4: Enable Realtime for Missing Tables
-
-```text
-ALTER PUBLICATION supabase_realtime ADD TABLE public.factions;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.lore_pages;
-```
+Update the scroll behavior so content stays within bounds:
+- Remove the fixed `h-[500px]` on ScrollAreas inside NPC, Locations, Factions, and Lore components and replace with responsive `h-[calc(100vh-24rem)]` that adapts to the available viewport
+- Remove the fixed `h-[300px]` on the Quest ScrollArea and use a similar responsive calculation
+- This ensures content never overflows the viewport regardless of header height
 
 ---
 
@@ -120,7 +75,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.lore_pages;
 
 | File | Changes |
 |------|---------|
-| `supabase/migrations/...` | Single migration: INSERT policy, backfill, 6 SELECT policy updates, realtime enablement |
+| `src/components/player/PlayerQuestTracker.tsx` | Replace `return null` with rich empty state card |
+| `src/components/player/PlayerNPCDirectory.tsx` | Upgrade empty state with icon, title, and description |
+| `src/components/player/PlayerLocationsView.tsx` | Upgrade empty state with icon and guidance |
+| `src/components/player/PlayerFactionsView.tsx` | Upgrade empty state with icon and guidance |
+| `src/components/player/PlayerLoreView.tsx` | Upgrade empty state with icon and guidance |
+| `src/components/player/PlayerTimelineView.tsx` | Upgrade empty state with icon and guidance |
+| `src/components/player/PlayerNotesView.tsx` | Fix layout heights, add mobile note dialog, fix content scrolling |
 
-No application code changes needed -- all components are correctly implemented. The issue is entirely at the database policy layer.
+### Empty State Design Pattern
+
+All empty states will follow this consistent structure:
+
+```text
++----------------------------------+
+|           (dashed border)        |
+|                                  |
+|         [Relevant Icon]          |
+|         (48x48, muted)           |
+|                                  |
+|     "No [Items] Yet"             |
+|     (font-cinzel, semibold)      |
+|                                  |
+|  "Helpful context about what     |
+|   this tab shows and when        |
+|   content will appear."          |
+|     (text-sm, muted)             |
+|                                  |
++----------------------------------+
+```
+
+No code or data changes are required -- this is purely a UI/UX polish pass.
 

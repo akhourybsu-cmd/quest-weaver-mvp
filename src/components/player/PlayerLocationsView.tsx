@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MapPin, Search } from "lucide-react";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,
   DialogContent,
@@ -180,12 +181,18 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredLocations.length === 0 ? (
+          {filteredLocations.length === 0 && locations.length === 0 ? (
+            <PlayerEmptyState
+              icon={MapPin}
+              title="No Discovered Locations"
+              description="Locations will appear here as you explore the world."
+            />
+          ) : filteredLocations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No locations discovered yet</p>
+              <p className="text-sm">No locations match your search</p>
             </div>
           ) : (
-            <ScrollArea className="h-[500px] pr-4">
+            <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredLocations.map((location) => {
                   const parentName = getParentName(location.parent_location_id);

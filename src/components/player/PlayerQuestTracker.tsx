@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollText, CheckCircle2, Target, MapPin, Award, Coins, User, Tag } from "lucide-react";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 
 interface Quest {
   id: string;
@@ -85,7 +86,13 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
   };
 
   if (quests.length === 0) {
-    return null;
+    return (
+      <PlayerEmptyState
+        icon={ScrollText}
+        title="No Active Quests"
+        description="Your DM hasn't assigned any quests yet. Check back after your next session!"
+      />
+    );
   }
 
   return (
@@ -97,7 +104,7 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[300px] pr-4">
+        <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
           <div className="space-y-3">
             {activeQuests.length > 0 && (
               <div className="space-y-2">

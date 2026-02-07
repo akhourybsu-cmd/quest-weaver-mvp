@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, Search, Target } from "lucide-react";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,
   DialogContent,
@@ -196,12 +197,18 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredFactions.length === 0 ? (
+          {filteredFactions.length === 0 && factions.length === 0 ? (
+            <PlayerEmptyState
+              icon={Shield}
+              title="No Known Factions"
+              description="Factions will be revealed as you encounter them in your adventures."
+            />
+          ) : filteredFactions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No factions revealed yet</p>
+              <p className="text-sm">No factions match your search</p>
             </div>
           ) : (
-            <ScrollArea className="h-[500px] pr-4">
+            <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredFactions.map((faction) => (
                   <Card

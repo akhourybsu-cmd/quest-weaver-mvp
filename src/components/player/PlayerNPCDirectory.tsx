@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, Search } from "lucide-react";
 import NPCDetailDrawer from "@/components/npcs/NPCDetailDrawer";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 
 interface NPC {
   id: string;
@@ -93,6 +94,16 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
     }
   };
 
+  if (npcs.length === 0) {
+    return (
+      <PlayerEmptyState
+        icon={Users}
+        title="No Known NPCs"
+        description="You haven't met any NPCs yet. As your DM introduces characters, they'll appear here."
+      />
+    );
+  }
+
   return (
     <>
       <NPCDetailDrawer
@@ -126,10 +137,10 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
         <CardContent>
           {filteredNPCs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No NPCs to display</p>
+              <p className="text-sm">No NPCs match your search</p>
             </div>
           ) : (
-            <ScrollArea className="h-[500px] pr-4">
+            <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="space-y-2">
                 {filteredNPCs.map((npc) => (
                   <Card

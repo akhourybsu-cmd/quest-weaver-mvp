@@ -18,6 +18,7 @@ import {
   Square,
 } from "lucide-react";
 import { format } from "date-fns";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 
 interface TimelineEvent {
   id: string;
@@ -148,12 +149,18 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
       </CardHeader>
 
       <CardContent>
-        {filteredEvents.length === 0 ? (
+        {filteredEvents.length === 0 && events.length === 0 ? (
+          <PlayerEmptyState
+            icon={Clock}
+            title="No Timeline Events"
+            description="Key events will appear here as your campaign progresses."
+          />
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">No timeline events revealed yet</p>
+            <p className="text-sm">No events match your search</p>
           </div>
         ) : (
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
             <div className="relative">
               {/* Vertical timeline line */}
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />

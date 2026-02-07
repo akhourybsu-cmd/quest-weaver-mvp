@@ -129,7 +129,7 @@ export const PlayerWaitingRoom = () => {
       await supabase.from('campaign_members').insert({
         campaign_id: campaign.id,
         user_id: user.id,
-        role: 'player',
+        role: 'PLAYER',
       });
     }
 

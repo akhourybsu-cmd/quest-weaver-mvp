@@ -106,7 +106,7 @@ export const usePlayerLinks = (playerId?: string) => {
             .insert({
               campaign_id: campaign.id,
               user_id: user.id,
-              role: 'player',
+              role: 'PLAYER',
             });
         }
       }

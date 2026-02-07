@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
- import { X, Trash2, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Trash2, Sparkles, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
@@ -48,6 +49,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [reputationScore, setReputationScore] = useState(0);
   const [existingReputation, setExistingReputation] = useState<{ id: string } | null>(null);
   const [lorePageId, setLorePageId] = useState<string | null>(null);
+  const [playerVisible, setPlayerVisible] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,6 +64,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setInfluenceScore(faction.influence_score ?? 50);
       setGoals(faction.goals || []);
       setLorePageId(faction.lore_page_id || null);
+      setPlayerVisible((faction as any).player_visible ?? false);
       setTagInput("");
       setGoalInput("");
       
@@ -95,6 +98,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setReputationScore(0);
       setExistingReputation(null);
       setLorePageId(null);
+      setPlayerVisible(false);
       setTagInput("");
       setGoalInput("");
     }
@@ -161,6 +165,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         influence_score: influenceScore,
         goals: finalGoals,
         lore_page_id: lorePageId,
+        player_visible: playerVisible,
       };
 
       if (faction) {
@@ -416,6 +421,22 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
                 </Badge>
               ))}
             </div>
+          </div>
+
+          {/* Player Visibility Toggle */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-lg border border-brass/20 bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="player-visible" className="text-sm font-medium">Player Visible</Label>
+                <p className="text-xs text-muted-foreground">Allow players to see this faction</p>
+              </div>
+            </div>
+            <Switch
+              id="player-visible"
+              checked={playerVisible}
+              onCheckedChange={setPlayerVisible}
+            />
           </div>
 
           <div className="flex justify-between gap-2 pt-4 border-t">

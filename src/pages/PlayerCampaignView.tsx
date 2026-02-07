@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerNPCDirectory } from "@/components/player/PlayerNPCDirectory";
 import { PlayerLocationsView } from "@/components/player/PlayerLocationsView";
+import { PlayerFactionsView } from "@/components/player/PlayerFactionsView";
+import { PlayerLoreView } from "@/components/player/PlayerLoreView";
+import { PlayerTimelineView } from "@/components/player/PlayerTimelineView";
 import { PlayerNotesView } from "@/components/player/PlayerNotesView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -173,10 +176,13 @@ export default function PlayerCampaignView() {
         </Card>
 
         <Tabs defaultValue="quests">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="w-full flex overflow-x-auto justify-start gap-1">
             <TabsTrigger value="quests">Quests</TabsTrigger>
             <TabsTrigger value="npcs">NPCs</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsTrigger value="factions">Factions</TabsTrigger>
+            <TabsTrigger value="lore">Lore</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
 
@@ -188,6 +194,15 @@ export default function PlayerCampaignView() {
           </TabsContent>
           <TabsContent value="locations" className="mt-4">
             <PlayerLocationsView campaignId={campaign.id} />
+          </TabsContent>
+          <TabsContent value="factions" className="mt-4">
+            <PlayerFactionsView campaignId={campaign.id} />
+          </TabsContent>
+          <TabsContent value="lore" className="mt-4">
+            <PlayerLoreView campaignId={campaign.id} />
+          </TabsContent>
+          <TabsContent value="timeline" className="mt-4">
+            <PlayerTimelineView campaignId={campaign.id} />
           </TabsContent>
           <TabsContent value="notes" className="mt-4">
             {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}

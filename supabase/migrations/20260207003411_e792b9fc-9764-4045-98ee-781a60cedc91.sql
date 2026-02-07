@@ -1,0 +1,1 @@
+ALTER TABLE public.factions ADD COLUMN player_visible boolean DEFAULT false;

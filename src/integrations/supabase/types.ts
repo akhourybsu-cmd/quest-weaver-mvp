@@ -2188,6 +2188,7 @@ export type Database = {
           lore_page_id: string | null
           motto: string | null
           name: string
+          player_visible: boolean | null
           tags: string[] | null
           updated_at: string | null
         }
@@ -2202,6 +2203,7 @@ export type Database = {
           lore_page_id?: string | null
           motto?: string | null
           name: string
+          player_visible?: boolean | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -2216,6 +2218,7 @@ export type Database = {
           lore_page_id?: string | null
           motto?: string | null
           name?: string
+          player_visible?: boolean | null
           tags?: string[] | null
           updated_at?: string | null
         }

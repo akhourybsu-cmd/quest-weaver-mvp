@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { LoreDetailsRenderer } from "./lore/LoreDetailsRenderer";
 
 interface LorePage {
   id: string;
@@ -157,9 +159,26 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
                 ))}
               </div>
 
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{selectedLore.content_md}</ReactMarkdown>
-              </div>
+              {/* Details section - shows structured data like population, government, etc. */}
+              <LoreDetailsRenderer
+                category={selectedLore.category}
+                details={selectedLore.details}
+                excerpt={selectedLore.excerpt}
+              />
+
+              {/* Main content markdown */}
+              {selectedLore.content_md && (
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedLore.content_md}</ReactMarkdown>
+                </div>
+              )}
+
+              {/* Fallback when no content and no useful details */}
+              {!selectedLore.content_md && !selectedLore.excerpt && !selectedLore.details && (
+                <p className="text-sm text-muted-foreground italic text-center py-4">
+                  No additional details available yet.
+                </p>
+              )}
             </div>
           )}
         </DialogContent>

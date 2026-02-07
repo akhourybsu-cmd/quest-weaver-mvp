@@ -42,15 +42,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+// Breadcrumb imports removed - using inline breadcrumb now
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -666,23 +660,27 @@ const CampaignHub = () => {
             </div>
           )}
           <div className="flex items-center justify-between mb-3 relative z-10">
-            {/* Breadcrumb - hidden on mobile */}
-            <Breadcrumb className="hidden sm:block">
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/" className="text-brass hover:text-ink">
-                    Home
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-brass/50" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="text-ink">Campaign Manager</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+          {/* Breadcrumb - subtle inline */}
+            <span className="hidden sm:inline text-xs text-brass/60">
+              <a href="/" className="hover:text-brass transition-colors">Home</a>
+              <span className="mx-1.5">›</span>
+              <span className="text-brass/80">Campaign Manager</span>
+            </span>
 
             <div className="flex items-center gap-2 sm:gap-3 bg-obsidian/70 backdrop-blur-sm rounded-lg px-2 py-1">
               {activeCampaign && <SessionControl campaignId={activeCampaign.id} />}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-brass hover:text-ink h-8 px-2 sm:px-3"
+                onClick={() => setPaletteOpen(true)}
+              >
+                <Sword className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Quick Command</span>
+                <kbd className="hidden md:inline ml-2 px-1.5 py-0.5 text-xs bg-brass/10 border border-brass/20 rounded">
+                  ⌘K
+                </kbd>
+              </Button>
               <Button onClick={handleInvitePlayers} variant="outline" size="sm" className="hidden sm:flex">
                 <Users className="w-4 h-4 mr-2" />
                 Invite
@@ -782,111 +780,103 @@ const CampaignHub = () => {
             </div>
           </div>
 
-          {/* Quick Command - hide kbd on mobile */}
-          <div className="mt-2 sm:mt-4 flex items-center gap-2 relative z-10">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-brass hover:text-ink h-8 px-2 sm:px-3"
-              onClick={() => setPaletteOpen(true)}
-            >
-              <Sword className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Quick Command</span>
-              <kbd className="hidden sm:inline ml-2 px-1.5 py-0.5 text-xs bg-brass/10 border border-brass/20 rounded">
-                ⌘K
-              </kbd>
-            </Button>
-          </div>
         </header>
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20">
-              <div className="overflow-x-auto scrollbar-hide">
-                <TabsList className="bg-transparent border-0 h-auto p-0 inline-flex min-w-max">
-                  <TabsTrigger
-                    value="overview"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="quests"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Quests
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="sessions"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Sessions
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="npcs"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    NPCs
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="locations"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Locations
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="lore"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Lore
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="factions"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Factions
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="bestiary"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Bestiary
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="encounters"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Encounters
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="items"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Item Vault
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="timeline"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Timeline
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap"
-                  >
-                    Notes
-                  </TabsTrigger>
-                  {liveSession && (
-                    <TabsTrigger
-                      value="session"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-3 py-2 md:px-4 md:py-3 text-sm md:text-base whitespace-nowrap text-red-500 font-semibold"
-                    >
-                      🔴 Live Session
+            {/* Desktop: Scrollable tab bar with gradient hints */}
+            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block">
+              <div className="relative">
+                {/* Left fade */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-obsidian to-transparent z-10 pointer-events-none" />
+                {/* Right fade */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-obsidian to-transparent z-10 pointer-events-none" />
+                <div className="overflow-x-auto scrollbar-hide">
+                  <TabsList className="bg-transparent border-0 h-auto p-0 inline-flex min-w-max">
+                    {/* Core */}
+                    <TabsTrigger value="overview" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Overview
                     </TabsTrigger>
-                  )}
-                </TabsList>
+                    <TabsTrigger value="quests" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Quests
+                    </TabsTrigger>
+                    <TabsTrigger value="sessions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Sessions
+                    </TabsTrigger>
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-brass/20 self-center mx-1" />
+                    {/* World */}
+                    <TabsTrigger value="npcs" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      NPCs
+                    </TabsTrigger>
+                    <TabsTrigger value="locations" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Locations
+                    </TabsTrigger>
+                    <TabsTrigger value="lore" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Lore
+                    </TabsTrigger>
+                    <TabsTrigger value="factions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Factions
+                    </TabsTrigger>
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-brass/20 self-center mx-1" />
+                    {/* Combat */}
+                    <TabsTrigger value="bestiary" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Bestiary
+                    </TabsTrigger>
+                    <TabsTrigger value="encounters" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Encounters
+                    </TabsTrigger>
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-brass/20 self-center mx-1" />
+                    {/* Assets */}
+                    <TabsTrigger value="items" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Item Vault
+                    </TabsTrigger>
+                    <TabsTrigger value="timeline" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Timeline
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                      Notes
+                    </TabsTrigger>
+                    {liveSession && (
+                      <TabsTrigger
+                        value="session"
+                        className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap text-red-500 font-semibold"
+                      >
+                        🔴 Live Session
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+                </div>
               </div>
+            </div>
+
+            {/* Mobile: Grouped dropdown navigation */}
+            <div className="border-b border-brass/20 px-3 py-2 bg-obsidian sticky top-0 z-20 md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="bg-card/50 border-brass/30 font-cinzel">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overview">📋 Overview</SelectItem>
+                  <SelectItem value="quests">📜 Quests</SelectItem>
+                  <SelectItem value="sessions">📅 Sessions</SelectItem>
+                  <SelectItem value="npcs">👥 NPCs</SelectItem>
+                  <SelectItem value="locations">📍 Locations</SelectItem>
+                  <SelectItem value="lore">📖 Lore</SelectItem>
+                  <SelectItem value="factions">🏰 Factions</SelectItem>
+                  <SelectItem value="bestiary">🔥 Bestiary</SelectItem>
+                  <SelectItem value="encounters">⚔️ Encounters</SelectItem>
+                  <SelectItem value="items">📦 Item Vault</SelectItem>
+                  <SelectItem value="timeline">⏳ Timeline</SelectItem>
+                  <SelectItem value="notes">📝 Notes</SelectItem>
+                  {liveSession && (
+                    <SelectItem value="session">🔴 Live Session</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex-1 p-3 sm:p-4 md:p-6">

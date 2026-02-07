@@ -392,6 +392,17 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
               <CardTitle className="font-cinzel">Session Pack Builder</CardTitle>
               <CardDescription>Build content packs for upcoming sessions</CardDescription>
             </div>
+            {upcomingSessions.length > 0 ? (
+              <Button size="sm" variant="outline" onClick={() => openPackBuilder(upcomingSessions[0])}>
+                <Package className="w-4 h-4 mr-2" />
+                Build Pack
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setScheduleDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule First
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
@@ -414,9 +425,12 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
               <Skeleton className="h-24 w-full" />
             </div>
           ) : upcomingSessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No upcoming sessions scheduled
-            </p>
+            <div className="flex flex-col items-center py-8 text-center">
+              <div className="rounded-full bg-brass/10 p-3 mb-3">
+                <Calendar className="w-6 h-6 text-brass/60" />
+              </div>
+              <p className="text-sm text-muted-foreground">No upcoming sessions scheduled</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {upcomingSessions.map((session) => {

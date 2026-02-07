@@ -90,6 +90,27 @@ export const usePlayerLinks = (playerId?: string) => {
 
       if (insertError) throw insertError;
 
+      // Sync campaign_members so CampaignContext finds the player's role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: existingMember } = await supabase
+          .from('campaign_members')
+          .select('id')
+          .eq('campaign_id', campaign.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!existingMember) {
+          await supabase
+            .from('campaign_members')
+            .insert({
+              campaign_id: campaign.id,
+              user_id: user.id,
+              role: 'player',
+            });
+        }
+      }
+
       toast({
         title: 'Campaign linked!',
         description: `You're now linked to ${campaign.name}`,

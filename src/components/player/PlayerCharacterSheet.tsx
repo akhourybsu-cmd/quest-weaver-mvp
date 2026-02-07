@@ -195,18 +195,23 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       .single();
 
     if (data) {
+      const joined = data as typeof data & {
+        srd_subclasses: { name: string } | null;
+        srd_ancestries: { name: string; traits: AncestryTrait[] } | null;
+        srd_subancestries: { name: string; traits: AncestryTrait[] } | null;
+      };
       setCharacter({
         ...data,
-        subclass_name: (data as any).srd_subclasses?.name || null
+        subclass_name: joined.srd_subclasses?.name || null
       } as CharacterData);
       // Extract ancestry traits (they come as [{name, description}])
-      if ((data as any).srd_ancestries?.traits) {
-        setAncestryTraits((data as any).srd_ancestries.traits as AncestryTrait[]);
-        setAncestryName((data as any).srd_ancestries.name || '');
+      if (joined.srd_ancestries?.traits) {
+        setAncestryTraits(joined.srd_ancestries.traits);
+        setAncestryName(joined.srd_ancestries.name || '');
       }
-      if ((data as any).srd_subancestries?.traits) {
-        setSubancestryTraits((data as any).srd_subancestries.traits as AncestryTrait[]);
-        setSubancestryName((data as any).srd_subancestries.name || '');
+      if (joined.srd_subancestries?.traits) {
+        setSubancestryTraits(joined.srd_subancestries.traits);
+        setSubancestryName(joined.srd_subancestries.name || '');
       }
     }
   };

@@ -421,7 +421,7 @@ const SessionPlayer = () => {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
+      <header className="bg-card border-b-2 border-brass/30 sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center">
             <Button
@@ -429,12 +429,13 @@ const SessionPlayer = () => {
               size="sm"
               onClick={() => navigate('/player-hub')}
               className="shrink-0 text-muted-foreground hover:text-foreground mr-2"
+              title="Exit session"
             >
               <ArrowLeft className="w-4 h-4 sm:mr-1" />
               <span className="hidden sm:inline">Exit</span>
             </Button>
             <div className="text-center flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold">{character.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-cinzel font-bold">{character.name}</h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Level {character.level} {character.class} • Campaign: {campaignCode}
               </p>

@@ -35,6 +35,7 @@ interface Character {
   max_hp: number;
   current_hp: number;
   ac: number;
+  speed: number | null;
   portrait_url?: string;
   creation_status: string;
   campaign_id?: string;
@@ -312,7 +313,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Zap className="w-4 h-4 text-yellow-500" />
-                    <span>30 ft</span>
+                    <span>{character.speed ?? 30} ft</span>
                   </div>
                 </div>
               </CardContent>

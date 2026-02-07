@@ -137,16 +137,16 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 max-h-[calc(100vh-12rem)]">
       {/* Notes List */}
-      <div className="lg:col-span-1 space-y-4">
-        <div className="relative">
+      <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
+        <div className="relative shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search shared notes..." value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
 
-        <ScrollArea className="h-[calc(100vh-16rem)]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-2">
             {filteredNotes.length === 0 ? (
               <Card className="border-dashed">
@@ -222,7 +222,7 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
             </CardHeader>
             <Separator />
             <CardContent className="pt-6">
-              <ScrollArea className="h-[calc(100vh-24rem)]">
+              <ScrollArea className="flex-1 min-h-0 max-h-[60vh]">
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}

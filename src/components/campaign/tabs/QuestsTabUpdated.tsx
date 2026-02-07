@@ -62,7 +62,7 @@ const getQuestTypeIcon = (type?: string) => {
 const getDifficultyColor = (difficulty?: string) => {
   switch(difficulty) {
     case 'easy': return 'text-buff-green border-buff-green/30';
-    case 'medium': return 'text-warning-amber border-warning-amber/30';
+    case 'medium': case 'moderate': return 'text-warning-amber border-warning-amber/30';
     case 'hard': return 'text-destructive border-destructive/30';
     case 'deadly': return 'text-dragon-red border-dragon-red/30';
     default: return 'text-muted-foreground border-brass/30';
@@ -200,9 +200,13 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
           tags,
           reward_xp,
           reward_gp,
+          reward_items,
           assigned_to,
           faction_id,
           dm_notes,
+          player_visible,
+          lore_page_id,
+          quest_chain_parent,
           quest_steps (
             id,
             description,
@@ -234,9 +238,13 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         tags: quest.tags || [],
         rewardXP: quest.reward_xp,
         rewardGP: quest.reward_gp,
+        rewardItems: quest.reward_items || [],
         assignedTo: quest.assigned_to || [],
         factionId: quest.faction_id,
         dmNotes: quest.dm_notes,
+        playerVisible: quest.player_visible,
+        lorePageId: quest.lore_page_id,
+        questChainParent: quest.quest_chain_parent,
         steps: quest.quest_steps || [],
         npc: quest.npc,
         location: quest.location,

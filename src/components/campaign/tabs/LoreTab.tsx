@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Plus, Search, Book, Clock, List, Mountain, Users, Scroll, Sparkles, User, HelpCircle } from "lucide-react";
+import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { toast } from "sonner";
 import LoreEditor from "@/components/lore/LoreEditor";
 import LorePageView from "@/components/lore/LorePageView";
@@ -296,22 +297,15 @@ export function LoreTab({ campaignId }: LoreTabProps) {
               {loading ? (
                 <p className="text-muted-foreground col-span-full text-center py-8">Loading...</p>
               ) : filteredPages.length === 0 ? (
-                <Card className="col-span-full rounded-2xl border-brass/20 bg-card/50">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Book className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-lg font-medium mb-2">No lore entries yet</p>
-                    <p className="text-sm text-muted-foreground mb-4 text-center">
-                      Start worldbuilding by creating your first lore entry.
-                    </p>
-                    <Button 
-                      onClick={() => handleCreateByCategory(activeCategory)}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create {getCategoryLabel(activeCategory)}
-                    </Button>
-                  </CardContent>
-                </Card>
+                <div className="col-span-full">
+                  <DMEmptyState
+                    icon={Book}
+                    title="No Lore Entries Yet"
+                    description="Start worldbuilding by creating your first lore entry for this category."
+                    actionLabel={`Create ${getCategoryLabel(activeCategory)}`}
+                    onAction={() => handleCreateByCategory(activeCategory)}
+                  />
+                </div>
               ) : (
                 filteredPages.map((page) => {
                   const config = getCategoryConfig(page.category);

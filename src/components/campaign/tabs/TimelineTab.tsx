@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Calendar, Plus, Filter, Eye, EyeOff, Download, Loader2 } from "lucide-react";
+import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
@@ -228,22 +229,15 @@ export function TimelineTab({ campaignId }: TimelineTabProps) {
           <Skeleton className="h-24 w-full" />
         </div>
       ) : filteredEvents.length === 0 ? (
-        <Card className="bg-card/50 border-brass/20">
-          <CardContent className="py-12">
-            <div className="text-center space-y-3">
-              <Calendar className="w-12 h-12 mx-auto text-brass/50" />
-              <p className="text-sm text-muted-foreground">
-                {filter === 'all' 
-                  ? "No events recorded yet. Start chronicling your campaign's history."
-                  : "No events match this filter."}
-              </p>
-              <Button variant="outline" onClick={() => { setEventToEdit(null); setShowAddDialog(true); }}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Event
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <DMEmptyState
+          icon={Calendar}
+          title="No Events Recorded"
+          description={filter === 'all'
+            ? "No events recorded yet. Start chronicling your campaign's history."
+            : "No events match this filter. Try a different category."}
+          actionLabel={filter === 'all' ? "Add First Event" : undefined}
+          onAction={filter === 'all' ? () => { setEventToEdit(null); setShowAddDialog(true); } : undefined}
+        />
       ) : (
         <ScrollArea className="h-[calc(100vh-300px)]">
           <div className="relative pb-4">

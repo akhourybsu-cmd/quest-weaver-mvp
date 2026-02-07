@@ -51,7 +51,7 @@ const NotesBoard = ({ campaignId, isDM, userId }: NotesBoardProps) => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "mine" | "dm" | "shared" | "private" | "pinned">("all");
   const [sessionFilter, setSessionFilter] = useState<string>("all");
-  const [groupMode, setGroupMode] = useState<GroupMode>("session");
+  const [groupMode, setGroupMode] = useState<GroupMode>("notebook");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const { toast } = useToast();
 

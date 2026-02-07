@@ -6,6 +6,8 @@ import { Clock, Scroll, Users, Plus, TrendingUp, MapPin, Package, Loader2 } from
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RecentActivityFeed } from "@/components/campaign/overview/RecentActivityFeed";
+import { NeedsAttention } from "@/components/campaign/overview/NeedsAttention";
 
 import { DemoCampaign } from "@/data/demoSeeds";
 import { getDemoCampaignStats } from "@/lib/demoAdapters";
@@ -15,12 +17,13 @@ interface OverviewTabProps {
   campaignCode: string;
   onQuickAdd: (type: string) => void;
   onReviewSessionPack?: () => void;
+  onNavigateTab?: (tab: string) => void;
   refreshTrigger?: number;
   demoMode?: boolean;
   demoCampaign?: DemoCampaign | null;
 }
 
-export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack, refreshTrigger, demoMode, demoCampaign }: OverviewTabProps) {
+export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSessionPack, onNavigateTab, refreshTrigger, demoMode, demoCampaign }: OverviewTabProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -237,6 +240,16 @@ export function OverviewTab({ campaignId, campaignCode, onQuickAdd, onReviewSess
           </CardContent>
         </Card>
       )}
+
+      {/* Needs Attention & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <NeedsAttention
+          campaignId={campaignId}
+          demoMode={demoMode}
+          onNavigate={(tab) => onNavigateTab?.(tab)}
+        />
+        <RecentActivityFeed campaignId={campaignId} demoMode={demoMode} />
+      </div>
 
       {/* Quick Add */}
       <Card className="bg-card/50 border-brass/20">

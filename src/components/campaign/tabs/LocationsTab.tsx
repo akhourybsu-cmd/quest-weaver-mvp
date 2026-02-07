@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye } from "lucide-react";
+import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
@@ -375,18 +376,15 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
             </div>
           </div>
         ) : displayLocations.length === 0 ? (
-          <Card className="bg-card/50 border-brass/20">
-            <CardContent className="py-12">
-              <div className="text-center space-y-2">
-                <Map className="w-12 h-12 mx-auto text-brass/50" />
-                <p className="text-sm text-muted-foreground">
-                  {searchQuery
-                    ? "No locations match your search."
-                    : "No locations yet. Create your first location to begin mapping your world."}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <DMEmptyState
+            icon={Map}
+            title="No Locations Found"
+            description={searchQuery
+              ? "No locations match your search. Try adjusting your criteria."
+              : "No locations yet. Create your first location to begin mapping your world."}
+            actionLabel={searchQuery ? undefined : "New Location"}
+            onAction={searchQuery ? undefined : () => { setLocationToEdit(undefined); setParentLocationId(null); setDialogOpen(true); }}
+          />
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">

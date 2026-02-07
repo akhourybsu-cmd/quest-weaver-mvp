@@ -1,129 +1,125 @@
 
-
-# Player Hub Consistency Pass -- Findings and Fixes
+# Player Campaign View -- Missing Tabs and Visibility Audit
 
 ## Current State
 
-After reviewing all 25+ Player Hub files, routes, hooks, and types, the system is in solid shape following the previous overhaul. The unified `PlayerPageLayout` is applied consistently, the Notes visibility bug is fixed, the unlink flow has proper confirmation, and `SessionPlayer` correctly redirects to `/player-hub`. However, several inconsistencies remain:
+The campaign **"The World of Sandrogal"** (code `99DC7S`) has rich content:
 
----
+| Asset Type | Total | Player-Visible |
+|-----------|-------|----------------|
+| NPCs | 112 | 0 (all `player_visible: false`) |
+| Locations | 46 | 0 (all `discovered: false`) |
+| Factions | 27 | N/A (no visibility column exists!) |
+| Quests | 2 | 0 (both `player_visible: false`) |
+| Lore Pages | 1 | 1 (`visibility: SHARED`) |
+| Session Notes | 4 | 3 (`SHARED`) |
+| Items | 0 | -- |
+| Timeline Events | 0 | -- |
 
-## Inconsistencies Found
+## Problems Found
 
-### 1. `linkCampaign()` does NOT create `campaign_members` entry
+### 1. Missing Tabs in Player Campaign View
 
-When a player joins a campaign via the **JoinCampaignDialog** (dashboard "Join Campaign" button), `usePlayerLinks.linkCampaign()` only creates a `player_campaign_links` row. It does **not** create a `campaign_members` entry.
+The DM Campaign Manager has **12 tabs**: Overview, Quests, Sessions, NPCs, Locations, Lore, Factions, Bestiary, Encounters, Item Vault, Timeline, Notes.
 
-The **WaitingRoom** was fixed to create both, but the JoinCampaignDialog is a separate path. This means a player who joins via the dashboard dialog will be linked but won't have a `campaign_members` row until they visit the waiting room. If they go directly to a live session (clicking "Join Session" on the tile), the `CampaignContext` won't find their role and session features may break.
+The Player Campaign View currently has only **4 tabs**: Quests, NPCs, Locations, Notes.
 
-**Fix:** Add `campaign_members` sync to `linkCampaign()` in `usePlayerLinks.ts`, matching the WaitingRoom pattern.
+Of the 8 missing tabs, some are correctly DM-only (Sessions, Bestiary, Encounters, Overview, Item Vault). But **3 tabs are missing that players should have access to**:
 
-### 2. `PlayerHome` component still exists (dead code)
+- **Factions** -- 27 factions exist with descriptions, goals, and influence. Players should be able to see factions the DM has revealed.
+- **Lore** -- The lore system already has a `visibility` field (`DM_ONLY` / `SHARED`). 1 lore page is already marked SHARED. Players should be able to browse shared lore.
+- **Timeline** -- The timeline_events table already has a `player_visible` column. Players should see revealed timeline events.
 
-The `/player-home` route was correctly removed from `App.tsx`, but the `PlayerHome` component file (`src/components/permissions/PlayerHome.tsx`) remains. It's not imported anywhere. It's dead code that should be removed for hygiene.
+### 2. Factions Table Missing Visibility Column
 
-**Fix:** Delete `src/components/permissions/PlayerHome.tsx`.
+Unlike NPCs, quests, locations, and timeline events which all have visibility controls, the `factions` table has NO `player_visible` column. This needs to be added before a player factions view can work.
 
-### 3. `PlayerNotesView` hardcoded height breaks in campaign tab context
+### 3. All Assets Currently Hidden
 
-The `PlayerNotesView` uses `h-[calc(100vh-12rem)]` for its container and `h-[calc(100vh-16rem)]` for the scroll area. This calculation assumes the component is rendered in a full-page context (standalone Notes page). When embedded inside the `PlayerCampaignView` (inside a tab, under a header + character card + tab bar), it overflows because the actual available space is much less than `100vh - 12rem`.
+Every single NPC, location, and quest has visibility turned off. This means the player currently sees **empty tabs** for everything. This is a data-state issue the DM controls -- once the tabs and visibility columns are properly wired, the DM can toggle assets visible from the Campaign Manager.
 
-**Fix:** Remove hardcoded viewport-height calculations and use `flex-1` / `overflow-auto` patterns that adapt to their parent container. Or accept a `className` prop for height customization.
+### 4. No Player-Facing Components for Factions, Lore, or Timeline
 
-### 4. `PlayerCharacterSheet` uses `as any` casts for ancestry/subclass data
-
-Lines 200-209 of `PlayerCharacterSheet.tsx` use `(data as any).srd_ancestries`, `(data as any).srd_subancestries`, `(data as any).srd_subclasses`. The types file includes these relations, so these casts are unnecessary and hide potential errors.
-
-**Fix:** Remove `as any` casts and use proper typed access.
-
-### 5. Mobile layout inconsistency: `PlayerPageLayout` uses `useIsMobile()` but `SessionPlayer` does not use `PlayerPageLayout`
-
-This is intentional -- `SessionPlayer` is a live session and needs a different layout (no sidebar, just a header bar). However, the `SessionPlayer` header doesn't have a consistent design with the rest of the Player Hub:
-- No player avatar or branding
-- "Exit" button text is hidden on mobile (only shows arrow icon) which may confuse first-time users
-
-**Fix:** Add a subtle tooltip on the exit button for mobile, and style the SessionPlayer header to match the Player Hub brass/fantasy theme.
-
-### 6. `PlayerCharacterList` has a speed stat hardcoded to "30 ft"
-
-Line 316: `<span>30 ft</span>` -- the speed is hardcoded rather than read from `character.speed`. This was likely a placeholder.
-
-**Fix:** Use `character.speed` (need to add `speed` to the character select query).
-
-### 7. `CampaignTile` and `PlayerCampaignView` both independently load character data
-
-Both components fetch the character for a campaign independently using nearly identical queries. The `PlayerCampaignView` loads character data in `loadCharacter()`, and `CampaignTile` does the same in its own `loadCharacter()`. If the user changes their character from one view, the other won't reflect it until remounted.
-
-This is a known architectural issue (Redundancy 4 from the previous audit). While a full shared hook would be ideal long-term, for now the code works correctly because each component mounts independently.
-
-**Fix:** No change needed now -- flag for future refactoring.
-
-### 8. `PlayerNavigation` collapse state persists in localStorage but doesn't sync across tabs
-
-Minor -- the sidebar collapse is stored in `localStorage` but doesn't listen for `storage` events. Opening the player hub in two tabs can show different sidebar states.
-
-**Fix:** Low priority, no change needed.
-
-### 9. `CharacterSelectionDialog` uses `window.confirm()` for reassignment warning
-
-Line 102: `window.confirm(...)` is used instead of the app's `AlertDialog` component. This breaks the visual consistency and can't be styled with the fantasy theme.
-
-**Fix:** Replace `window.confirm()` with a proper `AlertDialog` component, matching the pattern used in `CampaignTile`.
+There are no `PlayerFactionsView`, `PlayerLoreView`, or `PlayerTimelineView` components. These need to be created, following the same pattern as existing player components (`PlayerNPCDirectory`, `PlayerLocationsView`, etc.).
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Critical Data Integrity Fix
-1. **`usePlayerLinks.ts`** -- Add `campaign_members` sync to `linkCampaign()`. After creating the `player_campaign_links` row, get the auth user and create a `campaign_members` entry if one doesn't exist. This ensures both tables are synced regardless of whether the player joins via the dialog or the waiting room.
+### Phase 1: Database -- Add Factions Visibility Column
 
-### Phase 2: Code Cleanup
-1. **Delete** `src/components/permissions/PlayerHome.tsx` (dead code, no imports)
-2. **`PlayerCharacterSheet.tsx`** -- Remove `as any` casts on ancestry/subclass data
-3. **`PlayerCharacterList.tsx`** -- Fix hardcoded speed: add `speed` to the character query and display `character.speed` instead of `30`
+Add a `player_visible` boolean column (default `false`) to the `factions` table. This mirrors the pattern used for NPCs, quests, and timeline events.
 
-### Phase 3: Layout Fixes
-1. **`PlayerNotesView.tsx`** -- Replace hardcoded `h-[calc(100vh-12rem)]` and `h-[calc(100vh-16rem)]` and `h-[calc(100vh-24rem)]` with flexible height patterns that work in both standalone page and embedded tab contexts
-2. **`SessionPlayer.tsx`** -- Style the header to match the Player Hub fantasy theme (add brass border accent, font-cinzel on character name)
+```text
+ALTER TABLE public.factions ADD COLUMN player_visible boolean DEFAULT false;
+```
 
-### Phase 4: UX Polish
-1. **`CharacterSelectionDialog.tsx`** -- Replace `window.confirm()` with a styled `AlertDialog` for the campaign reassignment warning
+Also update the `FactionEditor` to include a visibility toggle (matching the NPC editor pattern).
+
+### Phase 2: Create Player-Facing Components
+
+**`PlayerFactionsView`** -- New component displaying factions where `player_visible = true`:
+- Grid of faction cards showing name, description, banner image, motto, goals
+- Reputation score display (if faction_reputation exists for this player)
+- Search/filter by name
+- Read-only -- no edit/delete actions
+- Realtime subscription for live updates
+- Follows the same card design as `PlayerNPCDirectory` and `PlayerLocationsView`
+
+**`PlayerLoreView`** -- New component displaying lore pages where `visibility = 'SHARED'`:
+- List of lore pages grouped by category (Regions, History, NPCs, Factions, etc.)
+- Click to open read-only lore page viewer (reusing `LorePageView` with `onEdit` hidden)
+- Category filter tabs matching the DM lore tab
+- Search by title/tags
+- Follows the fantasy codex aesthetic from the DM lore system
+
+**`PlayerTimelineView`** -- New component displaying timeline events where `player_visible = true`:
+- Vertical timeline display with in-game dates
+- Event cards showing title, summary, category icon
+- Sorted by occurred_at date
+- Read-only view
+
+### Phase 3: Wire Up PlayerCampaignView Tabs
+
+Update `PlayerCampaignView.tsx` to include 7 tabs instead of 4:
+
+```text
+Quests | NPCs | Locations | Factions | Lore | Timeline | Notes
+```
+
+- Import and render the three new components
+- Update the `TabsList` grid from `grid-cols-4` to a scrollable layout (matching the DM tab bar) so all 7 tabs fit on mobile
+
+### Phase 4: Add Visibility Toggle to Faction Editor
+
+Update `FactionEditor.tsx` to include a "Player Visible" toggle, matching the same pattern used in `EnhancedNPCEditor` and `QuestDialog`. This lets the DM control which factions players can see.
 
 ---
 
 ## Technical Details
 
-### `campaign_members` sync in `linkCampaign()`
-
-```text
-After inserting into player_campaign_links:
-1. Get current auth user via supabase.auth.getUser()
-2. Check if campaign_members row exists for (campaign_id, user_id)
-3. If not, insert { campaign_id, user_id, role: 'player' }
-```
-
-### `PlayerNotesView` height fix
-
-Replace the fixed viewport calculations with a container that fills available space:
-
-```text
-Container: use flex flex-col with a passed-in max-height or simply overflow-auto
-ScrollArea: remove fixed calc heights, let parent control sizing
-```
-
 ### Files Changed
 
 | File | Changes |
 |------|---------|
-| `src/hooks/usePlayerLinks.ts` | Add `campaign_members` sync to `linkCampaign()` |
-| `src/components/permissions/PlayerHome.tsx` | DELETE (dead code) |
-| `src/components/player/PlayerCharacterSheet.tsx` | Remove `as any` casts |
-| `src/components/player/PlayerCharacterList.tsx` | Fix hardcoded speed, add `speed` to query |
-| `src/components/player/PlayerNotesView.tsx` | Fix hardcoded height calculations |
-| `src/pages/SessionPlayer.tsx` | Style header to match Player Hub theme |
-| `src/components/character/CharacterSelectionDialog.tsx` | Replace `window.confirm` with `AlertDialog` |
+| `supabase/migrations/...` | Add `player_visible` boolean to `factions` table |
+| `src/components/player/PlayerFactionsView.tsx` | NEW -- read-only faction directory for players |
+| `src/components/player/PlayerLoreView.tsx` | NEW -- read-only lore browser for players |
+| `src/components/player/PlayerTimelineView.tsx` | NEW -- read-only timeline for players |
+| `src/pages/PlayerCampaignView.tsx` | Add 3 new tabs (Factions, Lore, Timeline), update tab layout |
+| `src/components/factions/FactionEditor.tsx` | Add `player_visible` toggle |
 
-### No database changes needed
+### Component Patterns
 
-All schema, constraints, triggers, and RLS policies are correct.
+All three new components follow the established player component pattern:
+- Accept `campaignId` prop
+- Query with visibility filter (`.eq("player_visible", true)` or `.eq("visibility", "SHARED")`)
+- Subscribe to realtime changes via `supabase.channel()`
+- Read-only UI (no create/edit/delete buttons)
+- Search input for filtering
+- Empty state when no visible assets exist
+- Fantasy-themed styling (font-cinzel headers, brass accents, card borders)
 
+### Data Visibility Note
+
+Currently ALL NPCs, locations, quests, and factions have visibility set to off. After this implementation, the DM will need to toggle visibility on individual assets from the Campaign Manager. The player will see empty states until the DM reveals content -- this is by design (the DM controls what players see).

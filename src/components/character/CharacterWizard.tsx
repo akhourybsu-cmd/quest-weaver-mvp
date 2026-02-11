@@ -829,19 +829,19 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               </div>
 
               {/* Navigation */}
-              <div className="p-4 md:p-6 border-t flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
+              <div className="p-4 md:p-6 border-t border-brass/20 flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={handleBack}
                   disabled={currentStep === 0}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all"
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 
                 {currentStep < STEPS.length - 1 ? (
-                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto">
+                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground active:scale-95 transition-all">
                     Next
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>

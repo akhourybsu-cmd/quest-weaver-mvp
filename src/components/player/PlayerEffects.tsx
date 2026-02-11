@@ -106,23 +106,24 @@ export function PlayerEffects({ characterId, encounterId }: PlayerEffectsProps) 
   }
 
   return (
-    <Card>
+    <Card className="fantasy-border-ornaments">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center gap-2 font-cinzel tracking-wide text-brand-brass">
           <Sparkles className="w-5 h-5" />
           Active Effects
         </CardTitle>
+        <div className="h-px bg-gradient-to-r from-transparent via-brand-brass/50 to-transparent mt-2" />
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Concentration Banner */}
         {concentrationEffect && (
-          <div className="p-3 bg-primary/10 border-2 border-primary rounded-lg">
+          <div className="p-3 bg-primary/10 border-2 border-brand-brass/40 rounded-lg animate-fade-in shadow-[0_0_8px_hsl(var(--brass)/0.2)]">
             <div className="flex items-start gap-2">
-              <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-brand-brass shrink-0 mt-0.5 animate-pulse-breathe" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-primary">Concentrating</span>
-                  <Badge variant="outline" className="text-xs">
+                  <span className="font-semibold text-brand-brass font-cinzel">Concentrating</span>
+                  <Badge variant="outline" className="text-xs border-brand-brass/30">
                     {concentrationEffect.name}
                   </Badge>
                 </div>
@@ -137,10 +138,11 @@ export function PlayerEffects({ characterId, encounterId }: PlayerEffectsProps) 
         {/* Conditions */}
         {conditions.length > 0 && (
           <div className="space-y-2">
-            {conditions.map((condition) => (
+            {conditions.map((condition, index) => (
               <div
                 key={condition.id}
-                className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
+                className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg animate-fade-in"
+                style={{ animationDelay: `${index * 60}ms` }}
               >
                 <div className="flex items-start gap-2">
                   <Skull className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -171,13 +173,14 @@ export function PlayerEffects({ characterId, encounterId }: PlayerEffectsProps) 
           <div className="space-y-2">
             {effects
               .filter(e => !e.requires_concentration)
-              .map((effect) => (
+              .map((effect, index) => (
                 <div
                   key={effect.id}
-                  className="p-3 bg-muted/30 border border-border rounded-lg"
+                  className="p-3 bg-muted/30 border border-brand-brass/20 rounded-lg animate-fade-in"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
                   <div className="flex items-start gap-2">
-                    <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <Sparkles className="w-5 h-5 text-brand-brass shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold">{effect.name}</div>
                       {effect.source && (

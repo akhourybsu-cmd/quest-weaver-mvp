@@ -1054,7 +1054,7 @@ export const LevelUpWizard = ({
     
     s.push("review");
     return s;
-  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant]);
+  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant, needsSubclass]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;

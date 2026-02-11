@@ -168,6 +168,7 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
+  const bulk = useBulkSelection();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState<Location | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "tree">("grid");

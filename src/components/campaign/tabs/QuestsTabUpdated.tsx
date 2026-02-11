@@ -162,6 +162,7 @@ QuestCard.displayName = "QuestCard";
 
 export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }: QuestsTabProps) {
   const { toast } = useToast();
+  const bulk = useBulkSelection();
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);

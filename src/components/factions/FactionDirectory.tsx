@@ -492,6 +492,20 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
           onSaved={loadReputations}
         />
       )}
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={filteredFactions.length}
+          onSelectAll={() => bulk.selectAll(filteredFactions.map((f) => f.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="factions"
+          visibilityColumn="player_visible"
+          entityLabel="factions"
+          onUpdated={loadFactions}
+        />
+      )}
     </>
   );
 };

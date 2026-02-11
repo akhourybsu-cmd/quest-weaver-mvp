@@ -99,6 +99,11 @@ const LocationCard = memo(({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {selectionMode && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(location.id)} />
+              </div>
+            )}
             <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base font-cinzel truncate drop-shadow-md">{location.name}</CardTitle>

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateModifier } from "@/lib/dnd5e";
+import { Brain } from "lucide-react";
 import { STANDARD_ARRAY, validatePointBuy } from "@/lib/characterRules";
 import { useAtom } from "jotai";
 import { draftAtom, setAbilityScoresAtom } from "@/state/characterWizard";
@@ -34,7 +35,11 @@ const StepAbilities = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ability Scores</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <Brain className="h-5 w-5" />
+          Ability Scores
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
           Choose how to generate your character's ability scores. These determine your character's core capabilities.
         </p>
@@ -149,9 +154,9 @@ const StepAbilities = () => {
         </TabsContent>
       </Tabs>
 
-      <Card className="bg-muted/50">
+      <Card className="bg-muted/50 fantasy-border-ornaments">
         <CardContent className="pt-6">
-          <h4 className="font-medium mb-3">Your Modifiers</h4>
+          <h4 className="font-cinzel font-medium mb-3 text-brass">Your Modifiers</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
             {ABILITIES.map((ability) => {
               const score = draft.abilityScores[ability.key];

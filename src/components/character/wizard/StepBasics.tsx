@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Sword } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -89,7 +90,11 @@ const StepBasics = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <Sword className="h-5 w-5" />
+          Basic Information
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
           Start by choosing your character's name, class, and level. This will determine their core capabilities.
         </p>
@@ -168,9 +173,9 @@ const StepBasics = () => {
       </div>
 
       {selectedClass && (
-        <Card>
+        <Card className="fantasy-border-ornaments">
           <CardHeader>
-            <CardTitle className="text-base">{selectedClass.name} Details</CardTitle>
+            <CardTitle className="text-base font-cinzel text-brass">{selectedClass.name} Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">

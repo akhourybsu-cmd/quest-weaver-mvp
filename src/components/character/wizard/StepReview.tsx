@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, Heart, Shield, Zap, BookOpen } from "lucide-react";
+import { Check, Heart, Shield, Zap, BookOpen, Sparkles, CheckCircle } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus, DND_CLASSES } from "@/lib/dnd5e";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
@@ -80,15 +80,19 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Review & Confirm</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <CheckCircle className="h-5 w-5" />
+          Review & Confirm
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground">
           Review your character before finalizing. You can go back to make changes if needed.
         </p>
       </div>
 
-      <Card>
+      <Card className="fantasy-border-ornaments">
         <CardHeader>
-          <CardTitle className="text-2xl">{draft.name || "Unnamed Character"}</CardTitle>
+          <CardTitle className="text-2xl font-cinzel text-brass">{draft.name || "Unnamed Character"}</CardTitle>
           <CardDescription className="flex flex-wrap gap-2 mt-1">
             <Badge variant="secondary">Level {draft.level}</Badge>
             {ancestryName && <Badge variant="outline">{ancestryName}</Badge>}
@@ -258,18 +262,19 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
         </CardContent>
       </Card>
 
-      <Card className="border-primary/50 bg-primary/5">
+      <Card className="border-brass/50 bg-gradient-to-br from-brass/10 to-brass/5 shadow-[0_0_12px_hsl(var(--brass)/0.3)] animate-pulse-breathe">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <div className="rounded-full bg-primary/20 p-2">
-              <Check className="h-5 w-5 text-primary" />
+            <div className="rounded-full bg-brass/20 p-2">
+              <Sparkles className="h-5 w-5 text-brass" />
             </div>
             <div className="flex-1">
-              <h4 className="font-medium mb-2">Ready to Finalize?</h4>
+              <h4 className="font-cinzel font-medium mb-2 text-brass">Ready to Finalize?</h4>
               <p className="text-sm text-muted-foreground mb-4">
                 This will create your character with all the selected options. You can still edit it later.
               </p>
-              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full">
+              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground active:scale-95 transition-all">
+                <Sparkles className="mr-2 h-4 w-4" />
                 {loading ? "Creating Character..." : "Finalize Character"}
               </Button>
             </div>

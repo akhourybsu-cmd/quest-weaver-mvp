@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
 import { PortraitCropper } from "@/components/character/PortraitCropper";
-import { User } from "lucide-react";
+import { User, Scroll } from "lucide-react";
 
 const ALIGNMENTS = [
   "Lawful Good",
@@ -44,14 +44,18 @@ const StepDescription = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Character Description</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <Scroll className="h-5 w-5" />
+          Character Description
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
           Add personality and physical details to bring your character to life. All fields are optional.
         </p>
       </div>
 
       {/* Portrait Section */}
-      <Card>
+      <Card className="fantasy-border-ornaments">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center gap-4">
             <Label className="text-base font-semibold">Character Portrait</Label>

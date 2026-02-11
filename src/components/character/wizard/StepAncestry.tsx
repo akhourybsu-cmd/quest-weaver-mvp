@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,11 @@ const StepAncestry = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ancestry & Heritage</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Ancestry & Heritage
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
           Choose your character's ancestry (race). This determines base traits, ability score bonuses, and special features.
         </p>
@@ -116,9 +121,9 @@ const StepAncestry = () => {
       </div>
 
       {selectedAncestry && (
-        <Card>
+        <Card className="fantasy-border-ornaments animate-fade-in">
           <CardHeader>
-            <CardTitle>{selectedAncestry.name}</CardTitle>
+            <CardTitle className="font-cinzel text-brass">{selectedAncestry.name}</CardTitle>
             <CardDescription>
               Size: {selectedAncestry.size} • Speed: {selectedAncestry.speed} ft.
             </CardDescription>

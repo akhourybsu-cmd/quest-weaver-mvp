@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react";
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
@@ -782,13 +782,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col">
+      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col fantasy-border-ornaments bg-gradient-to-br from-parchment/5 via-transparent to-brass/5">
         {/* Show loading state while seeding SRD data */}
         {isSeeding ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Sparkles className="h-8 w-8 animate-spin text-brass" />
             <div className="text-center">
-              <p className="font-semibold">Preparing Character Creator...</p>
+              <p className="font-cinzel font-semibold text-brass">Preparing Character Creator...</p>
               <p className="text-sm text-muted-foreground">
                 {seedingStatus || "Loading game data for the first time"}
               </p>
@@ -799,47 +799,49 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             {/* Main wizard content */}
             <div className="flex-1 flex flex-col min-h-0">
               {/* Header */}
-              <div className="p-4 md:p-6 border-b flex-shrink-0">
-                <h2 className="text-xl md:text-2xl font-bold mb-2">
+              <div className="p-4 md:p-6 border-b border-brass/20 flex-shrink-0">
+                <h2 className="text-xl md:text-2xl font-cinzel font-bold mb-2 text-brass tracking-wide">
                   Character Creation Wizard
                 </h2>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs md:text-sm text-muted-foreground">
                     <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}: </span>
                     <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
-                    {STEPS[currentStep]}
+                    <span className="font-cinzel">{STEPS[currentStep]}</span>
                   </p>
-                  <Button variant="outline" size="sm" onClick={handleSaveAndExit}>
+                  <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
                     <Save className="h-4 w-4" />
                     <span className="hidden sm:inline ml-2">Save & Exit</span>
                   </Button>
                 </div>
-                <Progress value={progress} className="mt-3" />
+                <Progress value={progress} className="mt-3 h-2 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass" />
               </div>
 
               {/* Step content - Scrollable */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="p-4 md:p-6">
-                  <div className="max-w-4xl mx-auto">
-                    {renderStep()}
+                  <div className="max-w-4xl mx-auto" key={currentStep}>
+                    <div className="animate-fade-in">
+                      {renderStep()}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Navigation */}
-              <div className="p-4 md:p-6 border-t flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
+              <div className="p-4 md:p-6 border-t border-brass/20 flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={handleBack}
                   disabled={currentStep === 0}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all"
                 >
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 
                 {currentStep < STEPS.length - 1 ? (
-                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto">
+                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground active:scale-95 transition-all">
                     Next
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -848,7 +850,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             </div>
 
             {/* Live summary sidebar - hidden on mobile, visible on tablet+ */}
-            <div className="hidden md:block md:w-80 border-l bg-muted/30 flex-shrink-0">
+            <div className="hidden md:block md:w-80 border-l border-brass/20 bg-gradient-to-b from-parchment/5 to-brass/5 flex-shrink-0">
               <LiveSummaryPanel />
             </div>
           </div>

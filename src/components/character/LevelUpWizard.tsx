@@ -1055,12 +1055,29 @@ export const LevelUpWizard = ({
 
   const addAutoPrepairedSubclassSpells = async () => {
     // Determine subclass key (e.g. "Cleric:Life Domain")
-    const effectiveSubclassName = subclassName || (selectedSubclassId ? null : null);
-    if (!character?.class || !effectiveSubclassName) return;
+    let effectiveName = subclassName;
+    // If subclass was just chosen this level-up, resolve its name
+    if (!effectiveName && selectedSubclassId) {
+      const { data: sc } = await supabase
+        .from("srd_subclasses")
+        .select("name")
+        .eq("id", selectedSubclassId)
+        .single();
+      effectiveName = sc?.name || null;
+    }
+    if (!character?.class || !effectiveName) return;
 
-    const key = `${character.class}:${effectiveSubclassName}`;
+    const key = `${character.class}:${effectiveName}`;
     const autoPreparedList = AUTO_PREPARED_BY_SUBCLASS[key];
     if (!autoPreparedList) return;
+
+    // Collect all spells up to the new level (for newly selected subclass, add all earlier levels too)
+    const allSpellNames: string[] = [];
+    for (const [lvl, names] of Object.entries(autoPreparedList)) {
+      if (parseInt(lvl) <= newLevel) {
+        allSpellNames.push(...names);
+      }
+    }
 
     // Get spells to add at the new level
     const spellNames = autoPreparedList[newLevel];

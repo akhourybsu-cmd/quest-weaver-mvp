@@ -1520,6 +1520,16 @@ export const LevelUpWizard = ({
             />
           )}
 
+          {/* Mystic Arcanum Step (Warlock levels 11, 13, 15, 17) */}
+          {step === "mystic-arcanum" && (
+            <MysticArcanumStep
+              characterLevel={newLevel}
+              selectedSpellId={mysticArcanumSpellId}
+              onSelect={setMysticArcanumSpellId}
+              existingArcanumSpellIds={existingArcanumSpellIds}
+            />
+          )}
+
           {/* Favored Enemy Step (Ranger) */}
           {step === "favored-enemy" && (
             <FavoredEnemySelector

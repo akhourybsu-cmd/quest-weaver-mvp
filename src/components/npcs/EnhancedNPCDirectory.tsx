@@ -118,7 +118,7 @@ const NPCCardItem = memo(({
           </div>
         )}
         {isDM && !selectionMode && (
-          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-2 action-reveal">
             <NPCQuickActions
               npcId={npc.id}
               npcName={npc.name}

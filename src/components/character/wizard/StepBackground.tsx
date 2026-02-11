@@ -55,9 +55,13 @@ const StepBackground = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Background</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <BookOpen className="h-5 w-5" />
+          Background
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
-          Your background reveals where you came from and how you became an adventurer. It provides skill proficiencies, tool proficiencies, languages, and equipment.
+          Your background reveals where you came from and how you became an adventurer.
         </p>
       </div>
 

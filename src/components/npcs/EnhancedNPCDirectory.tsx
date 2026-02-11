@@ -60,21 +60,35 @@ const NPCCardItem = memo(({
   isDM, 
   campaignId, 
   onView, 
-  onUpdate 
+  onUpdate,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: { 
   npc: NPC; 
   isDM: boolean; 
   campaignId: string; 
   onView: (npc: NPC) => void;
   onUpdate: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) => (
   <Card
     className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
-    onClick={() => onView(npc)}
+    onClick={() => selectionMode ? onToggleSelect?.(npc.id) : onView(npc)}
   >
     <CardContent className="p-4">
       <div className="flex flex-col items-center text-center relative">
-        <div className={`absolute top-0 left-0 w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
+        {selectionMode && (
+          <div className="absolute top-0 left-0 z-10" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(npc.id)}
+            />
+          </div>
+        )}
+        <div className={`absolute top-0 ${selectionMode ? 'left-5' : 'left-0'} w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
         {isDM && npc.secrets && (
           <div className="absolute top-0 right-0" title="Has GM secrets">
             <EyeOff className="w-3 h-3 text-muted-foreground" />
@@ -103,7 +117,7 @@ const NPCCardItem = memo(({
             )}
           </div>
         )}
-        {isDM && (
+        {isDM && !selectionMode && (
           <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <NPCQuickActions
               npcId={npc.id}

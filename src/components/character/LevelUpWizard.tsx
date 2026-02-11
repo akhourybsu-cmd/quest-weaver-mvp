@@ -1079,15 +1079,13 @@ export const LevelUpWizard = ({
       }
     }
 
-    // Get spells to add at the new level
-    const spellNames = autoPreparedList[newLevel];
-    if (!spellNames || spellNames.length === 0) return;
+    if (allSpellNames.length === 0) return;
 
     // Look up spell IDs by name
     const { data: spellData } = await supabase
       .from("srd_spells")
       .select("id, name")
-      .in("name", spellNames);
+      .in("name", allSpellNames);
 
     if (!spellData || spellData.length === 0) return;
 

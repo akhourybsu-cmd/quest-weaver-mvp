@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Users, Grid, List, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Users, Grid, List, Eye, EyeOff, CheckSquare } from "lucide-react";
 import EnhancedNPCEditor from "./EnhancedNPCEditor";
 import NPCDetailDrawer from "./NPCDetailDrawer";
 import NPCFilterPanel, { NPCFilters } from "./NPCFilterPanel";
 import NPCQuickActions from "./NPCQuickActions";
 import { useToast } from "@/hooks/use-toast";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 interface NPC {
   id: string;

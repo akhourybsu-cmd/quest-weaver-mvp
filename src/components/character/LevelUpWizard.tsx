@@ -171,6 +171,7 @@ export const LevelUpWizard = ({
       setSelectedSubclassId(null);
       setMysticArcanumSpellId(null);
       setExistingArcanumSpellIds([]);
+      setSubclassName(null);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);

@@ -1053,6 +1053,52 @@ export const LevelUpWizard = ({
     }
   };
 
+  const addAutoPrepairedSubclassSpells = async () => {
+    // Determine subclass key (e.g. "Cleric:Life Domain")
+    const effectiveSubclassName = subclassName || (selectedSubclassId ? null : null);
+    if (!character?.class || !effectiveSubclassName) return;
+
+    const key = `${character.class}:${effectiveSubclassName}`;
+    const autoPreparedList = AUTO_PREPARED_BY_SUBCLASS[key];
+    if (!autoPreparedList) return;
+
+    // Get spells to add at the new level
+    const spellNames = autoPreparedList[newLevel];
+    if (!spellNames || spellNames.length === 0) return;
+
+    // Look up spell IDs by name
+    const { data: spellData } = await supabase
+      .from("srd_spells")
+      .select("id, name")
+      .in("name", spellNames);
+
+    if (!spellData || spellData.length === 0) return;
+
+    // Check which spells the character already has
+    const { data: existingSpells } = await supabase
+      .from("character_spells")
+      .select("spell_id")
+      .eq("character_id", characterId)
+      .in("spell_id", spellData.map(s => s.id));
+
+    const existingIds = new Set((existingSpells || []).map(s => s.spell_id));
+
+    const newAutoSpells = spellData
+      .filter(s => !existingIds.has(s.id))
+      .map(s => ({
+        character_id: characterId,
+        spell_id: s.id,
+        known: true,
+        prepared: true,
+        is_always_prepared: true,
+        source: 'subclass',
+      }));
+
+    if (newAutoSpells.length > 0) {
+      await supabase.from("character_spells").insert(newAutoSpells);
+    }
+  };
+
   const updateClassResources = async () => {
     if (!classRules) return;
 

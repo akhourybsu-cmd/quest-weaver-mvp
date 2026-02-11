@@ -311,7 +311,7 @@ export const LevelUpWizard = ({
     // If character already has a subclass, no need
     if (character.subclass_id) return false;
     // If this level is the subclass level for the class
-    return newLevel === classRules.subclassLevel;
+    return newLevel >= classRules.subclassLevel;
   }, [classRules, character, newLevel]);
 
   // Favored Terrain (Ranger)

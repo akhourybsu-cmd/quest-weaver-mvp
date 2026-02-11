@@ -782,7 +782,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col">
+      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col fantasy-border-ornaments bg-gradient-to-br from-parchment/5 via-transparent to-brass/5">
         {/* Show loading state while seeding SRD data */}
         {isSeeding ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">

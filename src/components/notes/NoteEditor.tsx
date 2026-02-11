@@ -23,7 +23,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Extracted sub-modules
-import { PREDEFINED_TAGS, NOTE_TEMPLATES, parseWikilinks, debounce } from "./editor/constants";
+import { PREDEFINED_TAGS, NOTE_TEMPLATES, parseWikilinks } from "./editor/constants";
 import type { NoteLink, NoteRevision, NoteEditorProps } from "./editor/types";
 import { getCaretCoordinates } from "./editor/getCaretCoordinates";
 import { WikilinkText } from "./editor/WikilinkText";
@@ -346,16 +346,37 @@ const NoteEditor = ({ open, onOpenChange, campaignId, note, isDM, userId, onSave
     }
   };
 
-  const debouncedSave = useCallback(
-    debounce(async () => { await performSave(true); }, 1500),
-    [title, content, visibility, isPinned, tags, note, campaignId, userId, onSaved, folder, version]
-  );
+  // --- 45-second interval auto-save ---
+  const hasUnsavedChanges = useRef(false);
+  const performSaveRef = useRef(performSave);
+  performSaveRef.current = performSave;
+
+  // Mark dirty whenever editable fields change (skip initial load)
+  const isInitialLoad = useRef(true);
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
+    hasUnsavedChanges.current = true;
+  }, [title, content, visibility, isPinned, tags]);
+
+  // Reset dirty flag & initial-load guard when note/dialog changes
+  useEffect(() => {
+    hasUnsavedChanges.current = false;
+    isInitialLoad.current = true;
+  }, [note, open]);
 
   useEffect(() => {
-    if (open && autoSaveEnabled && title.trim()) {
-      debouncedSave();
-    }
-  }, [title, content, visibility, isPinned, tags, open, autoSaveEnabled, debouncedSave]);
+    if (!open || !autoSaveEnabled) return;
+    const id = setInterval(() => {
+      if (hasUnsavedChanges.current && title.trim()) {
+        hasUnsavedChanges.current = false;
+        performSaveRef.current(true);
+      }
+    }, 45_000);
+    return () => clearInterval(id);
+  }, [open, autoSaveEnabled, title]);
 
   // ========== Content handlers ==========
 

@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react";
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";

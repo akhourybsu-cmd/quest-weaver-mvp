@@ -1609,6 +1609,13 @@ export const LevelUpWizard = ({
 
                 <Separator />
 
+                {selectedSubclassId && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Subclass Chosen</p>
+                    <Badge variant="secondary">Subclass Selected</Badge>
+                  </div>
+                )}
+
                 {wizardSpellbookSpells.length > 0 && (
                   <div>
                     <p className="text-sm font-medium mb-2">Spellbook Additions</p>

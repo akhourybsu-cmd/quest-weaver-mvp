@@ -252,8 +252,13 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                 <Card
                   key={faction.id}
                   className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden"
-                  onClick={() => handleViewFaction(faction)}
+                  onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
                 >
+                  {bulk.selectionMode && (
+                    <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={bulk.selectedIds.includes(faction.id)} onCheckedChange={() => bulk.toggleId(faction.id)} />
+                    </div>
+                  )}
                   {/* Banner Image */}
                   {faction.banner_url && (
                     <div className="relative w-full h-24 overflow-hidden">

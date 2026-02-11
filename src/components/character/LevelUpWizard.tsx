@@ -1065,6 +1065,8 @@ export const LevelUpWizard = ({
         return selectedClassToLevel !== null;
       case "hp-roll":
         return hpRoll !== null;
+      case "subclass":
+        return selectedSubclassId !== null;
       case "wizard-spellbook":
         return wizardSpellbookSpells.length === wizardSpellsToAdd;
       case "spells":

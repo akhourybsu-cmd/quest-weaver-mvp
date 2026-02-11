@@ -20,6 +20,7 @@ import { MagicalSecretsStep } from "./levelup/MagicalSecretsStep";
 import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnemySelector";
 import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
+import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   CLASS_LEVEL_UP_RULES,

@@ -59,6 +59,7 @@ type LevelUpStep =
   | "fighting-style"
   | "expertise"
   | "magical-secrets"
+  | "mystic-arcanum"
   | "favored-enemy"
   | "favored-terrain"
   | "asi-or-feat" 

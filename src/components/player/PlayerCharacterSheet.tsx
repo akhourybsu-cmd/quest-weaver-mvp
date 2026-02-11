@@ -146,6 +146,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [ancestryName, setAncestryName] = useState<string>('');
   const [subancestryName, setSubancestryName] = useState<string>('');
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const [saveProficiencies, setSaveProficiencies] = useState<Record<string, boolean>>({});
   const [profOpen, setProfOpen] = useState(false);
   const [spellsOpen, setSpellsOpen] = useState(true);
   const [featuresOpen, setFeaturesOpen] = useState(true);

@@ -463,7 +463,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
                   questsByStatus.completed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
                   ))
                 )}
               </div>

@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Heart, Swords, AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CONDITION_TOOLTIPS } from "@/lib/conditionTooltips";
 import { PlayerCombatActions } from "./PlayerCombatActions";
 import { PlayerEffects } from "./PlayerEffects";
 
@@ -32,17 +34,11 @@ export function PlayerCombatView({
     fetchConditions();
     fetchCurrentRound();
 
-    // Real-time subscriptions
     const initiativeChannel = supabase
       .channel(`player-initiative:${encounterId}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'initiative',
-          filter: `encounter_id=eq.${encounterId}`,
-        },
+        { event: '*', schema: 'public', table: 'initiative', filter: `encounter_id=eq.${encounterId}` },
         () => fetchInitiative()
       )
       .subscribe();
@@ -51,12 +47,7 @@ export function PlayerCombatView({
       .channel(`player-combat-log:${encounterId}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'combat_log',
-          filter: `encounter_id=eq.${encounterId}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'combat_log', filter: `encounter_id=eq.${encounterId}` },
         () => fetchCombatLog()
       )
       .subscribe();
@@ -65,12 +56,7 @@ export function PlayerCombatView({
       .channel(`player-conditions:${characterId}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'character_conditions',
-          filter: `character_id=eq.${characterId}`,
-        },
+        { event: '*', schema: 'public', table: 'character_conditions', filter: `character_id=eq.${characterId}` },
         () => fetchConditions()
       )
       .subscribe();
@@ -79,12 +65,7 @@ export function PlayerCombatView({
       .channel(`player-encounter:${encounterId}`)
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'encounters',
-          filter: `id=eq.${encounterId}`,
-        },
+        { event: 'UPDATE', schema: 'public', table: 'encounters', filter: `id=eq.${encounterId}` },
         () => fetchCurrentRound()
       )
       .subscribe();
@@ -107,7 +88,6 @@ export function PlayerCombatView({
 
     if (!data) return;
 
-    // Fetch names and stats for each combatant
     const entries = await Promise.all(
       data.map(async (init) => {
         if (init.combatant_type === 'character') {
@@ -199,18 +179,12 @@ export function PlayerCombatView({
 
   const getActionColor = (type: string) => {
     switch (type) {
-      case "damage":
-        return "text-status-hp";
-      case "healing":
-        return "text-status-buff";
-      case "save":
-        return "text-secondary";
-      case "effect_applied":
-        return "text-primary";
-      case "round_start":
-        return "text-primary font-semibold";
-      default:
-        return "text-foreground";
+      case "damage": return "text-status-hp";
+      case "healing": return "text-status-buff";
+      case "save": return "text-secondary";
+      case "effect_applied": return "text-primary";
+      case "round_start": return "text-primary font-semibold";
+      default: return "text-foreground";
     }
   };
 
@@ -327,32 +301,66 @@ export function PlayerCombatView({
 
           <TabsContent value="conditions" className="mt-4">
             <ScrollArea className="h-[300px] sm:h-[400px]">
-              <div className="space-y-2 pr-2 sm:pr-4">
-                {conditions.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-8">
-                    No active conditions
-                  </div>
-                ) : (
-                  conditions.map((condition) => (
-                    <div
-                      key={condition.id}
-                      className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
-                    >
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-destructive" />
-                        <span className="font-medium capitalize">
-                          {condition.condition.replace(/_/g, ' ')}
-                        </span>
-                        {condition.ends_at_round && (
-                          <Badge variant="outline" className="ml-auto text-xs">
-                            Until Round {condition.ends_at_round}
-                          </Badge>
-                        )}
-                      </div>
+              <TooltipProvider>
+                <div className="space-y-2 pr-2 sm:pr-4">
+                  {conditions.length === 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No active conditions
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    conditions.map((condition) => {
+                      const tooltipInfo = CONDITION_TOOLTIPS[condition.condition];
+                      return (
+                        <Tooltip key={condition.id}>
+                          <TooltipTrigger asChild>
+                            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 cursor-help">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-destructive" />
+                                <span className="font-medium capitalize">
+                                  {condition.condition.replace(/_/g, ' ')}
+                                </span>
+                                {condition.ends_at_round && (
+                                  <Badge variant="outline" className="ml-auto text-xs">
+                                    Until Round {condition.ends_at_round}
+                                  </Badge>
+                                )}
+                              </div>
+                              {/* Inline description for mobile (tooltips don't work well on touch) */}
+                              {tooltipInfo && (
+                                <div className="mt-2 sm:hidden">
+                                  <p className="text-xs text-muted-foreground">{tooltipInfo.description}</p>
+                                  <ul className="mt-1 space-y-0.5">
+                                    {tooltipInfo.effects.map((effect, i) => (
+                                      <li key={i} className="text-xs text-destructive/80 flex items-start gap-1">
+                                        <span className="shrink-0 mt-0.5">•</span>
+                                        {effect}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          {tooltipInfo && (
+                            <TooltipContent side="left" className="max-w-xs hidden sm:block">
+                              <p className="font-semibold mb-1">{tooltipInfo.name}</p>
+                              <p className="text-xs text-muted-foreground mb-2">{tooltipInfo.description}</p>
+                              <ul className="space-y-0.5">
+                                {tooltipInfo.effects.map((effect, i) => (
+                                  <li key={i} className="text-xs flex items-start gap-1">
+                                    <span className="shrink-0 mt-0.5">•</span>
+                                    {effect}
+                                  </li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      );
+                    })
+                  )}
+                </div>
+              </TooltipProvider>
             </ScrollArea>
 
             <div className="mt-4">

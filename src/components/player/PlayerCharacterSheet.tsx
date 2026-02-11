@@ -14,6 +14,7 @@ import {
 import { LevelUpWizard } from "@/components/character/LevelUpWizard";
 import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
 import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
+import { DeathSavingThrows } from "./DeathSavingThrows";
 
 // Type definitions
 interface AncestryTrait {
@@ -122,6 +123,8 @@ interface CharacterData {
   pact_slots_used: number | null;
   pact_slot_level: number | null;
   subclass_name?: string | null;
+  death_save_success: number | null;
+  death_save_fail: number | null;
 }
 
 interface PlayerCharacterSheetProps {
@@ -447,6 +450,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   />
                 </div>
               </div>
+
+              {/* Death Saving Throws - shown when HP is 0 */}
+              {character.current_hp <= 0 && (
+                <DeathSavingThrows
+                  characterId={character.id}
+                  successes={character.death_save_success || 0}
+                  failures={character.death_save_fail || 0}
+                  onUpdate={fetchCharacter}
+                />
+              )}
 
               {/* Exhaustion & Warlock Pact Slots */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

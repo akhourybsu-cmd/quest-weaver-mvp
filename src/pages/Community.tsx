@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,12 @@ interface ForumReply {
   author_name?: string;
 }
 
+interface AuthorProfile {
+  name: string;
+  avatar_url: string | null;
+  color: string;
+}
+
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageCircle,
   Lightbulb,
@@ -96,6 +103,25 @@ const Community = () => {
   
   // Reply form
   const [replyContent, setReplyContent] = useState("");
+
+  // Author profiles cache
+  const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
+
+  const fetchAuthorProfiles = async (authorIds: string[]) => {
+    const uniqueIds = [...new Set(authorIds)].filter(id => !authorProfiles[id]);
+    if (uniqueIds.length === 0) return;
+    const { data } = await supabase
+      .from('players')
+      .select('user_id, name, avatar_url, color')
+      .in('user_id', uniqueIds);
+    if (data) {
+      const profileMap: Record<string, AuthorProfile> = {};
+      data.forEach(p => {
+        profileMap[p.user_id] = { name: p.name, avatar_url: p.avatar_url || null, color: p.color || '#8B7355' };
+      });
+      setAuthorProfiles(prev => ({ ...prev, ...profileMap }));
+    }
+  };
 
   useEffect(() => {
     checkUser();
@@ -152,6 +178,9 @@ const Community = () => {
         })
       );
       setTopics(topicsWithCounts);
+      // Fetch author profiles for topics
+      const authorIds = (data || []).map(t => t.author_id);
+      fetchAuthorProfiles(authorIds);
     }
     setLoading(false);
   };
@@ -192,6 +221,10 @@ const Community = () => {
     } else {
       setReplies(repliesData || []);
     }
+    
+    // Fetch author profiles for topic + replies
+    const allAuthorIds = [topicData.author_id, ...(repliesData || []).map(r => r.author_id)];
+    fetchAuthorProfiles(allAuthorIds);
     
     setLoading(false);
   };
@@ -405,14 +438,24 @@ const Community = () => {
                   className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border border-border"
                   onClick={() => navigate(`/community/topic/${topic.id}`)}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
+                    {/* Author avatar */}
+                    <Avatar className="w-8 h-8 shrink-0 border border-brass/20">
+                      <AvatarImage src={authorProfiles[topic.author_id]?.avatar_url || undefined} />
+                      <AvatarFallback style={{ backgroundColor: authorProfiles[topic.author_id]?.color || '#8B7355' }} className="text-xs text-white">
+                        {(authorProfiles[topic.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {topic.is_pinned && <Pin className="w-3 h-3 text-brand-arcanePurple" />}
                         {topic.is_locked && <Lock className="w-3 h-3 text-muted-foreground" />}
                         <h3 className="font-medium truncate">{topic.title}</h3>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{topic.content}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        <span className="font-medium text-foreground/70">{authorProfiles[topic.author_id]?.name || 'Anonymous'}</span>
+                        {' · '}{topic.content}
+                      </p>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground shrink-0">
                       <div className="flex items-center gap-1">
@@ -472,10 +515,17 @@ const Community = () => {
             
             <h1 className="text-2xl font-cinzel font-bold mb-4">{currentTopic.title}</h1>
             
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <User className="w-4 h-4" />
+            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+              <Avatar className="w-8 h-8 border border-brass/20">
+                <AvatarImage src={authorProfiles[currentTopic.author_id]?.avatar_url || undefined} />
+                <AvatarFallback style={{ backgroundColor: authorProfiles[currentTopic.author_id]?.color || '#8B7355' }} className="text-xs text-white">
+                  {(authorProfiles[currentTopic.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-foreground">{authorProfiles[currentTopic.author_id]?.name || 'Anonymous'}</span>
+              <span>·</span>
               <span>Posted {formatDistanceToNow(new Date(currentTopic.created_at), { addSuffix: true })}</span>
-              <span>•</span>
+              <span>·</span>
               <Eye className="w-4 h-4" />
               <span>{currentTopic.view_count} views</span>
             </div>
@@ -495,11 +545,18 @@ const Community = () => {
           <div className="space-y-4 mb-8">
             {replies.map((reply) => (
               <Card key={reply.id} className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <User className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
+                  <Avatar className="w-7 h-7 border border-brass/20">
+                    <AvatarImage src={authorProfiles[reply.author_id]?.avatar_url || undefined} />
+                    <AvatarFallback style={{ backgroundColor: authorProfiles[reply.author_id]?.color || '#8B7355' }} className="text-[10px] text-white">
+                      {(authorProfiles[reply.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-foreground">{authorProfiles[reply.author_id]?.name || 'Anonymous'}</span>
+                  <span>·</span>
                   <span>{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</span>
                 </div>
-                <p className="whitespace-pre-wrap">{reply.content}</p>
+                <p className="whitespace-pre-wrap ml-10">{reply.content}</p>
               </Card>
             ))}
           </div>

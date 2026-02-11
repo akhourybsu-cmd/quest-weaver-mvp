@@ -20,6 +20,7 @@ import { MagicalSecretsStep } from "./levelup/MagicalSecretsStep";
 import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnemySelector";
 import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
+import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   CLASS_LEVEL_UP_RULES,
@@ -46,7 +47,8 @@ interface LevelUpWizardProps {
 
 type LevelUpStep = 
   | "class-select"
-  | "hp-roll" 
+  | "hp-roll"
+  | "subclass"
   | "wizard-spellbook"
   | "spells" 
   | "cantrips"
@@ -84,6 +86,25 @@ interface FeatureToGrant {
   description: string;
   level: number;
   source: string;
+}
+
+async function getSaveProficiencies(characterId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("character_saves")
+    .select("str, dex, con, int, wis, cha")
+    .eq("character_id", characterId)
+    .single();
+  
+  const proficient = new Set<string>();
+  if (data) {
+    if (data.str) proficient.add("STR");
+    if (data.dex) proficient.add("DEX");
+    if (data.con) proficient.add("CON");
+    if (data.int) proficient.add("INT");
+    if (data.wis) proficient.add("WIS");
+    if (data.cha) proficient.add("CHA");
+  }
+  return proficient;
 }
 
 export const LevelUpWizard = ({
@@ -138,6 +159,7 @@ export const LevelUpWizard = ({
       setMagicalSecretsSpells([]);
       setFavoredEnemyChoice(null);
       setFavoredTerrainChoice(null);
+      setSelectedSubclassId(null);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);
@@ -182,6 +204,7 @@ export const LevelUpWizard = ({
   const [magicalSecretsSpells, setMagicalSecretsSpells] = useState<string[]>([]);
   const [favoredEnemyChoice, setFavoredEnemyChoice] = useState<string | null>(null);
   const [favoredTerrainChoice, setFavoredTerrainChoice] = useState<string | null>(null);
+  const [selectedSubclassId, setSelectedSubclassId] = useState<string | null>(null);
   
   // Existing character data
   const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);
@@ -281,6 +304,15 @@ export const LevelUpWizard = ({
     const choice = featureChoices.find(c => c.type === "favored_enemy");
     return choice || null;
   }, [featureChoices]);
+
+  // Subclass needed?
+  const needsSubclass = useMemo(() => {
+    if (!classRules || !character) return false;
+    // If character already has a subclass, no need
+    if (character.subclass_id) return false;
+    // If this level is the subclass level for the class
+    return newLevel === classRules.subclassLevel;
+  }, [classRules, character, newLevel]);
 
   // Favored Terrain (Ranger)
   const favoredTerrainToChoose = useMemo(() => {
@@ -551,17 +583,58 @@ export const LevelUpWizard = ({
     try {
       const conMod = Math.floor(((character?.character_abilities?.[0]?.con || 10) - 10) / 2);
       const hpGain = Math.max(1, hpRoll + conMod);
+      const newProfBonus = Math.floor((newLevel - 1) / 4) + 2;
 
-      // Update character level and HP
+      // Calculate derived stats updates
+      const charUpdates: Record<string, any> = {
+        level: newLevel,
+        max_hp: (character?.max_hp || 0) + hpGain,
+        current_hp: (character?.current_hp || 0) + hpGain,
+        hit_dice_total: newLevel,
+        hit_dice_current: (character?.hit_dice_current || currentLevel) + 1,
+        proficiency_bonus: newProfBonus,
+      };
+
+      // If subclass was chosen, save it
+      if (selectedSubclassId) {
+        charUpdates.subclass_id = selectedSubclassId;
+      }
+
+      // Recalculate saving throw mods based on new proficiency bonus
+      const abilities = character?.character_abilities?.[0];
+      if (abilities) {
+        const saveProficiencies = await getSaveProficiencies(characterId);
+        const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+        abilityKeys.forEach(ab => {
+          const mod = Math.floor(((abilities[ab] || 10) - 10) / 2);
+          const saveKey = `${ab}_save` as string;
+          charUpdates[saveKey] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
+        });
+
+        // Update passive perception
+        const wisMod = Math.floor(((abilities.wis || 10) - 10) / 2);
+        const { data: percSkill } = await supabase
+          .from("character_skills")
+          .select("proficient, expertise")
+          .eq("character_id", characterId)
+          .eq("skill", "Perception")
+          .single();
+        const percBonus = wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_perception = 10 + percBonus;
+
+        // Update spell save DC and spell attack mod if character has spellcasting
+        if (character.spell_ability) {
+          const spellAbKey = character.spell_ability.toLowerCase();
+          const spellAbMod = Math.floor(((abilities[spellAbKey] || 10) - 10) / 2);
+          charUpdates.spell_save_dc = 8 + newProfBonus + spellAbMod;
+          charUpdates.spell_attack_mod = newProfBonus + spellAbMod;
+        }
+      }
+
+      // Update character level, HP, proficiency bonus, and derived stats
       await supabase
         .from("characters")
-        .update({
-          level: newLevel,
-          max_hp: (character?.max_hp || 0) + hpGain,
-          current_hp: (character?.current_hp || 0) + hpGain,
-          hit_dice_total: newLevel,
-          hit_dice_current: (character?.hit_dice_current || currentLevel) + 1
-        })
+        .update(charUpdates)
         .eq("id", characterId);
 
       // Update the specific class level in character_classes (for multiclass support)
@@ -612,6 +685,7 @@ export const LevelUpWizard = ({
             magical_secrets: magicalSecretsSpells,
             favored_enemy: favoredEnemyChoice,
             favored_terrain: favoredTerrainChoice,
+            subclass_id: selectedSubclassId,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });
@@ -656,6 +730,39 @@ export const LevelUpWizard = ({
             .from("character_abilities")
             .update(updates)
             .eq("character_id", characterId);
+
+          // Recalculate derived stats with new ability scores
+          const newAbilities = { ...abilities, ...updates };
+          const saveProficiencies = await getSaveProficiencies(characterId);
+          const derivedUpdates: Record<string, any> = {};
+          const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+          abilityKeys.forEach(ab => {
+            const mod = Math.floor(((newAbilities[ab] || 10) - 10) / 2);
+            derivedUpdates[`${ab}_save`] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
+          });
+
+          // Recalculate passive perception with new WIS
+          const newWisMod = Math.floor(((newAbilities.wis || 10) - 10) / 2);
+          const { data: percSkill2 } = await supabase
+            .from("character_skills")
+            .select("proficient, expertise")
+            .eq("character_id", characterId)
+            .eq("skill", "Perception")
+            .single();
+          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill2?.proficient ? newProfBonus : 0) + (percSkill2?.expertise ? newProfBonus : 0);
+
+          // Recalculate spell stats with new ability scores
+          if (character.spell_ability) {
+            const spellAbKey = character.spell_ability.toLowerCase();
+            const spellAbMod = Math.floor(((newAbilities[spellAbKey] || 10) - 10) / 2);
+            derivedUpdates.spell_save_dc = 8 + newProfBonus + spellAbMod;
+            derivedUpdates.spell_attack_mod = newProfBonus + spellAbMod;
+          }
+
+          await supabase
+            .from("characters")
+            .update(derivedUpdates)
+            .eq("id", characterId);
         }
       }
 
@@ -969,6 +1076,11 @@ export const LevelUpWizard = ({
     
     s.push("hp-roll");
     
+    // Subclass selection (if this is the subclass level and none chosen yet)
+    if (needsSubclass) {
+      s.push("subclass");
+    }
+    
     // Wizard spellbook (always 2 spells per level)
     if (isWizard) {
       s.push("wizard-spellbook");
@@ -1036,7 +1148,7 @@ export const LevelUpWizard = ({
     
     s.push("review");
     return s;
-  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant]);
+  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant, needsSubclass]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
@@ -1047,6 +1159,8 @@ export const LevelUpWizard = ({
         return selectedClassToLevel !== null;
       case "hp-roll":
         return hpRoll !== null;
+      case "subclass":
+        return selectedSubclassId !== null;
       case "wizard-spellbook":
         return wizardSpellbookSpells.length === wizardSpellsToAdd;
       case "spells":
@@ -1186,6 +1300,15 @@ export const LevelUpWizard = ({
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Subclass Selection Step */}
+          {step === "subclass" && (
+            <SubclassSelectionStep
+              className={character?.class || ""}
+              selectedSubclassId={selectedSubclassId}
+              onSelect={setSelectedSubclassId}
+            />
           )}
 
           {/* Wizard Spellbook Step */}
@@ -1518,6 +1641,13 @@ export const LevelUpWizard = ({
                 </div>
 
                 <Separator />
+
+                {selectedSubclassId && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Subclass Chosen</p>
+                    <Badge variant="secondary">Subclass Selected</Badge>
+                  </div>
+                )}
 
                 {wizardSpellbookSpells.length > 0 && (
                   <div>

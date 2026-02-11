@@ -29,7 +29,7 @@ import {
   getThirdCasterSpellsKnownGain,
   getThirdCasterMaxSpellLevel,
 } from "@/lib/rules/thirdCasterUtils";
-import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
+import { AUTO_PREPARED_BY_SUBCLASS, getWarlockExpandedSpells } from "@/lib/rules/subclassSpells";
 import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,

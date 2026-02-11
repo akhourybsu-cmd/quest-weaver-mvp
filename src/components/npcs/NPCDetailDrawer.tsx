@@ -68,6 +68,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   }, [open, npc]);
 
   const loadRelationships = async () => {
+    if (!npc) return;
     const { data } = await supabase
       .from("npc_relationships")
       .select("*")
@@ -78,6 +79,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadAppearances = async () => {
+    if (!npc) return;
     const { data } = await supabase
       .from("npc_appearances")
       .select("*")

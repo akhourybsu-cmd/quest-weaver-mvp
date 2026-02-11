@@ -88,6 +88,25 @@ interface FeatureToGrant {
   source: string;
 }
 
+async function getSaveProficiencies(characterId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("character_saves")
+    .select("str, dex, con, int, wis, cha")
+    .eq("character_id", characterId)
+    .single();
+  
+  const proficient = new Set<string>();
+  if (data) {
+    if (data.str) proficient.add("STR");
+    if (data.dex) proficient.add("DEX");
+    if (data.con) proficient.add("CON");
+    if (data.int) proficient.add("INT");
+    if (data.wis) proficient.add("WIS");
+    if (data.cha) proficient.add("CHA");
+  }
+  return proficient;
+}
+
 export const LevelUpWizard = ({
   open,
   onOpenChange,

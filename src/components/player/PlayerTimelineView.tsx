@@ -166,10 +166,10 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
 
               <div className="space-y-4">
-                {filteredEvents.map((event) => {
+                {filteredEvents.map((event, index) => {
                   const dateStr = formatDate(event);
                   return (
-                    <div key={event.id} className="relative pl-10">
+                    <div key={event.id} className="relative pl-10 opacity-0 animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}>
                       {/* Timeline dot */}
                       <div className="absolute left-2.5 top-3 w-3 h-3 rounded-full bg-primary border-2 border-background" />
 

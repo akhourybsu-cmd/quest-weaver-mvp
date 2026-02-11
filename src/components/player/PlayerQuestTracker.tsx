@@ -133,8 +133,8 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                       <p className="text-sm text-muted-foreground line-clamp-2">{quest.description}</p>
                     )}
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {quest.locations?.[0] && (
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{quest.locations[0]}</span>
+                      {(quest.location?.name || quest.locations?.[0]) && (
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{quest.location?.name || quest.locations[0]}</span>
                       )}
                       {quest.reward_xp > 0 && (
                         <span className="flex items-center gap-1"><Award className="w-3 h-3" />{quest.reward_xp} XP</span>

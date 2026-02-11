@@ -408,10 +408,6 @@ const SessionPlayer = () => {
     );
   }
 
-  console.log('SessionPlayer - Rendering with activeEncounter:', activeEncounter);
-  console.log('SessionPlayer - campaignId:', campaignId);
-  console.log('SessionPlayer - mapId:', mapId);
-
   return (
     <div className="min-h-screen">
       {/* Header */}

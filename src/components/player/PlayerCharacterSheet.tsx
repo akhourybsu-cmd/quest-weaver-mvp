@@ -539,20 +539,26 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {[
-                    { label: 'STR', value: character.str_save },
-                    { label: 'DEX', value: character.dex_save },
-                    { label: 'CON', value: character.con_save },
-                    { label: 'INT', value: character.int_save },
-                    { label: 'WIS', value: character.wis_save },
-                    { label: 'CHA', value: character.cha_save },
-                  ].map((save) => (
-                    <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
-                      <span className="text-muted-foreground font-medium">{save.label}</span>
-                      <span className={`font-mono font-bold ${(save.value || 0) >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
-                        {(save.value || 0) >= 0 ? '+' : ''}{save.value || 0}
-                      </span>
-                    </div>
-                  ))}
+                    { label: 'STR', value: character.str_save, key: 'str' },
+                    { label: 'DEX', value: character.dex_save, key: 'dex' },
+                    { label: 'CON', value: character.con_save, key: 'con' },
+                    { label: 'INT', value: character.int_save, key: 'int' },
+                    { label: 'WIS', value: character.wis_save, key: 'wis' },
+                    { label: 'CHA', value: character.cha_save, key: 'cha' },
+                  ].map((save) => {
+                    const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
+                    return (
+                      <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
+                          <span className="text-muted-foreground font-medium">{save.label}</span>
+                        </div>
+                        <span className={`font-mono font-bold ${(save.value || 0) >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
+                          {(save.value || 0) >= 0 ? '+' : ''}{save.value || 0}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -154,6 +154,9 @@ export default function PlayerCampaignView() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Shield className="w-4 h-4" />
                     Level {character.level} {character.class}
+                    {(character as any).srd_subclasses?.name && (
+                      <span className="text-brass ml-1">({(character as any).srd_subclasses.name})</span>
+                    )}
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => setShowCharacterSelect(true)}>

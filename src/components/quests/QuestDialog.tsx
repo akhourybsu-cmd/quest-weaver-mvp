@@ -213,7 +213,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           );
         }
 
-        toast({ title: "Quest updated!", description: `${title} has been updated.` });
+        toast({ title: "Quest reforged!", description: `${title} has been updated.` });
       } else {
         const { data: questData, error: questError } = await supabase
           .from("quests")

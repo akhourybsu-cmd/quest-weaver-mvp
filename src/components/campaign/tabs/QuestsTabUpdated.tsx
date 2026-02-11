@@ -532,6 +532,20 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={quests.length}
+          onSelectAll={() => bulk.selectAll(quests.map((q) => q.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="quests"
+          visibilityColumn="player_visible"
+          entityLabel="quests"
+          onUpdated={fetchQuests}
+        />
+      )}
     </div>
   );
 }

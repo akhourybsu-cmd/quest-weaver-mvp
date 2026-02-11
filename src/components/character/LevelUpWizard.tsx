@@ -320,6 +320,12 @@ export const LevelUpWizard = ({
     return newLevel >= classRules.subclassLevel;
   }, [classRules, character, newLevel]);
 
+  // Warlock Mystic Arcanum (levels 11, 13, 15, 17)
+  const needsMysticArcanum = useMemo(() => {
+    if (character?.class !== "Warlock") return false;
+    return getMysticArcanumSpellLevel(newLevel) !== null;
+  }, [character?.class, newLevel]);
+
   // Favored Terrain (Ranger)
   const favoredTerrainToChoose = useMemo(() => {
     const choice = featureChoices.find(c => c.type === "favored_terrain");

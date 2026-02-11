@@ -64,7 +64,7 @@ export default function PlayerCampaignView() {
 
       const { data, error } = await supabase
         .from('characters')
-        .select('id, name, class, level, portrait_url')
+        .select('id, name, class, level, portrait_url, subclass_id, srd_subclasses(name)')
         .eq('campaign_id', campaignData.id)
         .eq('user_id', user.id)
         .maybeSingle();

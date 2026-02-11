@@ -232,6 +232,7 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
     showOnlyPinned: false,
   });
   const { toast } = useToast();
+  const bulk = useBulkSelection();
 
   useEffect(() => {
     localStorage.setItem("npc-view-mode", viewMode);

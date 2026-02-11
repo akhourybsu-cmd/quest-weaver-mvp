@@ -489,6 +489,7 @@ export const LevelUpWizard = ({
     }
   };
 
+  const loadFeatures = async () => {
     try {
       const { data: charData } = await supabase
         .from("characters")

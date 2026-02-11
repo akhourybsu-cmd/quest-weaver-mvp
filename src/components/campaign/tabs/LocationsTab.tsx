@@ -423,6 +423,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                   onEdit={handleEditLocation}
                   onAddSub={handleAddSubLocation}
                   onDelete={handleDeleteLocation}
+                  selectionMode={bulk.selectionMode}
+                  isSelected={bulk.selectedIds.includes(location.id)}
+                  onToggleSelect={bulk.toggleId}
                 />
               ))}
             </div>

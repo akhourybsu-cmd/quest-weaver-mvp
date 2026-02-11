@@ -252,7 +252,7 @@ const QuestDialog = ({ open, onOpenChange, campaignId, questToEdit }: QuestDialo
           questGiverNpc?.name || giver || undefined
         );
 
-        toast({ title: "Quest added!", description: `${title} added to quest log.` });
+        toast({ title: "Quest forged!", description: `${title} has been added to the quest log.` });
       }
 
       resetForm();

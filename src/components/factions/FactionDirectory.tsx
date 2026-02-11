@@ -333,6 +333,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                     )}
                   </CardContent>
                 </Card>
+                </div>
               );
             })}
           </div>

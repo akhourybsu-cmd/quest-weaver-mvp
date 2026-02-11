@@ -218,8 +218,8 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       }
 
       toast({
-        title: npc ? "NPC updated" : "NPC created",
-        description: `${name} has been ${npc ? "updated" : "created"} successfully`,
+        title: npc ? "NPC updated!" : "NPC inscribed!",
+        description: `${name} has been ${npc ? "updated" : "etched into the chronicles"}.`,
       });
 
       onSaved();

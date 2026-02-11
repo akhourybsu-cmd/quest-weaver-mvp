@@ -545,8 +545,10 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {unpinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                            {unpinnedNPCs.map((npc, index) => (
+                              <div key={npc.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                                <NPCListItem npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                              </div>
                             ))}
                           </div>
                         )}

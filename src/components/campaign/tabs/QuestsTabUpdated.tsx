@@ -341,7 +341,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         variant: "destructive" 
       });
     } else {
-      toast({ title: "Success", description: "Quest deleted successfully" });
+      toast({ title: "Quest erased", description: "The quest has been removed from the chronicles." });
       setDeleteDialogOpen(false);
       setDetailDialogOpen(false);
       setSelectedQuest(null);

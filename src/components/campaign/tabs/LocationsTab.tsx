@@ -428,6 +428,7 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                   isSelected={bulk.selectedIds.includes(location.id)}
                   onToggleSelect={bulk.toggleId}
                 />
+                </div>
               ))}
             </div>
           </ScrollArea>

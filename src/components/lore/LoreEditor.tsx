@@ -452,7 +452,7 @@ Use @NPC, #Location, %Faction, !Quest, $Item to link entities"
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={() => handleSave(false)} disabled={saving}>
+          <Button onClick={() => handleSave(false)} disabled={saving} className="btn-press">
             <Save className="h-4 w-4 mr-2" />
             Save
           </Button>

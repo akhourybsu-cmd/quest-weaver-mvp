@@ -71,7 +71,11 @@ const StepAncestry = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ancestry & Heritage</h3>
+        <h3 className="text-lg font-cinzel font-semibold mb-2 text-brass tracking-wide flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Ancestry & Heritage
+        </h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-4" />
         <p className="text-sm text-muted-foreground mb-6">
           Choose your character's ancestry (race). This determines base traits, ability score bonuses, and special features.
         </p>

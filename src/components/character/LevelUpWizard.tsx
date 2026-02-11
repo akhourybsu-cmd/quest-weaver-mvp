@@ -21,6 +21,7 @@ import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnem
 import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
 import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
+import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   CLASS_LEVEL_UP_RULES,

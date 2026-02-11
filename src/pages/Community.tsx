@@ -178,6 +178,9 @@ const Community = () => {
         })
       );
       setTopics(topicsWithCounts);
+      // Fetch author profiles for topics
+      const authorIds = (data || []).map(t => t.author_id);
+      fetchAuthorProfiles(authorIds);
     }
     setLoading(false);
   };

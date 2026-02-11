@@ -1208,6 +1208,15 @@ export const LevelUpWizard = ({
             </Card>
           )}
 
+          {/* Subclass Selection Step */}
+          {step === "subclass" && (
+            <SubclassSelectionStep
+              className={character?.class || ""}
+              selectedSubclassId={selectedSubclassId}
+              onSelect={setSelectedSubclassId}
+            />
+          )}
+
           {/* Wizard Spellbook Step */}
           {step === "wizard-spellbook" && (
             <WizardSpellbookStep

@@ -1141,6 +1141,11 @@ export const LevelUpWizard = ({
       s.push("magical-secrets");
     }
     
+    // Mystic Arcanum (Warlock levels 11, 13, 15, 17)
+    if (needsMysticArcanum) {
+      s.push("mystic-arcanum");
+    }
+    
     // Favored Enemy (Ranger)
     if (favoredEnemyToChoose) {
       s.push("favored-enemy");

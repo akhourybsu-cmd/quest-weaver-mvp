@@ -820,8 +820,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               {/* Step content - Scrollable */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="p-4 md:p-6">
-                  <div className="max-w-4xl mx-auto">
-                    {renderStep()}
+                  <div className="max-w-4xl mx-auto" key={currentStep}>
+                    <div className="animate-fade-in">
+                      {renderStep()}
+                    </div>
                   </div>
                 </div>
               </div>

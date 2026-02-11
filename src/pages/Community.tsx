@@ -67,6 +67,12 @@ interface ForumReply {
   author_name?: string;
 }
 
+interface AuthorProfile {
+  name: string;
+  avatar_url: string | null;
+  color: string;
+}
+
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageCircle,
   Lightbulb,

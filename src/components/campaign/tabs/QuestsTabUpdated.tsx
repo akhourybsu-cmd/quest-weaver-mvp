@@ -486,8 +486,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                 {questsByStatus.failed.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
-                  questsByStatus.failed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                  questsByStatus.failed.map((quest, index) => (
+                    <div key={quest.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                      <QuestCard quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                    </div>
                   ))
                 )}
               </div>

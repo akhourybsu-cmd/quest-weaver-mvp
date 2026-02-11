@@ -341,7 +341,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         variant: "destructive" 
       });
     } else {
-      toast({ title: "Success", description: "Quest deleted successfully" });
+      toast({ title: "Quest erased", description: "The quest has been removed from the chronicles." });
       setDeleteDialogOpen(false);
       setDetailDialogOpen(false);
       setSelectedQuest(null);
@@ -426,8 +426,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                 {questsByStatus.not_started.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
-                  questsByStatus.not_started.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                  questsByStatus.not_started.map((quest, index) => (
+                    <div key={quest.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                      <QuestCard quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                    </div>
                   ))
                 )}
               </div>
@@ -444,8 +446,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                 {questsByStatus.in_progress.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
-                  questsByStatus.in_progress.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                  questsByStatus.in_progress.map((quest, index) => (
+                    <div key={quest.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                      <QuestCard quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                    </div>
                   ))
                 )}
               </div>
@@ -462,8 +466,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                 {questsByStatus.completed.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
-                  questsByStatus.completed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                  questsByStatus.completed.map((quest, index) => (
+                    <div key={quest.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                      <QuestCard quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                    </div>
                   ))
                 )}
               </div>
@@ -480,8 +486,10 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                 {questsByStatus.failed.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
-                  questsByStatus.failed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                  questsByStatus.failed.map((quest, index) => (
+                    <div key={quest.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                      <QuestCard quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
+                    </div>
                   ))
                 )}
               </div>

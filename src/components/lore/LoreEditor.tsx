@@ -245,7 +245,7 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
       }
 
       if (!isAutosave) {
-        toast.success("Page saved successfully");
+        toast.success("Lore chronicled!");
         onSave();
       }
     } catch (error: any) {
@@ -452,7 +452,7 @@ Use @NPC, #Location, %Faction, !Quest, $Item to link entities"
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={() => handleSave(false)} disabled={saving}>
+          <Button onClick={() => handleSave(false)} disabled={saving} className="btn-press">
             <Save className="h-4 w-4 mr-2" />
             Save
           </Button>

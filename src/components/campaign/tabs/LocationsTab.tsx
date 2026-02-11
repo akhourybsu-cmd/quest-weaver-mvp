@@ -82,7 +82,7 @@ const LocationCard = memo(({
   onToggleSelect?: (id: string) => void;
 }) => (
   <Card
-    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden"
+    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden card-glow"
     onClick={() => selectionMode ? onToggleSelect?.(location.id) : onEdit(location)}
   >
     {/* Background Image with Overlay */}
@@ -383,9 +383,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
               )}
               <ScrollArea className="h-[calc(100vh-350px)]">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
-                  {displayLocations.map((location) => (
-                    <LocationCard
-                      key={location.id}
+              {displayLocations.map((location, index) => (
+                <div key={location.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                <LocationCard
                       location={location}
                       parentName={getParentName(location.parent_location_id)}
                       childCount={getChildCount(location.id)}
@@ -394,9 +394,10 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                       onDelete={handleDeleteLocation}
                       selectionMode={bulk.selectionMode}
                       isSelected={bulk.selectedIds.includes(location.id)}
-                      onToggleSelect={bulk.toggleId}
-                    />
-                  ))}
+                  onToggleSelect={bulk.toggleId}
+                />
+                </div>
+              ))}
                 </div>
               </ScrollArea>
             </div>
@@ -414,9 +415,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-              {displayLocations.map((location) => (
+              {displayLocations.map((location, index) => (
+                <div key={location.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
                 <LocationCard
-                  key={location.id}
                   location={location}
                   parentName={getParentName(location.parent_location_id)}
                   childCount={getChildCount(location.id)}
@@ -427,6 +428,7 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                   isSelected={bulk.selectedIds.includes(location.id)}
                   onToggleSelect={bulk.toggleId}
                 />
+                </div>
               ))}
             </div>
           </ScrollArea>

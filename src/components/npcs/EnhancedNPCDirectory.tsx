@@ -75,7 +75,7 @@ const NPCCardItem = memo(({
   onToggleSelect?: (id: string) => void;
 }) => (
   <Card
-    className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
+    className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden card-glow"
     onClick={() => selectionMode ? onToggleSelect?.(npc.id) : onView(npc)}
   >
     <CardContent className="p-4">
@@ -118,7 +118,7 @@ const NPCCardItem = memo(({
           </div>
         )}
         {isDM && !selectionMode && (
-          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-2 action-reveal">
             <NPCQuickActions
               npcId={npc.id}
               npcName={npc.name}
@@ -511,14 +511,18 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         </div>
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {pinnedNPCs.map((npc) => (
-                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                            {pinnedNPCs.map((npc, index) => (
+                              <div key={npc.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                                <NPCCardItem npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                              </div>
                             ))}
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {pinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                            {pinnedNPCs.map((npc, index) => (
+                              <div key={npc.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                                <NPCListItem npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                              </div>
                             ))}
                           </div>
                         )}
@@ -533,14 +537,18 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         )}
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {unpinnedNPCs.map((npc) => (
-                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                            {unpinnedNPCs.map((npc, index) => (
+                              <div key={npc.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                                <NPCCardItem npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                              </div>
                             ))}
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {unpinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                            {unpinnedNPCs.map((npc, index) => (
+                              <div key={npc.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
+                                <NPCListItem npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
+                              </div>
                             ))}
                           </div>
                         )}

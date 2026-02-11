@@ -244,14 +244,14 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredFactions.map((faction) => {
+            {filteredFactions.map((faction, index) => {
               const reputation = getReputation(faction.id);
               const score = reputation?.score || 0;
 
               return (
+                <div key={faction.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
                 <Card
-                  key={faction.id}
-                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative"
+                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative card-glow"
                   onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
                 >
                   {bulk.selectionMode && (
@@ -333,6 +333,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                     )}
                   </CardContent>
                 </Card>
+                </div>
               );
             })}
           </div>

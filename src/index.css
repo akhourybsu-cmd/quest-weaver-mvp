@@ -169,6 +169,63 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Staggered card entrance - starts invisible, animate-fade-in fills forward */
+  .stagger-item {
+    opacity: 0;
+    animation-fill-mode: forwards;
+  }
+  
+  /* Button press effect */
+  .btn-press:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease-out;
+  }
+  .btn-press {
+    transition: transform 0.15s ease-out;
+  }
+  
+  /* Card hover glow */
+  .card-glow {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-glow:hover {
+    box-shadow: 0 0 15px -3px hsl(var(--brass) / 0.3);
+  }
+  
+  /* Quick action slide-up reveal */
+  .action-reveal {
+    transform: translateY(4px);
+    opacity: 0;
+    transition: all 0.2s ease-out;
+  }
+  .group:hover .action-reveal {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  /* Tab content fade */
+  .tab-enter {
+    animation: fade-in 0.2s ease-out;
+  }
+}
+
+/* Reduced motion: disable all custom animations */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .btn-press:active {
+    transform: none !important;
+  }
+  .card-glow:hover {
+    box-shadow: none !important;
+  }
+  .action-reveal {
+    transform: none !important;
+    opacity: 1 !important;
+  }
 }
 
 /* Prose/Typography customizations for markdown preview */

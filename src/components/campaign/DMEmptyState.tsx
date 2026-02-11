@@ -14,7 +14,7 @@ export function DMEmptyState({ icon: Icon, title, description, actionLabel, onAc
   return (
     <Card className="border-dashed border-2 border-brass/30 bg-card/30">
       <CardContent className="flex flex-col items-center justify-center py-16 text-center px-6">
-        <div className="rounded-full bg-brass/10 p-4 mb-4">
+        <div className="rounded-full bg-brass/10 p-4 mb-4 animate-pulse-breathe">
           <Icon className="w-10 h-10 text-brass/60" />
         </div>
         <h3 className="font-cinzel text-lg font-semibold mb-2">{title}</h3>

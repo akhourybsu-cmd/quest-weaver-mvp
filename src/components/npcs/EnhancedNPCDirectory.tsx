@@ -576,6 +576,20 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
           }}
         />
       )}
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={sortedNPCs.length}
+          onSelectAll={() => bulk.selectAll(sortedNPCs.map((n) => n.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="npcs"
+          visibilityColumn="player_visible"
+          entityLabel="NPCs"
+          onUpdated={loadNPCs}
+        />
+      )}
     </div>
   );
 };

@@ -300,6 +300,15 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     if (data) setResources(data as CharacterResource[]);
   };
 
+  const fetchSaveProficiencies = async () => {
+    const { data } = await supabase
+      .from("character_saves")
+      .select("str, dex, con, int, wis, cha")
+      .eq("character_id", characterId)
+      .maybeSingle();
+    if (data) setSaveProficiencies(data as Record<string, boolean>);
+  };
+
   const getAbilityModifier = (score: number) => Math.floor((score - 10) / 2);
   const formatModifier = (mod: number) => (mod >= 0 ? `+${mod}` : `${mod}`);
 

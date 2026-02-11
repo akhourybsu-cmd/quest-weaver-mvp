@@ -304,10 +304,6 @@ const SessionPlayer = () => {
 
     setCharacter(data);
     
-    console.log('SessionPlayer - Character loaded:', data.name);
-    console.log('SessionPlayer - Active encounter:', encounter?.id);
-    console.log('SessionPlayer - Campaign ID:', campaigns[0].id);
-
     // Check if it's my turn
     if (encounter?.id) {
       const { data: initData } = await supabase

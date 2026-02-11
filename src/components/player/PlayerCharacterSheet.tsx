@@ -9,7 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Heart, Shield, Zap, BookOpen, Languages, 
-  ShieldAlert, Wand2, ChevronDown, Sword, Sparkles, Star, Flame, TrendingUp
+  ShieldAlert, Wand2, ChevronDown, Sword, Sparkles, Star, Flame, TrendingUp,
+  Skull, CheckCircle2, XCircle
 } from "lucide-react";
 import { LevelUpWizard } from "@/components/character/LevelUpWizard";
 import { ExhaustionManager } from "@/components/combat/ExhaustionManager";

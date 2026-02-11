@@ -176,7 +176,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLocation = async () => {
-    if (!npc.location_id) return;
+    if (!npc || !npc.location_id) return;
     const { data } = await supabase
       .from("locations")
       .select("id, name, location_type")

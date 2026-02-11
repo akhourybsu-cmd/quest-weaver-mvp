@@ -713,6 +713,7 @@ export const LevelUpWizard = ({
             favored_enemy: favoredEnemyChoice,
             favored_terrain: favoredTerrainChoice,
             subclass_id: selectedSubclassId,
+            mystic_arcanum_spell: mysticArcanumSpellId,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });

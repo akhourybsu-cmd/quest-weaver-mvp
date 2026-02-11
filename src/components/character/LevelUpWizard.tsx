@@ -577,10 +577,13 @@ export const LevelUpWizard = ({
     if (!character?.class) return;
 
     try {
+      // Third-casters (Eldritch Knight / Arcane Trickster) use Wizard spell list
+      const spellClass = isThirdCaster ? "Wizard" : character.class;
+      
       const { data: spells } = await supabase
         .from("srd_spells")
         .select("id, name, level, school, concentration, ritual")
-        .contains("classes", [character.class])
+        .contains("classes", [spellClass])
         .order("level")
         .order("name");
 

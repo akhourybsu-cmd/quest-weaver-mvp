@@ -38,7 +38,7 @@ interface LorePage {
 interface NPCDetailDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  npc: NPC;
+  npc: NPC | null;
   campaignId: string;
   isDM: boolean;
   onEdit: () => void;
@@ -68,6 +68,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   }, [open, npc]);
 
   const loadRelationships = async () => {
+    if (!npc) return;
     const { data } = await supabase
       .from("npc_relationships")
       .select("*")
@@ -78,6 +79,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadAppearances = async () => {
+    if (!npc) return;
     const { data } = await supabase
       .from("npc_appearances")
       .select("*")
@@ -99,6 +101,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLinkedNotes = async () => {
+    if (!npc) return;
     console.log(`[NPCDetailDrawer] Loading notes for NPC: ${npc.name} (${npc.id})`);
     
     // Get notes that have this NPC linked (using uppercase NPC)
@@ -146,6 +149,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadRelatedQuests = async () => {
+    if (!npc) return;
     // Find quests where this NPC is the quest giver
     const { data: givenQuests } = await supabase
       .from("quests")
@@ -172,7 +176,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLocation = async () => {
-    if (!npc.location_id) return;
+    if (!npc || !npc.location_id) return;
     const { data } = await supabase
       .from("locations")
       .select("id, name, location_type")
@@ -183,7 +187,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLinkedLore = async () => {
-    if (!npc.lore_page_id) {
+    if (!npc || !npc.lore_page_id) {
       setLinkedLore(null);
       return;
     }
@@ -198,6 +202,18 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
       setLinkedLore(data as LorePage);
     }
   };
+
+  if (!npc) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>No NPC Selected</DrawerTitle>
+          </DrawerHeader>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>

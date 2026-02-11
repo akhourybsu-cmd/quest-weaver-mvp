@@ -222,6 +222,10 @@ const Community = () => {
       setReplies(repliesData || []);
     }
     
+    // Fetch author profiles for topic + replies
+    const allAuthorIds = [topicData.author_id, ...(repliesData || []).map(r => r.author_id)];
+    fetchAuthorProfiles(allAuthorIds);
+    
     setLoading(false);
   };
 

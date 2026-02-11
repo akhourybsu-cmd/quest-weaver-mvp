@@ -47,7 +47,8 @@ interface LevelUpWizardProps {
 
 type LevelUpStep = 
   | "class-select"
-  | "hp-roll" 
+  | "hp-roll"
+  | "subclass"
   | "wizard-spellbook"
   | "spells" 
   | "cantrips"

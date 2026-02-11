@@ -451,6 +451,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                 </div>
               </div>
 
+              {/* Death Saving Throws - shown when HP is 0 */}
+              {character.current_hp <= 0 && (
+                <DeathSavingThrows
+                  characterId={character.id}
+                  successes={character.death_save_success || 0}
+                  failures={character.death_save_fail || 0}
+                  onUpdate={fetchCharacter}
+                />
+              )}
+
               {/* Exhaustion & Warlock Pact Slots */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <ExhaustionManager

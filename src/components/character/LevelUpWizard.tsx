@@ -730,6 +730,39 @@ export const LevelUpWizard = ({
             .from("character_abilities")
             .update(updates)
             .eq("character_id", characterId);
+
+          // Recalculate derived stats with new ability scores
+          const newAbilities = { ...abilities, ...updates };
+          const saveProficiencies = await getSaveProficiencies(characterId);
+          const derivedUpdates: Record<string, any> = {};
+          const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+          abilityKeys.forEach(ab => {
+            const mod = Math.floor(((newAbilities[ab] || 10) - 10) / 2);
+            derivedUpdates[`${ab}_save`] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
+          });
+
+          // Recalculate passive perception with new WIS
+          const newWisMod = Math.floor(((newAbilities.wis || 10) - 10) / 2);
+          const { data: percSkill2 } = await supabase
+            .from("character_skills")
+            .select("proficient, expertise")
+            .eq("character_id", characterId)
+            .eq("skill", "Perception")
+            .single();
+          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill2?.proficient ? newProfBonus : 0) + (percSkill2?.expertise ? newProfBonus : 0);
+
+          // Recalculate spell stats with new ability scores
+          if (character.spell_ability) {
+            const spellAbKey = character.spell_ability.toLowerCase();
+            const spellAbMod = Math.floor(((newAbilities[spellAbKey] || 10) - 10) / 2);
+            derivedUpdates.spell_save_dc = 8 + newProfBonus + spellAbMod;
+            derivedUpdates.spell_attack_mod = newProfBonus + spellAbMod;
+          }
+
+          await supabase
+            .from("characters")
+            .update(derivedUpdates)
+            .eq("id", characterId);
         }
       }
 

@@ -39,6 +39,20 @@ interface CharacterAttack {
   properties: string[] | null;
 }
 
+/** Compute a skill modifier from ability score, proficiency bonus, and skill proficiency/expertise */
+function computeSkillBonus(
+  abilityScore: number,
+  proficiencyBonus: number,
+  proficient: boolean,
+  expertise: boolean
+): number {
+  const mod = Math.floor((abilityScore - 10) / 2);
+  let bonus = mod;
+  if (proficient) bonus += proficiencyBonus;
+  if (expertise) bonus += proficiencyBonus;
+  return bonus;
+}
+
 export function PlayerCombatActions({
   characterId,
   encounterId,
@@ -133,24 +147,52 @@ export function PlayerCombatActions({
   };
 
   const fetchCharacterData = async () => {
+    // Fetch character base data
     const { data } = await supabase
       .from("characters")
-      .select("id, name, str_save, dex_save, proficiency_bonus, size, exhaustion_level")
+      .select("id, name, proficiency_bonus, size, exhaustion_level")
       .eq("id", characterId)
       .single();
 
-    if (data) {
-      // Calculate Athletics and Acrobatics bonuses
-      // Athletics = STR + proficiency, Acrobatics = DEX + proficiency
-      const athleticsBonus = data.str_save || 0;
-      const acrobaticsBonus = data.dex_save || 0;
-      
-      setCharacter({
-        ...data,
-        athleticsBonus,
-        acrobaticsBonus,
-      });
-    }
+    if (!data) return;
+
+    // Fetch ability scores for STR and DEX
+    const { data: abilities } = await supabase
+      .from("character_abilities")
+      .select("str, dex")
+      .eq("character_id", characterId)
+      .maybeSingle();
+
+    // Fetch Athletics and Acrobatics skill proficiency
+    const { data: skillData } = await supabase
+      .from("character_skills")
+      .select("skill, proficient, expertise")
+      .eq("character_id", characterId)
+      .in("skill", ["Athletics", "Acrobatics"]);
+
+    const strScore = abilities?.str || 10;
+    const dexScore = abilities?.dex || 10;
+    const profBonus = data.proficiency_bonus || 2;
+
+    const athleticsSkill = skillData?.find(s => s.skill === "Athletics");
+    const acrobaticsSkill = skillData?.find(s => s.skill === "Acrobatics");
+
+    const athleticsBonus = computeSkillBonus(
+      strScore, profBonus,
+      athleticsSkill?.proficient || false,
+      athleticsSkill?.expertise || false
+    );
+    const acrobaticsBonus = computeSkillBonus(
+      dexScore, profBonus,
+      acrobaticsSkill?.proficient || false,
+      acrobaticsSkill?.expertise || false
+    );
+
+    setCharacter({
+      ...data,
+      athleticsBonus,
+      acrobaticsBonus,
+    });
   };
 
   const fetchAttacks = async () => {
@@ -222,7 +264,6 @@ export function PlayerCombatActions({
   };
 
   const fetchTargets = async () => {
-    // Fetch all combatants in the encounter
     const { data: initData } = await supabase
       .from("initiative")
       .select("combatant_id, combatant_type")
@@ -235,34 +276,66 @@ export function PlayerCombatActions({
         .filter(i => !(i.combatant_type === 'character' && i.combatant_id === characterId))
         .map(async (init) => {
           if (init.combatant_type === 'character') {
+            // Fetch actual skill data for other characters too
             const { data } = await supabase
               .from('characters')
-              .select('id, name, str_save, dex_save')
+              .select('id, name, proficiency_bonus')
               .eq('id', init.combatant_id)
               .single();
 
-            return data ? {
+            if (!data) return null;
+
+            const { data: abilities } = await supabase
+              .from("character_abilities")
+              .select("str, dex")
+              .eq("character_id", init.combatant_id)
+              .maybeSingle();
+
+            const { data: skillData } = await supabase
+              .from("character_skills")
+              .select("skill, proficient, expertise")
+              .eq("character_id", init.combatant_id)
+              .in("skill", ["Athletics", "Acrobatics"]);
+
+            const strScore = abilities?.str || 10;
+            const dexScore = abilities?.dex || 10;
+            const profBonus = data.proficiency_bonus || 2;
+            const athSkill = skillData?.find(s => s.skill === "Athletics");
+            const acroSkill = skillData?.find(s => s.skill === "Acrobatics");
+
+            return {
               id: data.id,
               type: 'character' as const,
               name: data.name,
-              athleticsBonus: data.str_save || 0,
-              acrobaticsBonus: data.dex_save || 0,
-            } : null;
+              athleticsBonus: computeSkillBonus(strScore, profBonus, athSkill?.proficient || false, athSkill?.expertise || false),
+              acrobaticsBonus: computeSkillBonus(dexScore, profBonus, acroSkill?.proficient || false, acroSkill?.expertise || false),
+            };
           } else {
+            // Monster: derive Athletics/Acrobatics from ability scores
             const { data } = await supabase
               .from('encounter_monsters')
-              .select('id, display_name')
+              .select('id, display_name, str, dex, challenge_rating')
               .eq('id', init.combatant_id)
               .single();
 
-            // Estimate monster skill bonuses (simplified)
-            return data ? {
+            if (!data) return null;
+
+            // Estimate proficiency bonus from CR (5E formula: 2 + floor((CR-1)/4), min 2)
+            const cr = data.challenge_rating ?? 0;
+            const monsterProf = Math.max(2, 2 + Math.floor((cr - 1) / 4));
+            
+            // Use STR/DEX mod as base; monsters don't have explicit skill proficiency in our schema
+            // so we use raw ability modifier as a reasonable approximation
+            const strMod = Math.floor(((data.str ?? 10) - 10) / 2);
+            const dexMod = Math.floor(((data.dex ?? 10) - 10) / 2);
+
+            return {
               id: data.id,
               type: 'monster' as const,
               name: data.display_name,
-              athleticsBonus: 2,
-              acrobaticsBonus: 2,
-            } : null;
+              athleticsBonus: strMod,
+              acrobaticsBonus: dexMod,
+            };
           }
         })
     );
@@ -284,7 +357,6 @@ export function PlayerCombatActions({
 
   const handleEndTurn = async () => {
     try {
-      // Insert turn signal to notify DM
       const { error } = await supabase
         .from("player_turn_signals")
         .insert({
@@ -356,12 +428,10 @@ export function PlayerCombatActions({
             </div>
           </div>
 
-          {/* Combat Actions */}
           {character && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Combat Options:</p>
               <div className="flex flex-wrap gap-2">
-                {/* Weapon Attacks */}
                 {attacks.length > 0 ? (
                   attacks.map((attack) => (
                     <PlayerAttackDialog
@@ -398,7 +468,7 @@ export function PlayerCombatActions({
                     athleticsBonus={character.athleticsBonus}
                     acrobaticsBonus={character.acrobaticsBonus}
                     encounterId={encounterId}
-                    grapplerDC={15} // Simplified DC
+                    grapplerDC={15}
                     conditionId={grappleCondition.id}
                   />
                 )}
@@ -423,7 +493,6 @@ export function PlayerCombatActions({
             </div>
           )}
 
-          {/* Ammunition Tracker */}
           <AmmunitionTracker characterId={characterId} />
 
           <Button

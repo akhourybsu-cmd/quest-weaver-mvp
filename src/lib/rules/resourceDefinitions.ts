@@ -173,7 +173,7 @@ export const CLASS_RESOURCE_DEFINITIONS: Record<string, Record<number, ResourceG
     }]
   },
   Bard: {
-    2: [{
+    1: [{
       key: 'bardic_inspiration',
       label: 'Bardic Inspiration',
       maxFormula: 'max(1, floor((charisma-10)/2))',

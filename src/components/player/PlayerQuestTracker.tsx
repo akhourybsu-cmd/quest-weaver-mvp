@@ -144,12 +144,31 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                       )}
                     </div>
                     {quest.steps?.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>Progress</span>
                           <span>{quest.steps.filter((s: any) => s.is_completed).length}/{quest.steps.length}</span>
                         </div>
                         <Progress value={getProgress(quest)} className="h-1.5" />
+                        <div className="space-y-1 mt-1">
+                          {quest.steps.map((step: any) => (
+                            <div key={step.id} className="flex items-start gap-2 text-xs">
+                              {step.is_completed ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                              ) : (
+                                <Circle className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                              )}
+                              <span className={step.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}>
+                                {step.description}
+                                {step.progress_max > 0 && (
+                                  <span className="text-muted-foreground ml-1">
+                                    ({step.progress_current || 0}/{step.progress_max})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -367,7 +367,7 @@ export const LevelUpWizard = ({
         loadExistingArcanum();
       }
     }
-  }, [character?.class]);
+  }, [character?.class, subclassName]);
 
   const loadCharacter = async () => {
     setLoading(true);

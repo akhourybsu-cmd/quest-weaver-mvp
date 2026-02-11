@@ -38,7 +38,7 @@ interface LorePage {
 interface NPCDetailDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  npc: NPC;
+  npc: NPC | null;
   campaignId: string;
   isDM: boolean;
   onEdit: () => void;

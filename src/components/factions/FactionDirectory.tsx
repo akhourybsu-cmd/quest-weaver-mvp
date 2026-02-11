@@ -244,7 +244,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredFactions.map((faction) => {
+            {filteredFactions.map((faction, index) => {
               const reputation = getReputation(faction.id);
               const score = reputation?.score || 0;
 

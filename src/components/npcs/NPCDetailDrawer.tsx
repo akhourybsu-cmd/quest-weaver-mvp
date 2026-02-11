@@ -149,6 +149,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadRelatedQuests = async () => {
+    if (!npc) return;
     // Find quests where this NPC is the quest giver
     const { data: givenQuests } = await supabase
       .from("quests")

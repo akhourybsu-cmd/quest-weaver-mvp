@@ -123,6 +123,8 @@ interface CharacterData {
   pact_slots_used: number | null;
   pact_slot_level: number | null;
   subclass_name?: string | null;
+  death_save_success: number | null;
+  death_save_fail: number | null;
 }
 
 interface PlayerCharacterSheetProps {

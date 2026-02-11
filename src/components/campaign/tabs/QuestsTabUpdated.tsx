@@ -73,7 +73,10 @@ const getDifficultyColor = (difficulty?: string) => {
 };
 
 // Memoized Quest Card Component
-const QuestCard = memo(({ quest, onClick }: { quest: Quest; onClick: (quest: Quest) => void }) => {
+const QuestCard = memo(({ quest, onClick, selectionMode, isSelected, onToggleSelect }: { 
+  quest: Quest; onClick: (quest: Quest) => void;
+  selectionMode?: boolean; isSelected?: boolean; onToggleSelect?: (id: string) => void;
+}) => {
   const objectives = quest.steps || [];
   const completedObjectives = objectives.filter((o: any) => o.is_completed || o.isCompleted).length;
   const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
@@ -81,10 +84,15 @@ const QuestCard = memo(({ quest, onClick }: { quest: Quest; onClick: (quest: Que
   return (
     <Card
       className="hover:shadow-lg transition-all bg-card border-brass/20 cursor-pointer"
-      onClick={() => onClick(quest)}
+      onClick={() => selectionMode ? onToggleSelect?.(quest.id) : onClick(quest)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
+          {selectionMode && (
+            <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+              <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(quest.id)} />
+            </div>
+          )}
           <div className="flex-1">
             <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
             <div className="flex items-center gap-2 flex-wrap mt-2">

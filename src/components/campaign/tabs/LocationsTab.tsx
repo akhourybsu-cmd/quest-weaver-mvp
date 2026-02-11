@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,13 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye } from "lucide-react";
+import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye, CheckSquare } from "lucide-react";
 import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
 import LocationDialog from "@/components/locations/LocationDialog";
 import { LocationTreeView } from "@/components/locations/LocationTreeView";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 import { DemoCampaign } from "@/data/demoSeeds";
 import { adaptDemoLocations } from "@/lib/demoAdapters";

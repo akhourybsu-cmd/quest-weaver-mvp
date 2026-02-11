@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, SkipForward, Zap, Mountain, Sword, Target } from "lucide-react";
+import { Check, X, SkipForward, Zap, Mountain, Sword, Target, Swords } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -147,7 +147,6 @@ export function PlayerCombatActions({
   };
 
   const fetchCharacterData = async () => {
-    // Fetch character base data
     const { data } = await supabase
       .from("characters")
       .select("id, name, proficiency_bonus, size, exhaustion_level")
@@ -156,14 +155,12 @@ export function PlayerCombatActions({
 
     if (!data) return;
 
-    // Fetch ability scores for STR and DEX
     const { data: abilities } = await supabase
       .from("character_abilities")
       .select("str, dex")
       .eq("character_id", characterId)
       .maybeSingle();
 
-    // Fetch Athletics and Acrobatics skill proficiency
     const { data: skillData } = await supabase
       .from("character_skills")
       .select("skill, proficient, expertise")
@@ -276,7 +273,6 @@ export function PlayerCombatActions({
         .filter(i => !(i.combatant_type === 'character' && i.combatant_id === characterId))
         .map(async (init) => {
           if (init.combatant_type === 'character') {
-            // Fetch actual skill data for other characters too
             const { data } = await supabase
               .from('characters')
               .select('id, name, proficiency_bonus')
@@ -311,7 +307,6 @@ export function PlayerCombatActions({
               acrobaticsBonus: computeSkillBonus(dexScore, profBonus, acroSkill?.proficient || false, acroSkill?.expertise || false),
             };
           } else {
-            // Monster: derive Athletics/Acrobatics from abilities JSON and skills JSON
             const { data } = await supabase
               .from('encounter_monsters')
               .select('id, display_name, abilities, skills')
@@ -323,7 +318,6 @@ export function PlayerCombatActions({
             const abilities = (data.abilities || {}) as Record<string, number>;
             const skills = (data.skills || {}) as Record<string, number>;
             
-            // Use explicit skill bonus if available, otherwise fall back to ability modifier
             const strMod = Math.floor(((abilities.str ?? 10) - 10) / 2);
             const dexMod = Math.floor(((abilities.dex ?? 10) - 10) / 2);
             const athleticsBonus = skills.athletics ?? skills.Athletics ?? strMod;
@@ -395,10 +389,10 @@ export function PlayerCombatActions({
     <div className="flex items-center gap-2">
       <Badge
         variant={used ? "outline" : "default"}
-        className={`h-8 px-3 ${
+        className={`h-8 px-3 transition-all active:scale-95 ${
           used 
-            ? 'bg-muted/50 text-muted-foreground line-through' 
-            : 'bg-primary text-primary-foreground'
+            ? 'bg-muted/50 text-muted-foreground line-through border-muted' 
+            : 'bg-brand-brass/15 text-brand-brass border-brand-brass/50 hover:bg-brand-brass/25'
         }`}
       >
         {used ? <X className="h-4 w-4 mr-1" /> : <Check className="h-4 w-4 mr-1" />}
@@ -414,13 +408,17 @@ export function PlayerCombatActions({
 
   return (
     <>
-      <Card className="border-primary shadow-lg">
+      <Card className="fantasy-border-ornaments border-brand-brass/40 shadow-[0_0_12px_hsl(var(--brass)/0.3)] animate-pulse-breathe">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Your Turn</CardTitle>
+          <CardTitle className="text-lg font-cinzel tracking-wide text-brand-brass flex items-center gap-2">
+            <Swords className="w-5 h-5" />
+            Your Turn
+          </CardTitle>
+          <div className="h-px bg-gradient-to-r from-transparent via-brand-brass/50 to-transparent mt-2" />
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Available Actions:</p>
+            <p className="text-sm text-muted-foreground font-cinzel tracking-wide">Available Actions:</p>
             <div className="flex flex-wrap gap-2">
               <ActionChip used={actionUsed} label="A" fullLabel="Action" />
               <ActionChip used={bonusActionUsed} label="B" fullLabel="Bonus Action" />
@@ -430,7 +428,7 @@ export function PlayerCombatActions({
 
           {character && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Combat Options:</p>
+              <p className="text-sm font-medium font-cinzel tracking-wide">Combat Options:</p>
               <div className="flex flex-wrap gap-2">
                 {attacks.length > 0 ? (
                   attacks.map((attack) => (
@@ -475,6 +473,7 @@ export function PlayerCombatActions({
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-[44px]"
                   onClick={() => setShowReadiedActionDialog(true)}
                   disabled={actionUsed}
                 >
@@ -484,6 +483,7 @@ export function PlayerCombatActions({
                 <Button
                   size="sm"
                   variant="outline"
+                  className="min-h-[44px]"
                   onClick={() => setShowMountDialog(true)}
                 >
                   <Mountain className="w-4 h-4 mr-1" />
@@ -497,7 +497,7 @@ export function PlayerCombatActions({
 
           <Button
             onClick={() => setShowEndTurnDialog(true)}
-            className="w-full"
+            className="w-full min-h-[44px]"
             size="lg"
           >
             <SkipForward className="w-4 h-4 mr-2" />

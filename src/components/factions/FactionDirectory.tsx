@@ -249,9 +249,9 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
               const score = reputation?.score || 0;
 
               return (
+                <div key={faction.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
                 <Card
-                  key={faction.id}
-                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative"
+                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative card-glow"
                   onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
                 >
                   {bulk.selectionMode && (

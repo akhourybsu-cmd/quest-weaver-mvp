@@ -115,8 +115,6 @@ const SessionPlayer = () => {
           filter: `campaign_id=eq.${campaignId}`,
         },
         (payload) => {
-          console.log('SessionPlayer - Encounter change detected:', payload);
-          // Re-fetch encounter status
           fetchEncounterStatus();
         }
       )

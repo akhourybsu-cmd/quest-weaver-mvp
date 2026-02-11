@@ -518,7 +518,7 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         ) : (
                           <div className="space-y-2">
                             {pinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
                             ))}
                           </div>
                         )}

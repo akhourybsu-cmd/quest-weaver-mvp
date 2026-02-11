@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
 import { PortraitCropper } from "@/components/character/PortraitCropper";
-import { User } from "lucide-react";
+import { User, Scroll } from "lucide-react";
 
 const ALIGNMENTS = [
   "Lawful Good",

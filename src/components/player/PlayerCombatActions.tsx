@@ -311,30 +311,30 @@ export function PlayerCombatActions({
               acrobaticsBonus: computeSkillBonus(dexScore, profBonus, acroSkill?.proficient || false, acroSkill?.expertise || false),
             };
           } else {
-            // Monster: derive Athletics/Acrobatics from ability scores
+            // Monster: derive Athletics/Acrobatics from abilities JSON and skills JSON
             const { data } = await supabase
               .from('encounter_monsters')
-              .select('id, display_name, str, dex, challenge_rating')
+              .select('id, display_name, abilities, skills')
               .eq('id', init.combatant_id)
               .single();
 
             if (!data) return null;
 
-            // Estimate proficiency bonus from CR (5E formula: 2 + floor((CR-1)/4), min 2)
-            const cr = data.challenge_rating ?? 0;
-            const monsterProf = Math.max(2, 2 + Math.floor((cr - 1) / 4));
+            const abilities = (data.abilities || {}) as Record<string, number>;
+            const skills = (data.skills || {}) as Record<string, number>;
             
-            // Use STR/DEX mod as base; monsters don't have explicit skill proficiency in our schema
-            // so we use raw ability modifier as a reasonable approximation
-            const strMod = Math.floor(((data.str ?? 10) - 10) / 2);
-            const dexMod = Math.floor(((data.dex ?? 10) - 10) / 2);
+            // Use explicit skill bonus if available, otherwise fall back to ability modifier
+            const strMod = Math.floor(((abilities.str ?? 10) - 10) / 2);
+            const dexMod = Math.floor(((abilities.dex ?? 10) - 10) / 2);
+            const athleticsBonus = skills.athletics ?? skills.Athletics ?? strMod;
+            const acrobaticsBonus = skills.acrobatics ?? skills.Acrobatics ?? dexMod;
 
             return {
               id: data.id,
               type: 'monster' as const,
               name: data.display_name,
-              athleticsBonus: strMod,
-              acrobaticsBonus: dexMod,
+              athleticsBonus,
+              acrobaticsBonus,
             };
           }
         })

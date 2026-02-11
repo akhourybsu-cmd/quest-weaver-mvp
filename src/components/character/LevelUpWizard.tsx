@@ -1041,6 +1041,9 @@ export const LevelUpWizard = ({
       // Update spell slots
       await updateSpellSlots();
 
+      // Auto-add subclass prepared spells (Domain, Oath, Circle spells)
+      await addAutoPrepairedSubclassSpells();
+
       toast.success(`Leveled up to ${newLevel}!`);
       onComplete();
       onOpenChange(false);

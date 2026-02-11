@@ -1,64 +1,88 @@
 
 
-# Player Hub and 5E Rules Audit -- Fixes and Polish Pass
+# Comprehensive Player Hub and 5E Rules Pass -- Round 2
 
 ## Issues Found
 
-### 5E Rules Bugs
+### Critical 5E Rules Bug
 
-**1. Athletics/Acrobatics using Saving Throw values instead of Skill modifiers (CRITICAL)**
-In `PlayerCombatActions.tsx` (lines 143-146, 248-249), Athletics and Acrobatics bonuses for grapple/shove contests are incorrectly set to `str_save` and `dex_save`. These are **saving throw** modifiers, not skill modifiers. Athletics = STR mod + proficiency (if proficient in Athletics). A Rogue proficient in Athletics but not in STR saves would get the wrong bonus. The fix is to query `character_skills` for Athletics/Acrobatics proficiency and compute the correct modifier from ability scores.
+**1. `spellNeedsFor` doesn't pass className to `spellKnownPrepared` (5eRules.ts line 244)**
+The previous fix added per-class spell tables to `spellTables.ts`, but `spellNeedsFor` in `5eRules.ts` still calls `spellKnownPrepared(cls, level)` without the third `className` parameter. This means the class-specific tables are never actually used during character creation -- it always falls back to the Bard table for all known casters. The `classIdentifier` parameter is right there but never passed through.
 
-**2. Bardic Inspiration starts at level 1, not level 2 (levelUpRules.ts)**
-`levelUpRules.ts` line 139 lists Bardic Inspiration starting at level 1, but `resourceDefinitions.ts` line 175 grants it at level 2. Both should agree. Per 5E SRD, Bards get Bardic Inspiration at level 1. The `resourceDefinitions.ts` entry is wrong -- it should be level 1.
+Fix: Change line 244 from `spellKnownPrepared(cls, level)` to `spellKnownPrepared(cls, level, classIdentifier)`.
 
-**3. `spellTables.ts` treats all "known" casters identically**
-The known spell progression table on lines 22-44 uses Bard numbers for all "known" type casters. Ranger, Sorcerer, and Warlock have different known-spell progressions. The `spellRules.ts` file has the correct per-class tables, but `spellTables.ts` (used by the wizard `spellNeedsFor` function) doesn't differentiate. This could cause incorrect spell counts during character creation for non-Bard known casters.
+### Player Hub Missing Animations
 
-**4. Monster skill bonuses hardcoded to +2 in grapple/shove (PlayerCombatActions.tsx line 261)**
-Monster Athletics/Acrobatics bonuses are hardcoded to `2` instead of being derived from the monster's actual stat block (`encounter_monsters` table stores ability scores or challenge rating data). This makes grapple/shove contests inaccurate for strong or weak monsters.
+**2. Player Hub views have zero stagger/entrance animations**
+The campaign manager side got staggered card entrances, card-glow hover, and btn-press effects in the last pass, but none of the player-facing components received them. The following player views render cards/lists that could benefit from staggered fade-in entrances:
+- `PlayerNPCDirectory.tsx` -- NPC cards
+- `PlayerLocationsView.tsx` -- Location cards
+- `PlayerFactionsView.tsx` -- Faction cards
+- `PlayerQuestTracker.tsx` -- Quest cards
+- `PlayerTimelineView.tsx` -- Timeline event cards
+- `PlayerCharacterSheet.tsx` -- Core stat sections
 
-### Player Hub UI/Linking Issues
+### Player Hub Polish Issues
 
-**5. Condition tooltips missing from player combat view**
-The `PlayerCombatView.tsx` conditions tab shows condition names but no description of what each condition does mechanically (blinded, frightened, etc.). The `conditionTooltips.ts` file exists with full 5E condition descriptions but isn't used in the player view.
+**3. PlayerEffects conditions don't use conditionTooltips**
+The `PlayerEffects.tsx` component (rendered in the effects panel during combat) shows conditions but doesn't import or display the mechanical descriptions from `conditionTooltips.ts`. While the Conditions tab in `PlayerCombatView.tsx` was fixed in the last pass, `PlayerEffects.tsx` still shows conditions with no mechanical info. Players who look at effects see raw condition names with no explanation of what they do.
 
-**6. Quest steps not individually visible to players**
-`PlayerQuestTracker.tsx` shows a progress bar for quest steps but doesn't list the individual step descriptions, so players can't see what each step actually requires.
+**4. Player Hub NPC cards missing card-glow hover effect**
+The campaign manager cards got the `card-glow` CSS class for brass border glow on hover, but the player-side NPC, Location, and Faction cards don't use it. This creates visual inconsistency between the DM and player experience.
 
-**7. No death saving throws tracking on player side**
-The character sheet shows HP dropping to 0 but has no mechanism for players to track or roll death saving throws. This is a core 5E mechanic.
+**5. Session Player has excessive console.log statements**
+`SessionPlayer.tsx` has 6+ `console.log` calls (lines 118, 309-311, 417-419) that ship to production. These should be removed for a polished experience.
+
+**6. PlayerInitiativeDisplay shows monster HP to players unconditionally**
+In `PlayerInitiativeDisplay.tsx`, monster HP is shown if `is_visible_to_players` is true, but the similar display in `PlayerCombatView.tsx` also shows HP for monsters via `is_hp_visible_to_players`. These use two different column names (`is_visible_to_players` vs `is_hp_visible_to_players`), which could cause monsters to appear in initiative but with no HP, or vice versa. Need to verify consistency.
+
+**7. Saving throw display doesn't indicate proficiency**
+The character sheet shows saving throw modifiers but doesn't visually distinguish which saves the character is proficient in. In 5E, each class grants proficiency in exactly 2 saving throws, and players need to know which ones they're proficient in (it affects modifier calculation). A small proficiency dot or indicator would help.
+
+### Linking and Data Flow
+
+**8. PlayerCampaignView doesn't show subclass in character card**
+Per the existing memory about `character-display-subclass-visibility`, subclass should be shown prominently alongside class and level. The `PlayerCampaignView.tsx` character card (line 155) shows "Level X Class" but doesn't query or display the subclass name. The character query (line 67) doesn't join `srd_subclasses`.
+
+**9. Quest location link doesn't use the linked location**
+`PlayerQuestTracker.tsx` line 136 shows `quest.locations[0]` (the legacy text array field) instead of the linked `quest.location?.name` (from the `location_id` foreign key join fetched on line 65). This means even when a DM properly links a quest to a location, the player sees the old text-based location instead.
 
 ---
 
 ## Proposed Changes
 
-### Fix 1: Athletics/Acrobatics Skill Calculation (PlayerCombatActions.tsx)
-- Query `character_skills` table for Athletics and Acrobatics proficiency/expertise
-- Query `character_abilities` for STR and DEX scores
-- Compute correct skill modifiers: ability mod + (proficiency bonus if proficient) + (proficiency bonus again if expertise)
-- Replace `str_save`/`dex_save` usage for grapple/shove
+### Fix 1: Pass className in spellNeedsFor (5eRules.ts)
+- Line 244: Change `spellKnownPrepared(cls, level)` to `spellKnownPrepared(cls, level, classIdentifier)`
+- One-line fix that activates the per-class spell tables already in place
 
-### Fix 2: Bardic Inspiration Start Level (resourceDefinitions.ts)
-- Change Bard resource definition from `startLevel: 2` (line 175 area) to include level 1:
-  - Move the `bardic_inspiration` entry from key `2:` to key `1:`
+### Fix 2: Add staggered entrance animations to Player Hub views
+Apply the same `animate-fade-in` with index-based `animationDelay` pattern used on the campaign manager to:
+- `PlayerNPCDirectory.tsx` -- NPC card list items
+- `PlayerLocationsView.tsx` -- Location card grid
+- `PlayerFactionsView.tsx` -- Faction card grid
+- `PlayerQuestTracker.tsx` -- Quest card items
+- `PlayerTimelineView.tsx` -- Timeline event cards
 
-### Fix 3: Per-Class Known Spell Counts (spellTables.ts)
-- Add class-name-aware logic so `spellKnownPrepared` returns correct counts for Ranger, Sorcerer, Warlock, and Bard independently instead of using one table for all "known" type casters
+Also add `card-glow` hover class to player-side cards for consistent brass glow on hover.
 
-### Fix 4: Condition Tooltips in Player Combat View (PlayerCombatView.tsx)
-- Import condition descriptions from `conditionTooltips.ts`
-- Display condition mechanical effects when a player taps/hovers on a condition in the Conditions tab
+### Fix 3: Add condition tooltips to PlayerEffects.tsx
+- Import `CONDITION_TOOLTIPS` from `conditionTooltips.ts`
+- Display mechanical effects below condition names (inline, same as the mobile treatment in PlayerCombatView)
 
-### Fix 5: Quest Step Details (PlayerQuestTracker.tsx)
-- Show individual quest step descriptions below the progress bar
-- Mark completed steps with a checkmark and incomplete steps with an empty circle
-- This lets players know what they need to do next
+### Fix 4: Remove console.log statements from SessionPlayer.tsx
+- Remove 6 debug log statements from production code
 
-### Fix 6: Death Saving Throws UI (PlayerCharacterSheet.tsx)
-- When `current_hp <= 0`, display a death saving throw tracker
-- Show 3 success circles and 3 failure circles
-- Track state in `characters` table columns (death_save_successes, death_save_failures) if they exist, or in local state with save-on-change
+### Fix 5: Add saving throw proficiency indicators to PlayerCharacterSheet.tsx
+- Query the character's class to determine which two saving throws are proficient
+- Display a small filled dot next to proficient saves (matching the skill proficiency dot pattern already used)
+
+### Fix 6: Show subclass in PlayerCampaignView character card
+- Update the character query to join `srd_subclasses(name)` via the `subclass_id` foreign key
+- Display "Level X Class (Subclass)" in the character card
+
+### Fix 7: Use linked location name in PlayerQuestTracker
+- Prefer `quest.location?.name` over `quest.locations?.[0]` when displaying quest location
+- Fall back to legacy text field if no linked location exists
 
 ---
 
@@ -66,16 +90,21 @@ The character sheet shows HP dropping to 0 but has no mechanism for players to t
 
 | File | Change |
 |------|--------|
-| `src/components/player/PlayerCombatActions.tsx` | Fix Athletics/Acrobatics calculation to use actual skill modifiers instead of saving throws |
-| `src/lib/rules/resourceDefinitions.ts` | Move Bard Bardic Inspiration grant from level 2 to level 1 |
-| `src/lib/rules/spellTables.ts` | Add class-specific known spell progressions for Ranger, Sorcerer, Warlock |
-| `src/components/player/PlayerCombatView.tsx` | Add condition tooltips from `conditionTooltips.ts` |
-| `src/components/player/PlayerQuestTracker.tsx` | Show individual quest step descriptions |
-| `src/components/player/PlayerCharacterSheet.tsx` | Add death saving throw tracker when HP is 0 |
+| `src/lib/rules/5eRules.ts` | Pass `classIdentifier` to `spellKnownPrepared` call (1 line) |
+| `src/components/player/PlayerNPCDirectory.tsx` | Add staggered fade-in and card-glow to NPC cards |
+| `src/components/player/PlayerLocationsView.tsx` | Add staggered fade-in and card-glow to location cards |
+| `src/components/player/PlayerFactionsView.tsx` | Add staggered fade-in and card-glow to faction cards |
+| `src/components/player/PlayerQuestTracker.tsx` | Add staggered fade-in to quest cards; fix location link |
+| `src/components/player/PlayerTimelineView.tsx` | Add staggered fade-in to timeline events |
+| `src/components/player/PlayerEffects.tsx` | Add condition tooltips from conditionTooltips.ts |
+| `src/components/player/PlayerCharacterSheet.tsx` | Add saving throw proficiency indicators |
+| `src/pages/SessionPlayer.tsx` | Remove console.log statements |
+| `src/pages/PlayerCampaignView.tsx` | Show subclass in character card |
 
 ## Technical Notes
 
-- The Athletics/Acrobatics fix requires an additional Supabase query to `character_skills` and `character_abilities` tables, which are already queried elsewhere in the player hub
-- The death saving throw tracker can use local component state initially and persist via the existing `characters` table update pattern, since `death_save_successes` and `death_save_failures` columns may need to be added via migration
-- Condition tooltips use the existing `conditionTooltips.ts` file which already has all 15 standard 5E conditions defined
+- The stagger animation pattern is: `className="opacity-0 animate-fade-in"` with `style={{ animationDelay: \`${Math.min(index * 30, 300)}ms\`, animationFillMode: 'forwards' }}`
+- The `card-glow` class is already defined in `index.css` from the previous animation pass
+- Saving throw proficiency can be determined from the class data -- each class has exactly 2 proficient saves defined in the SRD. These are already stored in `character_proficiencies` table with type `'save'` or can be derived from the class name using a lookup table
+- The `spellKnownPrepared` fix is the most mechanically important -- without it, Rangers get told they know 22 spells at level 20 (Bard count) instead of 11
 

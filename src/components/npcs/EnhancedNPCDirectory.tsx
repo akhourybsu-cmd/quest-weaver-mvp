@@ -375,10 +375,20 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                 NPC Directory
               </CardTitle>
               {isDM && (
-                <Button size="sm" onClick={handleNewNPC}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New NPC
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={bulk.selectionMode ? "secondary" : "outline"}
+                    onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    {bulk.selectionMode ? "Exit Bulk Edit" : "Bulk Edit"}
+                  </Button>
+                  <Button size="sm" onClick={handleNewNPC}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New NPC
+                  </Button>
+                </div>
               )}
             </div>
 

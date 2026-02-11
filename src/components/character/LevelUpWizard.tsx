@@ -185,6 +185,7 @@ export const LevelUpWizard = ({
   const [magicalSecretsSpells, setMagicalSecretsSpells] = useState<string[]>([]);
   const [favoredEnemyChoice, setFavoredEnemyChoice] = useState<string | null>(null);
   const [favoredTerrainChoice, setFavoredTerrainChoice] = useState<string | null>(null);
+  const [selectedSubclassId, setSelectedSubclassId] = useState<string | null>(null);
   
   // Existing character data
   const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);

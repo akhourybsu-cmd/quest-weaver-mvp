@@ -23,7 +23,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Extracted sub-modules
-import { PREDEFINED_TAGS, NOTE_TEMPLATES, parseWikilinks, debounce } from "./editor/constants";
+import { PREDEFINED_TAGS, NOTE_TEMPLATES, parseWikilinks } from "./editor/constants";
 import type { NoteLink, NoteRevision, NoteEditorProps } from "./editor/types";
 import { getCaretCoordinates } from "./editor/getCaretCoordinates";
 import { WikilinkText } from "./editor/WikilinkText";

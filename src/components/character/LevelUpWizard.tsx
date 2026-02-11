@@ -685,6 +685,7 @@ export const LevelUpWizard = ({
             magical_secrets: magicalSecretsSpells,
             favored_enemy: favoredEnemyChoice,
             favored_terrain: favoredTerrainChoice,
+            subclass_id: selectedSubclassId,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });

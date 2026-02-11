@@ -286,6 +286,15 @@ export const LevelUpWizard = ({
     return choice || null;
   }, [featureChoices]);
 
+  // Subclass needed?
+  const needsSubclass = useMemo(() => {
+    if (!classRules || !character) return false;
+    // If character already has a subclass, no need
+    if (character.subclass_id) return false;
+    // If this level is the subclass level for the class
+    return newLevel === classRules.subclassLevel;
+  }, [classRules, character, newLevel]);
+
   // Favored Terrain (Ranger)
   const favoredTerrainToChoose = useMemo(() => {
     const choice = featureChoices.find(c => c.type === "favored_terrain");

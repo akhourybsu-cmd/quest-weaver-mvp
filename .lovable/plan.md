@@ -1,39 +1,75 @@
-# Fix Notes Auto-Save -- Reduce Frequency to 45 Seconds
 
-## Problem
 
-The current auto-save triggers a debounced save after only **1.5 seconds** of inactivity, and the debounce function is recreated on every keystroke (because `content` is in its dependency array). This causes:
+# Bulk Visibility Toggles + Alignment Display Fix
 
-- Saves firing almost continuously while typing
-- Version conflict errors from rapid consecutive saves
-- Unnecessary database load
+## Alignment Answer
 
-## Solution
+**NPC alignment is currently NOT shown to players** (or anyone in the detail view). The data is fetched from the database in the player NPC directory, but the UI never renders it. The NPCDetailDrawer also has no alignment display. So right now it's invisible to everyone except in the NPC editor form.
 
-Replace the current debounce-on-every-change approach with a simple **45-second interval timer** that only saves when changes exist.
+**Recommendation**: Show alignment in the NPC detail drawer for DMs only by default. Alignment is typically metagame knowledge in D&D -- players usually learn alignment through roleplay, not as a stat. We can add it to the DM section of the detail drawer.
 
-## Changes
+---
 
-**File: `src/components/notes/NoteEditor.tsx**`
+## Bulk Visibility Toggle Feature
 
-1. **Remove** the `debouncedSave` callback and its `useEffect` trigger (lines ~349-358)
-2. **Add** a `hasUnsavedChanges` ref that gets set to `true` whenever `title`, `content`, `visibility`, `isPinned`, or `tags` change
-3. **Add** a `useEffect` with a `setInterval` at 45 seconds that:
-  - Checks if `autoSaveEnabled && hasUnsavedChanges.current && title.trim()`
-  - If so, calls `performSave(true)` and resets the flag
-  - Clears the interval on unmount or when auto-save is toggled off
-4. **Remove** `debounce` import from `../editor/constants` if no longer needed elsewhere in this file
+### What Changes
 
-This approach means:
+Add a "selection mode" to 4 asset directories (NPCs, Quests, Locations, Factions) that lets DMs:
+1. Click a "Bulk Edit" button to enter selection mode
+2. Check/uncheck multiple items via checkboxes on each card
+3. Use a floating action bar to "Reveal to Players" or "Hide from Players" in one click
+4. Exit selection mode when done
 
-- No save storms during active typing
-- A predictable 45-second cadence
-- Still saves on manual Ctrl+S / button click immediately
-- Revision snapshots still created every 5th auto-save
+### How It Works
 
-## Technical Detail
+When the DM clicks "Bulk Edit":
+- Each NPC/Quest/Location/Faction card gains a checkbox in the top-left corner
+- A "Select All" / "Deselect All" option appears in the toolbar
+- A floating bottom bar shows: "[X] selected | Reveal to Players | Hide from Players | Cancel"
+- Clicking Reveal/Hide runs a single batched database update on all selected IDs
+- A toast confirms "5 NPCs revealed to players" or similar
 
+### Files to Create/Modify
+
+| File | Change |
+|------|--------|
+| `src/components/campaign/BulkVisibilityBar.tsx` | **New** -- Reusable floating action bar component with Reveal/Hide/Cancel buttons |
+| `src/components/npcs/EnhancedNPCDirectory.tsx` | Add selection mode state, checkboxes on cards, integrate BulkVisibilityBar |
+| `src/components/npcs/NPCDetailDrawer.tsx` | Add alignment display in Overview tab (DM-only section) |
+| `src/components/campaign/tabs/QuestsTabUpdated.tsx` | Add selection mode + bulk visibility for quests |
+| `src/components/campaign/tabs/LocationsTab.tsx` | Add selection mode + bulk visibility for locations (uses `discovered` field) |
+| `src/components/factions/FactionDirectory.tsx` | Add selection mode + bulk visibility for factions |
+
+### Design Details
+
+**Floating Action Bar** (appears at bottom of screen when items are selected):
 ```text
-Before:  keystroke -> 1.5s debounce -> save (fires constantly)
-After:   45s interval tick -> check dirty flag -> save if needed
++------------------------------------------------------------------+
+|  [checkbox] 5 selected    [Eye] Reveal to Players   [EyeOff] Hide from Players   [X] Cancel  |
++------------------------------------------------------------------+
 ```
+- Styled with brass accents and `font-cinzel` to match the app
+- Fixed to bottom of the content area, not the viewport
+- Semi-transparent dark background with backdrop blur
+
+**Card Checkboxes in Selection Mode**:
+- Checkbox appears in the top-left corner of each card with a subtle transition
+- Already-visible items show a small Eye icon badge so DMs can see current state at a glance
+- Cards are still clickable for detail view (checkbox area is separate)
+
+**Alignment in NPC Detail Drawer**:
+- Added to the "Quick Facts" card in the Overview tab
+- Only shown when alignment has a value
+- Displayed as a Badge with a subtle icon, visible to DMs only (not shown in player view)
+
+### Technical Approach
+
+The bulk update uses a single Supabase query with `.in('id', selectedIds)`:
+```typescript
+await supabase
+  .from("npcs")
+  .update({ player_visible: true })
+  .in("id", selectedIds);
+```
+This is efficient -- one DB call regardless of how many items are selected.
+

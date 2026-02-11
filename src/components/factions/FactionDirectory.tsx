@@ -60,6 +60,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
   const { toast } = useToast();
+  const bulk = useBulkSelection();
 
   useEffect(() => {
     loadFactions();

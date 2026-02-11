@@ -104,7 +104,24 @@ const Community = () => {
   // Reply form
   const [replyContent, setReplyContent] = useState("");
 
-  useEffect(() => {
+  // Author profiles cache
+  const [authorProfiles, setAuthorProfiles] = useState<Record<string, AuthorProfile>>({});
+
+  const fetchAuthorProfiles = async (authorIds: string[]) => {
+    const uniqueIds = [...new Set(authorIds)].filter(id => !authorProfiles[id]);
+    if (uniqueIds.length === 0) return;
+    const { data } = await supabase
+      .from('players')
+      .select('user_id, name, avatar_url, color')
+      .in('user_id', uniqueIds);
+    if (data) {
+      const profileMap: Record<string, AuthorProfile> = {};
+      data.forEach(p => {
+        profileMap[p.user_id] = { name: p.name, avatar_url: p.avatar_url || null, color: p.color || '#8B7355' };
+      });
+      setAuthorProfiles(prev => ({ ...prev, ...profileMap }));
+    }
+  };
     checkUser();
     loadCategories();
   }, []);

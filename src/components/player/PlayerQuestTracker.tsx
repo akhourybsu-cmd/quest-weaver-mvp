@@ -112,8 +112,8 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                   <Target className="w-4 h-4" />
                   Active Quests
                 </h4>
-                {activeQuests.map((quest) => (
-                  <div key={quest.id} className="p-3 border rounded-lg space-y-2">
+                {activeQuests.map((quest, index) => (
+                  <div key={quest.id} className="p-3 border rounded-lg space-y-2 card-glow opacity-0 animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -133,8 +133,8 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                       <p className="text-sm text-muted-foreground line-clamp-2">{quest.description}</p>
                     )}
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {quest.locations?.[0] && (
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{quest.locations[0]}</span>
+                      {(quest.location?.name || quest.locations?.[0]) && (
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{quest.location?.name || quest.locations[0]}</span>
                       )}
                       {quest.reward_xp > 0 && (
                         <span className="flex items-center gap-1"><Award className="w-3 h-3" />{quest.reward_xp} XP</span>

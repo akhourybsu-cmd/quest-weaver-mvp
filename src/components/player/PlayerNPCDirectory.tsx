@@ -142,10 +142,11 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
           ) : (
             <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="space-y-2">
-                {filteredNPCs.map((npc) => (
+                {filteredNPCs.map((npc, index) => (
                   <Card
                     key={npc.id}
-                    className="cursor-pointer hover:shadow-md hover:border-brand-brass/70 transition-all border-2 border-border/50"
+                    className="cursor-pointer hover:shadow-md hover:border-brand-brass/70 transition-all border-2 border-border/50 card-glow opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
                     onClick={() => handleViewNPC(npc)}
                   >
                     <CardContent className="flex items-center gap-4 p-4">

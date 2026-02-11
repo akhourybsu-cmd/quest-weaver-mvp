@@ -241,7 +241,7 @@ export function spellNeedsFor(
     return {};
   }
   
-  const { known, prepared } = spellKnownPrepared(cls, level);
+  const { known, prepared } = spellKnownPrepared(cls, level, classIdentifier);
   
   return {
     spells: {

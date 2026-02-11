@@ -210,10 +210,11 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
           ) : (
             <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredFactions.map((faction) => (
+                {filteredFactions.map((faction, index) => (
                   <Card
                     key={faction.id}
-                    className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20 relative overflow-hidden"
+                    className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20 relative overflow-hidden card-glow opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
                     onClick={() => handleViewFaction(faction)}
                   >
                     {faction.banner_url && (

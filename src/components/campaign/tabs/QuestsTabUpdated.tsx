@@ -3,12 +3,13 @@ import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Scroll, Users, MapPin, Plus, Loader2, ScrollText,
-  Award, Coins, Target, Sword, User
+  Award, Coins, Target, Sword, User, CheckSquare
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,8 @@ import QuestDialog from "@/components/quests/QuestDialog";
 import { QuestDetailDialog } from "@/components/quests/QuestDetailDialog";
 import { DemoCampaign } from "@/data/demoSeeds";
 import { adaptDemoQuests } from "@/lib/demoAdapters";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 interface Quest {
   id: string;
@@ -70,7 +73,10 @@ const getDifficultyColor = (difficulty?: string) => {
 };
 
 // Memoized Quest Card Component
-const QuestCard = memo(({ quest, onClick }: { quest: Quest; onClick: (quest: Quest) => void }) => {
+const QuestCard = memo(({ quest, onClick, selectionMode, isSelected, onToggleSelect }: { 
+  quest: Quest; onClick: (quest: Quest) => void;
+  selectionMode?: boolean; isSelected?: boolean; onToggleSelect?: (id: string) => void;
+}) => {
   const objectives = quest.steps || [];
   const completedObjectives = objectives.filter((o: any) => o.is_completed || o.isCompleted).length;
   const progress = objectives.length > 0 ? (completedObjectives / objectives.length) * 100 : 0;
@@ -78,10 +84,15 @@ const QuestCard = memo(({ quest, onClick }: { quest: Quest; onClick: (quest: Que
   return (
     <Card
       className="hover:shadow-lg transition-all bg-card border-brass/20 cursor-pointer"
-      onClick={() => onClick(quest)}
+      onClick={() => selectionMode ? onToggleSelect?.(quest.id) : onClick(quest)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
+          {selectionMode && (
+            <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+              <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(quest.id)} />
+            </div>
+          )}
           <div className="flex-1">
             <CardTitle className="text-base font-cinzel">{quest.title}</CardTitle>
             <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -151,6 +162,7 @@ QuestCard.displayName = "QuestCard";
 
 export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }: QuestsTabProps) {
   const { toast } = useToast();
+  const bulk = useBulkSelection();
   const [view, setView] = useState<"board" | "list">("board");
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -382,13 +394,23 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         </Tabs>
 
         {!demoMode && (
-          <Button onClick={() => {
-            setQuestToEdit(undefined);
-            setDialogOpen(true);
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Quest
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={bulk.selectionMode ? "secondary" : "outline"}
+              onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              {bulk.selectionMode ? "Exit Bulk Edit" : "Bulk Edit"}
+            </Button>
+            <Button onClick={() => {
+              setQuestToEdit(undefined);
+              setDialogOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Quest
+            </Button>
+          </div>
         )}
       </div>
 
@@ -405,7 +427,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
                   questsByStatus.not_started.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
                   ))
                 )}
               </div>
@@ -423,7 +445,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
                   questsByStatus.in_progress.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
                   ))
                 )}
               </div>
@@ -441,7 +463,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
                   questsByStatus.completed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
                   ))
                 )}
               </div>
@@ -459,7 +481,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
                   <p className="text-xs text-muted-foreground text-center py-8 italic">No quests here yet</p>
                 ) : (
                   questsByStatus.failed.map((quest) => (
-                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+                    <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
                   ))
                 )}
               </div>
@@ -472,7 +494,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         <ScrollArea className="h-[calc(100vh-20rem)]">
           <div className="space-y-3">
             {quests.map((quest) => (
-              <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+              <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
             ))}
           </div>
         </ScrollArea>
@@ -510,6 +532,20 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={quests.length}
+          onSelectAll={() => bulk.selectAll(quests.map((q) => q.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="quests"
+          visibilityColumn="player_visible"
+          entityLabel="quests"
+          onUpdated={fetchQuests}
+        />
+      )}
     </div>
   );
 }

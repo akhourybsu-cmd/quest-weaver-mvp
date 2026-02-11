@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,13 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye } from "lucide-react";
+import { MapPin, Plus, Search, Map, Grid3x3, List, Trash2, Eye, CheckSquare } from "lucide-react";
 import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { resilientChannel } from "@/lib/realtime";
 import { toast } from "sonner";
 import LocationDialog from "@/components/locations/LocationDialog";
 import { LocationTreeView } from "@/components/locations/LocationTreeView";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 import { DemoCampaign } from "@/data/demoSeeds";
 import { adaptDemoLocations } from "@/lib/demoAdapters";
@@ -63,7 +66,10 @@ const LocationCard = memo(({
   childCount, 
   onEdit, 
   onAddSub, 
-  onDelete 
+  onDelete,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: { 
   location: Location; 
   parentName: string | null;
@@ -71,10 +77,13 @@ const LocationCard = memo(({
   onEdit: (location: Location) => void;
   onAddSub: (parentId: string) => void;
   onDelete: (location: Location) => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) => (
   <Card
     className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden"
-    onClick={() => onEdit(location)}
+    onClick={() => selectionMode ? onToggleSelect?.(location.id) : onEdit(location)}
   >
     {/* Background Image with Overlay */}
     {location.image_url && (
@@ -90,6 +99,11 @@ const LocationCard = memo(({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {selectionMode && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(location.id)} />
+              </div>
+            )}
             <MapPin className="w-4 h-4 text-arcanePurple shrink-0" />
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base font-cinzel truncate drop-shadow-md">{location.name}</CardTitle>
@@ -165,6 +179,7 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
+  const bulk = useBulkSelection();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState<Location | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "tree">("grid");
@@ -311,6 +326,14 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
             />
           </div>
           <Button
+            variant={bulk.selectionMode ? "secondary" : "outline"}
+            size="sm"
+            onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+          >
+            <CheckSquare className="w-4 h-4 mr-2" />
+            {bulk.selectionMode ? "Exit" : "Bulk Edit"}
+          </Button>
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setViewMode(viewMode === "grid" ? "tree" : "grid")}
@@ -369,6 +392,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                       onEdit={handleEditLocation}
                       onAddSub={handleAddSubLocation}
                       onDelete={handleDeleteLocation}
+                      selectionMode={bulk.selectionMode}
+                      isSelected={bulk.selectedIds.includes(location.id)}
+                      onToggleSelect={bulk.toggleId}
                     />
                   ))}
                 </div>
@@ -397,6 +423,9 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
                   onEdit={handleEditLocation}
                   onAddSub={handleAddSubLocation}
                   onDelete={handleDeleteLocation}
+                  selectionMode={bulk.selectionMode}
+                  isSelected={bulk.selectedIds.includes(location.id)}
+                  onToggleSelect={bulk.toggleId}
                 />
               ))}
             </div>
@@ -429,6 +458,20 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
         parentLocationId={parentLocationId}
         onSaved={fetchLocations}
       />
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={displayLocations.length}
+          onSelectAll={() => bulk.selectAll(displayLocations.map((l) => l.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="locations"
+          visibilityColumn="discovered"
+          entityLabel="locations"
+          onUpdated={fetchLocations}
+        />
+      )}
     </>
   );
 }

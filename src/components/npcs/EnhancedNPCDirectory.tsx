@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Users, Grid, List, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Users, Grid, List, Eye, EyeOff, CheckSquare } from "lucide-react";
 import EnhancedNPCEditor from "./EnhancedNPCEditor";
 import NPCDetailDrawer from "./NPCDetailDrawer";
 import NPCFilterPanel, { NPCFilters } from "./NPCFilterPanel";
 import NPCQuickActions from "./NPCQuickActions";
 import { useToast } from "@/hooks/use-toast";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 interface NPC {
   id: string;
@@ -57,21 +60,35 @@ const NPCCardItem = memo(({
   isDM, 
   campaignId, 
   onView, 
-  onUpdate 
+  onUpdate,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: { 
   npc: NPC; 
   isDM: boolean; 
   campaignId: string; 
   onView: (npc: NPC) => void;
   onUpdate: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) => (
   <Card
     className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
-    onClick={() => onView(npc)}
+    onClick={() => selectionMode ? onToggleSelect?.(npc.id) : onView(npc)}
   >
     <CardContent className="p-4">
       <div className="flex flex-col items-center text-center relative">
-        <div className={`absolute top-0 left-0 w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
+        {selectionMode && (
+          <div className="absolute top-0 left-0 z-10" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect?.(npc.id)}
+            />
+          </div>
+        )}
+        <div className={`absolute top-0 ${selectionMode ? 'left-5' : 'left-0'} w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
         {isDM && npc.secrets && (
           <div className="absolute top-0 right-0" title="Has GM secrets">
             <EyeOff className="w-3 h-3 text-muted-foreground" />
@@ -100,7 +117,7 @@ const NPCCardItem = memo(({
             )}
           </div>
         )}
-        {isDM && (
+        {isDM && !selectionMode && (
           <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <NPCQuickActions
               npcId={npc.id}
@@ -125,19 +142,33 @@ const NPCListItem = memo(({
   isDM, 
   campaignId, 
   onView, 
-  onUpdate 
+  onUpdate,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: { 
   npc: NPC; 
   isDM: boolean; 
   campaignId: string; 
   onView: (npc: NPC) => void;
   onUpdate: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) => (
   <Card
     className="group cursor-pointer hover:shadow-md hover:border-brand-brass/70 transition-all duration-200 border-2 border-border/50"
-    onClick={() => onView(npc)}
+    onClick={() => selectionMode ? onToggleSelect?.(npc.id) : onView(npc)}
   >
     <CardContent className="flex items-center gap-4 p-4">
+      {selectionMode && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect?.(npc.id)}
+          />
+        </div>
+      )}
       <div className={`w-2 h-2 rounded-full ${getStatusColor(npc.status)}`} />
       <div className="relative">
         <div className="absolute inset-0 rounded-full border-2 border-brand-brass/70 group-hover:border-brand-brass transition-colors" />
@@ -165,7 +196,7 @@ const NPCListItem = memo(({
           <EyeOff className="w-4 h-4 text-muted-foreground" />
         </div>
       )}
-      {isDM && (
+      {isDM && !selectionMode && (
         <NPCQuickActions
           npcId={npc.id}
           npcName={npc.name}
@@ -201,6 +232,7 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
     showOnlyPinned: false,
   });
   const { toast } = useToast();
+  const bulk = useBulkSelection();
 
   useEffect(() => {
     localStorage.setItem("npc-view-mode", viewMode);
@@ -343,10 +375,20 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                 NPC Directory
               </CardTitle>
               {isDM && (
-                <Button size="sm" onClick={handleNewNPC}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New NPC
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={bulk.selectionMode ? "secondary" : "outline"}
+                    onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    {bulk.selectionMode ? "Exit Bulk Edit" : "Bulk Edit"}
+                  </Button>
+                  <Button size="sm" onClick={handleNewNPC}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New NPC
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -470,13 +512,13 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {pinnedNPCs.map((npc) => (
-                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
                             ))}
                           </div>
                         ) : (
                           <div className="space-y-2">
                             {pinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
                             ))}
                           </div>
                         )}
@@ -492,13 +534,13 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
                         {viewMode === "grid" ? (
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {unpinnedNPCs.map((npc) => (
-                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                              <NPCCardItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
                             ))}
                           </div>
                         ) : (
                           <div className="space-y-2">
                             {unpinnedNPCs.map((npc) => (
-                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} />
+                              <NPCListItem key={npc.id} npc={npc} isDM={isDM} campaignId={campaignId} onView={handleViewNPC} onUpdate={loadNPCs} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(npc.id)} onToggleSelect={bulk.toggleId} />
                             ))}
                           </div>
                         )}
@@ -532,6 +574,20 @@ const EnhancedNPCDirectory = ({ campaignId, isDM }: EnhancedNPCDirectoryProps) =
             setDetailOpen(false);
             handleEditNPC(selectedNPC);
           }}
+        />
+      )}
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={sortedNPCs.length}
+          onSelectAll={() => bulk.selectAll(sortedNPCs.map((n) => n.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="npcs"
+          visibilityColumn="player_visible"
+          entityLabel="NPCs"
+          onUpdated={loadNPCs}
         />
       )}
     </div>

@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown, Book } from "lucide-react";
+import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown, Book, CheckSquare } from "lucide-react";
 import FactionEditor from "./FactionEditor";
 import ReputationAdjuster from "./ReputationAdjuster";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 interface Faction {
   id: string;
@@ -57,6 +60,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
   const { toast } = useToast();
+  const bulk = useBulkSelection();
 
   useEffect(() => {
     loadFactions();
@@ -196,10 +200,20 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
             <h2 className="text-xl font-cinzel text-brass">Factions ({factions.length})</h2>
           </div>
           {isDM && (
-            <Button size="sm" onClick={handleNewFaction}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Faction
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={bulk.selectionMode ? "secondary" : "outline"}
+                onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+              >
+                <CheckSquare className="w-4 h-4 mr-2" />
+                {bulk.selectionMode ? "Exit" : "Bulk Edit"}
+              </Button>
+              <Button size="sm" onClick={handleNewFaction}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Faction
+              </Button>
+            </div>
           )}
         </div>
 
@@ -237,9 +251,14 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
               return (
                 <Card
                   key={faction.id}
-                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden"
-                  onClick={() => handleViewFaction(faction)}
+                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative"
+                  onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
                 >
+                  {bulk.selectionMode && (
+                    <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={bulk.selectedIds.includes(faction.id)} onCheckedChange={() => bulk.toggleId(faction.id)} />
+                    </div>
+                  )}
                   {/* Banner Image */}
                   {faction.banner_url && (
                     <div className="relative w-full h-24 overflow-hidden">
@@ -471,6 +490,20 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
           faction={selectedFaction}
           currentReputation={getReputation(selectedFaction.id)}
           onSaved={loadReputations}
+        />
+      )}
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={filteredFactions.length}
+          onSelectAll={() => bulk.selectAll(filteredFactions.map((f) => f.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="factions"
+          visibilityColumn="player_visible"
+          entityLabel="factions"
+          onUpdated={loadFactions}
         />
       )}
     </>

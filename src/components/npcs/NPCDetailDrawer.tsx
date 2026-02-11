@@ -257,6 +257,14 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
                       </span>
                     </div>
                   )}
+                  {isDM && (npc as any).alignment && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs border-brass/30">
+                        {(npc as any).alignment}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">(DM only)</span>
+                    </div>
+                  )}
                   {npc.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {npc.tags.map((tag) => (

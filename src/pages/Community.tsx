@@ -515,10 +515,17 @@ const Community = () => {
             
             <h1 className="text-2xl font-cinzel font-bold mb-4">{currentTopic.title}</h1>
             
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <User className="w-4 h-4" />
+            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+              <Avatar className="w-8 h-8 border border-brass/20">
+                <AvatarImage src={authorProfiles[currentTopic.author_id]?.avatar_url || undefined} />
+                <AvatarFallback style={{ backgroundColor: authorProfiles[currentTopic.author_id]?.color || '#8B7355' }} className="text-xs text-white">
+                  {(authorProfiles[currentTopic.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-foreground">{authorProfiles[currentTopic.author_id]?.name || 'Anonymous'}</span>
+              <span>·</span>
               <span>Posted {formatDistanceToNow(new Date(currentTopic.created_at), { addSuffix: true })}</span>
-              <span>•</span>
+              <span>·</span>
               <Eye className="w-4 h-4" />
               <span>{currentTopic.view_count} views</span>
             </div>

@@ -494,7 +494,7 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         <ScrollArea className="h-[calc(100vh-20rem)]">
           <div className="space-y-3">
             {quests.map((quest) => (
-              <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} />
+              <QuestCard key={quest.id} quest={quest} onClick={handleQuestClick} selectionMode={bulk.selectionMode} isSelected={bulk.selectedIds.includes(quest.id)} onToggleSelect={bulk.toggleId} />
             ))}
           </div>
         </ScrollArea>

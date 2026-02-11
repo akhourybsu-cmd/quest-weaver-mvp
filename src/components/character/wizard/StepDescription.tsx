@@ -55,7 +55,7 @@ const StepDescription = () => {
       </div>
 
       {/* Portrait Section */}
-      <Card>
+      <Card className="fantasy-border-ornaments">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center gap-4">
             <Label className="text-base font-semibold">Character Portrait</Label>

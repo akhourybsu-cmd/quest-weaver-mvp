@@ -87,9 +87,9 @@ const StepBackground = () => {
       </div>
 
       {selectedBackground && (
-        <Card>
+        <Card className="fantasy-border-ornaments animate-fade-in">
           <CardHeader>
-            <CardTitle>{selectedBackground.name}</CardTitle>
+            <CardTitle className="font-cinzel text-brass">{selectedBackground.name}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {skills.length > 0 && (

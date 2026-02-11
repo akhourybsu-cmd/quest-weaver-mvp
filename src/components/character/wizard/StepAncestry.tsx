@@ -123,7 +123,7 @@ const StepAncestry = () => {
       {selectedAncestry && (
         <Card className="fantasy-border-ornaments animate-fade-in">
           <CardHeader>
-            <CardTitle>{selectedAncestry.name}</CardTitle>
+            <CardTitle className="font-cinzel text-brass">{selectedAncestry.name}</CardTitle>
             <CardDescription>
               Size: {selectedAncestry.size} • Speed: {selectedAncestry.speed} ft.
             </CardDescription>

@@ -154,9 +154,9 @@ const StepAbilities = () => {
         </TabsContent>
       </Tabs>
 
-      <Card className="bg-muted/50">
+      <Card className="bg-muted/50 fantasy-border-ornaments">
         <CardContent className="pt-6">
-          <h4 className="font-medium mb-3">Your Modifiers</h4>
+          <h4 className="font-cinzel font-medium mb-3 text-brass">Your Modifiers</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
             {ABILITIES.map((ability) => {
               const score = draft.abilityScores[ability.key];

@@ -173,9 +173,9 @@ const StepBasics = () => {
       </div>
 
       {selectedClass && (
-        <Card>
+        <Card className="fantasy-border-ornaments">
           <CardHeader>
-            <CardTitle className="text-base">{selectedClass.name} Details</CardTitle>
+            <CardTitle className="text-base font-cinzel text-brass">{selectedClass.name} Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">

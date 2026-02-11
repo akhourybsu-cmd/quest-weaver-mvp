@@ -15,6 +15,7 @@ import {
 import { LevelUpWizard } from "@/components/character/LevelUpWizard";
 import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
 import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
+import { DeathSavingThrows } from "./DeathSavingThrows";
 
 // Type definitions
 interface AncestryTrait {

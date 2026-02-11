@@ -209,6 +209,8 @@ export const LevelUpWizard = ({
   const [favoredEnemyChoice, setFavoredEnemyChoice] = useState<string | null>(null);
   const [favoredTerrainChoice, setFavoredTerrainChoice] = useState<string | null>(null);
   const [selectedSubclassId, setSelectedSubclassId] = useState<string | null>(null);
+  const [mysticArcanumSpellId, setMysticArcanumSpellId] = useState<string | null>(null);
+  const [existingArcanumSpellIds, setExistingArcanumSpellIds] = useState<string[]>([]);
   
   // Existing character data
   const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);

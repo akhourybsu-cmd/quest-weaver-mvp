@@ -122,6 +122,8 @@ const Community = () => {
       setAuthorProfiles(prev => ({ ...prev, ...profileMap }));
     }
   };
+
+  useEffect(() => {
     checkUser();
     loadCategories();
   }, []);

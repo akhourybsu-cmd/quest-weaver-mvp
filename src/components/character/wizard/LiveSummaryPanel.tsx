@@ -60,26 +60,27 @@ const LiveSummaryPanel = () => {
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4">
       <div>
-        <h3 className="font-bold text-lg mb-1">Character Summary</h3>
+        <h3 className="font-cinzel font-bold text-lg mb-1 text-brass tracking-wide">Character Summary</h3>
+        <div className="h-px bg-gradient-to-r from-brass/50 via-brass/20 to-transparent mb-1" />
         <p className="text-xs text-muted-foreground">
           Updates as you make selections
         </p>
       </div>
 
       {/* Progress */}
-      <Card>
+      <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '0ms' }}>
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progress</span>
+            <span className="text-sm font-cinzel font-medium text-brass">Progress</span>
             <span className="text-sm text-muted-foreground">{completionPercent}%</span>
           </div>
-          <Progress value={completionPercent} className="h-2" />
+          <Progress value={completionPercent} className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass" />
           <div className="flex flex-wrap gap-1 mt-2">
             {completionSteps.map((step, idx) => (
               <Badge 
                 key={idx} 
                 variant={step.done ? "default" : "outline"} 
-                className="text-xs"
+                className={`text-xs ${step.done ? 'bg-brass/80 text-brass-foreground hover:bg-brass/70' : 'border-brass/30'}`}
               >
                 {step.name}
               </Badge>
@@ -89,9 +90,9 @@ const LiveSummaryPanel = () => {
       </Card>
 
       {/* Character Identity */}
-      <Card>
+      <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '50ms' }}>
         <CardHeader className="pb-2 pt-3">
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardTitle className="text-sm font-cinzel flex items-center gap-2 text-brass">
             <User className="h-4 w-4" />
             Identity
           </CardTitle>
@@ -125,22 +126,22 @@ const LiveSummaryPanel = () => {
       </Card>
 
       {/* Combat Stats */}
-      <Card>
+      <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '100ms' }}>
         <CardHeader className="pb-2 pt-3">
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardTitle className="text-sm font-cinzel flex items-center gap-2 text-brass">
             <Zap className="h-4 w-4" />
             Combat
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-3">
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col items-center p-2 rounded bg-destructive/10">
+            <div className="flex flex-col items-center p-2 rounded bg-destructive/10 border border-destructive/20">
               <Heart className="h-4 w-4 text-destructive mb-1" />
               <span className="text-lg font-bold">{maxHP}</span>
               <span className="text-xs text-muted-foreground">HP</span>
             </div>
-            <div className="flex flex-col items-center p-2 rounded bg-primary/10">
-              <Shield className="h-4 w-4 text-primary mb-1" />
+            <div className="flex flex-col items-center p-2 rounded bg-brass/10 border border-brass/20">
+              <Shield className="h-4 w-4 text-brass mb-1" />
               <span className="text-lg font-bold">{baseAC}</span>
               <span className="text-xs text-muted-foreground">AC</span>
             </div>
@@ -159,16 +160,16 @@ const LiveSummaryPanel = () => {
       </Card>
 
       {/* Ability Modifiers */}
-      <Card>
+      <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '150ms' }}>
         <CardHeader className="pb-2 pt-3">
-          <CardTitle className="text-sm">Ability Modifiers</CardTitle>
+          <CardTitle className="text-sm font-cinzel text-brass">Ability Modifiers</CardTitle>
         </CardHeader>
         <CardContent className="pb-3">
           <div className="grid grid-cols-3 gap-1">
             {Object.entries(draft.abilityScores).map(([ability, score]) => {
               const modifier = calculateModifier(score);
               return (
-                <div key={ability} className="flex flex-col items-center p-1 rounded bg-muted/30">
+                <div key={ability} className="flex flex-col items-center p-1 rounded bg-muted/30 border border-brass/10">
                   <span className="text-xs uppercase text-muted-foreground">{ability}</span>
                   <span className="font-mono font-bold text-sm">
                     {modifier >= 0 ? '+' : ''}{modifier}
@@ -182,19 +183,19 @@ const LiveSummaryPanel = () => {
 
       {/* Skills */}
       {draft.choices.skills.length > 0 && (
-        <Card>
+        <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '200ms' }}>
           <CardHeader className="pb-2 pt-3">
-            <CardTitle className="text-sm">Skills ({draft.choices.skills.length})</CardTitle>
+            <CardTitle className="text-sm font-cinzel text-brass">Skills ({draft.choices.skills.length})</CardTitle>
           </CardHeader>
           <CardContent className="pb-3">
             <div className="flex flex-wrap gap-1">
               {draft.choices.skills.slice(0, 6).map((skill, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
+                <Badge key={idx} variant="secondary" className="text-xs" style={{ animationDelay: `${idx * 30}ms` }}>
                   {skill}
                 </Badge>
               ))}
               {draft.choices.skills.length > 6 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs border-brass/30">
                   +{draft.choices.skills.length - 6}
                 </Badge>
               )}
@@ -205,9 +206,9 @@ const LiveSummaryPanel = () => {
 
       {/* Spells */}
       {draft.choices.spellsKnown.length > 0 && (
-        <Card>
+        <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '250ms' }}>
           <CardHeader className="pb-2 pt-3">
-            <CardTitle className="text-sm">Spells</CardTitle>
+            <CardTitle className="text-sm font-cinzel text-brass">Spells</CardTitle>
           </CardHeader>
           <CardContent className="pb-3">
             <p className="text-sm">{draft.choices.spellsKnown.length} spell(s) selected</p>

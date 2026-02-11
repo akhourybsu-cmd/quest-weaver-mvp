@@ -262,18 +262,19 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
         </CardContent>
       </Card>
 
-      <Card className="border-primary/50 bg-primary/5">
+      <Card className="border-brass/50 bg-gradient-to-br from-brass/10 to-brass/5 shadow-[0_0_12px_hsl(var(--brass)/0.3)] animate-pulse-breathe">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <div className="rounded-full bg-primary/20 p-2">
-              <Check className="h-5 w-5 text-primary" />
+            <div className="rounded-full bg-brass/20 p-2">
+              <Sparkles className="h-5 w-5 text-brass" />
             </div>
             <div className="flex-1">
-              <h4 className="font-medium mb-2">Ready to Finalize?</h4>
+              <h4 className="font-cinzel font-medium mb-2 text-brass">Ready to Finalize?</h4>
               <p className="text-sm text-muted-foreground mb-4">
                 This will create your character with all the selected options. You can still edit it later.
               </p>
-              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full">
+              <Button onClick={onFinalize} disabled={loading} size="lg" className="w-full bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground active:scale-95 transition-all">
+                <Sparkles className="mr-2 h-4 w-4" />
                 {loading ? "Creating Character..." : "Finalize Character"}
               </Button>
             </div>

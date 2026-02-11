@@ -786,9 +786,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         {/* Show loading state while seeding SRD data */}
         {isSeeding ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Sparkles className="h-8 w-8 animate-spin text-brass" />
             <div className="text-center">
-              <p className="font-semibold">Preparing Character Creator...</p>
+              <p className="font-cinzel font-semibold text-brass">Preparing Character Creator...</p>
               <p className="text-sm text-muted-foreground">
                 {seedingStatus || "Loading game data for the first time"}
               </p>

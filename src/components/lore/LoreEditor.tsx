@@ -245,7 +245,7 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
       }
 
       if (!isAutosave) {
-        toast.success("Page saved successfully");
+        toast.success("Lore chronicled!");
         onSave();
       }
     } catch (error: any) {

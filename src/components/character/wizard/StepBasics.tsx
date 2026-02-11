@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Sword } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

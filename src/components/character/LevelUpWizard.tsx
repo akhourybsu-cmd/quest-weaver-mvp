@@ -976,6 +976,18 @@ export const LevelUpWizard = ({
         });
       }
 
+      // Save Mystic Arcanum (Warlock levels 11, 13, 15, 17)
+      if (mysticArcanumSpellId) {
+        const arcanumSpellLevel = getMysticArcanumSpellLevel(newLevel);
+        if (arcanumSpellLevel) {
+          await supabase.from("character_mystic_arcanum").insert({
+            character_id: characterId,
+            spell_level: arcanumSpellLevel,
+            spell_id: mysticArcanumSpellId,
+          });
+        }
+      }
+
       // Remove replaced invocations
       if (invocationsToRemove.length > 0) {
         for (const inv of invocationsToRemove) {

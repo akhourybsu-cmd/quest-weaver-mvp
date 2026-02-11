@@ -345,6 +345,9 @@ export const LevelUpWizard = ({
       loadSpells();
       loadCharacterProficiencies();
       loadCharacterFeatureChoices();
+      if (character.class === "Warlock") {
+        loadExistingArcanum();
+      }
     }
   }, [character?.class]);
 

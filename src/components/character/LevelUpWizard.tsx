@@ -1199,6 +1199,8 @@ export const LevelUpWizard = ({
         return expertiseChoices.length === (expertiseToChoose?.count || 0);
       case "magical-secrets":
         return magicalSecretsSpells.length === (magicalSecretsToChoose?.count || 0);
+      case "mystic-arcanum":
+        return mysticArcanumSpellId !== null;
       case "favored-enemy":
         return favoredEnemyChoice !== null;
       case "favored-terrain":

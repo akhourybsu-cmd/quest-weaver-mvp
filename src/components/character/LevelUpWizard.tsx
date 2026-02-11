@@ -24,6 +24,13 @@ import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
+  isThirdCasterSubclass,
+  getThirdCasterCantripGain,
+  getThirdCasterSpellsKnownGain,
+  getThirdCasterMaxSpellLevel,
+} from "@/lib/rules/thirdCasterUtils";
+import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
+import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,
   getSpellsKnownGain,
@@ -164,6 +171,7 @@ export const LevelUpWizard = ({
       setSelectedSubclassId(null);
       setMysticArcanumSpellId(null);
       setExistingArcanumSpellIds([]);
+      setSubclassName(null);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);
@@ -221,38 +229,48 @@ export const LevelUpWizard = ({
   const [currentFavoredEnemies, setCurrentFavoredEnemies] = useState<string[]>([]);
   const [currentFavoredTerrains, setCurrentFavoredTerrains] = useState<string[]>([]);
   
+  // Subclass name (for third-caster & auto-prepared detection)
+  const [subclassName, setSubclassName] = useState<string | null>(null);
+  
   // Features
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
 
   const newLevel = currentLevel + 1;
+  
+  // Detect third-caster subclass
+  const isThirdCaster = isThirdCasterSubclass(subclassName);
   
   // Get class rules
   const classRules = useMemo(() => {
     return character?.class ? getClassRules(character.class) : null;
   }, [character?.class]);
 
-  // Calculate what's needed at this level
+  // Calculate what's needed at this level (with third-caster override)
   const cantripGain = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterCantripGain(currentLevel, newLevel);
     if (!character?.class) return 0;
     return getCantripGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel]);
+  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
 
   const spellsKnownGain = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterSpellsKnownGain(currentLevel, newLevel);
     if (!character?.class) return 0;
     return getSpellsKnownGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel]);
+  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
 
   const isWizard = character?.class === "Wizard";
   const wizardSpellsToAdd = isWizard ? 2 : 0;
 
   const maxSpellLevel = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterMaxSpellLevel(newLevel);
     if (!character?.class) return 0;
     return getMaxSpellLevelForClass(character.class, newLevel);
-  }, [character?.class, newLevel]);
+  }, [character?.class, newLevel, isThirdCaster]);
 
   const canSwapSpell = useMemo(() => {
+    if (isThirdCaster) return true;
     return classRules?.spellcasting.canSwapOnLevelUp || false;
-  }, [classRules]);
+  }, [classRules, isThirdCaster]);
 
   const featureChoices = useMemo(() => {
     if (!character?.class) return [];
@@ -349,7 +367,7 @@ export const LevelUpWizard = ({
         loadExistingArcanum();
       }
     }
-  }, [character?.class]);
+  }, [character?.class, subclassName]);
 
   const loadCharacter = async () => {
     setLoading(true);
@@ -368,6 +386,16 @@ export const LevelUpWizard = ({
       if (error) throw error;
       setCharacter(data);
       setCurrentSpellIds(data.character_spells?.filter((s: any) => s.known).map((s: any) => s.spell_id) || []);
+      
+      // Load subclass name for third-caster & auto-prepared detection
+      if (data.subclass_id) {
+        const { data: subclassData } = await supabase
+          .from("srd_subclasses")
+          .select("name")
+          .eq("id", data.subclass_id)
+          .single();
+        setSubclassName(subclassData?.name || null);
+      }
       
       // Load character classes for multiclass support
       const { data: classesData } = await supabase
@@ -549,10 +577,13 @@ export const LevelUpWizard = ({
     if (!character?.class) return;
 
     try {
+      // Third-casters (Eldritch Knight / Arcane Trickster) use Wizard spell list
+      const spellClass = isThirdCaster ? "Wizard" : character.class;
+      
       const { data: spells } = await supabase
         .from("srd_spells")
         .select("id, name, level, school, concentration, ritual")
-        .contains("classes", [character.class])
+        .contains("classes", [spellClass])
         .order("level")
         .order("name");
 
@@ -1010,12 +1041,76 @@ export const LevelUpWizard = ({
       // Update spell slots
       await updateSpellSlots();
 
+      // Auto-add subclass prepared spells (Domain, Oath, Circle spells)
+      await addAutoPrepairedSubclassSpells();
+
       toast.success(`Leveled up to ${newLevel}!`);
       onComplete();
       onOpenChange(false);
     } catch (error) {
       console.error("Error leveling up:", error);
       toast.error("Failed to level up character");
+    }
+  };
+
+  const addAutoPrepairedSubclassSpells = async () => {
+    // Determine subclass key (e.g. "Cleric:Life Domain")
+    let effectiveName = subclassName;
+    // If subclass was just chosen this level-up, resolve its name
+    if (!effectiveName && selectedSubclassId) {
+      const { data: sc } = await supabase
+        .from("srd_subclasses")
+        .select("name")
+        .eq("id", selectedSubclassId)
+        .single();
+      effectiveName = sc?.name || null;
+    }
+    if (!character?.class || !effectiveName) return;
+
+    const key = `${character.class}:${effectiveName}`;
+    const autoPreparedList = AUTO_PREPARED_BY_SUBCLASS[key];
+    if (!autoPreparedList) return;
+
+    // Collect all spells up to the new level (for newly selected subclass, add all earlier levels too)
+    const allSpellNames: string[] = [];
+    for (const [lvl, names] of Object.entries(autoPreparedList)) {
+      if (parseInt(lvl) <= newLevel) {
+        allSpellNames.push(...names);
+      }
+    }
+
+    if (allSpellNames.length === 0) return;
+
+    // Look up spell IDs by name
+    const { data: spellData } = await supabase
+      .from("srd_spells")
+      .select("id, name")
+      .in("name", allSpellNames);
+
+    if (!spellData || spellData.length === 0) return;
+
+    // Check which spells the character already has
+    const { data: existingSpells } = await supabase
+      .from("character_spells")
+      .select("spell_id")
+      .eq("character_id", characterId)
+      .in("spell_id", spellData.map(s => s.id));
+
+    const existingIds = new Set((existingSpells || []).map(s => s.spell_id));
+
+    const newAutoSpells = spellData
+      .filter(s => !existingIds.has(s.id))
+      .map(s => ({
+        character_id: characterId,
+        spell_id: s.id,
+        known: true,
+        prepared: true,
+        is_always_prepared: true,
+        source: 'subclass',
+      }));
+
+    if (newAutoSpells.length > 0) {
+      await supabase.from("character_spells").insert(newAutoSpells);
     }
   };
 

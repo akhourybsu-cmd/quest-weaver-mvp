@@ -228,6 +228,9 @@ export const LevelUpWizard = ({
   const [currentFavoredEnemies, setCurrentFavoredEnemies] = useState<string[]>([]);
   const [currentFavoredTerrains, setCurrentFavoredTerrains] = useState<string[]>([]);
   
+  // Subclass name (for third-caster & auto-prepared detection)
+  const [subclassName, setSubclassName] = useState<string | null>(null);
+  
   // Features
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
 

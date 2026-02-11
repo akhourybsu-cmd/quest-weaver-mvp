@@ -850,7 +850,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             </div>
 
             {/* Live summary sidebar - hidden on mobile, visible on tablet+ */}
-            <div className="hidden md:block md:w-80 border-l bg-muted/30 flex-shrink-0">
+            <div className="hidden md:block md:w-80 border-l border-brass/20 bg-gradient-to-b from-parchment/5 to-brass/5 flex-shrink-0">
               <LiveSummaryPanel />
             </div>
           </div>

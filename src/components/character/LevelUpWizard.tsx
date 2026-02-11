@@ -1791,6 +1791,13 @@ export const LevelUpWizard = ({
                   </div>
                 )}
 
+                {mysticArcanumSpellId && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Mystic Arcanum ({getMysticArcanumSpellLevel(newLevel)}th Level)</p>
+                    <Badge variant="secondary">Arcanum Spell Selected</Badge>
+                  </div>
+                )}
+
                 {hasASI && asiChoice && (
                   <div>
                     <p className="text-sm font-medium mb-2">{asiChoice === "asi" ? "Ability Increases" : "Feat"}</p>

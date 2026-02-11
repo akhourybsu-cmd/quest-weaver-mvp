@@ -24,6 +24,13 @@ import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
+  isThirdCasterSubclass,
+  getThirdCasterCantripGain,
+  getThirdCasterSpellsKnownGain,
+  getThirdCasterMaxSpellLevel,
+} from "@/lib/rules/thirdCasterUtils";
+import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
+import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,
   getSpellsKnownGain,

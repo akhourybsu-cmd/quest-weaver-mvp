@@ -121,7 +121,7 @@ const StepAncestry = () => {
       </div>
 
       {selectedAncestry && (
-        <Card>
+        <Card className="fantasy-border-ornaments animate-fade-in">
           <CardHeader>
             <CardTitle>{selectedAncestry.name}</CardTitle>
             <CardDescription>

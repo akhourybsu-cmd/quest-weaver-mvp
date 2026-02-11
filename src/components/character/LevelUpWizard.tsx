@@ -982,6 +982,11 @@ export const LevelUpWizard = ({
     
     s.push("hp-roll");
     
+    // Subclass selection (if this is the subclass level and none chosen yet)
+    if (needsSubclass) {
+      s.push("subclass");
+    }
+    
     // Wizard spellbook (always 2 spells per level)
     if (isWizard) {
       s.push("wizard-spellbook");

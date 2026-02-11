@@ -82,7 +82,7 @@ const LocationCard = memo(({
   onToggleSelect?: (id: string) => void;
 }) => (
   <Card
-    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden"
+    className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden card-glow"
     onClick={() => selectionMode ? onToggleSelect?.(location.id) : onEdit(location)}
   >
     {/* Background Image with Overlay */}

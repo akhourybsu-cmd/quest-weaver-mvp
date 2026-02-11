@@ -21,6 +21,7 @@ import { FavoredEnemySelector, FAVORED_ENEMY_TYPES } from "./levelup/FavoredEnem
 import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/FavoredTerrainSelector";
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
 import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
+import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   CLASS_LEVEL_UP_RULES,
@@ -58,6 +59,7 @@ type LevelUpStep =
   | "fighting-style"
   | "expertise"
   | "magical-secrets"
+  | "mystic-arcanum"
   | "favored-enemy"
   | "favored-terrain"
   | "asi-or-feat" 
@@ -160,6 +162,8 @@ export const LevelUpWizard = ({
       setFavoredEnemyChoice(null);
       setFavoredTerrainChoice(null);
       setSelectedSubclassId(null);
+      setMysticArcanumSpellId(null);
+      setExistingArcanumSpellIds([]);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);
@@ -205,6 +209,8 @@ export const LevelUpWizard = ({
   const [favoredEnemyChoice, setFavoredEnemyChoice] = useState<string | null>(null);
   const [favoredTerrainChoice, setFavoredTerrainChoice] = useState<string | null>(null);
   const [selectedSubclassId, setSelectedSubclassId] = useState<string | null>(null);
+  const [mysticArcanumSpellId, setMysticArcanumSpellId] = useState<string | null>(null);
+  const [existingArcanumSpellIds, setExistingArcanumSpellIds] = useState<string[]>([]);
   
   // Existing character data
   const [currentProficientSkills, setCurrentProficientSkills] = useState<string[]>([]);
@@ -314,6 +320,12 @@ export const LevelUpWizard = ({
     return newLevel >= classRules.subclassLevel;
   }, [classRules, character, newLevel]);
 
+  // Warlock Mystic Arcanum (levels 11, 13, 15, 17)
+  const needsMysticArcanum = useMemo(() => {
+    if (character?.class !== "Warlock") return false;
+    return getMysticArcanumSpellLevel(newLevel) !== null;
+  }, [character?.class, newLevel]);
+
   // Favored Terrain (Ranger)
   const favoredTerrainToChoose = useMemo(() => {
     const choice = featureChoices.find(c => c.type === "favored_terrain");
@@ -333,6 +345,9 @@ export const LevelUpWizard = ({
       loadSpells();
       loadCharacterProficiencies();
       loadCharacterFeatureChoices();
+      if (character.class === "Warlock") {
+        loadExistingArcanum();
+      }
     }
   }, [character?.class]);
 
@@ -459,6 +474,18 @@ export const LevelUpWizard = ({
       }
     } catch (error) {
       console.error("Error loading feature choices:", error);
+    }
+  };
+
+  const loadExistingArcanum = async () => {
+    try {
+      const { data } = await supabase
+        .from("character_mystic_arcanum")
+        .select("spell_id")
+        .eq("character_id", characterId);
+      setExistingArcanumSpellIds((data || []).map(d => d.spell_id).filter(Boolean) as string[]);
+    } catch (error) {
+      console.error("Error loading mystic arcanum:", error);
     }
   };
 
@@ -686,6 +713,7 @@ export const LevelUpWizard = ({
             favored_enemy: favoredEnemyChoice,
             favored_terrain: favoredTerrainChoice,
             subclass_id: selectedSubclassId,
+            mystic_arcanum_spell: mysticArcanumSpellId,
           },
           features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
         });
@@ -948,6 +976,18 @@ export const LevelUpWizard = ({
         });
       }
 
+      // Save Mystic Arcanum (Warlock levels 11, 13, 15, 17)
+      if (mysticArcanumSpellId) {
+        const arcanumSpellLevel = getMysticArcanumSpellLevel(newLevel);
+        if (arcanumSpellLevel) {
+          await supabase.from("character_mystic_arcanum").insert({
+            character_id: characterId,
+            spell_level: arcanumSpellLevel,
+            spell_id: mysticArcanumSpellId,
+          });
+        }
+      }
+
       // Remove replaced invocations
       if (invocationsToRemove.length > 0) {
         for (const inv of invocationsToRemove) {
@@ -1126,6 +1166,11 @@ export const LevelUpWizard = ({
       s.push("magical-secrets");
     }
     
+    // Mystic Arcanum (Warlock levels 11, 13, 15, 17)
+    if (needsMysticArcanum) {
+      s.push("mystic-arcanum");
+    }
+    
     // Favored Enemy (Ranger)
     if (favoredEnemyToChoose) {
       s.push("favored-enemy");
@@ -1148,7 +1193,7 @@ export const LevelUpWizard = ({
     
     s.push("review");
     return s;
-  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant, needsSubclass]);
+  }, [characterClasses.length, isWizard, spellsKnownGain, cantripGain, invocationsToGain, invocationReplaceCount, showPactBoon, metamagicToGain, fightingStyleToChoose, expertiseToChoose, magicalSecretsToChoose, needsMysticArcanum, favoredEnemyToChoose, favoredTerrainToChoose, hasASI, featuresToGrant, needsSubclass]);
 
   const currentStepIndex = steps.indexOf(step);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
@@ -1179,6 +1224,8 @@ export const LevelUpWizard = ({
         return expertiseChoices.length === (expertiseToChoose?.count || 0);
       case "magical-secrets":
         return magicalSecretsSpells.length === (magicalSecretsToChoose?.count || 0);
+      case "mystic-arcanum":
+        return mysticArcanumSpellId !== null;
       case "favored-enemy":
         return favoredEnemyChoice !== null;
       case "favored-terrain":
@@ -1473,6 +1520,16 @@ export const LevelUpWizard = ({
             />
           )}
 
+          {/* Mystic Arcanum Step (Warlock levels 11, 13, 15, 17) */}
+          {step === "mystic-arcanum" && (
+            <MysticArcanumStep
+              characterLevel={newLevel}
+              selectedSpellId={mysticArcanumSpellId}
+              onSelect={setMysticArcanumSpellId}
+              existingArcanumSpellIds={existingArcanumSpellIds}
+            />
+          )}
+
           {/* Favored Enemy Step (Ranger) */}
           {step === "favored-enemy" && (
             <FavoredEnemySelector
@@ -1731,6 +1788,13 @@ export const LevelUpWizard = ({
                         return <Badge key={inv} variant="secondary">{invocation?.name || inv}</Badge>;
                       })}
                     </div>
+                  </div>
+                )}
+
+                {mysticArcanumSpellId && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Mystic Arcanum ({getMysticArcanumSpellLevel(newLevel)}th Level)</p>
+                    <Badge variant="secondary">Arcanum Spell Selected</Badge>
                   </div>
                 )}
 

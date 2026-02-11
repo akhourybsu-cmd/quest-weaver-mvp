@@ -438,14 +438,24 @@ const Community = () => {
                   className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border border-border"
                   onClick={() => navigate(`/community/topic/${topic.id}`)}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
+                    {/* Author avatar */}
+                    <Avatar className="w-8 h-8 shrink-0 border border-brass/20">
+                      <AvatarImage src={authorProfiles[topic.author_id]?.avatar_url || undefined} />
+                      <AvatarFallback style={{ backgroundColor: authorProfiles[topic.author_id]?.color || '#8B7355' }} className="text-xs text-white">
+                        {(authorProfiles[topic.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {topic.is_pinned && <Pin className="w-3 h-3 text-brand-arcanePurple" />}
                         {topic.is_locked && <Lock className="w-3 h-3 text-muted-foreground" />}
                         <h3 className="font-medium truncate">{topic.title}</h3>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{topic.content}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        <span className="font-medium text-foreground/70">{authorProfiles[topic.author_id]?.name || 'Anonymous'}</span>
+                        {' · '}{topic.content}
+                      </p>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground shrink-0">
                       <div className="flex items-center gap-1">

@@ -90,9 +90,9 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
         </p>
       </div>
 
-      <Card>
+      <Card className="fantasy-border-ornaments">
         <CardHeader>
-          <CardTitle className="text-2xl">{draft.name || "Unnamed Character"}</CardTitle>
+          <CardTitle className="text-2xl font-cinzel text-brass">{draft.name || "Unnamed Character"}</CardTitle>
           <CardDescription className="flex flex-wrap gap-2 mt-1">
             <Badge variant="secondary">Level {draft.level}</Badge>
             {ancestryName && <Badge variant="outline">{ancestryName}</Badge>}

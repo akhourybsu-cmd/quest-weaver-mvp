@@ -545,11 +545,18 @@ const Community = () => {
           <div className="space-y-4 mb-8">
             {replies.map((reply) => (
               <Card key={reply.id} className="p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <User className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
+                  <Avatar className="w-7 h-7 border border-brass/20">
+                    <AvatarImage src={authorProfiles[reply.author_id]?.avatar_url || undefined} />
+                    <AvatarFallback style={{ backgroundColor: authorProfiles[reply.author_id]?.color || '#8B7355' }} className="text-[10px] text-white">
+                      {(authorProfiles[reply.author_id]?.name || '?').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-foreground">{authorProfiles[reply.author_id]?.name || 'Anonymous'}</span>
+                  <span>·</span>
                   <span>{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</span>
                 </div>
-                <p className="whitespace-pre-wrap">{reply.content}</p>
+                <p className="whitespace-pre-wrap ml-10">{reply.content}</p>
               </Card>
             ))}
           </div>

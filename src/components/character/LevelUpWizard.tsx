@@ -564,17 +564,58 @@ export const LevelUpWizard = ({
     try {
       const conMod = Math.floor(((character?.character_abilities?.[0]?.con || 10) - 10) / 2);
       const hpGain = Math.max(1, hpRoll + conMod);
+      const newProfBonus = Math.floor((newLevel - 1) / 4) + 2;
 
-      // Update character level and HP
+      // Calculate derived stats updates
+      const charUpdates: Record<string, any> = {
+        level: newLevel,
+        max_hp: (character?.max_hp || 0) + hpGain,
+        current_hp: (character?.current_hp || 0) + hpGain,
+        hit_dice_total: newLevel,
+        hit_dice_current: (character?.hit_dice_current || currentLevel) + 1,
+        proficiency_bonus: newProfBonus,
+      };
+
+      // If subclass was chosen, save it
+      if (selectedSubclassId) {
+        charUpdates.subclass_id = selectedSubclassId;
+      }
+
+      // Recalculate saving throw mods based on new proficiency bonus
+      const abilities = character?.character_abilities?.[0];
+      if (abilities) {
+        const saveProficiencies = await getSaveProficiencies(characterId);
+        const abilityKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
+        abilityKeys.forEach(ab => {
+          const mod = Math.floor(((abilities[ab] || 10) - 10) / 2);
+          const saveKey = `${ab}_save` as string;
+          charUpdates[saveKey] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
+        });
+
+        // Update passive perception
+        const wisMod = Math.floor(((abilities.wis || 10) - 10) / 2);
+        const { data: percSkill } = await supabase
+          .from("character_skills")
+          .select("proficient, expertise")
+          .eq("character_id", characterId)
+          .eq("skill", "Perception")
+          .single();
+        const percBonus = wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_perception = 10 + percBonus;
+
+        // Update spell save DC and spell attack mod if character has spellcasting
+        if (character.spell_ability) {
+          const spellAbKey = character.spell_ability.toLowerCase();
+          const spellAbMod = Math.floor(((abilities[spellAbKey] || 10) - 10) / 2);
+          charUpdates.spell_save_dc = 8 + newProfBonus + spellAbMod;
+          charUpdates.spell_attack_mod = newProfBonus + spellAbMod;
+        }
+      }
+
+      // Update character level, HP, proficiency bonus, and derived stats
       await supabase
         .from("characters")
-        .update({
-          level: newLevel,
-          max_hp: (character?.max_hp || 0) + hpGain,
-          current_hp: (character?.current_hp || 0) + hpGain,
-          hit_dice_total: newLevel,
-          hit_dice_current: (character?.hit_dice_current || currentLevel) + 1
-        })
+        .update(charUpdates)
         .eq("id", characterId);
 
       // Update the specific class level in character_classes (for multiclass support)

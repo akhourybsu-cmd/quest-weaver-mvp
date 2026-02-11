@@ -29,6 +29,38 @@ export const AUTO_PREPARED_BY_SUBCLASS: Record<string, Record<number, string[]>>
 };
 
 /**
+ * Warlock expanded spell lists by subclass.
+ * These spells are added to the Warlock's AVAILABLE spell list (not auto-prepared).
+ * Key format: "Warlock:SubclassName", value: spell level -> spell names.
+ * Spell levels 1-5 unlock at warlock levels 1,3,5,7,9.
+ */
+export const WARLOCK_EXPANDED_SPELLS: Record<string, Record<number, string[]>> = {
+  "Warlock:The Fiend": {
+    1: ["Burning Hands", "Command"],
+    2: ["Blindness/Deafness", "Scorching Ray"],
+    3: ["Fireball", "Stinking Cloud"],
+    4: ["Fire Shield", "Wall of Fire"],
+    5: ["Flame Strike", "Hallow"],
+  },
+};
+
+/**
+ * Get expanded spell names available to a warlock at a given level.
+ */
+export function getWarlockExpandedSpells(subclassName: string, warlockLevel: number): string[] {
+  const key = `Warlock:${subclassName}`;
+  const spells = WARLOCK_EXPANDED_SPELLS[key];
+  if (!spells) return [];
+  const result: string[] = [];
+  const levelMap: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 };
+  for (const [spellLvl, names] of Object.entries(spells)) {
+    const requiredLevel = levelMap[Number(spellLvl)] ?? 1;
+    if (warlockLevel >= requiredLevel) result.push(...names);
+  }
+  return result;
+}
+
+/**
  * Third-caster subclass spell school restrictions (SRD).
  * Eldritch Knight: Abjuration and Evocation (plus unrestricted picks at 3, 8, 14, 20)
  * Arcane Trickster: Enchantment and Illusion (plus unrestricted picks at 3, 8, 14, 20)

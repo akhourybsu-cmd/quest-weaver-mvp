@@ -29,7 +29,7 @@ import {
   getThirdCasterSpellsKnownGain,
   getThirdCasterMaxSpellLevel,
 } from "@/lib/rules/thirdCasterUtils";
-import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
+import { AUTO_PREPARED_BY_SUBCLASS, getWarlockExpandedSpells } from "@/lib/rules/subclassSpells";
 import {
   CLASS_LEVEL_UP_RULES,
   getClassRules,
@@ -587,10 +587,31 @@ export const LevelUpWizard = ({
         .order("level")
         .order("name");
 
-      if (spells) {
-        setAvailableSpells(spells.filter(s => s.level > 0));
-        setAvailableCantrips(spells.filter(s => s.level === 0));
+      let allSpells = spells || [];
+
+      // For Warlocks with a patron, merge expanded spell list into available spells
+      if (character.class === "Warlock" && subclassName) {
+        const expandedNames = getWarlockExpandedSpells(subclassName, newLevel);
+        if (expandedNames.length > 0) {
+          const existingIds = new Set(allSpells.map(s => s.id));
+          const { data: patronSpells } = await supabase
+            .from("srd_spells")
+            .select("id, name, level, school, concentration, ritual")
+            .in("name", expandedNames);
+          if (patronSpells) {
+            for (const ps of patronSpells) {
+              if (!existingIds.has(ps.id)) {
+                allSpells.push(ps);
+              }
+            }
+            // Re-sort after merging
+            allSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+          }
+        }
       }
+
+      setAvailableSpells(allSpells.filter(s => s.level > 0));
+      setAvailableCantrips(allSpells.filter(s => s.level === 0));
     } catch (error) {
       console.error("Error loading spells:", error);
     }

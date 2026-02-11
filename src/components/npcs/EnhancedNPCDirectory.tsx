@@ -75,7 +75,7 @@ const NPCCardItem = memo(({
   onToggleSelect?: (id: string) => void;
 }) => (
   <Card
-    className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden"
+    className="group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-border/50 hover:border-brand-brass/70 relative overflow-hidden card-glow"
     onClick={() => selectionMode ? onToggleSelect?.(npc.id) : onView(npc)}
   >
     <CardContent className="p-4">

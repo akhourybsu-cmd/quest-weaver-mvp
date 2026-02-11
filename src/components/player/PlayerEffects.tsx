@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Clock, Skull } from "lucide-react";
+import { CONDITION_TOOLTIPS } from "@/lib/conditionTooltips";
 
 interface Effect {
   id: string;

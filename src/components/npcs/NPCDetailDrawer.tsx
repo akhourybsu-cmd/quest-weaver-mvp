@@ -101,6 +101,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLinkedNotes = async () => {
+    if (!npc) return;
     console.log(`[NPCDetailDrawer] Loading notes for NPC: ${npc.name} (${npc.id})`);
     
     // Get notes that have this NPC linked (using uppercase NPC)

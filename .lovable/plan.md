@@ -1,71 +1,69 @@
 
 
-# Player Hub Combat Screen Polish
+# Comprehensive Account Settings and Profile Management
 
 ## Overview
-Bring the combat screen components (`PlayerCombatView`, `PlayerCombatActions`, `PlayerEffects`, `PlayerInitiativeDisplay`) up to the same fantasy aesthetic and responsive standards as the `PlayerCharacterSheet` and rest of the Player Hub.
+Expand the existing `PlayerSettings` page into a full account settings hub that covers all user assets across the Player Hub, Campaign Manager, and Community Forum. Currently, the settings page only handles name, avatar, and fallback color -- there is no way to manage account credentials, view linked campaigns/characters, or control forum identity.
 
-## Current Issues
+## Current State
 
-1. **No fantasy theming** -- Combat components use plain `Card` with no `fantasy-border-ornaments`, no brass accents, no parchment overlays, no `font-cinzel` headers. This clashes with the richly-themed character sheet.
-2. **No animations** -- Initiative entries, combat log messages, and condition cards appear without entrance animations (no `animate-fade-in`, no staggered reveals).
-3. **"Unknown" fallback text** -- If a character or monster lookup fails, users see bare "Unknown" text with no visual differentiation or icon.
-4. **Mobile text truncation** -- Combatant names in initiative rows lack `truncate`/`min-w-0` in `PlayerCombatView` (present in `PlayerInitiativeDisplay` but inconsistent).
-5. **Plain action economy chips** -- The `ActionChip` in `PlayerCombatActions` is functional but lacks the brass accent styling and hover feedback used elsewhere.
-6. **"Your Turn" banner is understated** -- The `CardTitle "Your Turn"` is a plain text header; it should pulse/glow to match the urgency of combat.
-7. **HP bar missing in initiative** -- `PlayerCombatView` shows HP as plain text; the character sheet uses colored gradient bars.
-8. **Combat log lacks visual richness** -- Log entries are plain text with no icons for action types (damage, healing, save, etc.).
-9. **Conditions tab inline description** -- Good mobile handling exists, but no entrance animations or brass-themed styling.
-10. **`PlayerEffects` card** -- Plain card styling, no fantasy border or thematic decoration.
+- **PlayerSettings page**: Only has profile card (name, avatar, color) and a placeholder "Preferences" card saying "coming soon"
+- **Forum (Community.tsx)**: Shows only a generic User icon and timestamps for authors -- no display name or avatar from the `players` table
+- **Campaign Hub**: Has a "Settings" dropdown item that does nothing
+- **Account management**: No way to change email, password, or delete account from within the app
 
-## Plan
+## What We Will Build
 
-### 1. Fantasy Theming Pass (all 4 combat components)
-- Add `fantasy-border-ornaments` class and parchment overlay to main `Card` wrappers in `PlayerCombatView`, `PlayerCombatActions`, `PlayerEffects`, and `PlayerInitiativeDisplay`.
-- Switch all card titles to `font-cinzel` with `text-brass` or themed color and `tracking-wide`.
-- Add brass gradient dividers between sections (the `h-px bg-gradient-to-r from-transparent via-brass/50 to-transparent` pattern from the character sheet).
+### 1. Account Management Section
+A new card on the settings page for managing auth credentials:
+- **Email display** (read-only, showing current email from `auth.getUser()`)
+- **Change password** button/form (using `supabase.auth.updateUser({ password })`)
+- **Sign out** button (already in nav, but also available here for discoverability)
+- **Danger zone**: Account deletion option with confirmation dialog
 
-### 2. Initiative List Animations and HP Bars
-- Add staggered `animate-fade-in` with incremental `animation-delay` to each initiative entry.
-- Replace plain HP text (`{hp_current}/{hp_max}`) with a mini colored HP bar matching the `getHPColor` pattern used in `MonsterRoster`.
-- Add `hover:border-brass/50 transition-colors` to initiative entry cards.
-- Ensure `truncate` and `min-w-0` on combatant names in `PlayerCombatView` (already done in `PlayerInitiativeDisplay`).
+### 2. Forum Display Name Integration
+Currently the forum shows no author names -- just a User icon and timestamp. We will:
+- Look up the `players.name` for each `author_id` in forum topics and replies
+- Display the player's name and avatar alongside their posts
+- Ensure changes to the display name in settings propagate to the forum identity automatically (since forum uses `author_id` which maps to `user_id` which maps to `players.user_id`)
 
-### 3. "Your Turn" Glow Banner
-- In `PlayerCombatActions`, add a pulsing brass border-glow (`shadow-[0_0_12px_hsl(var(--brass)/0.4)]`) and `animate-[pulse_2s_ease-in-out_infinite]` to the wrapping card when `isMyTurn` is true.
-- Add a `Swords` icon to the "Your Turn" title with `font-cinzel`.
+### 3. Linked Assets Overview
+A new "My Assets" or "Connected Content" card showing a summary of what the user owns across the platform:
+- **Characters**: Count and list of characters (from `characters` table where `user_id` matches)
+- **Campaigns (as DM)**: Count and list of campaigns where user is `dm_user_id`
+- **Campaigns (as Player)**: Count from `player_campaign_links`
+- **Forum Activity**: Topic and reply counts from `forum_topics` and `forum_replies`
 
-### 4. Action Economy Chips Upgrade
-- Restyle `ActionChip` with brass border accents: available actions get `border-brass/50 bg-brass/10`, used actions get a muted crossed-out style.
-- Add press-down scale feedback (`active:scale-95`).
+Each item links to its respective page for quick navigation.
 
-### 5. Combat Log Visual Enhancement
-- Add small icons per `action_type`: crossed swords for damage, heart for healing, shield for save, sparkles for effect.
-- Style round markers as brass-accented badges instead of plain `[Round X]` text.
-- Add `animate-fade-in` to new log entries.
+### 4. Preferences Section (replacing placeholder)
+Replace the "coming soon" card with functional preferences:
+- **Theme toggle** (if dark/light mode is available via next-themes)
+- **Navigation default**: Option to set default landing page (Player Hub vs Campaign Hub)
 
-### 6. Conditions and Effects Fantasy Styling
-- In `PlayerCombatView` conditions tab, add staggered entrance animations.
-- In `PlayerEffects`, add `fantasy-border-ornaments` to the card, `font-cinzel` to the title, brass accents to the concentration banner border.
-
-### 7. "Unknown" Display Fix
-- Replace bare "Unknown" fallback text in both `PlayerCombatView` and `PlayerInitiativeDisplay` with a styled placeholder: italic text, muted color, and a `HelpCircle` icon to indicate missing data rather than showing a cryptic label.
-
-### 8. Mobile Responsiveness Check
-- Ensure all combat buttons meet 44px minimum touch targets.
-- Verify `flex-wrap` on combat option buttons doesn't clip on narrow screens.
-- Confirm ScrollArea heights use responsive `h-[300px] sm:h-[400px]` (already in place, will verify no regressions).
+### 5. Fantasy Theming
+Apply the same `fantasy-border-ornaments`, `font-cinzel`, and brass accent styling used in the combat and character sheet components to all new settings cards.
 
 ---
 
-### Technical Details
+## Technical Details
 
-**Files to modify:**
-- `src/components/player/PlayerCombatView.tsx` -- Fantasy card wrapper, initiative HP bars, log icons, animations, "Unknown" fix, name truncation
-- `src/components/player/PlayerCombatActions.tsx` -- "Your Turn" glow, ActionChip restyle, font-cinzel headers, combat option button sizing
-- `src/components/player/PlayerEffects.tsx` -- Fantasy card wrapper, font-cinzel title, brass accents
-- `src/components/player/PlayerInitiativeDisplay.tsx` -- Fantasy card wrapper, HP bar addition, animations, "Unknown" fix
-- `src/pages/SessionPlayer.tsx` -- No structural changes needed; combat tab content is already delegated to components
+### Files to create:
+- `src/components/player/settings/AccountSection.tsx` -- Email display, password change form, danger zone
+- `src/components/player/settings/LinkedAssetsSection.tsx` -- Asset overview with counts and links
+- `src/components/player/settings/PreferencesSection.tsx` -- Theme toggle, nav defaults
+- `src/components/player/settings/ForumIdentitySection.tsx` -- Preview of how user appears in forums
 
-**No new files or dependencies required.** All styling uses existing Tailwind utilities, animation classes, and fantasy-border CSS classes already in the project.
+### Files to modify:
+- `src/pages/PlayerSettings.tsx` -- Compose new section components, add fantasy theming to the page wrapper
+- `src/pages/Community.tsx` -- Fetch and display `players.name` and `players.avatar_url` for topic authors and reply authors by joining on `author_id = players.user_id`
+
+### Database:
+- No schema changes needed. All data already exists across `players`, `characters`, `campaigns`, `player_campaign_links`, `forum_topics`, and `forum_replies` tables. We only need to query and display it.
+
+### Key implementation notes:
+- Password change uses `supabase.auth.updateUser({ password: newPassword })` -- no migration needed
+- Forum author lookup: batch-fetch player profiles for all unique `author_id` values in topics/replies, then map them by `user_id` for display
+- Asset counts use simple `select('*', { count: 'exact', head: true })` queries
+- All new sections follow existing card pattern with `rounded-2xl shadow-xl border-brass/30`
 

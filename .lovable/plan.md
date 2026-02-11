@@ -1,110 +1,71 @@
 
 
-# Comprehensive Player Hub and 5E Rules Pass -- Round 2
+# Player Hub Combat Screen Polish
 
-## Issues Found
+## Overview
+Bring the combat screen components (`PlayerCombatView`, `PlayerCombatActions`, `PlayerEffects`, `PlayerInitiativeDisplay`) up to the same fantasy aesthetic and responsive standards as the `PlayerCharacterSheet` and rest of the Player Hub.
 
-### Critical 5E Rules Bug
+## Current Issues
 
-**1. `spellNeedsFor` doesn't pass className to `spellKnownPrepared` (5eRules.ts line 244)**
-The previous fix added per-class spell tables to `spellTables.ts`, but `spellNeedsFor` in `5eRules.ts` still calls `spellKnownPrepared(cls, level)` without the third `className` parameter. This means the class-specific tables are never actually used during character creation -- it always falls back to the Bard table for all known casters. The `classIdentifier` parameter is right there but never passed through.
+1. **No fantasy theming** -- Combat components use plain `Card` with no `fantasy-border-ornaments`, no brass accents, no parchment overlays, no `font-cinzel` headers. This clashes with the richly-themed character sheet.
+2. **No animations** -- Initiative entries, combat log messages, and condition cards appear without entrance animations (no `animate-fade-in`, no staggered reveals).
+3. **"Unknown" fallback text** -- If a character or monster lookup fails, users see bare "Unknown" text with no visual differentiation or icon.
+4. **Mobile text truncation** -- Combatant names in initiative rows lack `truncate`/`min-w-0` in `PlayerCombatView` (present in `PlayerInitiativeDisplay` but inconsistent).
+5. **Plain action economy chips** -- The `ActionChip` in `PlayerCombatActions` is functional but lacks the brass accent styling and hover feedback used elsewhere.
+6. **"Your Turn" banner is understated** -- The `CardTitle "Your Turn"` is a plain text header; it should pulse/glow to match the urgency of combat.
+7. **HP bar missing in initiative** -- `PlayerCombatView` shows HP as plain text; the character sheet uses colored gradient bars.
+8. **Combat log lacks visual richness** -- Log entries are plain text with no icons for action types (damage, healing, save, etc.).
+9. **Conditions tab inline description** -- Good mobile handling exists, but no entrance animations or brass-themed styling.
+10. **`PlayerEffects` card** -- Plain card styling, no fantasy border or thematic decoration.
 
-Fix: Change line 244 from `spellKnownPrepared(cls, level)` to `spellKnownPrepared(cls, level, classIdentifier)`.
+## Plan
 
-### Player Hub Missing Animations
+### 1. Fantasy Theming Pass (all 4 combat components)
+- Add `fantasy-border-ornaments` class and parchment overlay to main `Card` wrappers in `PlayerCombatView`, `PlayerCombatActions`, `PlayerEffects`, and `PlayerInitiativeDisplay`.
+- Switch all card titles to `font-cinzel` with `text-brass` or themed color and `tracking-wide`.
+- Add brass gradient dividers between sections (the `h-px bg-gradient-to-r from-transparent via-brass/50 to-transparent` pattern from the character sheet).
 
-**2. Player Hub views have zero stagger/entrance animations**
-The campaign manager side got staggered card entrances, card-glow hover, and btn-press effects in the last pass, but none of the player-facing components received them. The following player views render cards/lists that could benefit from staggered fade-in entrances:
-- `PlayerNPCDirectory.tsx` -- NPC cards
-- `PlayerLocationsView.tsx` -- Location cards
-- `PlayerFactionsView.tsx` -- Faction cards
-- `PlayerQuestTracker.tsx` -- Quest cards
-- `PlayerTimelineView.tsx` -- Timeline event cards
-- `PlayerCharacterSheet.tsx` -- Core stat sections
+### 2. Initiative List Animations and HP Bars
+- Add staggered `animate-fade-in` with incremental `animation-delay` to each initiative entry.
+- Replace plain HP text (`{hp_current}/{hp_max}`) with a mini colored HP bar matching the `getHPColor` pattern used in `MonsterRoster`.
+- Add `hover:border-brass/50 transition-colors` to initiative entry cards.
+- Ensure `truncate` and `min-w-0` on combatant names in `PlayerCombatView` (already done in `PlayerInitiativeDisplay`).
 
-### Player Hub Polish Issues
+### 3. "Your Turn" Glow Banner
+- In `PlayerCombatActions`, add a pulsing brass border-glow (`shadow-[0_0_12px_hsl(var(--brass)/0.4)]`) and `animate-[pulse_2s_ease-in-out_infinite]` to the wrapping card when `isMyTurn` is true.
+- Add a `Swords` icon to the "Your Turn" title with `font-cinzel`.
 
-**3. PlayerEffects conditions don't use conditionTooltips**
-The `PlayerEffects.tsx` component (rendered in the effects panel during combat) shows conditions but doesn't import or display the mechanical descriptions from `conditionTooltips.ts`. While the Conditions tab in `PlayerCombatView.tsx` was fixed in the last pass, `PlayerEffects.tsx` still shows conditions with no mechanical info. Players who look at effects see raw condition names with no explanation of what they do.
+### 4. Action Economy Chips Upgrade
+- Restyle `ActionChip` with brass border accents: available actions get `border-brass/50 bg-brass/10`, used actions get a muted crossed-out style.
+- Add press-down scale feedback (`active:scale-95`).
 
-**4. Player Hub NPC cards missing card-glow hover effect**
-The campaign manager cards got the `card-glow` CSS class for brass border glow on hover, but the player-side NPC, Location, and Faction cards don't use it. This creates visual inconsistency between the DM and player experience.
+### 5. Combat Log Visual Enhancement
+- Add small icons per `action_type`: crossed swords for damage, heart for healing, shield for save, sparkles for effect.
+- Style round markers as brass-accented badges instead of plain `[Round X]` text.
+- Add `animate-fade-in` to new log entries.
 
-**5. Session Player has excessive console.log statements**
-`SessionPlayer.tsx` has 6+ `console.log` calls (lines 118, 309-311, 417-419) that ship to production. These should be removed for a polished experience.
+### 6. Conditions and Effects Fantasy Styling
+- In `PlayerCombatView` conditions tab, add staggered entrance animations.
+- In `PlayerEffects`, add `fantasy-border-ornaments` to the card, `font-cinzel` to the title, brass accents to the concentration banner border.
 
-**6. PlayerInitiativeDisplay shows monster HP to players unconditionally**
-In `PlayerInitiativeDisplay.tsx`, monster HP is shown if `is_visible_to_players` is true, but the similar display in `PlayerCombatView.tsx` also shows HP for monsters via `is_hp_visible_to_players`. These use two different column names (`is_visible_to_players` vs `is_hp_visible_to_players`), which could cause monsters to appear in initiative but with no HP, or vice versa. Need to verify consistency.
+### 7. "Unknown" Display Fix
+- Replace bare "Unknown" fallback text in both `PlayerCombatView` and `PlayerInitiativeDisplay` with a styled placeholder: italic text, muted color, and a `HelpCircle` icon to indicate missing data rather than showing a cryptic label.
 
-**7. Saving throw display doesn't indicate proficiency**
-The character sheet shows saving throw modifiers but doesn't visually distinguish which saves the character is proficient in. In 5E, each class grants proficiency in exactly 2 saving throws, and players need to know which ones they're proficient in (it affects modifier calculation). A small proficiency dot or indicator would help.
-
-### Linking and Data Flow
-
-**8. PlayerCampaignView doesn't show subclass in character card**
-Per the existing memory about `character-display-subclass-visibility`, subclass should be shown prominently alongside class and level. The `PlayerCampaignView.tsx` character card (line 155) shows "Level X Class" but doesn't query or display the subclass name. The character query (line 67) doesn't join `srd_subclasses`.
-
-**9. Quest location link doesn't use the linked location**
-`PlayerQuestTracker.tsx` line 136 shows `quest.locations[0]` (the legacy text array field) instead of the linked `quest.location?.name` (from the `location_id` foreign key join fetched on line 65). This means even when a DM properly links a quest to a location, the player sees the old text-based location instead.
-
----
-
-## Proposed Changes
-
-### Fix 1: Pass className in spellNeedsFor (5eRules.ts)
-- Line 244: Change `spellKnownPrepared(cls, level)` to `spellKnownPrepared(cls, level, classIdentifier)`
-- One-line fix that activates the per-class spell tables already in place
-
-### Fix 2: Add staggered entrance animations to Player Hub views
-Apply the same `animate-fade-in` with index-based `animationDelay` pattern used on the campaign manager to:
-- `PlayerNPCDirectory.tsx` -- NPC card list items
-- `PlayerLocationsView.tsx` -- Location card grid
-- `PlayerFactionsView.tsx` -- Faction card grid
-- `PlayerQuestTracker.tsx` -- Quest card items
-- `PlayerTimelineView.tsx` -- Timeline event cards
-
-Also add `card-glow` hover class to player-side cards for consistent brass glow on hover.
-
-### Fix 3: Add condition tooltips to PlayerEffects.tsx
-- Import `CONDITION_TOOLTIPS` from `conditionTooltips.ts`
-- Display mechanical effects below condition names (inline, same as the mobile treatment in PlayerCombatView)
-
-### Fix 4: Remove console.log statements from SessionPlayer.tsx
-- Remove 6 debug log statements from production code
-
-### Fix 5: Add saving throw proficiency indicators to PlayerCharacterSheet.tsx
-- Query the character's class to determine which two saving throws are proficient
-- Display a small filled dot next to proficient saves (matching the skill proficiency dot pattern already used)
-
-### Fix 6: Show subclass in PlayerCampaignView character card
-- Update the character query to join `srd_subclasses(name)` via the `subclass_id` foreign key
-- Display "Level X Class (Subclass)" in the character card
-
-### Fix 7: Use linked location name in PlayerQuestTracker
-- Prefer `quest.location?.name` over `quest.locations?.[0]` when displaying quest location
-- Fall back to legacy text field if no linked location exists
+### 8. Mobile Responsiveness Check
+- Ensure all combat buttons meet 44px minimum touch targets.
+- Verify `flex-wrap` on combat option buttons doesn't clip on narrow screens.
+- Confirm ScrollArea heights use responsive `h-[300px] sm:h-[400px]` (already in place, will verify no regressions).
 
 ---
 
-## Files to Modify
+### Technical Details
 
-| File | Change |
-|------|--------|
-| `src/lib/rules/5eRules.ts` | Pass `classIdentifier` to `spellKnownPrepared` call (1 line) |
-| `src/components/player/PlayerNPCDirectory.tsx` | Add staggered fade-in and card-glow to NPC cards |
-| `src/components/player/PlayerLocationsView.tsx` | Add staggered fade-in and card-glow to location cards |
-| `src/components/player/PlayerFactionsView.tsx` | Add staggered fade-in and card-glow to faction cards |
-| `src/components/player/PlayerQuestTracker.tsx` | Add staggered fade-in to quest cards; fix location link |
-| `src/components/player/PlayerTimelineView.tsx` | Add staggered fade-in to timeline events |
-| `src/components/player/PlayerEffects.tsx` | Add condition tooltips from conditionTooltips.ts |
-| `src/components/player/PlayerCharacterSheet.tsx` | Add saving throw proficiency indicators |
-| `src/pages/SessionPlayer.tsx` | Remove console.log statements |
-| `src/pages/PlayerCampaignView.tsx` | Show subclass in character card |
+**Files to modify:**
+- `src/components/player/PlayerCombatView.tsx` -- Fantasy card wrapper, initiative HP bars, log icons, animations, "Unknown" fix, name truncation
+- `src/components/player/PlayerCombatActions.tsx` -- "Your Turn" glow, ActionChip restyle, font-cinzel headers, combat option button sizing
+- `src/components/player/PlayerEffects.tsx` -- Fantasy card wrapper, font-cinzel title, brass accents
+- `src/components/player/PlayerInitiativeDisplay.tsx` -- Fantasy card wrapper, HP bar addition, animations, "Unknown" fix
+- `src/pages/SessionPlayer.tsx` -- No structural changes needed; combat tab content is already delegated to components
 
-## Technical Notes
-
-- The stagger animation pattern is: `className="opacity-0 animate-fade-in"` with `style={{ animationDelay: \`${Math.min(index * 30, 300)}ms\`, animationFillMode: 'forwards' }}`
-- The `card-glow` class is already defined in `index.css` from the previous animation pass
-- Saving throw proficiency can be determined from the class data -- each class has exactly 2 proficient saves defined in the SRD. These are already stored in `character_proficiencies` table with type `'save'` or can be derived from the class name using a lookup table
-- The `spellKnownPrepared` fix is the most mechanically important -- without it, Rangers get told they know 22 spells at level 20 (Bard count) instead of 11
+**No new files or dependencies required.** All styling uses existing Tailwind utilities, animation classes, and fantasy-border CSS classes already in the project.
 

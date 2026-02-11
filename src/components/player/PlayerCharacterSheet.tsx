@@ -188,6 +188,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       fetchSpells(),
       fetchFeatures(),
       fetchResources(),
+      fetchSaveProficiencies(),
     ]);
   };
 

@@ -237,33 +237,40 @@ export const LevelUpWizard = ({
 
   const newLevel = currentLevel + 1;
   
+  // Detect third-caster subclass
+  const isThirdCaster = isThirdCasterSubclass(subclassName);
+  
   // Get class rules
   const classRules = useMemo(() => {
     return character?.class ? getClassRules(character.class) : null;
   }, [character?.class]);
 
-  // Calculate what's needed at this level
+  // Calculate what's needed at this level (with third-caster override)
   const cantripGain = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterCantripGain(currentLevel, newLevel);
     if (!character?.class) return 0;
     return getCantripGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel]);
+  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
 
   const spellsKnownGain = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterSpellsKnownGain(currentLevel, newLevel);
     if (!character?.class) return 0;
     return getSpellsKnownGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel]);
+  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
 
   const isWizard = character?.class === "Wizard";
   const wizardSpellsToAdd = isWizard ? 2 : 0;
 
   const maxSpellLevel = useMemo(() => {
+    if (isThirdCaster) return getThirdCasterMaxSpellLevel(newLevel);
     if (!character?.class) return 0;
     return getMaxSpellLevelForClass(character.class, newLevel);
-  }, [character?.class, newLevel]);
+  }, [character?.class, newLevel, isThirdCaster]);
 
   const canSwapSpell = useMemo(() => {
+    if (isThirdCaster) return true;
     return classRules?.spellcasting.canSwapOnLevelUp || false;
-  }, [classRules]);
+  }, [classRules, isThirdCaster]);
 
   const featureChoices = useMemo(() => {
     if (!character?.class) return [];

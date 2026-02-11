@@ -11,6 +11,10 @@ import { Loader2, Save, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
+import AccountSection from '@/components/player/settings/AccountSection';
+import LinkedAssetsSection from '@/components/player/settings/LinkedAssetsSection';
+import ForumIdentitySection from '@/components/player/settings/ForumIdentitySection';
+import PreferencesSection from '@/components/player/settings/PreferencesSection';
 
 const PlayerSettings = () => {
   const { player, loading: playerLoading, updatePlayer } = usePlayer();
@@ -22,7 +26,6 @@ const PlayerSettings = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix: use useEffect to sync local state when player data loads
   useEffect(() => {
     if (player) {
       setName(player.name || '');
@@ -103,13 +106,14 @@ const PlayerSettings = () => {
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         <div className="mb-8 hidden md:block">
           <h1 className="text-4xl font-cinzel font-bold text-foreground">Player Settings</h1>
-          <p className="text-muted-foreground mt-2">Manage your player profile and preferences</p>
+          <p className="text-muted-foreground mt-2">Manage your player profile, account, and preferences</p>
         </div>
 
         <div className="space-y-6">
-          <Card className="rounded-2xl shadow-xl border-brass/30">
+          {/* Profile Card */}
+          <Card className="fantasy-border-ornaments rounded-2xl shadow-xl">
             <CardHeader>
-              <CardTitle className="font-cinzel text-2xl">Profile</CardTitle>
+              <CardTitle className="font-cinzel text-2xl text-brass tracking-wide">Profile</CardTitle>
               <CardDescription>Update your display name and avatar</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -168,15 +172,17 @@ const PlayerSettings = () => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-xl border-brass/30">
-            <CardHeader>
-              <CardTitle className="font-cinzel text-2xl">Preferences</CardTitle>
-              <CardDescription>Additional settings coming soon</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">More customization options will be available in future updates.</p>
-            </CardContent>
-          </Card>
+          {/* Forum Identity */}
+          <ForumIdentitySection name={name} avatarUrl={avatarUrl} color={color} />
+
+          {/* Account Management */}
+          <AccountSection />
+
+          {/* Linked Assets */}
+          <LinkedAssetsSection />
+
+          {/* Preferences */}
+          <PreferencesSection />
         </div>
       </div>
     </PlayerPageLayout>

@@ -387,6 +387,16 @@ export const LevelUpWizard = ({
       setCharacter(data);
       setCurrentSpellIds(data.character_spells?.filter((s: any) => s.known).map((s: any) => s.spell_id) || []);
       
+      // Load subclass name for third-caster & auto-prepared detection
+      if (data.subclass_id) {
+        const { data: subclassData } = await supabase
+          .from("srd_subclasses")
+          .select("name")
+          .eq("id", data.subclass_id)
+          .single();
+        setSubclassName(subclassData?.name || null);
+      }
+      
       // Load character classes for multiclass support
       const { data: classesData } = await supabase
         .from("character_classes")

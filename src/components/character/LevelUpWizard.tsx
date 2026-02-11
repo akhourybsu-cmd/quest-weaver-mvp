@@ -162,6 +162,8 @@ export const LevelUpWizard = ({
       setFavoredEnemyChoice(null);
       setFavoredTerrainChoice(null);
       setSelectedSubclassId(null);
+      setMysticArcanumSpellId(null);
+      setExistingArcanumSpellIds([]);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);

@@ -200,10 +200,20 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
             <h2 className="text-xl font-cinzel text-brass">Factions ({factions.length})</h2>
           </div>
           {isDM && (
-            <Button size="sm" onClick={handleNewFaction}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Faction
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={bulk.selectionMode ? "secondary" : "outline"}
+                onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+              >
+                <CheckSquare className="w-4 h-4 mr-2" />
+                {bulk.selectionMode ? "Exit" : "Bulk Edit"}
+              </Button>
+              <Button size="sm" onClick={handleNewFaction}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Faction
+              </Button>
+            </div>
           )}
         </div>
 

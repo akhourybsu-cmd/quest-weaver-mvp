@@ -3,12 +3,13 @@ import { DMEmptyState } from "@/components/campaign/DMEmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Scroll, Users, MapPin, Plus, Loader2, ScrollText,
-  Award, Coins, Target, Sword, User
+  Award, Coins, Target, Sword, User, CheckSquare
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,8 @@ import QuestDialog from "@/components/quests/QuestDialog";
 import { QuestDetailDialog } from "@/components/quests/QuestDetailDialog";
 import { DemoCampaign } from "@/data/demoSeeds";
 import { adaptDemoQuests } from "@/lib/demoAdapters";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
 
 interface Quest {
   id: string;

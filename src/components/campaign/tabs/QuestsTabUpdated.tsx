@@ -394,13 +394,23 @@ export function QuestsTab({ campaignId, onQuestSelect, demoMode, demoCampaign }:
         </Tabs>
 
         {!demoMode && (
-          <Button onClick={() => {
-            setQuestToEdit(undefined);
-            setDialogOpen(true);
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Quest
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={bulk.selectionMode ? "secondary" : "outline"}
+              onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              {bulk.selectionMode ? "Exit Bulk Edit" : "Bulk Edit"}
+            </Button>
+            <Button onClick={() => {
+              setQuestToEdit(undefined);
+              setDialogOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Quest
+            </Button>
+          </div>
         )}
       </div>
 

@@ -315,6 +315,14 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
             />
           </div>
           <Button
+            variant={bulk.selectionMode ? "secondary" : "outline"}
+            size="sm"
+            onClick={bulk.selectionMode ? bulk.exitSelectionMode : bulk.enterSelectionMode}
+          >
+            <CheckSquare className="w-4 h-4 mr-2" />
+            {bulk.selectionMode ? "Exit" : "Bulk Edit"}
+          </Button>
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setViewMode(viewMode === "grid" ? "tree" : "grid")}

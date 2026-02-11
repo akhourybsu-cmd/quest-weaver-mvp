@@ -112,8 +112,8 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
                   <Target className="w-4 h-4" />
                   Active Quests
                 </h4>
-                {activeQuests.map((quest) => (
-                  <div key={quest.id} className="p-3 border rounded-lg space-y-2">
+                {activeQuests.map((quest, index) => (
+                  <div key={quest.id} className="p-3 border rounded-lg space-y-2 card-glow opacity-0 animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

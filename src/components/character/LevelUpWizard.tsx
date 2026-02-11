@@ -477,7 +477,18 @@ export const LevelUpWizard = ({
     }
   };
 
-  const loadFeatures = async () => {
+  const loadExistingArcanum = async () => {
+    try {
+      const { data } = await supabase
+        .from("character_mystic_arcanum")
+        .select("spell_id")
+        .eq("character_id", characterId);
+      setExistingArcanumSpellIds((data || []).map(d => d.spell_id).filter(Boolean) as string[]);
+    } catch (error) {
+      console.error("Error loading mystic arcanum:", error);
+    }
+  };
+
     try {
       const { data: charData } = await supabase
         .from("characters")

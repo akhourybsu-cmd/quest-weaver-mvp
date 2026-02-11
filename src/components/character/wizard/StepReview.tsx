@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, Heart, Shield, Zap, BookOpen } from "lucide-react";
+import { Check, Heart, Shield, Zap, BookOpen, Sparkles, CheckCircle } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus, DND_CLASSES } from "@/lib/dnd5e";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";

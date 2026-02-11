@@ -458,6 +458,20 @@ export function LocationsTab({ campaignId, demoMode, demoCampaign }: LocationsTa
         parentLocationId={parentLocationId}
         onSaved={fetchLocations}
       />
+
+      {bulk.selectionMode && (
+        <BulkVisibilityBar
+          selectedIds={bulk.selectedIds}
+          totalCount={displayLocations.length}
+          onSelectAll={() => bulk.selectAll(displayLocations.map((l) => l.id))}
+          onDeselectAll={bulk.deselectAll}
+          onCancel={bulk.exitSelectionMode}
+          tableName="locations"
+          visibilityColumn="discovered"
+          entityLabel="locations"
+          onUpdated={fetchLocations}
+        />
+      )}
     </>
   );
 }

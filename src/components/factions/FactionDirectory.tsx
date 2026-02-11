@@ -251,7 +251,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
               return (
                 <Card
                   key={faction.id}
-                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden"
+                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative"
                   onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
                 >
                   {bulk.selectionMode && (

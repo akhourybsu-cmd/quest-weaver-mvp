@@ -187,7 +187,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
   };
 
   const loadLinkedLore = async () => {
-    if (!npc.lore_page_id) {
+    if (!npc || !npc.lore_page_id) {
       setLinkedLore(null);
       return;
     }

@@ -799,22 +799,22 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             {/* Main wizard content */}
             <div className="flex-1 flex flex-col min-h-0">
               {/* Header */}
-              <div className="p-4 md:p-6 border-b flex-shrink-0">
-                <h2 className="text-xl md:text-2xl font-bold mb-2">
+              <div className="p-4 md:p-6 border-b border-brass/20 flex-shrink-0">
+                <h2 className="text-xl md:text-2xl font-cinzel font-bold mb-2 text-brass tracking-wide">
                   Character Creation Wizard
                 </h2>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs md:text-sm text-muted-foreground">
                     <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}: </span>
                     <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
-                    {STEPS[currentStep]}
+                    <span className="font-cinzel">{STEPS[currentStep]}</span>
                   </p>
-                  <Button variant="outline" size="sm" onClick={handleSaveAndExit}>
+                  <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
                     <Save className="h-4 w-4" />
                     <span className="hidden sm:inline ml-2">Save & Exit</span>
                   </Button>
                 </div>
-                <Progress value={progress} className="mt-3" />
+                <Progress value={progress} className="mt-3 h-2 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass" />
               </div>
 
               {/* Step content - Scrollable */}

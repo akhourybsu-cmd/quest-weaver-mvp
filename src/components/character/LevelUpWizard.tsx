@@ -140,6 +140,7 @@ export const LevelUpWizard = ({
       setMagicalSecretsSpells([]);
       setFavoredEnemyChoice(null);
       setFavoredTerrainChoice(null);
+      setSelectedSubclassId(null);
       
       // Reset existing data caches
       setCurrentProficientSkills([]);

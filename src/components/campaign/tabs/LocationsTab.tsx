@@ -66,7 +66,10 @@ const LocationCard = memo(({
   childCount, 
   onEdit, 
   onAddSub, 
-  onDelete 
+  onDelete,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: { 
   location: Location; 
   parentName: string | null;
@@ -74,10 +77,13 @@ const LocationCard = memo(({
   onEdit: (location: Location) => void;
   onAddSub: (parentId: string) => void;
   onDelete: (location: Location) => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) => (
   <Card
     className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-brass/20 relative overflow-hidden"
-    onClick={() => onEdit(location)}
+    onClick={() => selectionMode ? onToggleSelect?.(location.id) : onEdit(location)}
   >
     {/* Background Image with Overlay */}
     {location.image_url && (

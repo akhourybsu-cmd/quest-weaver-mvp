@@ -280,6 +280,16 @@ export const WeaponEditor = ({ open, onOpenChange, campaignId, existingItem, onS
                     <SelectItem value="slashing">Slashing</SelectItem>
                     <SelectItem value="piercing">Piercing</SelectItem>
                     <SelectItem value="bludgeoning">Bludgeoning</SelectItem>
+                    <SelectItem value="fire">Fire</SelectItem>
+                    <SelectItem value="cold">Cold</SelectItem>
+                    <SelectItem value="lightning">Lightning</SelectItem>
+                    <SelectItem value="thunder">Thunder</SelectItem>
+                    <SelectItem value="acid">Acid</SelectItem>
+                    <SelectItem value="poison">Poison</SelectItem>
+                    <SelectItem value="necrotic">Necrotic</SelectItem>
+                    <SelectItem value="radiant">Radiant</SelectItem>
+                    <SelectItem value="force">Force</SelectItem>
+                    <SelectItem value="psychic">Psychic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -324,23 +334,25 @@ export const WeaponEditor = ({ open, onOpenChange, campaignId, existingItem, onS
               </div>
             )}
 
-            {weaponProperties.includes("Ammunition") && (
+            {(weaponProperties.includes("Ammunition") || weaponProperties.includes("Thrown")) && (
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Ammunition Type</Label>
-                  <Input
-                    value={ammunitionType}
-                    onChange={(e) => setAmmunitionType(e.target.value)}
-                    placeholder="Arrows, Bolts, etc."
-                  />
-                </div>
+                {weaponProperties.includes("Ammunition") && (
+                  <div className="space-y-2">
+                    <Label>Ammunition Type</Label>
+                    <Input
+                      value={ammunitionType}
+                      onChange={(e) => setAmmunitionType(e.target.value)}
+                      placeholder="Arrows, Bolts, etc."
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Range (Normal)</Label>
                   <Input
                     type="number"
                     value={rangeNormal}
                     onChange={(e) => setRangeNormal(e.target.value)}
-                    placeholder="80"
+                    placeholder={weaponProperties.includes("Thrown") ? "20" : "80"}
                   />
                 </div>
                 <div className="space-y-2">
@@ -349,7 +361,7 @@ export const WeaponEditor = ({ open, onOpenChange, campaignId, existingItem, onS
                     type="number"
                     value={rangeLong}
                     onChange={(e) => setRangeLong(e.target.value)}
-                    placeholder="320"
+                    placeholder={weaponProperties.includes("Thrown") ? "60" : "320"}
                   />
                 </div>
               </div>

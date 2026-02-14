@@ -786,58 +786,58 @@ const CampaignHub = () => {
         <div className="flex-1 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             {/* Desktop: Scrollable tab bar with gradient hints */}
-            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block shadow-sm">
+            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               <div className="relative">
                 {/* Left fade */}
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-obsidian to-transparent z-10 pointer-events-none" />
                 {/* Right fade */}
                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-obsidian to-transparent z-10 pointer-events-none" />
                 <div className="overflow-x-auto scrollbar-hide">
-                  <TabsList className="bg-transparent border-0 h-auto p-0 inline-flex min-w-max">
+                  <TabsList className="bg-transparent border-0 h-auto p-0 inline-flex min-w-max gap-0">
                     {/* Core */}
-                    <TabsTrigger value="overview" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="overview" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Overview
                     </TabsTrigger>
-                    <TabsTrigger value="quests" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="quests" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Quests
                     </TabsTrigger>
-                    <TabsTrigger value="sessions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="sessions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Sessions
                     </TabsTrigger>
                     {/* Divider */}
                     <div className="w-px h-5 bg-brass/20 self-center mx-1" />
                     {/* World */}
-                    <TabsTrigger value="npcs" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="npcs" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       NPCs
                     </TabsTrigger>
-                    <TabsTrigger value="locations" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="locations" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Locations
                     </TabsTrigger>
-                    <TabsTrigger value="lore" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="lore" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Lore
                     </TabsTrigger>
-                    <TabsTrigger value="factions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="factions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Factions
                     </TabsTrigger>
                     {/* Divider */}
                     <div className="w-px h-5 bg-brass/20 self-center mx-1" />
                     {/* Combat */}
-                    <TabsTrigger value="bestiary" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="bestiary" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Bestiary
                     </TabsTrigger>
-                    <TabsTrigger value="encounters" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="encounters" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Encounters
                     </TabsTrigger>
                     {/* Divider */}
                     <div className="w-px h-5 bg-brass/20 self-center mx-1" />
                     {/* Assets */}
-                    <TabsTrigger value="items" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="items" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Item Vault
                     </TabsTrigger>
-                    <TabsTrigger value="timeline" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="timeline" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Timeline
                     </TabsTrigger>
-                    <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple rounded-none px-4 py-3 whitespace-nowrap">
+                    <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Notes
                     </TabsTrigger>
                     {liveSession && (

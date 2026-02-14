@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getReputationLabel, getReputationBadgeColor } from "@/lib/factionUtils";
 
 interface Faction {
   id: string;
@@ -52,23 +53,7 @@ const ReputationAdjuster = ({
     }
   }, [currentReputation, open]);
 
-  const getReputationLabel = (score: number) => {
-    if (score >= 75) return "Revered";
-    if (score >= 50) return "Friendly";
-    if (score >= 25) return "Favorable";
-    if (score >= -25) return "Neutral";
-    if (score >= -50) return "Unfriendly";
-    if (score >= -75) return "Hostile";
-    return "Hated";
-  };
-
-  const getReputationColor = (score: number) => {
-    if (score >= 50) return "bg-green-500/10 text-green-500 border-green-500/20";
-    if (score >= 20) return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-    if (score >= -20) return "bg-slate-500/10 text-slate-500 border-slate-500/20";
-    if (score >= -50) return "bg-orange-500/10 text-orange-500 border-orange-500/20";
-    return "bg-red-500/10 text-red-500 border-red-500/20";
-  };
+  // Use shared utilities - imported at top of file
 
   const handleSave = async () => {
     try {
@@ -123,7 +108,7 @@ const ReputationAdjuster = ({
               {score > 0 && "+"}
               {score}
             </div>
-            <Badge variant="outline" className={getReputationColor(score)}>
+            <Badge variant="outline" className={getReputationBadgeColor(score)}>
               {getReputationLabel(score)}
             </Badge>
           </div>

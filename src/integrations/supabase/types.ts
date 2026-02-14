@@ -3841,6 +3841,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           faction_id: string | null
+          faction_role: string | null
           first_appearance_session_id: string | null
           gm_notes: string | null
           id: string
@@ -3868,6 +3869,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           faction_id?: string | null
+          faction_role?: string | null
           first_appearance_session_id?: string | null
           gm_notes?: string | null
           id?: string
@@ -3895,6 +3897,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           faction_id?: string | null
+          faction_role?: string | null
           first_appearance_session_id?: string | null
           gm_notes?: string | null
           id?: string

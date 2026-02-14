@@ -1,0 +1,1 @@
+ALTER TABLE public.npcs ADD COLUMN faction_role text;

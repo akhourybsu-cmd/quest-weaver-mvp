@@ -644,7 +644,7 @@ const CampaignHub = () => {
         inspectorContent={null}
       >
         {/* Header Bar with optional banner image */}
-        <header className="sticky top-0 z-10 border-b border-brass/20 bg-obsidian/95 backdrop-blur-sm px-6 py-4 relative overflow-hidden">
+        <header className="sticky top-0 z-20 border-b border-brass/20 bg-obsidian px-4 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)] relative overflow-hidden">
         {/* Background banner image with fade effect */}
           {activeCampaign?.banner_url && (
             <div className="absolute inset-0 pointer-events-none">
@@ -659,7 +659,7 @@ const CampaignHub = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-obsidian from-40% via-obsidian/80 via-70% to-transparent" />
             </div>
           )}
-          <div className="flex items-center justify-between mb-3 relative z-10">
+          <div className="flex items-center justify-between mb-1 relative z-10">
           {/* Breadcrumb - subtle inline */}
             <span className="hidden sm:inline text-xs text-brass/60">
               <a href="/" className="hover:text-brass transition-colors">Home</a>
@@ -730,7 +730,7 @@ const CampaignHub = () => {
 
           {/* Campaign name and badges - responsive */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 relative z-10">
-            <h1 className="text-lg sm:text-2xl font-cinzel font-bold text-ink truncate">{activeCampaign?.name}</h1>
+            <h1 className="text-base sm:text-xl font-cinzel font-bold text-ink truncate">{activeCampaign?.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="border-brass/30 text-brass text-xs">
                 5e
@@ -786,7 +786,7 @@ const CampaignHub = () => {
         <div className="flex-1 overflow-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             {/* Desktop: Scrollable tab bar with gradient hints */}
-            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block">
+            <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block shadow-sm">
               <div className="relative">
                 {/* Left fade */}
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-obsidian to-transparent z-10 pointer-events-none" />
@@ -854,7 +854,7 @@ const CampaignHub = () => {
             </div>
 
             {/* Mobile: Grouped dropdown navigation */}
-            <div className="border-b border-brass/20 px-3 py-2 bg-obsidian sticky top-0 z-20 md:hidden">
+            <div className="border-b border-brass/20 px-3 py-2 bg-obsidian sticky top-0 z-20 md:hidden shadow-sm">
               <Select value={activeTab} onValueChange={setActiveTab}>
                 <SelectTrigger className="bg-card/50 border-brass/30 font-cinzel">
                   <SelectValue />

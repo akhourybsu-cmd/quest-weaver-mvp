@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +23,7 @@ import {
   ZoomOut,
   Grid3x3,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export type DrawingTool =
   | "select"
@@ -78,89 +77,87 @@ export function DrawingToolbar({
 }: DrawingToolbarProps) {
   return (
     <TooltipProvider delayDuration={200}>
-      <Card className="p-2 bg-card/95 backdrop-blur-sm shadow-lg">
-        <div className="flex flex-col gap-1">
-          {/* Drawing Tools */}
-          <div className="flex flex-wrap gap-1 pb-2 border-b border-border">
-            {TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Tooltip key={tool.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={activeTool === tool.id ? "default" : "ghost"}
-                      size="icon"
-                      className="w-9 h-9"
-                      onClick={() => onToolChange(tool.id)}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>
-                      {tool.label}
-                      {tool.shortcut && (
-                        <span className="ml-2 text-muted-foreground">
-                          ({tool.shortcut})
-                        </span>
-                      )}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-
-          {/* View Controls */}
-          <div className="flex flex-wrap gap-1 pt-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-9 h-9" onClick={onZoomIn}>
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Zoom In</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-9 h-9" onClick={onZoomOut}>
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Zoom Out</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-9 h-9" onClick={onFitToView}>
-                  <Maximize className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Fit to View</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={showGrid ? "default" : "ghost"}
-                  size="icon"
-                  className="w-9 h-9"
-                  onClick={onToggleGrid}
-                >
-                  <Grid3x3 className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Toggle Grid</TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Zoom Level Display */}
-          <div className="text-xs text-center text-muted-foreground pt-1 border-t border-border">
-            {Math.round(zoom * 100)}%
-          </div>
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Drawing Tools</p>
+        <div className="grid grid-cols-4 gap-1">
+          {TOOLS.map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <Tooltip key={tool.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={activeTool === tool.id ? "default" : "ghost"}
+                    size="icon"
+                    className="w-8 h-8"
+                    onClick={() => onToolChange(tool.id)}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>
+                    {tool.label}
+                    {tool.shortcut && (
+                      <span className="ml-2 text-muted-foreground">
+                        ({tool.shortcut})
+                      </span>
+                    )}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
-      </Card>
+
+        <Separator />
+
+        {/* View Controls */}
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">View</p>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="w-8 h-8" onClick={onZoomIn}>
+                <ZoomIn className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Zoom In</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="w-8 h-8" onClick={onZoomOut}>
+                <ZoomOut className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Zoom Out</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="w-8 h-8" onClick={onFitToView}>
+                <Maximize className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Fit to View</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showGrid ? "default" : "ghost"}
+                size="icon"
+                className="w-8 h-8"
+                onClick={onToggleGrid}
+              >
+                <Grid3x3 className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Toggle Grid</TooltipContent>
+          </Tooltip>
+
+          <span className="text-xs text-muted-foreground ml-auto">{Math.round(zoom * 100)}%</span>
+        </div>
+      </div>
     </TooltipProvider>
   );
 }

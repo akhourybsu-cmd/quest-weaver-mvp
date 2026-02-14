@@ -104,6 +104,7 @@ export function MapsTab({ campaignId }: MapsTabProps) {
           gridEnabled={selectedMap.grid_enabled}
           gridSize={selectedMap.grid_size}
           isDM={true}
+          campaignId={campaignId}
         />
       </div>
     );

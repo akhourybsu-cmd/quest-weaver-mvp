@@ -970,7 +970,7 @@ const CampaignHub = () => {
                 )}
               </TabsContent>
               <TabsContent value="bestiary" className="mt-0 h-full">
-                <BestiaryTab />
+                <BestiaryTab campaignId={activeCampaign?.id} />
               </TabsContent>
               <TabsContent value="encounters" className="mt-0 h-full">
                 {activeCampaign ? (

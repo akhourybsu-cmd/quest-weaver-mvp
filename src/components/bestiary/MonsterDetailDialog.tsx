@@ -83,7 +83,9 @@ export function MonsterDetailDialog({ open, onOpenChange, monster }: MonsterDeta
               {resistances.length > 0 && <p><strong>Damage Resistances</strong> {resistances.join(", ")}</p>}
               {immunities.length > 0 && <p><strong>Damage Immunities</strong> {immunities.join(", ")}</p>}
               {vulnerabilities.length > 0 && <p><strong>Vulnerabilities</strong> {vulnerabilities.join(", ")}</p>}
-              {Object.keys(senses).length > 0 && <p><strong>Senses</strong> {Object.entries(senses).map(([k, v]) => `${k} ${v} ft.`).join(", ")}</p>}
+              {senses && (typeof senses === "string" ? senses : Object.keys(senses).length > 0) && (
+                <p><strong>Senses</strong> {typeof senses === "string" ? senses : Object.entries(senses).map(([k, v]) => `${k} ${v} ft.`).join(", ")}</p>
+              )}
               {monster.languages && <p><strong>Languages</strong> {monster.languages}</p>}
               <p><strong>Challenge</strong> {monster.cr ?? "?"}</p>
             </div>

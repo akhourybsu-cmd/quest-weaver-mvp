@@ -1805,6 +1805,54 @@ export type Database = {
           },
         ]
       }
+      dm_character_notes: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          content_markdown: string | null
+          created_at: string
+          hooks: string | null
+          id: string
+          secrets: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          content_markdown?: string | null
+          created_at?: string
+          hooks?: string | null
+          id?: string
+          secrets?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          content_markdown?: string | null
+          created_at?: string
+          hooks?: string | null
+          id?: string
+          secrets?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_character_notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_character_notes_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downtime_activities: {
         Row: {
           activity_type: string
@@ -4577,6 +4625,48 @@ export type Database = {
             columns: ["save_prompt_id"]
             isOneToOne: false
             referencedRelation: "save_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_attendance: {
+        Row: {
+          attended: boolean
+          character_id: string
+          created_at: string
+          id: string
+          inspiration_granted: boolean
+          session_id: string
+        }
+        Insert: {
+          attended?: boolean
+          character_id: string
+          created_at?: string
+          id?: string
+          inspiration_granted?: boolean
+          session_id: string
+        }
+        Update: {
+          attended?: boolean
+          character_id?: string
+          created_at?: string
+          id?: string
+          inspiration_granted?: boolean
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_attendance_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
             referencedColumns: ["id"]
           },
         ]

@@ -380,6 +380,7 @@ export const WeaponEditor = ({ open, onOpenChange, campaignId, existingItem, onS
                   <SelectItem value="Rare">Rare</SelectItem>
                   <SelectItem value="Very Rare">Very Rare</SelectItem>
                   <SelectItem value="Legendary">Legendary</SelectItem>
+                  <SelectItem value="Artifact">Artifact</SelectItem>
                 </SelectContent>
               </Select>
             </div>

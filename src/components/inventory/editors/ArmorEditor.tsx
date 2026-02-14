@@ -129,9 +129,9 @@ export const ArmorEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
 
     const properties = {
       armorCategory,
+      armorType: armorCategory.toLowerCase(),
       baseAC: baseAC ? parseInt(baseAC) : undefined,
       dexCap: dexCap ? parseInt(dexCap) : undefined,
-      armorType,
       stealthDisadvantage,
       strengthRequired: strengthRequired ? parseInt(strengthRequired) : undefined,
       armorDonTime: donTime,
@@ -231,16 +231,19 @@ export const ArmorEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
               </div>
 
               <div className="space-y-2">
-                <Label>Armor Type</Label>
-                <Select value={armorType} onValueChange={setArmorType}>
+                <Label>Rarity (Optional)</Label>
+                <Select value={rarity || "none"} onValueChange={(v) => setRarity(v === "none" ? "" : v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Select rarity" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="heavy">Heavy</SelectItem>
-                    <SelectItem value="shield">Shield</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="Common">Common</SelectItem>
+                    <SelectItem value="Uncommon">Uncommon</SelectItem>
+                    <SelectItem value="Rare">Rare</SelectItem>
+                    <SelectItem value="Very Rare">Very Rare</SelectItem>
+                    <SelectItem value="Legendary">Legendary</SelectItem>
+                    <SelectItem value="Artifact">Artifact</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -322,22 +325,6 @@ export const ArmorEditor = ({ open, onOpenChange, campaignId, existingItem, onSa
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Rarity (Optional)</Label>
-              <Select value={rarity || "none"} onValueChange={(v) => setRarity(v === "none" ? "" : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select rarity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="Common">Common</SelectItem>
-                  <SelectItem value="Uncommon">Uncommon</SelectItem>
-                  <SelectItem value="Rare">Rare</SelectItem>
-                  <SelectItem value="Very Rare">Very Rare</SelectItem>
-                  <SelectItem value="Legendary">Legendary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <Separator />
 

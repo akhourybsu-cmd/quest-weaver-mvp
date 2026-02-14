@@ -328,10 +328,10 @@ const DMItemVault = ({ campaignId, onRefresh }: DMItemVaultProps) => {
                   </div>
                 )}
 
-                {item.properties?.ac && (
+                {(item.properties?.ac || item.properties?.baseAC) && (
                   <div className="text-sm">
                     <span className="text-muted-foreground">AC:</span>{" "}
-                    <span className="font-medium">{item.properties.ac}</span>
+                    <span className="font-medium">{item.properties.baseAC || item.properties.ac}{item.properties?.dexCap != null ? ` (max Dex +${item.properties.dexCap})` : ""}</span>
                   </div>
                 )}
 

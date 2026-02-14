@@ -187,22 +187,25 @@ const MapViewer = ({
   // Update cursor based on tool
   useEffect(() => {
     if (!fabricCanvas) return;
+    // Guard: Fabric.js setCursor accesses upperCanvasEl.style which may be undefined
+    // if the canvas DOM element hasn't mounted yet
+    const canSetCursor = fabricCanvas.upperCanvasEl != null;
     
     switch (activeTool) {
       case "pan":
-        fabricCanvas.setCursor("grab");
+        if (canSetCursor) fabricCanvas.setCursor("grab");
         fabricCanvas.selection = false;
         break;
       case "select":
-        fabricCanvas.setCursor("default");
+        if (canSetCursor) fabricCanvas.setCursor("default");
         fabricCanvas.selection = isDM;
         break;
       case "pin":
-        fabricCanvas.setCursor("crosshair");
+        if (canSetCursor) fabricCanvas.setCursor("crosshair");
         fabricCanvas.selection = false;
         break;
       default:
-        fabricCanvas.setCursor("crosshair");
+        if (canSetCursor) fabricCanvas.setCursor("crosshair");
         fabricCanvas.selection = false;
     }
   }, [fabricCanvas, activeTool, isDM]);

@@ -2230,6 +2230,7 @@ export type Database = {
           campaign_id: string
           created_at: string | null
           description: string | null
+          faction_type: string | null
           goals: string[] | null
           id: string
           influence_score: number | null
@@ -2245,6 +2246,7 @@ export type Database = {
           campaign_id: string
           created_at?: string | null
           description?: string | null
+          faction_type?: string | null
           goals?: string[] | null
           id?: string
           influence_score?: number | null
@@ -2260,6 +2262,7 @@ export type Database = {
           campaign_id?: string
           created_at?: string | null
           description?: string | null
+          faction_type?: string | null
           goals?: string[] | null
           id?: string
           influence_score?: number | null
@@ -3300,7 +3303,9 @@ export type Database = {
           height: number
           id: string
           image_url: string
+          map_type: string | null
           name: string
+          player_visible: boolean | null
           scale_feet_per_square: number | null
           updated_at: string | null
           width: number
@@ -3314,7 +3319,9 @@ export type Database = {
           height: number
           id?: string
           image_url: string
+          map_type?: string | null
           name: string
+          player_visible?: boolean | null
           scale_feet_per_square?: number | null
           updated_at?: string | null
           width: number
@@ -3328,7 +3335,9 @@ export type Database = {
           height?: number
           id?: string
           image_url?: string
+          map_type?: string | null
           name?: string
+          player_visible?: boolean | null
           scale_feet_per_square?: number | null
           updated_at?: string | null
           width?: number
@@ -4225,6 +4234,91 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      plot_thread_links: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          linked_id: string
+          linked_type: string
+          thread_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          linked_id: string
+          linked_type: string
+          thread_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          linked_id?: string
+          linked_type?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plot_thread_links_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "plot_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plot_threads: {
+        Row: {
+          branching_notes: string | null
+          campaign_id: string
+          created_at: string
+          description: string | null
+          id: string
+          party_knowledge: string | null
+          sort_order: number | null
+          status: string
+          title: string
+          truth: string | null
+          updated_at: string
+        }
+        Insert: {
+          branching_notes?: string | null
+          campaign_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          party_knowledge?: string | null
+          sort_order?: number | null
+          status?: string
+          title: string
+          truth?: string | null
+          updated_at?: string
+        }
+        Update: {
+          branching_notes?: string | null
+          campaign_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          party_knowledge?: string | null
+          sort_order?: number | null
+          status?: string
+          title?: string
+          truth?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plot_threads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

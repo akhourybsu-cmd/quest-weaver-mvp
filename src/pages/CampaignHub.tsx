@@ -105,6 +105,7 @@ const NotesTab = lazy(() => import("@/components/campaign/tabs/NotesTab").then(m
 const TimelineTab = lazy(() => import("@/components/campaign/tabs/TimelineTab").then(m => ({ default: m.TimelineTab })));
 const LoreTab = lazy(() => import("@/components/campaign/tabs/LoreTab").then(m => ({ default: m.LoreTab })));
 const LiveSessionTab = lazy(() => import("@/components/campaign/tabs/LiveSessionTab").then(m => ({ default: m.LiveSessionTab })));
+const PartyTab = lazy(() => import("@/components/campaign/tabs/PartyTab").then(m => ({ default: m.PartyTab })));
 
 const TabFallback = () => (
   <div className="space-y-4 p-4">
@@ -826,6 +827,9 @@ const CampaignHub = () => {
                     <TabsTrigger value="sessions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Sessions
                     </TabsTrigger>
+                    <TabsTrigger value="party" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
+                      Party
+                    </TabsTrigger>
                     {/* Divider */}
                     <div className="w-px h-5 bg-brass/20 self-center mx-1" />
                     {/* World */}
@@ -885,6 +889,7 @@ const CampaignHub = () => {
                   <SelectItem value="overview">📋 Overview</SelectItem>
                   <SelectItem value="quests">📜 Quests</SelectItem>
                   <SelectItem value="sessions">📅 Sessions</SelectItem>
+                  <SelectItem value="party">👥 Party</SelectItem>
                   <SelectItem value="npcs">👥 NPCs</SelectItem>
                   <SelectItem value="locations">📍 Locations</SelectItem>
                   <SelectItem value="lore">📖 Lore</SelectItem>
@@ -927,6 +932,13 @@ const CampaignHub = () => {
                 <TabsContent value="sessions" className="mt-0 h-full">
                   <Suspense fallback={<TabFallback />}>
                     {activeCampaign ? <SessionsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("party") && (
+                <TabsContent value="party" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <PartyTab campaignId={activeCampaign.id} /> : <TabFallback />}
                   </Suspense>
                 </TabsContent>
               )}

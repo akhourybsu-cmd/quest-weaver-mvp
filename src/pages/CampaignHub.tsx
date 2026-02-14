@@ -106,6 +106,9 @@ const TimelineTab = lazy(() => import("@/components/campaign/tabs/TimelineTab").
 const LoreTab = lazy(() => import("@/components/campaign/tabs/LoreTab").then(m => ({ default: m.LoreTab })));
 const LiveSessionTab = lazy(() => import("@/components/campaign/tabs/LiveSessionTab").then(m => ({ default: m.LiveSessionTab })));
 const PartyTab = lazy(() => import("@/components/campaign/tabs/PartyTab").then(m => ({ default: m.PartyTab })));
+const MapsTab = lazy(() => import("@/components/campaign/tabs/MapsTab").then(m => ({ default: m.MapsTab })));
+const DMToolsTab = lazy(() => import("@/components/campaign/tabs/DMToolsTab").then(m => ({ default: m.DMToolsTab })));
+const PlotBoardTab = lazy(() => import("@/components/campaign/tabs/PlotBoardTab").then(m => ({ default: m.PlotBoardTab })));
 
 const TabFallback = () => (
   <div className="space-y-4 p-4">
@@ -845,6 +848,9 @@ const CampaignHub = () => {
                     <TabsTrigger value="factions" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Factions
                     </TabsTrigger>
+                    <TabsTrigger value="maps" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
+                      Maps
+                    </TabsTrigger>
                     {/* Divider */}
                     <div className="w-px h-5 bg-brass/20 self-center mx-1" />
                     {/* Combat */}
@@ -865,6 +871,15 @@ const CampaignHub = () => {
                     </TabsTrigger>
                     <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
                       Notes
+                    </TabsTrigger>
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-brass/20 self-center mx-1" />
+                    {/* Utility */}
+                    <TabsTrigger value="dmtools" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
+                      DM Tools
+                    </TabsTrigger>
+                    <TabsTrigger value="plotboard" className="data-[state=active]:border-b-2 data-[state=active]:border-arcanePurple data-[state=active]:text-ink data-[state=inactive]:text-brass/70 hover:text-ink px-4 py-3 whitespace-nowrap transition-colors">
+                      Plot Board
                     </TabsTrigger>
                     {liveSession && (
                       <TabsTrigger
@@ -899,6 +914,9 @@ const CampaignHub = () => {
                   <SelectItem value="items">📦 Item Vault</SelectItem>
                   <SelectItem value="timeline">⏳ Timeline</SelectItem>
                   <SelectItem value="notes">📝 Notes</SelectItem>
+                  <SelectItem value="maps">🗺️ Maps</SelectItem>
+                  <SelectItem value="dmtools">🧰 DM Tools</SelectItem>
+                  <SelectItem value="plotboard">🕸️ Plot Board</SelectItem>
                   {liveSession && (
                     <SelectItem value="session">🔴 Live Session</SelectItem>
                   )}
@@ -1018,6 +1036,27 @@ const CampaignHub = () => {
                     {activeCampaign && currentUserId ? (
                       <NotesTab campaignId={activeCampaign.id} userId={currentUserId} />
                     ) : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("maps") && (
+                <TabsContent value="maps" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <MapsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("dmtools") && (
+                <TabsContent value="dmtools" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    <DMToolsTab />
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("plotboard") && (
+                <TabsContent value="plotboard" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <PlotBoardTab campaignId={activeCampaign.id} /> : <TabFallback />}
                   </Suspense>
                 </TabsContent>
               )}

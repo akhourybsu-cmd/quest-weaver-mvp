@@ -1,75 +1,73 @@
 
-
-# Character Creation Wizard -- Animation and Polish Pass
+# Campaign Manager Top Bar -- Condense, Opaque, and Sticky Fix
 
 ## Overview
-The Character Creation Wizard currently uses plain, unstyled components (generic Cards, standard Progress bar, no animations) which clashes with the rich fantasy aesthetic used throughout the Player Hub, combat screen, character sheets, and settings. This plan brings the wizard up to parity.
+Fix three issues with the Campaign Manager header and tab bar: reduce vertical height, eliminate transparency that lets content bleed through, and ensure the tab bar stays visible while scrolling.
 
-## Current Issues
+## Root Cause Analysis
 
-1. **No fantasy theming** -- The dialog, all step cards, the sidebar, and navigation use default shadcn styling with no `fantasy-border-ornaments`, `font-cinzel`, brass accents, or parchment overlays.
-2. **No step transition animations** -- Switching steps has no entrance animation; content just appears.
-3. **Plain progress bar** -- Standard unstyled `Progress` component with no thematic color.
-4. **LiveSummaryPanel is generic** -- No fantasy styling on any of the sidebar cards.
-5. **Navigation buttons are bland** -- Back/Next buttons have no fantasy styling or tactile feedback.
-6. **Step headers are plain text** -- Each step uses `h3` with no thematic icon, color, or divider.
-7. **StepReview finalize CTA is generic** -- Uses a plain `primary` button with no fantasy celebration feel.
-8. **No staggered animations** on card lists (badges, proficiency lists, ancestry traits, etc.)
+The current layout in `CampaignHub.tsx` has this structure:
+
+```text
+<CampaignManagerLayout>        (flex column)
+  <header>                     (sticky top-0 z-10, semi-transparent bg-obsidian/95)
+    breadcrumb + actions
+    campaign name + badges
+  </header>
+  <div overflow-auto>          (the scroll container)
+    <Tabs>
+      <tab-bar>                (sticky top-0 z-20, bg-obsidian -- but sticks inside scroll container)
+      <tab-content>
+    </Tabs>
+  </div>
+</CampaignManagerLayout>
+```
+
+**Problem 1 -- Transparency**: The header uses `bg-obsidian/95 backdrop-blur-sm`, which is 95% opaque. Scrolling content bleeds through.
+
+**Problem 2 -- Sticky conflict**: The header is `sticky top-0` in the main flex column, while the tab bar is `sticky top-0` inside the `overflow-auto` div. They each stick independently, but the header's semi-transparency lets the tab content show through it.
+
+**Problem 3 -- Vertical bulk**: The header uses `py-4` padding and `mb-3` spacing between rows, plus `text-lg sm:text-2xl` for the campaign title. This consumes significant vertical space.
 
 ## Plan
 
-### 1. Dialog Container Fantasy Theming
-- Apply `fantasy-border-ornaments` to the `DialogContent` wrapper.
-- Add parchment texture overlay (`bg-gradient-to-br from-parchment/5 via-transparent to-brass/5`).
-- Style the wizard title "Character Creation Wizard" with `font-cinzel text-brass tracking-wide`.
-- Replace the plain `Progress` bar with brass-themed styling (`[&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass`).
-- Add brass gradient dividers between header, content, and footer sections.
+### 1. Make Header Fully Opaque
+- Change `bg-obsidian/95 backdrop-blur-sm` to `bg-obsidian` (solid, no transparency)
+- Add a subtle `shadow-md` or `shadow-[0_1px_3px_rgba(0,0,0,0.3)]` to visually separate from content below
 
-### 2. Step Transition Animation
-- Wrap `renderStep()` output with a keyed `div` that applies `animate-fade-in` on each step change.
-- Use `key={currentStep}` to trigger re-mount and animation on every step transition.
+### 2. Condense Header Vertically
+- Reduce padding from `py-4` to `py-2`
+- Reduce horizontal padding from `px-6` to `px-4`
+- Reduce spacing between breadcrumb row and title row from `mb-3` to `mb-1`
+- Shrink campaign title from `text-lg sm:text-2xl` to `text-base sm:text-xl`
+- Reduce badge sizes and avatar sizes slightly
+- Tighten the actions bar padding
 
-### 3. Navigation Buttons Polish
-- Style the Next button with brass accent: `bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground`.
-- Add `active:scale-95 transition-transform` press feedback to both Back and Next.
-- Style the "Save & Exit" button with a brass outline variant.
+### 3. Make Tab Bar Fully Opaque with Separator
+- The tab bar already uses `bg-obsidian` (good), but add `shadow-sm` for a clear bottom edge
+- Ensure the gradient fades on left/right also use solid `from-obsidian` (they already do)
 
-### 4. Step Headers -- Thematic Icons and Styling
-- Add a themed icon next to each step title (Sword for Basics, Users for Ancestry, Brain for Abilities, Book for Background, Wrench for Proficiencies, Backpack for Equipment, Sparkles for Spells, Star for Features, Scroll for Description, CheckCircle for Review).
-- Apply `font-cinzel tracking-wide text-brass` to step `h3` titles.
-- Add brass gradient divider below each step header.
-
-### 5. Step Cards Fantasy Borders
-- Apply `fantasy-border-ornaments` to the primary detail cards in each step (class details in StepBasics, ancestry card in StepAncestry, background card in StepBackground, modifiers card in StepAbilities, portrait card and personality card in StepDescription, review card in StepReview).
-- Add parchment overlay to these cards where appropriate.
-
-### 6. LiveSummaryPanel Polish
-- Apply `fantasy-border-ornaments` to the sidebar wrapper.
-- Use `font-cinzel` for "Character Summary" and card section titles (Identity, Combat, Ability Modifiers, Skills).
-- Add brass accents to the progress badge list and combat stat blocks.
-- Add `animate-fade-in` entrance to each summary card with staggered delays.
-
-### 7. StepReview Finalize CTA
-- Style the finalize section card with a glowing brass border (`shadow-[0_0_12px_hsl(var(--brass)/0.3)]`).
-- Restyle "Finalize Character" button with brass gradient and a `Sparkles` icon.
-- Add `animate-pulse-breathe` subtle glow to the finalize card to draw attention.
-
-### 8. Badge and List Animations
-- Add staggered `animate-fade-in` with incremental `animation-delay` to badge lists in StepBasics (saving throws, armor, weapons), StepAncestry (ability bonuses, languages, traits), StepBackground (skills, tools, languages), and StepReview sections.
+### 4. Fix Sticky Stacking
+- The tab bar currently sticks at `top-0` inside the scroll container, which works correctly since it's inside `overflow-auto`. This is actually fine as-is -- the tab bar sticks at the top of the scrollable area.
+- Bump the header `z-index` from `z-10` to `z-20` and the tab bar stays at `z-20` so they layer correctly.
+- Alternatively, give the mobile tab bar the same treatment.
 
 ---
 
 ## Technical Details
 
-**Files to modify:**
-- `src/components/character/CharacterWizard.tsx` -- Dialog theming, progress bar styling, step transition animation wrapper, navigation buttons, header font
-- `src/components/character/wizard/StepBasics.tsx` -- Fantasy card borders, themed header with icon, badge animations
-- `src/components/character/wizard/StepAncestry.tsx` -- Fantasy card borders, themed header with icon, badge animations
-- `src/components/character/wizard/StepAbilities.tsx` -- Fantasy card borders, themed header with icon
-- `src/components/character/wizard/StepBackground.tsx` -- Fantasy card borders, themed header with icon, badge animations
-- `src/components/character/wizard/StepDescription.tsx` -- Fantasy card borders, themed header with icon
-- `src/components/character/wizard/StepReview.tsx` -- Fantasy card borders, finalize CTA glow, themed header, badge animations
-- `src/components/character/wizard/LiveSummaryPanel.tsx` -- Full fantasy theming pass, font-cinzel, brass accents, entrance animations
+**Single file to modify:** `src/pages/CampaignHub.tsx`
 
-**No new files, dependencies, or database changes required.** All styling uses existing Tailwind utilities, animation classes, and fantasy-border CSS already in the project.
+**Line-by-line changes:**
 
+1. **Line 647** (header tag): Change `bg-obsidian/95 backdrop-blur-sm px-6 py-4` to `bg-obsidian px-4 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.4)]`; bump `z-10` to `z-20`
+
+2. **Line 662** (breadcrumb row): Change `mb-3` to `mb-1`
+
+3. **Line 733** (campaign title): Change `text-lg sm:text-2xl` to `text-base sm:text-xl`
+
+4. **Line 789** (desktop tab bar): Add `shadow-sm` to ensure clear separation; keep `z-20`; confirm `bg-obsidian` is already solid
+
+5. **Line 857** (mobile tab bar): Same treatment -- confirm `bg-obsidian` is solid, add `shadow-sm`
+
+No new files, no database changes, no new dependencies.

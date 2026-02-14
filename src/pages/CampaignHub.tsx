@@ -35,7 +35,7 @@
  * NO ORPHANED ASSETS: All existing campaign-related components are now integrated into tabs.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-// Breadcrumb imports removed - using inline breadcrumb now
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,24 +77,6 @@ import { CampaignManagerLayout } from "@/components/campaign/CampaignManagerLayo
 import { CommandPalette, useCommandPalette } from "@/components/campaign/CommandPalette";
 import { QuickCaptureModal } from "@/components/notes/QuickCaptureModal";
 import { NewCampaignDialog } from "@/components/campaign/NewCampaignDialog";
-import { OverviewTab } from "@/components/campaign/tabs/OverviewTabUpdated";
-import { QuestsTab } from "@/components/campaign/tabs/QuestsTabUpdated";
-import { SessionTab } from "@/components/campaign/tabs/SessionTab";
-import { SessionsTab } from "@/components/campaign/tabs/SessionsTab";
-import { NPCsTab } from "@/components/campaign/tabs/NPCsTab";
-import { LocationsTab } from "@/components/campaign/tabs/LocationsTab";
-import { FactionsTab } from "@/components/campaign/tabs/FactionsTab";
-import { BestiaryTab } from "@/components/campaign/tabs/BestiaryTab";
-import { ItemVaultTab } from "@/components/campaign/tabs/ItemVaultTab";
-import { EncountersTab } from "@/components/campaign/tabs/EncountersTab";
-import { NotesTab } from "@/components/campaign/tabs/NotesTab";
-import { TimelineTab } from "@/components/campaign/tabs/TimelineTab";
-import { LoreTab } from "@/components/campaign/tabs/LoreTab";
-import { InspectorPanel } from "@/components/campaign/InspectorPanel";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LiveSessionTab } from "@/components/campaign/tabs/LiveSessionTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteCampaignDialog } from "@/components/campaign/DeleteCampaignDialog";
 import { SessionTimer } from "@/components/campaign/SessionTimer";
@@ -104,6 +85,33 @@ import { resilientChannel } from "@/lib/realtime";
 import { DocumentImportDialog } from "@/components/campaign/DocumentImportDialog";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { ImagePlus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { InspectorPanel } from "@/components/campaign/InspectorPanel";
+
+// Lazy-loaded tab components for code splitting
+const OverviewTab = lazy(() => import("@/components/campaign/tabs/OverviewTabUpdated").then(m => ({ default: m.OverviewTab })));
+const QuestsTab = lazy(() => import("@/components/campaign/tabs/QuestsTabUpdated").then(m => ({ default: m.QuestsTab })));
+const SessionTab = lazy(() => import("@/components/campaign/tabs/SessionTab").then(m => ({ default: m.SessionTab })));
+const SessionsTab = lazy(() => import("@/components/campaign/tabs/SessionsTab").then(m => ({ default: m.SessionsTab })));
+const NPCsTab = lazy(() => import("@/components/campaign/tabs/NPCsTab").then(m => ({ default: m.NPCsTab })));
+const LocationsTab = lazy(() => import("@/components/campaign/tabs/LocationsTab").then(m => ({ default: m.LocationsTab })));
+const FactionsTab = lazy(() => import("@/components/campaign/tabs/FactionsTab").then(m => ({ default: m.FactionsTab })));
+const BestiaryTab = lazy(() => import("@/components/campaign/tabs/BestiaryTab").then(m => ({ default: m.BestiaryTab })));
+const ItemVaultTab = lazy(() => import("@/components/campaign/tabs/ItemVaultTab").then(m => ({ default: m.ItemVaultTab })));
+const EncountersTab = lazy(() => import("@/components/campaign/tabs/EncountersTab").then(m => ({ default: m.EncountersTab })));
+const NotesTab = lazy(() => import("@/components/campaign/tabs/NotesTab").then(m => ({ default: m.NotesTab })));
+const TimelineTab = lazy(() => import("@/components/campaign/tabs/TimelineTab").then(m => ({ default: m.TimelineTab })));
+const LoreTab = lazy(() => import("@/components/campaign/tabs/LoreTab").then(m => ({ default: m.LoreTab })));
+const LiveSessionTab = lazy(() => import("@/components/campaign/tabs/LiveSessionTab").then(m => ({ default: m.LiveSessionTab })));
+
+const TabFallback = () => (
+  <div className="space-y-4 p-4">
+    <Skeleton className="h-32 w-full" />
+    <Skeleton className="h-32 w-full" />
+  </div>
+);
 
 interface Campaign {
   id: string;
@@ -140,9 +148,23 @@ const CampaignHub = () => {
   const [playerData, setPlayerData] = useState<{ count: number; players: any[] }>({ count: 0, players: [] });
   const [sessionCount, setSessionCount] = useState(0);
   const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0);
+  // Track which tabs have been visited for deferred rendering
+  const visitedTabsRef = useRef<Set<string>>(new Set(["overview"]));
 
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
+  // Track visited tabs to enable deferred rendering
+  const handleTabChange = useCallback((tab: string) => {
+    visitedTabsRef.current.add(tab);
+    setActiveTab(tab);
+  }, []);
+
+  // Check if a tab should render (visited at least once)
+  const shouldRenderTab = useCallback((tab: string) => {
+    return activeTab === tab || visitedTabsRef.current.has(tab);
+  }, [activeTab]);
+
+  // Initial user + campaigns fetch (runs once)
   useEffect(() => {
     const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -150,11 +172,12 @@ const CampaignHub = () => {
         setCurrentUserId(user.id);
       }
     };
-    
     initUser();
     fetchCampaigns();
-    
-    // Check for live session when active campaign changes
+  }, []);
+
+  // Live session check when campaign changes
+  useEffect(() => {
     if (activeCampaign) {
       fetchLiveSession();
     }
@@ -353,7 +376,7 @@ const CampaignHub = () => {
       });
       
       // Switch to session tab
-      setActiveTab('session');
+      handleTabChange('session');
       await fetchLiveSession();
     } catch (error: any) {
       toast({
@@ -459,7 +482,7 @@ const CampaignHub = () => {
       });
       
       setLiveSession(null);
-      setActiveTab('overview');
+      handleTabChange('overview');
     } catch (error: any) {
       toast({
         title: 'Error ending session',
@@ -514,20 +537,20 @@ const CampaignHub = () => {
 
   const handleQuickAdd = (type: string) => {
     if (type === "quest") {
-      setActiveTab("quests");
+      handleTabChange("quests");
       // Signal the Quests tab to open the creation dialog once it is active.
       window.dispatchEvent(new CustomEvent("qw:create-quest"));
     }
   };
 
-  const commandActions = [
+  const commandActions = useMemo(() => [
     {
       id: "create-quest",
       label: "Create Quest",
       icon: <Scroll className="w-4 h-4" />,
       group: "Create",
       onSelect: () => {
-        setActiveTab("quests");
+        handleTabChange("quests");
         toast({
           title: "Opening Quests",
           description: "Navigate to the Quests tab to create a new quest",
@@ -540,7 +563,7 @@ const CampaignHub = () => {
       icon: <Users className="w-4 h-4" />,
       group: "Create",
       onSelect: () => {
-        setActiveTab("npcs");
+        handleTabChange("npcs");
         toast({
           title: "Opening NPCs",
           description: "Navigate to the NPCs tab to create a new NPC",
@@ -553,7 +576,7 @@ const CampaignHub = () => {
       icon: <MapPin className="w-4 h-4" />,
       group: "Create",
       onSelect: () => {
-        setActiveTab("locations");
+        handleTabChange("locations");
         toast({
           title: "Opening Locations",
           description: "Navigate to the Locations tab to create a new location",
@@ -566,7 +589,7 @@ const CampaignHub = () => {
       icon: <Package className="w-4 h-4" />,
       group: "Create",
       onSelect: () => {
-        setActiveTab("items");
+        handleTabChange("items");
         toast({
           title: "Opening Item Vault",
           description: "Navigate to the Item Vault tab to create a new item",
@@ -578,24 +601,23 @@ const CampaignHub = () => {
       label: "Go to Quests",
       icon: <Scroll className="w-4 h-4" />,
       group: "Navigate",
-      onSelect: () => setActiveTab("quests"),
+      onSelect: () => handleTabChange("quests"),
     },
     {
       id: "nav-overview",
       label: "Go to Overview",
       icon: <Shield className="w-4 h-4" />,
       group: "Navigate",
-      onSelect: () => setActiveTab("overview"),
+      onSelect: () => handleTabChange("overview"),
     },
-  ];
+  ], [handleTabChange, toast]);
 
-  const formattedCampaigns = (campaigns || []).map((c) => ({
+  const formattedCampaigns = useMemo(() => (campaigns || []).map((c) => ({
     id: c.id,
     name: c.name,
     system: "5e",
-    // Only show live indicator when we've verified session is actually active (live or paused)
-    isLive: activeCampaign?.id === c.id && liveSession !== null && ['live', 'paused'].includes(liveSession.status),
-  }));
+    isLive: activeCampaign?.id === c.id && liveSession !== null && ['live', 'paused'].includes(liveSession?.status),
+  })), [campaigns, activeCampaign?.id, liveSession]);
 
   if (loading) {
     return (
@@ -784,7 +806,7 @@ const CampaignHub = () => {
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
             {/* Desktop: Scrollable tab bar with gradient hints */}
             <div className="border-b border-brass/20 px-3 sm:px-4 md:px-6 bg-obsidian sticky top-0 z-20 hidden md:block shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               <div className="relative">
@@ -855,7 +877,7 @@ const CampaignHub = () => {
 
             {/* Mobile: Grouped dropdown navigation */}
             <div className="border-b border-brass/20 px-3 py-2 bg-obsidian sticky top-0 z-20 md:hidden shadow-sm">
-              <Select value={activeTab} onValueChange={setActiveTab}>
+              <Select value={activeTab} onValueChange={handleTabChange}>
                 <SelectTrigger className="bg-card/50 border-brass/30 font-cinzel">
                   <SelectValue />
                 </SelectTrigger>
@@ -881,160 +903,121 @@ const CampaignHub = () => {
 
             <div className="flex-1 p-3 sm:p-4 md:p-6">
               <TabsContent value="overview" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <OverviewTab 
-                    campaignId={activeCampaign.id} 
-                    campaignCode={activeCampaign.code}
-                    onQuickAdd={handleQuickAdd}
-                    onReviewSessionPack={() => setActiveTab("sessions")}
-                    onNavigateTab={(tab) => setActiveTab(tab)}
-                    refreshTrigger={sessionRefreshTrigger}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
+                <Suspense fallback={<TabFallback />}>
+                  {activeCampaign ? (
+                    <OverviewTab 
+                      campaignId={activeCampaign.id} 
+                      campaignCode={activeCampaign.code}
+                      onQuickAdd={handleQuickAdd}
+                      onReviewSessionPack={() => handleTabChange("sessions")}
+                      onNavigateTab={(tab) => handleTabChange(tab)}
+                      refreshTrigger={sessionRefreshTrigger}
+                    />
+                  ) : <TabFallback />}
+                </Suspense>
               </TabsContent>
-              <TabsContent value="quests" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <QuestsTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="sessions" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <SessionsTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="npcs" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <NPCsTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="locations" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <LocationsTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="lore" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <LoreTab campaignId={activeCampaign.id} />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="factions" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <FactionsTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="bestiary" className="mt-0 h-full">
-                <BestiaryTab campaignId={activeCampaign?.id} />
-              </TabsContent>
-              <TabsContent value="encounters" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <EncountersTab 
-                    campaignId={activeCampaign.id}
-                    liveSessionId={liveSession?.id}
-                    onLaunchEncounter={(encounterId) => {
-                      // If no session is active, start one first
-                      if (!liveSession) {
-                        handleStartSession().then(() => {
-                          setActiveTab("session");
-                        });
-                      } else {
-                        setActiveTab("session");
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="items" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <ItemVaultTab 
-                    campaignId={activeCampaign.id}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="timeline" className="mt-0 h-full">
-                {activeCampaign ? (
-                  <TimelineTab campaignId={activeCampaign.id} />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="notes" className="mt-0 h-full">
-                {activeCampaign && currentUserId ? (
-                  <NotesTab campaignId={activeCampaign.id} userId={currentUserId} />
-                ) : (
-                  <div className="space-y-4">
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                    <Skeleton className="h-32 w-full" />
-                  </div>
-                )}
-              </TabsContent>
-              {liveSession && activeCampaign && currentUserId && (
+              {shouldRenderTab("quests") && (
+                <TabsContent value="quests" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <QuestsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("sessions") && (
+                <TabsContent value="sessions" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <SessionsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("npcs") && (
+                <TabsContent value="npcs" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <NPCsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("locations") && (
+                <TabsContent value="locations" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <LocationsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("lore") && (
+                <TabsContent value="lore" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <LoreTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("factions") && (
+                <TabsContent value="factions" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <FactionsTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("bestiary") && (
+                <TabsContent value="bestiary" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    <BestiaryTab campaignId={activeCampaign?.id} />
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("encounters") && (
+                <TabsContent value="encounters" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? (
+                      <EncountersTab 
+                        campaignId={activeCampaign.id}
+                        liveSessionId={liveSession?.id}
+                        onLaunchEncounter={(encounterId) => {
+                          if (!liveSession) {
+                            handleStartSession().then(() => {
+                              handleTabChange("session");
+                            });
+                          } else {
+                            handleTabChange("session");
+                          }
+                        }}
+                      />
+                    ) : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("items") && (
+                <TabsContent value="items" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <ItemVaultTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("timeline") && (
+                <TabsContent value="timeline" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign ? <TimelineTab campaignId={activeCampaign.id} /> : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {shouldRenderTab("notes") && (
+                <TabsContent value="notes" className="mt-0 h-full">
+                  <Suspense fallback={<TabFallback />}>
+                    {activeCampaign && currentUserId ? (
+                      <NotesTab campaignId={activeCampaign.id} userId={currentUserId} />
+                    ) : <TabFallback />}
+                  </Suspense>
+                </TabsContent>
+              )}
+              {liveSession && activeCampaign && currentUserId && shouldRenderTab("session") && (
                 <TabsContent value="session" className="mt-0 h-full">
-                  <LiveSessionTab
-                    campaignId={activeCampaign.id}
-                    sessionId={liveSession.id}
-                    currentUserId={currentUserId}
-                  />
+                  <Suspense fallback={<TabFallback />}>
+                    <LiveSessionTab
+                      campaignId={activeCampaign.id}
+                      sessionId={liveSession.id}
+                      currentUserId={currentUserId}
+                    />
+                  </Suspense>
                 </TabsContent>
               )}
             </div>

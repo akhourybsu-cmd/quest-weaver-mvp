@@ -13,7 +13,9 @@ import { X, Trash2, Sparkles, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import LoreLinkSelector from "@/components/lore/LoreLinkSelector";
- import { AIGenerateButton } from "@/components/ai/AIGenerateButton";
+import { AIGenerateButton } from "@/components/ai/AIGenerateButton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FACTION_TYPES } from "@/lib/factionUtils";
 
 interface Faction {
   id: string;
@@ -25,6 +27,7 @@ interface Faction {
   tags: string[];
   goals?: string[];
   lore_page_id?: string | null;
+  faction_type?: string | null;
 }
 
 interface FactionEditorProps {
@@ -50,6 +53,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
   const [existingReputation, setExistingReputation] = useState<{ id: string } | null>(null);
   const [lorePageId, setLorePageId] = useState<string | null>(null);
   const [playerVisible, setPlayerVisible] = useState(false);
+  const [factionType, setFactionType] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +69,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setGoals(faction.goals || []);
       setLorePageId(faction.lore_page_id || null);
       setPlayerVisible((faction as any).player_visible ?? false);
+      setFactionType((faction as any).faction_type || "");
       setTagInput("");
       setGoalInput("");
       
@@ -99,6 +104,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
       setExistingReputation(null);
       setLorePageId(null);
       setPlayerVisible(false);
+      setFactionType("");
       setTagInput("");
       setGoalInput("");
     }
@@ -166,6 +172,7 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         goals: finalGoals,
         lore_page_id: lorePageId,
         player_visible: playerVisible,
+        faction_type: factionType || null,
       };
 
       if (faction) {
@@ -283,14 +290,30 @@ const FactionEditor = ({ open, onOpenChange, campaignId, faction, onSaved }: Fac
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Faction name"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Faction name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="faction-type">Type</Label>
+              <Select value={factionType || "none"} onValueChange={(v) => setFactionType(v === "none" ? "" : v)}>
+                <SelectTrigger id="faction-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {FACTION_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Faction Banner/Emblem Upload */}

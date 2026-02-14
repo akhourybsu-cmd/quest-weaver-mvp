@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, Search, Target } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
@@ -12,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getReputationLabel, getReputationColor, getInfluenceLabel } from "@/lib/factionUtils";
 
 interface Faction {
   id: string;
@@ -22,6 +24,12 @@ interface Faction {
   influence_score: number | null;
   tags: string[];
   goals: string[];
+  faction_type: string | null;
+}
+
+interface Reputation {
+  faction_id: string;
+  score: number;
 }
 
 interface PlayerFactionsViewProps {
@@ -30,36 +38,43 @@ interface PlayerFactionsViewProps {
 
 export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
   const [factions, setFactions] = useState<Faction[]>([]);
+  const [reputations, setReputations] = useState<Reputation[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFaction, setSelectedFaction] = useState<Faction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     loadFactions();
+    loadReputations();
 
     const channel = supabase
       .channel(`player-factions:${campaignId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "factions",
-          filter: `campaign_id=eq.${campaignId}`,
-        },
+        { event: "*", schema: "public", table: "factions", filter: `campaign_id=eq.${campaignId}` },
         () => loadFactions()
+      )
+      .subscribe();
+
+    const repChannel = supabase
+      .channel(`player-faction-rep:${campaignId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "faction_reputation", filter: `campaign_id=eq.${campaignId}` },
+        () => loadReputations()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(repChannel);
     };
   }, [campaignId]);
 
   const loadFactions = async () => {
     const { data, error } = await supabase
       .from("factions")
-      .select("id, name, description, motto, banner_url, influence_score, tags, goals")
+      .select("id, name, description, motto, banner_url, influence_score, tags, goals, faction_type")
       .eq("campaign_id", campaignId)
       .eq("player_visible", true)
       .order("name");
@@ -67,6 +82,18 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
     if (!error && data) {
       setFactions(data as Faction[]);
     }
+  };
+
+  const loadReputations = async () => {
+    const { data } = await supabase
+      .from("faction_reputation")
+      .select("faction_id, score")
+      .eq("campaign_id", campaignId);
+    setReputations((data || []) as Reputation[]);
+  };
+
+  const getRepScore = (factionId: string) => {
+    return reputations.find((r) => r.faction_id === factionId)?.score ?? 0;
   };
 
   const filteredFactions = factions.filter((faction) => {
@@ -84,15 +111,6 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
     setDialogOpen(true);
   };
 
-  const getInfluenceLabel = (score: number | null) => {
-    if (score === null) return "Unknown";
-    if (score >= 80) return "Dominant";
-    if (score >= 60) return "Strong";
-    if (score >= 40) return "Moderate";
-    if (score >= 20) return "Minor";
-    return "Negligible";
-  };
-
   return (
     <>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -101,17 +119,16 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
             <DialogTitle className="font-cinzel flex items-center gap-2">
               <Shield className="w-5 h-5" />
               {selectedFaction?.name}
+              {selectedFaction?.faction_type && (
+                <Badge variant="secondary" className="ml-2">{selectedFaction.faction_type}</Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedFaction && (
             <div className="space-y-4">
               {selectedFaction.banner_url && (
                 <div className="rounded-lg overflow-hidden border border-brass/20">
-                  <img
-                    src={selectedFaction.banner_url}
-                    alt={selectedFaction.name}
-                    className="w-full h-auto max-h-[300px] object-cover"
-                  />
+                  <img src={selectedFaction.banner_url} alt={selectedFaction.name} className="w-full h-auto max-h-[300px] object-cover" />
                 </div>
               )}
 
@@ -121,6 +138,22 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
                   <p className="text-sm italic">"{selectedFaction.motto}"</p>
                 </div>
               )}
+
+              {/* Reputation */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Reputation</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${(getRepScore(selectedFaction.id) + 100) / 2}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs ${getReputationColor(getRepScore(selectedFaction.id))}`}>
+                    {getReputationLabel(getRepScore(selectedFaction.id))}
+                  </span>
+                </div>
+              </div>
 
               {selectedFaction.influence_score !== null && (
                 <div>
@@ -165,9 +198,7 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
                   <p className="text-sm font-medium text-muted-foreground mb-2">Tags</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedFaction.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="border-brass/30">
-                        {tag}
-                      </Badge>
+                      <Badge key={tag} variant="outline" className="border-brass/30">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -210,64 +241,76 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
           ) : (
             <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredFactions.map((faction, index) => (
-                  <Card
-                    key={faction.id}
-                    className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20 relative overflow-hidden card-glow opacity-0 animate-fade-in"
-                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
-                    onClick={() => handleViewFaction(faction)}
-                  >
-                    {faction.banner_url && (
-                      <div
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${faction.banner_url})` }}
-                      />
-                    )}
-                    <div className={`absolute inset-0 ${faction.banner_url ? 'bg-card/85 backdrop-blur-[2px]' : ''}`} />
+                {filteredFactions.map((faction, index) => {
+                  const repScore = getRepScore(faction.id);
+                  return (
+                    <Card
+                      key={faction.id}
+                      className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-brass/20 relative overflow-hidden card-glow opacity-0 animate-fade-in"
+                      style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
+                      onClick={() => handleViewFaction(faction)}
+                    >
+                      {faction.banner_url && (
+                        <div
+                          className="absolute inset-0 bg-cover bg-center"
+                          style={{ backgroundImage: `url(${faction.banner_url})` }}
+                        />
+                      )}
+                      <div className={`absolute inset-0 ${faction.banner_url ? 'bg-card/85 backdrop-blur-[2px]' : ''}`} />
 
-                    <CardContent className="p-4 space-y-2 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-primary shrink-0" />
-                        <h3 className="font-cinzel font-semibold truncate">{faction.name}</h3>
-                      </div>
-                      {faction.motto && (
-                        <p className="text-xs text-muted-foreground italic">"{faction.motto}"</p>
-                      )}
-                      {faction.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {faction.description}
-                        </p>
-                      )}
-                      {faction.influence_score !== null && (
+                      <CardContent className="p-4 space-y-2 relative z-10">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary/70 rounded-full"
-                              style={{ width: `${faction.influence_score}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {getInfluenceLabel(faction.influence_score)}
-                          </span>
-                        </div>
-                      )}
-                      {faction.tags && faction.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {faction.tags.slice(0, 2).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs border-brass/30">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {faction.tags.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{faction.tags.length - 2}
-                            </Badge>
+                          <Shield className="w-4 h-4 text-primary shrink-0" />
+                          <h3 className="font-cinzel font-semibold truncate">{faction.name}</h3>
+                          {faction.faction_type && (
+                            <Badge variant="secondary" className="text-xs ml-auto shrink-0">{faction.faction_type}</Badge>
                           )}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        {faction.motto && (
+                          <p className="text-xs text-muted-foreground italic">"{faction.motto}"</p>
+                        )}
+                        {faction.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{faction.description}</p>
+                        )}
+
+                        {/* Reputation bar */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Reputation</span>
+                            <span className={getReputationColor(repScore)}>
+                              {getReputationLabel(repScore)}
+                            </span>
+                          </div>
+                          <Progress value={(repScore + 100) / 2} className="h-1.5" />
+                        </div>
+
+                        {/* Influence bar */}
+                        {faction.influence_score !== null && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Influence</span>
+                              <span className="text-muted-foreground">
+                                {getInfluenceLabel(faction.influence_score)}
+                              </span>
+                            </div>
+                            <Progress value={faction.influence_score} className="h-1.5" />
+                          </div>
+                        )}
+
+                        {faction.tags && faction.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {faction.tags.slice(0, 2).map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs border-brass/30">{tag}</Badge>
+                            ))}
+                            {faction.tags.length > 2 && (
+                              <Badge variant="outline" className="text-xs">+{faction.tags.length - 2}</Badge>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </ScrollArea>
           )}

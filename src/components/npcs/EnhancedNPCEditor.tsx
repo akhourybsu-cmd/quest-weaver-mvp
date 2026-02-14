@@ -31,6 +31,7 @@ interface NPC {
   location_id?: string | null;
   faction_id?: string | null;
   lore_page_id?: string | null;
+  faction_role?: string | null;
 }
 
 interface Location {
@@ -71,6 +72,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
   const [locations, setLocations] = useState<Location[]>([]);
   const [factions, setFactions] = useState<Faction[]>([]);
   const [lorePageId, setLorePageId] = useState<string | null>(null);
+  const [factionRole, setFactionRole] = useState("");
   const { toast } = useToast();
 
   // Load locations and factions for dropdowns
@@ -110,6 +112,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setLocationId(npc.location_id || null);
       setFactionId(npc.faction_id || null);
       setLorePageId(npc.lore_page_id || null);
+      setFactionRole(npc.faction_role || "");
     } else {
       setName("");
       setPronouns("");
@@ -125,6 +128,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
       setLocationId(null);
       setFactionId(null);
       setLorePageId(null);
+      setFactionRole("");
     }
   }, [npc, open]);
 
@@ -203,6 +207,7 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
         location_id: locationId || null,
         faction_id: factionId || null,
         lore_page_id: lorePageId || null,
+        faction_role: factionId ? (factionRole.trim() || null) : null,
       };
 
       if (npc) {
@@ -446,6 +451,19 @@ const EnhancedNPCEditor = ({ open, onOpenChange, campaignId, npc, onSaved }: Enh
               </Select>
             </div>
           </div>
+
+          {/* Faction Role - conditional on faction selection */}
+          {factionId && (
+            <div>
+              <Label htmlFor="faction-role">Faction Role</Label>
+              <Input
+                id="faction-role"
+                value={factionRole}
+                onChange={(e) => setFactionRole(e.target.value)}
+                placeholder="e.g. Spymaster, Guild Master, Recruit..."
+              />
+            </div>
+          )}
           </div>
 
           {/* Lore Link */}

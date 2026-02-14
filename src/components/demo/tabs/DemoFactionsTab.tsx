@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Target, Quote, TrendingUp, TrendingDown } from "lucide-react";
+import { getReputationLabel, getReputationColor, getInfluenceLabel } from "@/lib/factionUtils";
 
 interface DemoFactionsTabProps {
   campaign: DemoCampaign;
@@ -15,21 +16,7 @@ export function DemoFactionsTab({ campaign }: DemoFactionsTabProps) {
   const [selectedFaction, setSelectedFaction] = useState<ReturnType<typeof adaptDemoFactions>[0] | null>(null);
   const factions = adaptDemoFactions(campaign);
 
-  const getReputationColor = (rep: number) => {
-    if (rep >= 50) return "text-emerald-400";
-    if (rep >= 0) return "text-amber-400";
-    return "text-red-400";
-  };
-
-  const getReputationLabel = (rep: number) => {
-    if (rep >= 75) return "Revered";
-    if (rep >= 50) return "Friendly";
-    if (rep >= 25) return "Warm";
-    if (rep >= -25) return "Neutral";
-    if (rep >= -50) return "Unfriendly";
-    if (rep >= -75) return "Hostile";
-    return "Hated";
-  };
+  // Use shared utilities from factionUtils
 
   return (
     <div className="space-y-6">
@@ -83,7 +70,7 @@ export function DemoFactionsTab({ campaign }: DemoFactionsTabProps) {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Influence</span>
-                  <span>{faction.influence_score}%</span>
+                  <span>{getInfluenceLabel(faction.influence_score)} ({faction.influence_score}%)</span>
                 </div>
                 <Progress value={faction.influence_score} className="h-2" />
               </div>

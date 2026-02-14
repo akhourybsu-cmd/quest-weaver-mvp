@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown, Book, CheckSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Search, Shield, Quote, Target, TrendingUp, TrendingDown, Book, CheckSquare, Users } from "lucide-react";
 import FactionEditor from "./FactionEditor";
 import ReputationAdjuster from "./ReputationAdjuster";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkVisibilityBar } from "@/components/campaign/BulkVisibilityBar";
+import { getReputationLabel, getReputationColor, getInfluenceLabel } from "@/lib/factionUtils";
 
 interface Faction {
   id: string;
@@ -27,6 +29,7 @@ interface Faction {
   tags: string[];
   goals?: string[];
   lore_page_id?: string;
+  faction_type?: string;
 }
 
 interface Reputation {
@@ -45,6 +48,14 @@ interface LorePage {
   tags?: string[];
 }
 
+interface AssociatedNPC {
+  id: string;
+  name: string;
+  portrait_url: string | null;
+  faction_role: string | null;
+  role_title: string | null;
+}
+
 interface FactionDirectoryProps {
   campaignId: string;
   isDM: boolean;
@@ -59,6 +70,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
   const [reputationOpen, setReputationOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [linkedLore, setLinkedLore] = useState<LorePage | null>(null);
+  const [associates, setAssociates] = useState<AssociatedNPC[]>([]);
   const { toast } = useToast();
   const bulk = useBulkSelection();
 
@@ -70,12 +82,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
       .channel(`factions:${campaignId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "factions",
-          filter: `campaign_id=eq.${campaignId}`,
-        },
+        { event: "*", schema: "public", table: "factions", filter: `campaign_id=eq.${campaignId}` },
         () => loadFactions()
       )
       .subscribe();
@@ -84,12 +91,7 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
       .channel(`faction_reputation:${campaignId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "faction_reputation",
-          filter: `campaign_id=eq.${campaignId}`,
-        },
+        { event: "*", schema: "public", table: "faction_reputation", filter: `campaign_id=eq.${campaignId}` },
         () => loadReputations()
       )
       .subscribe();
@@ -108,14 +110,9 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
       .order("name");
 
     if (error) {
-      toast({
-        title: "Error loading factions",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error loading factions", description: error.message, variant: "destructive" });
       return;
     }
-
     setFactions((data || []) as Faction[]);
   };
 
@@ -124,34 +121,28 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
       .from("faction_reputation")
       .select("*")
       .eq("campaign_id", campaignId);
-
     setReputations((data || []) as Reputation[]);
+  };
+
+  const loadAssociates = async (factionId: string) => {
+    const { data } = await supabase
+      .from("npcs")
+      .select("id, name, portrait_url, faction_role, role_title")
+      .eq("campaign_id", campaignId)
+      .eq("faction_id", factionId)
+      .order("name");
+    setAssociates((data || []) as AssociatedNPC[]);
   };
 
   const getReputation = (factionId: string) => {
     return reputations.find((r) => r.faction_id === factionId);
   };
 
-  const getReputationColor = (score: number) => {
-    if (score >= 50) return "text-emerald-400";
-    if (score >= 0) return "text-amber-400";
-    return "text-red-400";
-  };
-
-  const getReputationLabel = (score: number) => {
-    if (score >= 75) return "Revered";
-    if (score >= 50) return "Friendly";
-    if (score >= 25) return "Warm";
-    if (score >= -25) return "Neutral";
-    if (score >= -50) return "Unfriendly";
-    if (score >= -75) return "Hostile";
-    return "Hated";
-  };
-
   const filteredFactions = factions.filter((faction) =>
     searchQuery
       ? faction.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        faction.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        faction.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (faction.faction_type || "").toLowerCase().includes(searchQuery.toLowerCase())
       : true
   );
 
@@ -168,20 +159,24 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
   const handleViewFaction = async (faction: Faction) => {
     setSelectedFaction(faction);
     setLinkedLore(null);
+    setAssociates([]);
     setDetailOpen(true);
-    
-    // Load linked lore page if exists
+
+    // Load linked lore and associates in parallel
+    const promises: Promise<void>[] = [loadAssociates(faction.id)];
     if (faction.lore_page_id) {
-      const { data } = await supabase
-        .from("lore_pages")
-        .select("*")
-        .eq("id", faction.lore_page_id)
-        .single();
-      
-      if (data) {
-        setLinkedLore(data as LorePage);
-      }
+      promises.push(
+        (async () => {
+          const { data } = await supabase
+            .from("lore_pages")
+            .select("*")
+            .eq("id", faction.lore_page_id!)
+            .single();
+          if (data) setLinkedLore(data as LorePage);
+        })()
+      );
     }
+    await Promise.all(promises);
   };
 
   const handleAdjustReputation = (faction: Faction, e: React.MouseEvent) => {
@@ -250,89 +245,80 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
 
               return (
                 <div key={faction.id} className="stagger-item animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
-                <Card
-                  className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative card-glow"
-                  onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
-                >
-                  {bulk.selectionMode && (
-                    <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox checked={bulk.selectedIds.includes(faction.id)} onCheckedChange={() => bulk.toggleId(faction.id)} />
-                    </div>
-                  )}
-                  {/* Banner Image */}
-                  {faction.banner_url && (
-                    <div className="relative w-full h-24 overflow-hidden">
-                      <img
-                        src={faction.banner_url}
-                        alt={faction.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                    </div>
-                  )}
-                  
-                  <CardHeader className={faction.banner_url ? "pt-2" : ""}>
-                    <CardTitle className="font-cinzel">{faction.name}</CardTitle>
-                    {faction.motto && (
-                      <p className="text-xs italic text-muted-foreground flex items-center gap-1">
-                        <Quote className="w-3 h-3" />
-                        "{faction.motto}"
-                      </p>
-                    )}
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-3">
-                    {faction.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{faction.description}</p>
-                    )}
-                    
-                    {/* Reputation Progress Bar */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Reputation</span>
-                        <span className={getReputationColor(score)}>
-                          {getReputationLabel(score)}
-                        </span>
+                  <Card
+                    className="border-brass/20 hover:border-brass/40 transition-colors cursor-pointer overflow-hidden relative card-glow"
+                    onClick={() => bulk.selectionMode ? bulk.toggleId(faction.id) : handleViewFaction(faction)}
+                  >
+                    {bulk.selectionMode && (
+                      <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={bulk.selectedIds.includes(faction.id)} onCheckedChange={() => bulk.toggleId(faction.id)} />
                       </div>
-                      <Progress 
-                        value={(score + 100) / 2} 
-                        className="h-2"
-                      />
-                    </div>
-
-                    {/* Influence Progress Bar */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Influence</span>
-                        <span>{faction.influence_score}%</span>
-                      </div>
-                      <Progress value={faction.influence_score} className="h-2" />
-                    </div>
-
-                    {/* Tags */}
-                    {faction.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {faction.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
+                    )}
+                    {/* Banner Image */}
+                    {faction.banner_url && (
+                      <div className="relative w-full h-24 overflow-hidden">
+                        <img src={faction.banner_url} alt={faction.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                       </div>
                     )}
 
-                    {/* DM Reputation Button */}
-                    {isDM && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full mt-2"
-                        onClick={(e) => handleAdjustReputation(faction, e)}
-                      >
-                        Adjust Reputation
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                    <CardHeader className={faction.banner_url ? "pt-2" : ""}>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="font-cinzel">{faction.name}</CardTitle>
+                        {faction.faction_type && (
+                          <Badge variant="secondary" className="text-xs">{faction.faction_type}</Badge>
+                        )}
+                      </div>
+                      {faction.motto && (
+                        <p className="text-xs italic text-muted-foreground flex items-center gap-1">
+                          <Quote className="w-3 h-3" />
+                          "{faction.motto}"
+                        </p>
+                      )}
+                    </CardHeader>
+
+                    <CardContent className="space-y-3">
+                      {faction.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{faction.description}</p>
+                      )}
+
+                      {/* Reputation Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Reputation</span>
+                          <span className={getReputationColor(score)}>
+                            {getReputationLabel(score)}
+                          </span>
+                        </div>
+                        <Progress value={(score + 100) / 2} className="h-2" />
+                      </div>
+
+                      {/* Influence Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Influence</span>
+                          <span>{getInfluenceLabel(faction.influence_score)} ({faction.influence_score}%)</span>
+                        </div>
+                        <Progress value={faction.influence_score} className="h-2" />
+                      </div>
+
+                      {/* Tags */}
+                      {faction.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {faction.tags.map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* DM Reputation Button */}
+                      {isDM && (
+                        <Button size="sm" variant="outline" className="w-full mt-2" onClick={(e) => handleAdjustReputation(faction, e)}>
+                          Adjust Reputation
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               );
             })}
@@ -342,20 +328,21 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
 
       {/* Faction Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedFaction && (
             <>
               <DialogHeader>
                 {selectedFaction.banner_url && (
                   <div className="w-full h-32 rounded-lg overflow-hidden mb-4">
-                    <img
-                      src={selectedFaction.banner_url}
-                      alt={selectedFaction.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={selectedFaction.banner_url} alt={selectedFaction.name} className="w-full h-full object-cover" />
                   </div>
                 )}
-                <DialogTitle className="font-cinzel text-xl">{selectedFaction.name}</DialogTitle>
+                <div className="flex items-center gap-3">
+                  <DialogTitle className="font-cinzel text-xl">{selectedFaction.name}</DialogTitle>
+                  {selectedFaction.faction_type && (
+                    <Badge variant="secondary">{selectedFaction.faction_type}</Badge>
+                  )}
+                </div>
                 {selectedFaction.motto && (
                   <p className="text-sm italic text-muted-foreground">"{selectedFaction.motto}"</p>
                 )}
@@ -391,7 +378,8 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                     <h4 className="font-semibold text-brass">Influence</h4>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span>{selectedFaction.influence_score}%</span>
+                        <span>{getInfluenceLabel(selectedFaction.influence_score)}</span>
+                        <span className="text-muted-foreground">{selectedFaction.influence_score}%</span>
                       </div>
                       <Progress value={selectedFaction.influence_score} className="h-3" />
                     </div>
@@ -410,6 +398,32 @@ const FactionDirectory = ({ campaignId, isDM }: FactionDirectoryProps) => {
                         <li key={idx}>{goal}</li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* Known Associates */}
+                {associates.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t border-brass/20">
+                    <h4 className="font-semibold text-brass flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Known Associates ({associates.length})
+                    </h4>
+                    <div className="grid gap-2">
+                      {associates.map((npc) => (
+                        <div key={npc.id} className="flex items-center gap-3 p-2 rounded-lg border border-brass/10 bg-muted/20">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={npc.portrait_url || undefined} alt={npc.name} />
+                            <AvatarFallback className="text-xs">{npc.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{npc.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {npc.faction_role || npc.role_title || "Member"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

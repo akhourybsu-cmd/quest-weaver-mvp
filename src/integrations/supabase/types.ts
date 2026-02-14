@@ -3404,9 +3404,14 @@ export type Database = {
           ac: number
           actions: Json | null
           alignment: string | null
+          armor_description: string | null
+          bonus_actions: Json | null
           campaign_id: string | null
+          condition_immunities: Json | null
           cr: number | null
           created_at: string | null
+          derived_from_monster_id: string | null
+          derived_from_source: string | null
           hp_avg: number
           hp_formula: string | null
           id: string
@@ -3425,6 +3430,9 @@ export type Database = {
           size: Database["public"]["Enums"]["monster_size"]
           skills: Json | null
           speed: Json
+          spellcasting: Json | null
+          subtype: string | null
+          tags: Json | null
           traits: Json | null
           type: string
           updated_at: string | null
@@ -3435,9 +3443,14 @@ export type Database = {
           ac: number
           actions?: Json | null
           alignment?: string | null
+          armor_description?: string | null
+          bonus_actions?: Json | null
           campaign_id?: string | null
+          condition_immunities?: Json | null
           cr?: number | null
           created_at?: string | null
+          derived_from_monster_id?: string | null
+          derived_from_source?: string | null
           hp_avg: number
           hp_formula?: string | null
           id?: string
@@ -3456,6 +3469,9 @@ export type Database = {
           size: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
           speed?: Json
+          spellcasting?: Json | null
+          subtype?: string | null
+          tags?: Json | null
           traits?: Json | null
           type: string
           updated_at?: string | null
@@ -3466,9 +3482,14 @@ export type Database = {
           ac?: number
           actions?: Json | null
           alignment?: string | null
+          armor_description?: string | null
+          bonus_actions?: Json | null
           campaign_id?: string | null
+          condition_immunities?: Json | null
           cr?: number | null
           created_at?: string | null
+          derived_from_monster_id?: string | null
+          derived_from_source?: string | null
           hp_avg?: number
           hp_formula?: string | null
           id?: string
@@ -3487,6 +3508,9 @@ export type Database = {
           size?: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
           speed?: Json
+          spellcasting?: Json | null
+          subtype?: string | null
+          tags?: Json | null
           traits?: Json | null
           type?: string
           updated_at?: string | null

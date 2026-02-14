@@ -1,187 +1,109 @@
 
 
-# Campaign Manager Tab Audit: What to Add, Merge, or Skip
+# Map System Overhaul: Layout, Tool Integration, and Overlay Fixes
 
-## Current State (13 Tabs)
+## Problems Found
 
-The Campaign Manager already has a robust tab structure organized into 4 groups:
+### 1. Toolbar Covers the Map
+The `DrawingToolbar` is positioned `absolute top-4 left-4 z-20` **inside** the card that wraps the canvas. It floats directly over the map image, blocking content underneath.
 
-**Core:** Overview, Quests, Sessions
-**World:** NPCs, Locations, Lore, Factions
-**Combat:** Bestiary, Encounters
-**Assets:** Item Vault, Timeline, Notes
+### 2. Most Tools Are Not Wired Up
+These components exist but are **never rendered** anywhere in `MapViewer` or `MapsTab`:
+- `TokenManager` (add tokens dialog)
+- `AoETools` (place AoE templates)
+- `FogOfWarTools` / `AdvancedFogTools` (fog brush)
+- `MeasurementTool` (distance measurement)
+- `RangeIndicator` (range circles)
+- `TerrainMarker` (terrain type placement)
+- `GridSnapToggle` (snap tokens to grid)
 
----
+The `TokenContextMenu` is imported but never used in JSX either.
 
-## Analysis of Your 7 Proposals
+### 3. Canvas Destroyed on Every Resize
+The `FabricCanvas` initialization `useEffect` depends on `containerSize.width` and `containerSize.height`. Every `ResizeObserver` tick destroys and recreates the entire canvas (losing all objects, state, and zoom position).
 
-### 1. Player Hub (DM-facing party management) -- NEW TAB: "Party"
+### 4. Overlay Tools Use HTML Overlays, Not Fabric
+`MeasurementTool`, `RangeIndicator`, and `TerrainMarker` all render their own `<div className="absolute inset-0 z-40">` HTML overlays with SVG. These sit on top of the Fabric canvas and don't interact with it -- they measure HTML pixel coordinates, not canvas scene coordinates (which differ when zoomed/panned).
 
-**Verdict: Add as a new tab.** This fills a real gap -- the DM currently has no consolidated view of the party.
-
-What to include:
-- **Party Roster**: Auto-populated from `campaign_members` + `characters` table. Shows each PC's name, class/level, AC, HP, passive Perception/Insight/Investigation, languages, and a link to their full sheet.
-- **Party Inventory / Party Gold**: Aggregate view of all assigned character inventories + a shared "party fund" tracked at the campaign level.
-- **DM Notes per PC**: Private markdown notes attached per character (new `dm_character_notes` table), for secrets, hooks, and plot threads.
-- **Session Attendance**: Simple check-in log per session (new `session_attendance` table).
-- **Inspiration Tracking**: Toggle per character, visible to DM and player.
-
-This becomes a new **"Party"** tab in the Core group.
-
----
-
-### 2. Rules and Tools (DM toolbox) -- NEW TAB: "DM Tools"
-
-**Verdict: Add as a new tab.** The dice roller exists but is only in `SessionPlayer`. DMs need quick-access references outside of combat.
-
-What to include:
-- **Conditions Reference**: Searchable list of all 15 5e conditions (Blinded, Charmed, etc.) with full descriptions. Data already partially exists in `QuickConditionsPopover` -- this surfaces it as a standalone reference.
-- **Dice Roller**: Reuse the existing `DiceRoller` component.
-- **Quick Generators**: AI-powered generators (using Lovable AI / Gemini Flash) for NPC names, tavern names, loot drops, weather, and rumors. No new tables needed -- results are ephemeral or copy-to-clipboard.
-- **Random Tables**: Encounter tables by environment/CR, treasure tables by hoard CR (SRD data).
-- **Travel Calculator**: Input distance + pace (fast/normal/slow), outputs travel time, exhaustion risk, and random encounter check intervals per 5e PHB rules.
-
-This becomes a **"DM Tools"** tab in a new "Utility" group.
+### 5. MapsTab Has No Tool Sidebar
+When a map is selected, `MapsTab` renders `MapViewer` alone with no access to Token Manager, AoE Tools, or Fog Tools. The DM has no way to add tokens or use combat features from the Maps tab.
 
 ---
 
-### 3. Maps -- NEW TAB: "Maps"
+## Solution: Resizable Side-Panel Layout
 
-**Verdict: Add as a new tab.** The entire map infrastructure already exists (`MapViewer`, `MapUpload`, `DrawingToolbar`, `FogOfWarTools`, `MarkerRenderer`, `TokenManager`, `map_markers` table) but is only used inside encounter/session contexts. Promoting it to a first-class tab is straightforward.
-
-What to include:
-- **Map Gallery**: Upload and manage world/region/city/dungeon maps outside of encounters. Uses existing `MapUpload` and a new lightweight `campaign_maps` table (or reuse existing map storage).
-- **Pins/Markers**: Link markers to Locations, NPCs, or Encounters using existing `map_markers` infrastructure.
-- **Fog of War**: Already implemented in `FogOfWarTools` and `AdvancedFogTools`.
-- **Player-Safe Export**: A "Share with Players" toggle that hides DM-only markers and fog, reusing the existing `isDM` prop pattern on `MapViewer`.
-
-This becomes a **"Maps"** tab in the World group.
-
----
-
-### 4. Organizations and Religion -- MERGE INTO EXISTING
-
-**Verdict: Merge into Factions + Lore. No new tab needed.**
-
-Why:
-- **Factions** already supports guilds, orders, churches, and institutions. The reputation/influence system works for any organization type. Adding a `faction_type` category field (e.g., "Religious Order", "Guild", "Government", "Criminal") with filterable tags gives DMs the organizational taxonomy without a separate tab.
-- **Deities/Pantheons** are a natural fit for the **Lore** system, which already has category-based pages (Region, History, etc.). Adding a "Deity" or "Pantheon" lore category with structured fields (domains, alignment, symbol, holy day) in the `details` JSON keeps it consistent with the existing codex pattern.
-
-Implementation:
-- Add `faction_type` column to `factions` table with filter chips in `FactionsTab`.
-- Add "Deity" and "Pantheon" categories to the Lore system with appropriate creator components.
-
----
-
-### 5. Settlements and Economy -- MERGE INTO EXISTING
-
-**Verdict: Merge into Locations. No new tab needed.**
-
-Why:
-- Locations already represent places. A "settlement" is just a location with richer metadata. Adding structured fields to the location editor (population, government type, laws, exports/imports, defenses, services, price modifiers) via a `settlement_details` JSON column or expanding existing `details` keeps everything in one place.
-- "Notable NPCs" already works via the existing `location_id` FK on NPCs -- the location detail view can show linked NPCs.
-- "Points of Interest" can be child locations (self-referential `parent_location_id`).
-
-Implementation:
-- Add `location_type` field ("Wilderness", "Settlement", "Dungeon", "Building") with a settlement-specific detail panel in the location editor.
-- Add settlement fields: population, government, trade goods, defenses, price modifier.
-
----
-
-### 6. Plot Board -- NEW TAB: "Plot Board"
-
-**Verdict: Add as a new tab.** This is fundamentally different from Quests (which are player-facing task trackers). The Plot Board is a DM-only strategic planning tool.
-
-What to include:
-- **Plot Threads**: Cards representing ongoing storylines, mysteries, or villain plans. Each thread has a title, status (Active/Dormant/Resolved), and markdown description.
-- **Clue Web**: A node-graph visualization (reuse `react-force-graph-2d`, already installed for the Notes graph) showing connections between threads, NPCs, locations, and factions.
-- **Reveal Tracker**: Per-thread toggle for "Party Knows" vs "True State" -- two markdown fields per thread.
-- **Branching Notes**: "If X then Y" conditional notes attached to threads.
-
-New table: `plot_threads` with columns for campaign_id, title, status, description, truth, party_knowledge, and a `plot_thread_links` junction table for the graph.
-
-This becomes a **"Plot Board"** tab in the Core group (DM-only, never visible to players).
-
----
-
-### 7. Custom Content Builder -- MERGE INTO EXISTING
-
-**Verdict: Mostly already done or can extend existing tabs. No new tab needed.**
-
-What already exists:
-- **Items**: Full homebrew creation in the Item Vault with 5e templates.
-- **Monsters**: Full homebrew creation in Bestiary with SRD duplicate-and-reskin.
-- **Spells**: SRD spell library exists; homebrew spells can follow the same Bestiary pattern (SRD + Homebrew toggle).
-
-What to add incrementally (not as a separate tab):
-- **Homebrew Spells**: Add a "Homebrew" source toggle to the existing spell system, mirroring the Bestiary pattern. New `spell_homebrew` table.
-- **Homebrew Feats/Backgrounds/Subclasses**: These are lower priority and can be added as sub-features within character creation or the DM Tools tab later.
-
----
-
-## Summary: Recommended New Tabs
-
-| Proposal | Action | Where |
-|---|---|---|
-| Player Hub | **New "Party" tab** | Core group |
-| Rules and Tools | **New "DM Tools" tab** | New Utility group |
-| Maps | **New "Maps" tab** | World group |
-| Organizations | **Merge into Factions + Lore** | Existing tabs |
-| Settlements | **Merge into Locations** | Existing tabs |
-| Plot Board | **New "Plot Board" tab** | Core group |
-| Custom Content | **Extend existing tabs** | Bestiary/Item Vault pattern |
-
-**Net result: 3 new tabs (Party, DM Tools, Plot Board, Maps) + enhancements to 3 existing tabs (Factions, Locations, Lore)**
-
----
-
-## Technical Implementation
-
-### New Database Tables
+Replace the current stacked layout with a horizontal split: **Tools Panel (left) | Map Canvas (right)**.
 
 ```text
-campaign_maps        - id, campaign_id, name, image_url, map_type, width, height, grid_enabled, grid_size, player_visible
-plot_threads         - id, campaign_id, title, status, description, truth, party_knowledge, sort_order
-plot_thread_links    - id, thread_id, linked_type (NPC/Location/Faction/Thread), linked_id
-dm_character_notes   - id, campaign_id, character_id, content_markdown, hooks, secrets
-session_attendance   - id, session_id, character_id, attended, inspiration_granted
++--------------------+--------------------------------------+
+|   DM Tools Panel   |                                      |
+|   (collapsible)    |         Fabric.js Canvas              |
+|                    |                                      |
+|  [Token Manager]   |                                      |
+|  [AoE Tools]       |                                      |
+|  [Fog Tools]       |         (full remaining width)       |
+|  [Terrain]         |                                      |
+|  [Grid Snap]       |                                      |
+|                    |                                      |
+|  [Drawing Tools]   |      Zoom indicator (bottom-right)   |
+|  [View Controls]   |                                      |
++--------------------+--------------------------------------+
 ```
 
-### Schema Changes to Existing Tables
+The drawing toolbar (select/pan/draw/shapes/etc.) moves into this side panel rather than floating over the canvas. A collapse button lets DMs maximize canvas space.
 
-```text
-factions             + faction_type (text, nullable)
-locations            + location_type (text, nullable), settlement_details (jsonb, nullable)
-```
+---
 
-### New Components
+## Implementation Steps
 
-```text
-src/components/campaign/tabs/PartyTab.tsx
-src/components/campaign/tabs/DMToolsTab.tsx  
-src/components/campaign/tabs/MapsTab.tsx
-src/components/campaign/tabs/PlotBoardTab.tsx
-src/components/party/PartyRoster.tsx
-src/components/party/PartyInventoryView.tsx
-src/components/party/DMCharacterNotes.tsx
-src/components/dmtools/ConditionsReference.tsx
-src/components/dmtools/QuickGenerators.tsx
-src/components/dmtools/TravelCalculator.tsx
-src/components/dmtools/RandomTables.tsx
-src/components/plotboard/PlotThreadCard.tsx
-src/components/plotboard/ClueWeb.tsx
-src/components/plotboard/RevealTracker.tsx
-src/components/maps/MapGallery.tsx
-src/components/maps/CampaignMapManager.tsx
-```
+### Step 1: Fix Canvas Resize (stop recreating on every pixel change)
+- Remove `containerSize.width`/`containerSize.height` from the canvas init `useEffect` dependency array.
+- Instead, use `fabricCanvas.setDimensions()` in a separate `useEffect` that responds to size changes without destroying the canvas.
 
-### Implementation Order
+### Step 2: Restructure MapViewer Layout
+- Wrap content in a `ResizablePanelGroup` (horizontal).
+- Left panel: DM tools sidebar (only shown when `isDM` is true).
+- Right panel: the canvas container.
+- The sidebar contains the `DrawingToolbar` tools inline (not floating), plus sections for Token Manager, AoE Tools, Fog Tools, Terrain, Grid Snap, and Measurement/Range.
 
-1. **Party Tab** -- highest DM value, uses existing data
-2. **Maps Tab** -- most infrastructure already built
-3. **DM Tools Tab** -- standalone utility, no complex data dependencies
-4. **Plot Board Tab** -- new data model, graph visualization
-5. **Faction/Location/Lore enhancements** -- incremental improvements
+### Step 3: Integrate All Existing Tool Components
+Wire up each tool component into the sidebar:
+- `TokenManager` -- rendered in sidebar, already a dialog trigger.
+- `AoETools` -- rendered in sidebar, already self-contained.
+- `FogOfWarTools` -- rendered in sidebar with fog state wired to canvas.
+- `GridSnapToggle` -- rendered in sidebar.
+- `MeasurementTool` and `RangeIndicator` -- convert from HTML overlay approach to using the Fabric canvas for drawing measurement lines/circles (so they respect zoom/pan). Fall back to simpler sidebar-only controls if time-constrained.
+- `TerrainMarker` -- wire click handler through the canvas mouse events instead of a separate HTML overlay.
 
-Each tab will use the same lazy-loading and deferred rendering pattern already established in `CampaignHub.tsx` for zero impact on existing performance.
+### Step 4: Fix Overlay Coordinate Systems
+- `MeasurementTool`, `RangeIndicator`, and `TerrainMarker` currently use `e.clientX - rect.left` which gives HTML coordinates, not Fabric scene coordinates. Replace with `fabricCanvas.getScenePoint(e)` calls passed from MapViewer, so measurements and placements are accurate when the map is zoomed or panned.
+
+### Step 5: Wire Up TokenContextMenu
+- When a token's Fabric circle is right-clicked, show the `TokenContextMenu` positioned at the click location with edit/delete/visibility/duplicate actions (all handlers already exist in MapViewer).
+
+### Step 6: Update MapsTab
+- Pass `campaignId` to `MapViewer` so `TokenManager` and `AoETools` can load characters and encounter data.
+- Add a `map_type` selector to `MapUpload` dialog so DMs can categorize maps on creation.
+
+---
+
+## Technical Details
+
+### Files Modified
+- `src/components/maps/MapViewer.tsx` -- Major restructure: resizable panel layout, integrate all tools, fix canvas resize, wire context menu
+- `src/components/maps/DrawingToolbar.tsx` -- Convert from floating card to inline sidebar section (vertical list instead of wrapped grid)
+- `src/components/maps/MeasurementTool.tsx` -- Accept Fabric canvas ref, draw on canvas instead of HTML overlay
+- `src/components/maps/RangeIndicator.tsx` -- Same: use Fabric canvas coordinates
+- `src/components/maps/TerrainMarker.tsx` -- Remove HTML overlay, use canvas click events from parent
+- `src/components/campaign/tabs/MapsTab.tsx` -- Pass campaignId to MapViewer, add map_type to upload
+
+### Files Unchanged
+- `MarkerRenderer.tsx` -- already works correctly on Fabric canvas
+- `NotePinDialog.tsx` -- already wired up and functional
+- `TokenContextMenu.tsx` -- already built, just needs to be rendered
+- `useMapOverlays.ts` -- hook is solid, no changes needed
+- `MapUpload.tsx` -- minor: add map_type field
+
+### New Dependencies
+None -- `react-resizable-panels` is already installed.
 

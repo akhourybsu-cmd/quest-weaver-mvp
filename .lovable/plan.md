@@ -1,77 +1,69 @@
 
-# Faction System: Consistency, Associates, and Missing Fields
+# Condensed Header for Player Campaign View
 
-## Problem Summary
+## What's Causing the Dead Space
 
-1. **Reputation labels are inconsistent** across 3 components ("Warm" vs "Favorable" at score 25+)
-2. **Player view shows no reputation** -- only influence bars appear in `PlayerFactionsView`
-3. **No "Known Associates" section** -- NPCs link to factions via `faction_id` but faction views never display those NPCs
-4. **No faction role field** -- NPCs can belong to a faction but can't describe their position within it (e.g., "Spymaster", "Guild Master")
-5. **`faction_type` exists in DB but is invisible** -- never shown in editor, cards, or detail views
+The top of `PlayerCampaignView.tsx` stacks three separate vertical blocks:
 
-## Plan
+1. `Back to Dashboard` button (`mb-4`)
+2. Campaign title + status badge row (`mb-6`)
+3. A full `<Card>` for the character (with `CardHeader`, `CardContent`, and internal padding)
 
-### 1. Extract shared reputation utilities
+Combined with `p-4 md:p-8` outer padding, this pushes the tabs well down the screen before any actual content is visible.
 
-Create `src/lib/factionUtils.ts` with a single source of truth for:
-- `getReputationLabel(score)` -- unified scale: Hated / Hostile / Unfriendly / Neutral / Warm / Friendly / Revered
-- `getReputationColor(score)` -- unified color classes
-- `getInfluenceLabel(score)` -- Negligible / Minor / Moderate / Strong / Dominant
+## Solution: Compact Header Strip
 
-Replace the duplicated functions in `FactionDirectory.tsx`, `ReputationAdjuster.tsx`, `DemoFactionsTab.tsx`, `PlayerFactionsView.tsx`, and `LoreStatBar.tsx`.
+Merge all of the above into a single compact header band, similar to the Campaign Manager's "Creative Mode" header. The new layout has two rows:
 
-### 2. Add reputation to PlayerFactionsView
+**Row 1 (top bar):** `← Back` | Campaign Name | Status Badge | `Join Session` button — all on one line with tight padding.
 
-Query `faction_reputation` alongside factions so players can see their standing. Display a reputation bar + label on each faction card and in the detail dialog, matching the DM view's visual style.
+**Row 2 (character strip):** Small avatar + character name + class/level inline — displayed as a slim row, not a card, with a subtle border-bottom divider instead of a full raised card.
 
-### 3. Add `faction_role` column to NPCs table
+If no character is assigned, replace the full empty-state card with a single inline prompt: a small ghost button `+ Assign Character` right next to the campaign title.
 
-A new nullable text column on the `npcs` table to store the NPC's position within their linked faction (e.g., "Spymaster", "High Priest", "Recruit"). This is separate from `role_title` which describes their general role in the world.
-
-### 4. Add faction role field to NPC editor
-
-In `EnhancedNPCEditor.tsx`, add a "Faction Role" text input that appears conditionally when a faction is selected. Saved to the new `faction_role` column.
-
-### 5. Add "Known Associates" section to faction detail dialog
-
-In `FactionDirectory.tsx`'s detail dialog, query NPCs where `faction_id` matches the selected faction. Display them as a list showing:
-- NPC name and portrait (avatar)
-- `faction_role` (e.g., "Spymaster") or fallback to `role_title`
-- Click to navigate/view the NPC
-
-### 6. Surface `faction_type` everywhere
-
-- **FactionEditor**: Add a select dropdown for faction_type (Guild, Religious Order, Government, Military, Criminal, Merchant, Academic, Other)
-- **FactionDirectory cards**: Show faction_type as a badge below the name
-- **Detail dialog**: Display faction_type in the header area
-- **Search/filter**: Allow filtering by faction_type in the directory
-
-## Technical Details
-
-### Database Migration
+## Visual Before / After
 
 ```text
-npcs + faction_role (text, nullable)
+BEFORE (3 stacked blocks + outer padding)
+┌────────────────────────────────────────────┐
+│  p-8                                       │
+│  [← Back to Dashboard]           mb-4      │
+│                                            │
+│  Campaign Name (3xl/4xl)        mb-6       │
+│  Campaign Code: XXXXXX                     │
+│                             [Badge][Join]  │
+│                                            │
+│  ┌─ Card ─────────────────────────────┐    │
+│  │ CardHeader: "Your Character"       │    │
+│  │ CardContent:                       │    │
+│  │  [Avatar] Name / Lv1 Fighter       │    │
+│  └────────────────────────────────────┘    │
+│                                   mb-6     │
+│  [Tabs]                                    │
+└────────────────────────────────────────────┘
+
+AFTER (single compact header strip)
+┌────────────────────────────────────────────┐
+│  p-4 (tighter)                             │
+│  [←] Campaign Name (2xl)  [Badge] [Join]  │
+│  [Avatar] Lv1 Fighter · Subclass    [Chg]  │
+│  ──────────────────────────────────────── │
+│  [Tabs]                                    │
+└────────────────────────────────────────────┘
 ```
 
-No other schema changes needed -- `faction_type` already exists on the `factions` table.
+## Specific Changes to `PlayerCampaignView.tsx`
 
-### Files Modified
+1. **Reduce outer padding**: `p-4 md:p-8` → `p-3 md:p-4` (or `px-4 pt-3 pb-0`)
+2. **Remove the standalone Back button block**: Move the back arrow into the first row as a small icon-only ghost button
+3. **Merge title + status into one `flex` row**: `← [Campaign Name] [Code chip] [Status Badge] [Join Session]`
+4. **Replace the Character Card** with a slim inline strip:
+   - Avatar (w-8 h-8), character name, level + class, subclass in muted text
+   - `Change Character` becomes a small ghost/outline button on the right
+   - Separated from tabs by a simple `border-b border-brass/20` divider rather than a card shadow
+5. **No-character state**: Compact single-line prompt `You haven't selected a character · [+ Select]` instead of the centered empty state with icon
+6. **Remove `mb-6` gaps** between sections — use `gap-1` / `gap-2` inside the flex column header instead
 
-- NEW: `src/lib/factionUtils.ts` -- shared reputation/influence label and color functions
-- `src/components/factions/FactionDirectory.tsx` -- add Known Associates section in detail dialog, show faction_type badge on cards, use shared utils
-- `src/components/factions/FactionEditor.tsx` -- add faction_type selector, use shared utils
-- `src/components/factions/ReputationAdjuster.tsx` -- use shared utils (fixes "Favorable" to "Warm")
-- `src/components/player/PlayerFactionsView.tsx` -- add reputation display, use shared utils
-- `src/components/npcs/EnhancedNPCEditor.tsx` -- add faction_role input (conditional on faction selection)
-- `src/components/demo/tabs/DemoFactionsTab.tsx` -- use shared utils
-- `src/components/lore/ui/LoreStatBar.tsx` -- use shared utils for FactionStatBar
+## Files Modified
 
-### Implementation Order
-
-1. Create `factionUtils.ts` and run the migration (faction_role column)
-2. Update FactionEditor with faction_type dropdown
-3. Update FactionDirectory cards and detail dialog (faction_type badge + Known Associates)
-4. Update EnhancedNPCEditor with faction_role field
-5. Update PlayerFactionsView with reputation bars
-6. Replace duplicated functions in remaining files
+- `src/pages/PlayerCampaignView.tsx` — header restructure only; all data fetching logic unchanged

@@ -13,9 +13,8 @@ import { PlayerTimelineView } from "@/components/player/PlayerTimelineView";
 import { PlayerNotesView } from "@/components/player/PlayerNotesView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Swords, Loader2, User, Shield } from "lucide-react";
+import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 
 export default function PlayerCampaignView() {
@@ -103,82 +102,80 @@ export default function PlayerCampaignView() {
 
   return (
     <PlayerPageLayout playerId={player.id} mobileTitle={campaign.name}>
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <div className="mb-6">
+      <div className="max-w-7xl mx-auto px-4 pt-3 pb-0">
+        {/* Row 1: Back · Campaign Name · Status · Join */}
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="ghost"
+            size="icon"
             onClick={() => navigate(`/player/${player.id}`)}
-            className="mb-4"
+            className="shrink-0 h-8 w-8"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            <ArrowLeft className="w-4 h-4" />
           </Button>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-cinzel font-bold text-foreground">
-                {campaign.name}
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Campaign Code: <span className="font-mono font-semibold">{campaignCode}</span>
-              </p>
-            </div>
+          <h1 className="text-xl md:text-2xl font-cinzel font-bold text-foreground truncate flex-1 min-w-0">
+            {campaign.name}
+          </h1>
 
-            <div className="flex items-center gap-3">
-              {getStatusBadge()}
-              {sessionStatus !== 'offline' && (
-                <Button onClick={handleJoinSession}>
-                  <Swords className="w-4 h-4 mr-2" />
-                  Join Session
-                </Button>
-              )}
-            </div>
+          <span className="font-mono text-xs text-muted-foreground hidden sm:inline shrink-0">
+            {campaignCode}
+          </span>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {getStatusBadge()}
+            {sessionStatus !== 'offline' && (
+              <Button size="sm" onClick={handleJoinSession}>
+                <Swords className="w-3.5 h-3.5 mr-1.5" />
+                Join Session
+              </Button>
+            )}
           </div>
         </div>
 
-        <Card className="mb-6 rounded-2xl shadow-xl border-brass/30">
-          <CardHeader>
-            <CardTitle className="font-cinzel text-xl">Your Character</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {character ? (
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16 border-2 border-brass/30">
-                  <AvatarImage src={character.portrait_url} />
-                  <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl">
-                    {character.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{character.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shield className="w-4 h-4" />
-                    Level {character.level} {character.class}
-                    {(character as any).srd_subclasses?.name && (
-                      <span className="text-brass ml-1">({(character as any).srd_subclasses.name})</span>
-                    )}
-                  </div>
-                </div>
-                <Button variant="outline" onClick={() => setShowCharacterSelect(true)}>
-                  Change Character
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-muted-foreground mb-4">
-                  You haven't assigned a character to this campaign yet
-                </p>
-                <Button onClick={() => setShowCharacterSelect(true)}>
-                  <User className="w-4 h-4 mr-2" />
-                  Select Character
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Row 2: Character strip */}
+        <div className="flex items-center gap-2 mt-1.5 pb-2 border-b border-border/50">
+          {character ? (
+            <>
+              <Avatar className="w-7 h-7 border border-brass/30 shrink-0">
+                <AvatarImage src={character.portrait_url} />
+                <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xs">
+                  {character.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-sm truncate">{character.name}</span>
+              <span className="text-muted-foreground text-xs shrink-0">
+                Lv{character.level} {character.class}
+                {(character as any).srd_subclasses?.name && (
+                  <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
+                )}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-6 text-xs px-2 shrink-0"
+                onClick={() => setShowCharacterSelect(true)}
+              >
+                Change
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground text-xs">No character assigned</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() => setShowCharacterSelect(true)}
+              >
+                <User className="w-3 h-3 mr-1" />
+                + Select Character
+              </Button>
+            </>
+          )}
+        </div>
 
-        <Tabs defaultValue="quests">
+        <Tabs defaultValue="quests" className="mt-3">
           <TabsList className="w-full flex overflow-x-auto justify-start gap-1">
             <TabsTrigger value="quests">Quests</TabsTrigger>
             <TabsTrigger value="npcs">NPCs</TabsTrigger>

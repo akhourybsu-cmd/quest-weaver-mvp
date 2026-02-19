@@ -134,26 +134,28 @@ export default function PlayerCampaignView() {
         </div>
 
         {/* Row 2: Character strip */}
-        <div className="flex items-center gap-2 mt-1.5 pb-2 border-b border-border/50">
+        <div className="flex items-center gap-3 mt-2 pb-2.5 border-b border-border/50">
           {character ? (
             <>
-              <Avatar className="w-7 h-7 border border-brass/30 shrink-0">
-                <AvatarImage src={character.portrait_url} />
-                <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xs">
+              <Avatar className="w-10 h-10 border-2 border-brass/40 shrink-0 rounded-full overflow-hidden">
+                <AvatarImage src={character.portrait_url} className="object-cover object-top" />
+                <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-sm">
                   {character.name.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="font-medium text-sm truncate">{character.name}</span>
-              <span className="text-muted-foreground text-xs shrink-0">
-                Lv{character.level} {character.class}
-                {(character as any).srd_subclasses?.name && (
-                  <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
-                )}
-              </span>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="font-semibold text-sm leading-tight truncate">{character.name}</span>
+                <span className="text-muted-foreground text-xs leading-tight">
+                  Lv{character.level} {character.class}
+                  {(character as any).srd_subclasses?.name && (
+                    <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
+                  )}
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-auto h-6 text-xs px-2 shrink-0"
+                className="h-7 text-xs px-2 shrink-0 text-muted-foreground"
                 onClick={() => setShowCharacterSelect(true)}
               >
                 Change
@@ -161,15 +163,17 @@ export default function PlayerCampaignView() {
             </>
           ) : (
             <>
-              <span className="text-muted-foreground text-xs">No character assigned</span>
+              <div className="w-10 h-10 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <span className="text-muted-foreground text-xs flex-1">No character assigned</span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-xs px-2"
+                className="h-7 text-xs px-2 shrink-0"
                 onClick={() => setShowCharacterSelect(true)}
               >
-                <User className="w-3 h-3 mr-1" />
-                + Select Character
+                + Select
               </Button>
             </>
           )}

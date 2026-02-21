@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
+import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
@@ -26,6 +27,7 @@ export default function PlayerCampaignView() {
   const [sessionStatus, setSessionStatus] = useState<'live' | 'paused' | 'offline'>('offline');
   const [character, setCharacter] = useState<any>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+  const [kioskOpen, setKioskOpen] = useState(false);
 
   useEffect(() => {
     if (!campaignCode) return;
@@ -77,9 +79,8 @@ export default function PlayerCampaignView() {
 
   const handleJoinSession = () => {
     if (sessionStatus === 'live' || sessionStatus === 'paused') {
-      navigate(`/session/player?campaign=${campaignCode}`);
+      setKioskOpen(true);
     }
-    // When offline, do nothing — player stays on this page
   };
 
   if (playerLoading || loading) {
@@ -222,6 +223,17 @@ export default function PlayerCampaignView() {
             loadCharacter();
           }}
           onCancel={() => setShowCharacterSelect(false)}
+        />
+      )}
+
+      {campaign && (
+        <SessionKioskContainer
+          campaignId={campaign.id}
+          campaignCode={campaignCode || ''}
+          sessionStatus={sessionStatus}
+          onSessionEnded={() => {
+            setSessionStatus('offline');
+          }}
         />
       )}
     </PlayerPageLayout>

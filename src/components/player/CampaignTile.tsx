@@ -138,7 +138,8 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
   const handleJoinSession = async () => {
     await updateLastJoined(link.id);
     if (status?.hasLiveSession && status.sessionId) {
-      navigate(`/session/player?campaign=${link.join_code}`);
+      // Navigate to the campaign view where the kiosk FAB will appear
+      navigate(`/player/campaign/${link.join_code}`);
     }
     // When offline, do nothing — player stays on dashboard
   };

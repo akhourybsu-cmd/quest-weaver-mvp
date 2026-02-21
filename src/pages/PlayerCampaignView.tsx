@@ -78,9 +78,8 @@ export default function PlayerCampaignView() {
   const handleJoinSession = () => {
     if (sessionStatus === 'live' || sessionStatus === 'paused') {
       navigate(`/session/player?campaign=${campaignCode}`);
-    } else {
-      navigate(`/player/waiting?campaign=${campaignCode}`);
     }
+    // When offline, do nothing — player stays on this page
   };
 
   if (playerLoading || loading) {

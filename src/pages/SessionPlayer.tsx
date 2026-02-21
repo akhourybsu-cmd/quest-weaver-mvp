@@ -75,10 +75,11 @@ const SessionPlayer = () => {
   const [mapId, setMapId] = useState<string | null>(null);
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
   const [isMyTurn, setIsMyTurn] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
 
   useEffect(() => {
     if (!campaignCode) {
-      navigate("/player-hub");
+      navigate(`/player/dashboard`);
       return;
     }
 
@@ -209,62 +210,91 @@ const SessionPlayer = () => {
     setIsMyTurn(nowMyTurn);
   };
 
+  // Subscribe to session-end: when DM clears live_session_id, show overlay
+  useEffect(() => {
+    if (!campaignId) return;
+
+    const sessionEndChannel = supabase
+      .channel(`session-end:${campaignId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'campaigns',
+          filter: `id=eq.${campaignId}`,
+        },
+        (payload) => {
+          if (!payload.new.live_session_id) {
+            setSessionEnded(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(sessionEndChannel); };
+  }, [campaignId]);
+
   const fetchCharacter = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     setCurrentUserId(user.id);
 
-    // Get campaign by code
-    const { data: campaigns, error: campaignError } = await supabase
+    // Single combined query: get campaign ID + live_session_id at once
+    const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
-      .select("id")
-      .eq("code", campaignCode);
+      .select("id, live_session_id")
+      .eq("code", campaignCode)
+      .maybeSingle();
 
-    if (campaignError || !campaigns || campaigns.length === 0) {
+    if (campaignError || !campaign) {
       toast({
         title: "Campaign not found",
         description: "Invalid campaign code",
         variant: "destructive",
       });
-      navigate("/player-hub");
+      navigate(`/player/campaign/${campaignCode}`);
       return;
     }
 
-    setCampaignId(campaigns[0].id);
+    setCampaignId(campaign.id);
 
-    // Validate that session is live before proceeding
-    const { data: campaignData, error: sessionError } = await supabase
-      .from('campaigns')
-      .select('live_session_id')
-      .eq('id', campaigns[0].id)
-      .single();
-
-    if (sessionError || !campaignData?.live_session_id) {
-      navigate(`/player/waiting?campaign=${campaignCode}`);
+    // If no live session, redirect back to campaign view (not waiting room)
+    if (!campaign.live_session_id) {
+      navigate(`/player/campaign/${campaignCode}`);
       return;
     }
 
-    // Separately check session status
-    const { data: sessionData } = await supabase
-      .from('campaign_sessions')
-      .select('status')
-      .eq('id', campaignData.live_session_id)
-      .single();
+    // Parallel fetch: session status + encounter + character
+    const [sessionResult, encounterResult, characterResult] = await Promise.all([
+      supabase
+        .from('campaign_sessions')
+        .select('status')
+        .eq('id', campaign.live_session_id)
+        .maybeSingle(),
+      supabase
+        .from("encounters")
+        .select("id")
+        .eq("campaign_id", campaign.id)
+        .in("status", ["active", "paused"])
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase
+        .from("characters")
+        .select("*")
+        .eq("campaign_id", campaign.id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
-    if (!sessionData || !['live', 'paused'].includes(sessionData.status)) {
-      navigate(`/player/waiting?campaign=${campaignCode}`);
+    // Validate session is actually live/paused
+    if (!sessionResult.data || !['live', 'paused'].includes(sessionResult.data.status)) {
+      navigate(`/player/campaign/${campaignCode}`);
       return;
     }
 
-    // Check for active encounter
-    const { data: encounter } = await supabase
-      .from("encounters")
-      .select("id")
-      .eq("campaign_id", campaigns[0].id)
-      .in("status", ["active", "paused"])
-      .maybeSingle();
-
+    const encounter = encounterResult.data;
     setActiveEncounter(encounter?.id || null);
 
     // Fetch map for encounter if exists
@@ -274,67 +304,60 @@ const SessionPlayer = () => {
         .select("id")
         .eq("encounter_id", encounter.id)
         .maybeSingle();
-      
       setMapId(mapData?.id || null);
     }
 
-    // Get character for this user in this campaign
-    const { data, error } = await supabase
-      .from("characters")
-      .select("*")
-      .eq("campaign_id", campaigns[0].id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (error) {
+    const data = characterResult.data;
+    if (characterResult.error) {
       toast({
         title: "Error loading character",
-        description: error.message,
+        description: characterResult.error.message,
         variant: "destructive",
       });
       return;
     }
 
     if (!data) {
-      // No character found - show selection dialog
       setShowCharacterSelection(true);
       setLoading(false);
       return;
     }
 
     setCharacter(data);
-    
-    // Check if it's my turn
-    if (encounter?.id) {
-      const { data: initData } = await supabase
-        .from("initiative")
-        .select("is_current_turn")
-        .eq("encounter_id", encounter.id)
-        .eq("combatant_id", data.id)
-        .eq("combatant_type", "character")
-        .maybeSingle();
-      
-      setIsMyTurn(initData?.is_current_turn || false);
-    }
 
-    // Create or update player presence
-    const { data: existingPresence } = await supabase
+    // Check turn + presence in parallel
+    const presencePromise = supabase
       .from("player_presence")
       .select("id")
-      .eq("campaign_id", campaigns[0].id)
+      .eq("campaign_id", campaign.id)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (existingPresence) {
+    const turnPromise = encounter?.id
+      ? supabase
+          .from("initiative")
+          .select("is_current_turn")
+          .eq("encounter_id", encounter.id)
+          .eq("combatant_id", data.id)
+          .eq("combatant_type", "character")
+          .maybeSingle()
+      : Promise.resolve({ data: null });
+
+    const [presenceResult, turnResult] = await Promise.all([presencePromise, turnPromise]);
+
+    setIsMyTurn(turnResult.data?.is_current_turn || false);
+
+    // Upsert presence
+    if (presenceResult.data) {
       await supabase
         .from("player_presence")
         .update({ is_online: true, last_seen: new Date().toISOString() })
-        .eq("id", existingPresence.id);
+        .eq("id", presenceResult.data.id);
     } else {
       await supabase
         .from("player_presence")
         .insert({
-          campaign_id: campaigns[0].id,
+          campaign_id: campaign.id,
           user_id: user.id,
           character_id: data.id,
           is_online: true,
@@ -397,12 +420,30 @@ const SessionPlayer = () => {
     );
   }
 
+  if (sessionEnded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CardTitle className="font-cinzel">Session Ended</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">The DM has ended this session. Thanks for playing!</p>
+            <Button onClick={() => navigate(`/player/campaign/${campaignCode}`)}>
+              Back to Campaign
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!character) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg mb-4">No character found</p>
-          <Button onClick={() => navigate("/player-hub")}>Back to Dashboard</Button>
+          <Button onClick={() => navigate(`/player/campaign/${campaignCode}`)}>Back to Campaign</Button>
         </div>
       </div>
     );
@@ -417,7 +458,7 @@ const SessionPlayer = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/player-hub')}
+              onClick={() => navigate(`/player/campaign/${campaignCode}`)}
               className="shrink-0 text-muted-foreground hover:text-foreground mr-2"
               title="Exit session"
             >
@@ -449,7 +490,7 @@ const SessionPlayer = () => {
               setShowCharacterSelection(false);
               fetchCharacter();
             }}
-            onCancel={() => navigate("/player-hub")}
+            onCancel={() => navigate(`/player/campaign/${campaignCode}`)}
           />
         )}
 

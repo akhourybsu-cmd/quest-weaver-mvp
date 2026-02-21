@@ -17,6 +17,7 @@ import {
 import { Swords, Link2Off, Pin, PinOff, User, Eye } from 'lucide-react';
 import { usePlayerLinks } from '@/hooks/usePlayerLinks';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { resilientChannel } from '@/lib/realtime';
 import CharacterSelectionDialog from '@/components/character/CharacterSelectionDialog';
@@ -29,6 +30,7 @@ interface CampaignTileProps {
 
 export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { getCampaignStatus, togglePin, updateLastJoined, unlinkCampaign } = usePlayerLinks(playerId);
   const [status, setStatus] = useState<CampaignStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,14 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'campaigns',
         filter: `id=eq.${link.campaign_id}`
-      }, () => { loadStatus(); })
+      }, (payload) => {
+        const hadLive = status?.hasLiveSession;
+        loadStatus();
+        // If session just went live, show a toast
+        if (!hadLive && payload.new.live_session_id) {
+          toast({ title: '🔴 Session is Live!', description: 'The DM has started a session. Join now!' });
+        }
+      })
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'campaign_sessions',
         filter: `campaign_id=eq.${link.campaign_id}`
@@ -130,9 +139,8 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
     await updateLastJoined(link.id);
     if (status?.hasLiveSession && status.sessionId) {
       navigate(`/session/player?campaign=${link.join_code}`);
-    } else {
-      navigate(`/player/waiting?campaign=${link.join_code}`);
     }
+    // When offline, do nothing — player stays on dashboard
   };
 
   const handleUnlink = async () => {
@@ -216,10 +224,15 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/player/campaign/${link.join_code}`)}>
               <Eye className="w-4 h-4 mr-2" />View Campaign
             </Button>
-            <Button className="flex-1" onClick={handleJoinSession} disabled={loading || !status || !character}>
-              <Swords className="w-4 h-4 mr-2" />
-              {status?.hasLiveSession ? 'Join Session' : 'Waiting Room'}
-            </Button>
+            {status?.hasLiveSession ? (
+              <Button className="flex-1" onClick={handleJoinSession} disabled={loading || !character}>
+                <Swords className="w-4 h-4 mr-2" />Join Session
+              </Button>
+            ) : (
+              <Button className="flex-1" variant="outline" disabled>
+                <Swords className="w-4 h-4 mr-2" />No Session
+              </Button>
+            )}
           </div>
         </CardContent>
 

@@ -204,7 +204,7 @@ export const PlayerWaitingRoom = () => {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate(playerId ? `/player/${playerId}` : '/')}
+                  onClick={() => navigate(playerId ? `/player/dashboard` : '/')}
                 >
                   Back to Dashboard
                 </Button>

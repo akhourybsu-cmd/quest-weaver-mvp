@@ -4,7 +4,7 @@ import { SessionKiosk } from "./SessionKiosk";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Swords, X, Loader2 } from "lucide-react";
+import { Swords, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
@@ -12,6 +12,8 @@ interface SessionKioskContainerProps {
   campaignId: string;
   campaignCode: string;
   sessionStatus: 'live' | 'paused' | 'offline';
+  requestOpen?: boolean;
+  onRequestOpenHandled?: () => void;
   onSessionEnded?: () => void;
 }
 
@@ -52,6 +54,8 @@ export const SessionKioskContainer = ({
   campaignId,
   campaignCode,
   sessionStatus,
+  requestOpen,
+  onRequestOpenHandled,
   onSessionEnded,
 }: SessionKioskContainerProps) => {
   const [open, setOpen] = useState(false);
@@ -98,6 +102,14 @@ export const SessionKioskContainer = ({
     setOpen(true);
     loadCharacter();
   };
+
+  // Handle parent requesting open (from "Join Session" button)
+  useEffect(() => {
+    if (requestOpen && !open && isLive) {
+      handleOpen();
+      onRequestOpenHandled?.();
+    }
+  }, [requestOpen]);
 
   const handleSessionEnded = () => {
     onSessionEnded?.();

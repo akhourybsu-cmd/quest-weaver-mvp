@@ -231,6 +231,8 @@ export default function PlayerCampaignView() {
           campaignId={campaign.id}
           campaignCode={campaignCode || ''}
           sessionStatus={sessionStatus}
+          requestOpen={kioskOpen}
+          onRequestOpenHandled={() => setKioskOpen(false)}
           onSessionEnded={() => {
             setSessionStatus('offline');
           }}

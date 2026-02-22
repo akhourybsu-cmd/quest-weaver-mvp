@@ -105,15 +105,16 @@ const SessionPlayer = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-card border-b border-border sticky top-0 z-40 px-3 py-2 flex items-center gap-2">
+      <header className="bg-card border-b-2 border-brand-brass/20 sticky top-0 z-40 px-3 py-2 flex items-center gap-2">
         <Button
           variant="ghost" size="sm"
+          className="hover:text-brand-brass transition-colors"
           onClick={() => navigate(`/player/campaign/${campaignCode}`)}
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
           Exit
         </Button>
-        <span className="text-sm text-muted-foreground">Full Session View</span>
+        <span className="text-sm text-brand-brass/70 font-cinzel">Full Session View</span>
       </header>
       <div className="flex-1">
         <SessionKiosk

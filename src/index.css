@@ -204,9 +204,14 @@ All colors MUST be HSL.
     opacity: 1;
   }
   
-  /* Tab content fade */
+  /* Tab content fade + slide */
   .tab-enter {
-    animation: fade-in 0.2s ease-out;
+    animation: fade-in 0.25s ease-out, slide-up-subtle 0.25s ease-out;
+  }
+  
+  @keyframes slide-up-subtle {
+    0% { transform: translateY(6px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
   }
 }
 

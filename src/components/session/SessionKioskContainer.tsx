@@ -4,6 +4,7 @@ import { SessionKiosk } from "./SessionKiosk";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Swords, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -113,30 +114,44 @@ export const SessionKioskContainer = ({
 
   const handleSessionEnded = () => {
     onSessionEnded?.();
-    // Auto-close after a delay so the player sees the "Session Ended" card
     setTimeout(() => setOpen(false), 4000);
   };
 
-  // FAB - only show when session is live and kiosk is closed
+  // FAB - Enchanted Glow
   if (!open) {
     if (!isLive) return null;
     return (
-      <Button
-        onClick={handleOpen}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg 
-          bg-primary hover:bg-primary/90 text-primary-foreground
-          animate-pulse hover:animate-none transition-all"
-        size="icon"
-        title="Join Session"
-      >
-        <Swords className="w-6 h-6" />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleOpen}
+              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full
+                bg-brand-brass hover:bg-brand-brass/90
+                shadow-[0_0_20px_hsl(var(--brass)/0.4)]
+                text-background
+                animate-pulse-breathe hover:animate-none hover:scale-110
+                transition-transform duration-200"
+              size="icon"
+            >
+              <Swords className="w-6 h-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="font-cinzel text-sm">
+            Join Session
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
+  // Themed loading state
   const kioskContent = loading ? (
-    <div className="flex items-center justify-center h-64">
-      <Loader2 className="w-8 h-8 animate-spin text-brass" />
+    <div className="flex items-center justify-center h-64 animate-fade-in">
+      <div className="text-center space-y-3 p-6 rounded-lg border border-brand-brass/20 bg-card shadow-md">
+        <Swords className="w-10 h-10 mx-auto text-brand-brass animate-pulse-breathe" />
+        <p className="font-cinzel text-sm text-muted-foreground">Summoning your character...</p>
+      </div>
     </div>
   ) : character && currentUserId ? (
     <SessionKiosk
@@ -152,7 +167,7 @@ export const SessionKioskContainer = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent className="h-[92vh] max-h-[92vh]">
+        <DrawerContent className="h-[92vh] max-h-[92vh] border-t-2 border-brand-brass/30">
           <VisuallyHidden><DrawerTitle>Session Kiosk</DrawerTitle></VisuallyHidden>
           <div className="flex flex-col h-full overflow-hidden">
             {kioskContent}
@@ -166,7 +181,9 @@ export const SessionKioskContainer = ({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="right"
-        className="w-[55vw] max-w-2xl sm:max-w-2xl p-0 flex flex-col"
+        className="w-[55vw] max-w-2xl sm:max-w-2xl p-0 flex flex-col
+          border-l-2 border-brand-brass/30 bg-background
+          shadow-[inset_0_4px_12px_-4px_hsl(var(--brass)/0.1)]"
       >
         <VisuallyHidden><SheetTitle>Session Kiosk</SheetTitle></VisuallyHidden>
         <div className="flex flex-col h-full overflow-hidden">

@@ -15,9 +15,9 @@ import { PlayerSpellbook } from "@/components/player/PlayerSpellbook";
 import { PlayerFeatures } from "@/components/player/PlayerFeatures";
 import { PlayerChat } from "@/components/player/PlayerChat";
 import { PlayerProfile } from "@/components/player/PlayerProfile";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   User,
   Swords,
@@ -29,6 +29,9 @@ import {
   Zap,
   MessageSquare,
   UserCircle,
+  Shield,
+  Heart,
+  Lock,
 } from "lucide-react";
 
 interface SessionCharacter {
@@ -63,6 +66,25 @@ interface SessionKioskProps {
   onCharacterUpdate?: () => void;
 }
 
+const TAB_ITEMS: ReadonlyArray<{
+  value: string;
+  icon: typeof User;
+  label: string;
+  requiresEncounter?: boolean;
+  requiresMap?: boolean;
+}> = [
+  { value: "character", icon: User, label: "Character" },
+  { value: "combat", icon: Swords, label: "Combat", requiresEncounter: true },
+  { value: "spells", icon: BookOpen, label: "Spells" },
+  { value: "features", icon: Zap, label: "Features" },
+  { value: "journal", icon: ScrollText, label: "Journal" },
+  { value: "profile", icon: UserCircle, label: "Profile" },
+  { value: "quests", icon: Scroll, label: "Quests" },
+  { value: "inventory", icon: Package, label: "Inventory" },
+  { value: "chat", icon: MessageSquare, label: "Chat" },
+  { value: "map", icon: MapIcon, label: "Map", requiresMap: true },
+];
+
 export const SessionKiosk = ({
   campaignId,
   campaignCode,
@@ -83,7 +105,7 @@ export const SessionKiosk = ({
     setCharacter(initialCharacter);
   }, [initialCharacter]);
 
-  // Real-time subscriptions: character, encounters, initiative, session-end
+  // Real-time subscriptions
   useEffect(() => {
     const characterChannel = supabase
       .channel(`kiosk-char:${character.id}`)
@@ -140,7 +162,6 @@ export const SessionKiosk = ({
   // Initial encounter check
   useEffect(() => {
     fetchEncounterStatus();
-    // Upsert presence
     (async () => {
       const { data: existing } = await supabase
         .from("player_presence").select("id")
@@ -197,15 +218,27 @@ export const SessionKiosk = ({
     setIsMyTurn(nowMyTurn);
   };
 
+  const isTabDisabled = (tab: (typeof TAB_ITEMS)[number]) => {
+    if (tab.requiresEncounter && !activeEncounter) return true;
+    if (tab.requiresMap && !mapId) return true;
+    return false;
+  };
+
+  // Session Ended — Dramatic Curtain Call
   if (sessionEnded) {
     return (
-      <div className="flex items-center justify-center p-6 animate-fade-in">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <CardTitle className="font-cinzel">Session Ended</CardTitle>
+      <div className="flex items-center justify-center p-6 h-full relative">
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm animate-fade-in" />
+        <Card className="max-w-md w-full text-center relative z-10 border-brand-brass/30 animate-scale-in shadow-lg">
+          <CardHeader className="pb-2">
+            <Swords className="w-10 h-10 mx-auto text-brand-brass mb-2" />
+            <CardTitle className="font-cinzel text-xl">Session Ended</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <p className="text-muted-foreground">The DM has ended this session. Thanks for playing!</p>
+            <p className="font-cormorant italic text-sm text-muted-foreground/70">
+              The tale pauses here... until next time, adventurer.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -214,44 +247,72 @@ export const SessionKiosk = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Kiosk Header */}
-      <div className="px-4 py-3 border-b border-border/50 bg-card/50">
-        <h2 className="text-lg font-cinzel font-bold truncate">{character.name}</h2>
-        <p className="text-xs text-muted-foreground">
-          Lv{character.level} {character.class}
+      {/* Fantasy Header Strip */}
+      <div className="px-4 py-3 border-b-2 border-brand-brass/30 bg-gradient-to-r from-card via-card/90 to-card animate-fade-in">
+        <h2 className="text-lg font-cinzel font-bold truncate text-foreground" style={{ textShadow: '0 1px 4px hsl(var(--brass) / 0.15)' }}>
+          {character.name}
+        </h2>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+          <span>Lv{character.level} {character.class}</span>
+          <span className="flex items-center gap-0.5">
+            <Shield className="w-3 h-3 text-brand-brass" /> {character.ac}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <Heart className="w-3 h-3 text-status-hp" /> {character.current_hp}/{character.max_hp}
+          </span>
           {activeEncounter && (
-            <span className="text-primary font-semibold ml-2">⚔️ In Combat</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-brass/10 border border-brand-brass/30 text-brand-brass font-semibold animate-pulse-breathe text-[10px]">
+              ⚔️ In Combat
+            </span>
           )}
           {isMyTurn && (
-            <span className="text-status-warning font-semibold ml-2 animate-pulse">⚡ Your Turn!</span>
+            <span className="font-semibold animate-flash-gold text-[10px]">
+              ⚡ Your Turn!
+            </span>
           )}
-        </p>
+        </div>
       </div>
 
       {/* Player Presence */}
       <PlayerPresence campaignId={campaignId} currentUserId={currentUserId} isDM={false} />
 
-      {/* Kiosk Tabs */}
+      {/* Ornate Tabs */}
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <Tabs defaultValue={activeEncounter ? "combat" : "character"} className="mt-3 space-y-3">
-          <div className="space-y-1.5">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="character"><User className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="combat" disabled={!activeEncounter}><Swords className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="spells"><BookOpen className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="features"><Zap className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="journal"><ScrollText className="w-4 h-4" /></TabsTrigger>
+          <TooltipProvider delayDuration={300}>
+            <TabsList className="flex w-full overflow-x-auto scrollbar-hide gap-0.5 h-auto p-1 bg-muted/50 rounded-lg">
+              {TAB_ITEMS.map((tab) => {
+                const disabled = isTabDisabled(tab);
+                const Icon = tab.icon;
+                return (
+                  <Tooltip key={tab.value}>
+                    <TooltipTrigger asChild>
+                      <span className="relative flex-shrink-0">
+                        <TabsTrigger
+                          value={tab.value}
+                          disabled={disabled}
+                          className="relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 min-w-0
+                            data-[state=active]:bg-card data-[state=active]:border-b-2 data-[state=active]:border-brand-brass
+                            data-[state=active]:shadow-sm transition-all duration-200"
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="hidden sm:block text-[10px] leading-none">{tab.label}</span>
+                          {disabled && (
+                            <Lock className="w-2.5 h-2.5 absolute top-0.5 right-0.5 text-muted-foreground/50" />
+                          )}
+                        </TabsTrigger>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      {tab.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </TabsList>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="profile"><UserCircle className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="quests"><Scroll className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="inventory"><Package className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="chat"><MessageSquare className="w-4 h-4" /></TabsTrigger>
-              <TabsTrigger value="map" disabled={!mapId}><MapIcon className="w-4 h-4" /></TabsTrigger>
-            </TabsList>
-          </div>
+          </TooltipProvider>
 
-          <TabsContent value="character" className="space-y-4">
+          <TabsContent value="character" className="space-y-4 tab-enter">
             <PlayerCharacterSheet characterId={character.id} />
             <div className="grid grid-cols-1 gap-4">
               <RestManager
@@ -271,7 +332,7 @@ export const SessionKiosk = ({
           </TabsContent>
 
           {activeEncounter && (
-            <TabsContent value="combat" className="space-y-4">
+            <TabsContent value="combat" className="space-y-4 tab-enter">
               <PlayerCombatView
                 characterId={character.id}
                 characterName={character.name}
@@ -281,23 +342,22 @@ export const SessionKiosk = ({
             </TabsContent>
           )}
 
-          <TabsContent value="spells"><PlayerSpellbook characterId={character.id} /></TabsContent>
-          <TabsContent value="features"><PlayerFeatures characterId={character.id} /></TabsContent>
-          <TabsContent value="journal"><PlayerJournal campaignId={campaignId} characterId={character.id} /></TabsContent>
-          <TabsContent value="profile"><PlayerProfile characterId={character.id} /></TabsContent>
-          <TabsContent value="quests"><PlayerQuestTracker campaignId={campaignId} /></TabsContent>
-          <TabsContent value="inventory"><PlayerInventory characterId={character.id} campaignId={campaignId} /></TabsContent>
-          <TabsContent value="chat">
+          <TabsContent value="spells" className="tab-enter"><PlayerSpellbook characterId={character.id} /></TabsContent>
+          <TabsContent value="features" className="tab-enter"><PlayerFeatures characterId={character.id} /></TabsContent>
+          <TabsContent value="journal" className="tab-enter"><PlayerJournal campaignId={campaignId} characterId={character.id} /></TabsContent>
+          <TabsContent value="profile" className="tab-enter"><PlayerProfile characterId={character.id} /></TabsContent>
+          <TabsContent value="quests" className="tab-enter"><PlayerQuestTracker campaignId={campaignId} /></TabsContent>
+          <TabsContent value="inventory" className="tab-enter"><PlayerInventory characterId={character.id} campaignId={campaignId} /></TabsContent>
+          <TabsContent value="chat" className="tab-enter">
             <PlayerChat campaignId={campaignId} currentUserId={currentUserId} isDM={false} />
           </TabsContent>
           {mapId && (
-            <TabsContent value="map">
+            <TabsContent value="map" className="tab-enter">
               <PlayerMapViewer mapId={mapId} characterId={character.id} />
             </TabsContent>
           )}
         </Tabs>
 
-        {/* Save Prompt Listener */}
         <SavePromptListener characterId={character.id} character={character} campaignId={campaignId} />
       </div>
     </div>

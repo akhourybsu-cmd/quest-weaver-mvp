@@ -1,104 +1,107 @@
 
 
-# Session Kiosk: An Integrated Live-Session Experience
+# Session Kiosk UI Polish: Fantasy Aesthetic, Animations, and Creative Transitions
 
-## Concept
+## Overview
 
-Instead of navigating players away to a separate `/session/player` page, the live session experience becomes an animated **kiosk panel** that slides open from within the `PlayerCampaignView`. The player stays in context -- their campaign page is always "home base" -- and the session tools float on top or beside it.
+The Session Kiosk components (`SessionKiosk`, `SessionKioskContainer`, and `SessionPlayer`) are functionally wired up but visually plain -- they lack the brass-and-parchment fantasy aesthetic, creative animations, and polished interactions found in the rest of the app. This plan brings them on-brand and makes the kiosk feel fun and immersive to interact with.
 
-- **Desktop**: A slide-in side panel (using the existing Sheet or a resizable panel) anchored to the right, roughly 50-60% width, with all session tabs inside it.
-- **Mobile/PWA**: A full-screen bottom-up drawer (using Vaul's Drawer, already installed as `vaul`) that takes over the viewport, with a drag handle to minimize.
+---
 
-The existing `SessionPlayer.tsx` page content gets extracted into a reusable `SessionKiosk` component, and the standalone route remains as a fallback/direct-link entry point that simply wraps the same kiosk full-screen.
+## 1. Floating Action Button (FAB) -- Enchanted Glow
 
-## How It Works for the Player
+The current FAB is a plain pulsing button. Replace it with a brass-themed, glowing "summon" button that feels magical.
 
-1. Player is on their campaign page (`/player/campaign/:code`)
-2. Session goes live -- the "Join Session" button appears (already implemented)
-3. Player taps "Join Session" -- instead of navigating away, the kiosk **slides open** with a smooth animation
-4. All session tools (character sheet, combat, spells, inventory, chat, map, etc.) are inside the kiosk
-5. Player can **minimize** the kiosk (swipe down on mobile, click collapse on desktop) to glance at campaign info underneath
-6. When the DM ends the session, the kiosk shows the "Session Ended" card inline and auto-closes after acknowledgment
+**Changes in `SessionKioskContainer.tsx`:**
+- Swap `bg-primary` for a brass gradient background (`bg-gradient-to-br from-brass to-amber-700`)
+- Add a breathing brass glow ring using `shadow-[0_0_20px_hsl(var(--brass)/0.5)]` and `animate-pulse-breathe`
+- Add a subtle tooltip label "Join Session" floating above the FAB on hover
+- On hover, stop the breathing animation and scale up slightly (`hover:scale-110 hover:animate-none`)
 
-## Visual Layout
+## 2. Kiosk Loading State -- Mystical Entrance
 
-```text
-DESKTOP (side-by-side)
-+---------------------------+------------------------------+
-| PlayerCampaignView        |  SessionKiosk (Sheet)        |
-| (campaign tabs:           |  [x close]                   |
-|  quests, NPCs, lore...)   |  Character header strip      |
-|                           |  [Tabs: Char|Combat|Spells|  |
-|                           |   Features|Journal|Quests|   |
-|                           |   Inventory|Chat|Map]        |
-|                           |  [Tab content...]            |
-+---------------------------+------------------------------+
+The current loading state is a plain spinner. Replace it with a thematic loading experience.
 
-MOBILE (full-screen drawer)
-+---------------------------+
-| [--- drag handle ---]     |
-| SessionKiosk              |
-| Character header strip    |
-| [Tabs]                    |
-| [Tab content...]          |
-+---------------------------+
-```
+**Changes in `SessionKioskContainer.tsx`:**
+- Replace the bare `Loader2` spinner with a centered card containing a Swords icon with `animate-pulse-breathe`, plus "Summoning your character..." text in `font-cinzel`
+- Add a faint brass border glow to the loading card
 
-## Implementation Plan
+## 3. Kiosk Header -- Fantasy Character Strip
 
-### Step 1: Create `SessionKiosk` component
+The current header is a plain `bg-card/50` div. Upgrade it to match the campaign view's character strip aesthetic.
 
-Extract all session UI logic from `SessionPlayer.tsx` (lines 452-656) into a new `src/components/session/SessionKiosk.tsx` component. This component receives `campaignId`, `campaignCode`, `currentUserId`, and `character` as props (no routing, no auth fetching -- that stays in the parent).
+**Changes in `SessionKiosk.tsx`:**
+- Add a brass gradient bottom border (`border-b-2 border-brass/30`) and parchment-tinted background (`bg-gradient-to-r from-card via-card/90 to-card`)
+- Make character name use `font-cinzel text-lg` with a subtle brass text shadow
+- Add a small shield icon next to AC value and heart icon next to HP in the subtitle line for quick-glance stats
+- Add `animate-fade-in` entrance animation to the header
+- The "In Combat" badge becomes a glowing brass pill with `animate-pulse-breathe`
+- The "Your Turn!" indicator gets a golden flash animation (a new `flash-gold` keyframe that briefly brightens to full brass, then settles)
 
-It contains:
-- The session header strip (character name, "In Combat" indicator)
-- All 10 tab panels (Character, Combat, Spells, Features, Journal, Profile, Quests, Inventory, Chat, Map)
-- The SavePromptListener
-- PlayerPresence
-- The real-time encounter/initiative subscriptions
-- The "Session Ended" overlay (rendered inline within the kiosk)
+## 4. Tab Bar -- Ornate Navigation
 
-The kiosk does NOT include: auth checks, campaign code resolution, navigation back buttons, or the outer page shell -- those stay in the parent.
+The current tab bars are plain `grid grid-cols-5` with no styling. Make them feel like a fantasy toolbar.
 
-### Step 2: Create `SessionKioskContainer` wrapper
+**Changes in `SessionKiosk.tsx`:**
+- Replace the two stacked `TabsList` grids with a single horizontally scrollable row using `overflow-x-auto flex gap-1` with a subtle scroll fade on edges
+- Each `TabsTrigger` gets a tooltip (using the existing Tooltip component) showing the tab name on hover/long-press
+- Active tab gets a brass underline indicator (`border-b-2 border-brass`) instead of just text color change
+- Add icon labels below each icon on wider screens (`hidden sm:block text-[10px]`)
+- Disabled tabs (combat when no encounter, map when no map) show a lock icon overlay
 
-Create `src/components/session/SessionKioskContainer.tsx` that handles the kiosk's open/close state and animation:
+## 5. Tab Content Transitions
 
-- On **desktop**: Uses the existing Radix `Sheet` component (side="right", with a wide width like `max-w-2xl w-[55vw]`) for a slide-in panel
-- On **mobile**: Uses the existing `vaul` Drawer component (already in dependencies) for a full-screen bottom-up sheet with a drag handle
-- Entrance animation uses `animate-slide-in-right` on desktop, Vaul's built-in spring animation on mobile
-- When opened, it initializes the session data (single combined query + `Promise.all`, same optimized pattern from the recent overhaul)
-- A prominent floating action button (FAB) appears on the campaign view when a session is live, pulsing with the existing `pulse` animation class
+The current tab content uses a basic `tab-enter` fade. Enhance it.
 
-### Step 3: Integrate into `PlayerCampaignView`
+**Changes in `src/index.css`:**
+- Update `.tab-enter` to use a combined fade + slight slide-up: `animation: fade-in 0.25s ease-out, slide-up-subtle 0.25s ease-out`
+- Add new `slide-up-subtle` keyframe: `0% { transform: translateY(6px) } 100% { transform: translateY(0) }`
 
-Modify `PlayerCampaignView.tsx`:
-- Add a `kioskOpen` state
-- When `sessionStatus` is `live` or `paused`, render a floating "Join Session" FAB in the bottom-right corner (animated pulse when live)
-- Clicking it sets `kioskOpen = true` and renders `SessionKioskContainer`
-- The existing "Join Session" button in the header also opens the kiosk instead of navigating
-- Subscribe to the `campaigns` table for real-time session-end detection (reuse existing pattern) to auto-close the kiosk when session ends
+## 6. Session Ended Overlay -- Dramatic Curtain Call
 
-### Step 4: Slim down `SessionPlayer.tsx` to a thin wrapper
+The current "Session Ended" card is a plain centered card. Make it feel like a dramatic session close.
 
-Keep the `/session/player` route as a direct-link fallback (e.g., for shared URLs). But instead of duplicating all session UI, it simply renders `SessionKiosk` full-screen with a back button. All the heavy lifting is in the shared `SessionKiosk` component.
+**Changes in `SessionKiosk.tsx`:**
+- Add a dark overlay backdrop (`bg-background/80 backdrop-blur-sm`) that fades in
+- The "Session Ended" card gets `animate-scale-in` entrance with brass border accents
+- Add a decorative crossed-swords icon above the title
+- Add atmospheric text: "The tale pauses here... until next time, adventurer." in `font-cormorant italic`
+- Add a "Return to Campaign" button with brass styling
 
-### Step 5: Animated entrance and polish
+## 7. Sheet and Drawer Polish
 
-- Desktop kiosk slides in from the right with `animate-slide-in-right` (0.3s ease-out)
-- Mobile drawer uses Vaul's spring animation (already built-in)
-- The FAB has a breathing glow animation when session is live (uses existing `pulse` class + a brass border-glow)
-- When combat starts mid-session, the Combat tab auto-activates with a brief scale-in flash
-- "Session Ended" overlay uses `animate-fade-in` with a gentle scale
+The container wrappers need fantasy theming.
+
+**Changes in `SessionKioskContainer.tsx`:**
+- Desktop Sheet: Add a left border accent with brass color (`border-l-2 border-brass/30`), parchment-tinted background
+- Mobile Drawer: Style the drag handle from plain gray to brass-tinted (`bg-brass/40` instead of `bg-muted`)
+- Both containers get a subtle inner shadow at the top for depth
+
+## 8. SessionPlayer Full-Screen Wrapper
+
+The standalone `/session/player` page header is plain. Bring it on-brand.
+
+**Changes in `SessionPlayer.tsx`:**
+- Add brass bottom border to the header (`border-b-2 border-brass/20`)
+- "Full Session View" label gets `font-cinzel` and a subtle brass color
+- The "Exit" button gets ghost styling with a brass hover accent
+
+## 9. New Tailwind Keyframes
+
+**Changes in `tailwind.config.ts`:**
+- Add `flash-gold` keyframe: `0% { color: hsl(var(--brass)) } 50% { color: hsl(var(--brass)); text-shadow: 0 0 12px hsl(var(--brass)/0.6) } 100% { color: hsl(var(--warning-amber)) }`
+- Add `slide-up-subtle` keyframe: `0% { transform: translateY(6px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 }`
+- Add corresponding animation entries
+
+---
 
 ## Files Changed
 
-- **NEW**: `src/components/session/SessionKiosk.tsx` -- extracted session UI (tabs, subscriptions, combat tracking)
-- **NEW**: `src/components/session/SessionKioskContainer.tsx` -- Sheet/Drawer wrapper with open/close logic and FAB
-- **MODIFIED**: `src/pages/PlayerCampaignView.tsx` -- integrate kiosk, replace navigate-away join with kiosk open, add FAB
-- **MODIFIED**: `src/pages/SessionPlayer.tsx` -- slim down to thin wrapper around `SessionKiosk`
+- **`src/components/session/SessionKioskContainer.tsx`** -- FAB glow, loading state, Sheet/Drawer theming, drag handle styling
+- **`src/components/session/SessionKiosk.tsx`** -- Header strip, tab bar redesign with tooltips and brass underlines, combat indicators, session ended overlay, tab content icons
+- **`src/pages/SessionPlayer.tsx`** -- Header brass accents, font-cinzel, styled exit button
+- **`tailwind.config.ts`** -- New `flash-gold` and `slide-up-subtle` keyframes + animations
+- **`src/index.css`** -- Updated `.tab-enter` transition with slide-up
 
 ### No database changes required
-
-All changes are in the React/TypeScript UI layer. The same real-time subscriptions, queries, and session validation logic are reused -- just reorganized into the kiosk component.
 

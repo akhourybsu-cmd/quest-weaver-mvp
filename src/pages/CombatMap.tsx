@@ -4,16 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import MapViewer from "@/components/maps/MapViewer";
 import MapUpload from "@/components/maps/MapUpload";
-import TokenManager from "@/components/maps/TokenManager";
-import FogOfWarTools from "@/components/maps/FogOfWarTools";
-import AoETools from "@/components/maps/AoETools";
-import { ArrowLeft, Settings2, Map } from "lucide-react";
+import { ArrowLeft, Map } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface Map {
+interface MapData {
   id: string;
   name: string;
   imageUrl: string;
@@ -31,10 +27,8 @@ const CombatMap = () => {
   const encounterId = searchParams.get("encounter");
   const isDM = searchParams.get("dm") === "true";
 
-  const [maps, setMaps] = useState<Map[]>([]);
+  const [maps, setMaps] = useState<MapData[]>([]);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
-  const [fogTool, setFogTool] = useState<"reveal" | "hide" | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -98,51 +92,11 @@ const CombatMap = () => {
 
             <div className="flex items-center gap-2">
               {isDM && campaignId && (
-                <>
-                  <MapUpload
-                    campaignId={campaignId}
-                    encounterId={encounterId || undefined}
-                    onMapCreated={(id) => setSelectedMapId(id)}
-                  />
-                  
-                  {/* DM Tools Sidebar Trigger */}
-                  <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Settings2 className="w-4 h-4 mr-2" />
-                        Tools
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent className="w-[350px] sm:w-[400px] overflow-y-auto">
-                      <SheetHeader>
-                        <SheetTitle>DM Tools</SheetTitle>
-                      </SheetHeader>
-                      <div className="space-y-4 mt-4">
-                        {selectedMap && campaignId && (
-                          <>
-                            <TokenManager
-                              mapId={selectedMap.id}
-                              campaignId={campaignId}
-                              encounterId={encounterId || undefined}
-                              gridSize={selectedMap.gridSize}
-                              gridSnapEnabled={true}
-                            />
-                            <FogOfWarTools
-                              mapId={selectedMap.id}
-                              onToolChange={setFogTool}
-                              activeTool={fogTool}
-                            />
-                            <AoETools
-                              mapId={selectedMap.id}
-                              encounterId={encounterId || undefined}
-                              gridSize={selectedMap.gridSize}
-                            />
-                          </>
-                        )}
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                </>
+                <MapUpload
+                  campaignId={campaignId}
+                  encounterId={encounterId || undefined}
+                  onMapCreated={(id) => setSelectedMapId(id)}
+                />
               )}
             </div>
           </div>
@@ -187,6 +141,7 @@ const CombatMap = () => {
             gridSize={selectedMap.gridSize}
             isDM={isDM}
             encounterId={encounterId || undefined}
+            campaignId={campaignId || undefined}
           />
         )}
       </div>

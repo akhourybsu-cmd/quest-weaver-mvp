@@ -20,6 +20,7 @@ interface AoEToolsProps {
   mapId: string;
   encounterId?: string;
   gridSize: number;
+  getViewportCenter?: () => { x: number; y: number };
 }
 
 interface AoETemplate {
@@ -36,14 +37,13 @@ const AOE_SHAPES = [
   { value: "cube", label: "Cube", icon: Square, color: "#22c55e" },
 ];
 
-const AoETools = ({ mapId, encounterId, gridSize }: AoEToolsProps) => {
+const AoETools = ({ mapId, encounterId, gridSize, getViewportCenter }: AoEToolsProps) => {
   const [shape, setShape] = useState("circle");
   const [radius, setRadius] = useState("20");
   const [label, setLabel] = useState("");
   const [templates, setTemplates] = useState<AoETemplate[]>([]);
   const { toast } = useToast();
 
-  // Load existing templates
   useEffect(() => {
     loadTemplates();
   }, [mapId]);
@@ -62,13 +62,14 @@ const AoETools = ({ mapId, encounterId, gridSize }: AoEToolsProps) => {
   const handlePlace = async () => {
     const radiusInPixels = (parseInt(radius) / 5) * gridSize;
     const shapeData = AOE_SHAPES.find(s => s.value === shape);
+    const center = getViewportCenter ? getViewportCenter() : { x: 300, y: 200 };
 
     const { error } = await supabase.from("aoe_templates").insert({
       map_id: mapId,
       encounter_id: encounterId,
       shape,
-      x: 300,
-      y: 200,
+      x: center.x,
+      y: center.y,
       radius: radiusInPixels,
       length: shape === "line" || shape === "cone" ? radiusInPixels * 2 : null,
       width: shape === "line" ? gridSize / 2 : null,
@@ -88,7 +89,7 @@ const AoETools = ({ mapId, encounterId, gridSize }: AoEToolsProps) => {
 
     toast({
       title: "AoE placed",
-      description: `${shape} template added. Drag to reposition, click to delete.`,
+      description: `${shape} template added at viewport center. Drag to reposition.`,
     });
 
     setLabel("");
@@ -177,7 +178,6 @@ const AoETools = ({ mapId, encounterId, gridSize }: AoEToolsProps) => {
           Place Template
         </Button>
 
-        {/* Active Templates */}
         {templates.length > 0 && (
           <div className="border-t pt-3 space-y-2">
             <div className="flex items-center justify-between">
@@ -217,7 +217,7 @@ const AoETools = ({ mapId, encounterId, gridSize }: AoEToolsProps) => {
         )}
 
         <div className="text-xs text-muted-foreground">
-          Templates appear at map center. Drag to reposition on the map.
+          Templates appear at viewport center. Drag to reposition on the map.
         </div>
       </CardContent>
     </Card>

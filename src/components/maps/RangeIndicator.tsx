@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, X } from "lucide-react";
+import { Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -11,6 +10,8 @@ interface RangeIndicatorProps {
   scaleFeetsPerSquare: number;
   isActive: boolean;
   onToggle: () => void;
+  rangeFeet: number;
+  onRangeFeetChange: (feet: number) => void;
 }
 
 export function RangeIndicator({
@@ -18,9 +19,9 @@ export function RangeIndicator({
   scaleFeetsPerSquare,
   isActive,
   onToggle,
+  rangeFeet,
+  onRangeFeetChange,
 }: RangeIndicatorProps) {
-  const [rangeFeet, setRangeFeet] = useState<number>(30);
-
   return (
     <div className="space-y-2">
       <Button
@@ -43,7 +44,7 @@ export function RangeIndicator({
                 min="5"
                 step="5"
                 value={rangeFeet}
-                onChange={(e) => setRangeFeet(Math.max(5, parseInt(e.target.value) || 5))}
+                onChange={(e) => onRangeFeetChange(Math.max(5, parseInt(e.target.value) || 5))}
                 className="h-8"
               />
             </div>

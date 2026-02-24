@@ -19,6 +19,8 @@ interface TerrainMarkerProps {
   mapId: string;
   isActive: boolean;
   onToggle: () => void;
+  selectedType: 'difficult' | 'water' | 'fire' | 'hazard';
+  onTypeChange: (type: 'difficult' | 'water' | 'fire' | 'hazard') => void;
 }
 
 const TERRAIN_TYPES = [
@@ -28,9 +30,8 @@ const TERRAIN_TYPES = [
   { value: 'hazard', label: 'Hazard/Trap', icon: Skull, color: '#a855f7' },
 ] as const;
 
-export function TerrainMarker({ mapId, isActive, onToggle }: TerrainMarkerProps) {
+export function TerrainMarker({ mapId, isActive, onToggle, selectedType, onTypeChange }: TerrainMarkerProps) {
   const [markers, setMarkers] = useState<TerrainMarkerData[]>([]);
-  const [selectedType, setSelectedType] = useState<'difficult' | 'water' | 'fire' | 'hazard'>('difficult');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export function TerrainMarker({ mapId, isActive, onToggle }: TerrainMarkerProps)
               <label className="text-xs font-medium">Terrain Type</label>
               <Select
                 value={selectedType}
-                onValueChange={(v) => setSelectedType(v as any)}
+                onValueChange={(v) => onTypeChange(v as any)}
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />

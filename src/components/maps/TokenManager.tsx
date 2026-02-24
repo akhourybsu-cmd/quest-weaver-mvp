@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Users, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Character {
@@ -33,6 +33,7 @@ interface TokenManagerProps {
   encounterId?: string;
   gridSize: number;
   gridSnapEnabled?: boolean;
+  getViewportCenter?: () => { x: number; y: number };
 }
 
 const TOKEN_COLORS = [
@@ -52,7 +53,7 @@ const TOKEN_SIZES = [
   { value: 4, label: "Gargantuan (4x4)" },
 ];
 
-const TokenManager = ({ mapId, campaignId, encounterId, gridSize, gridSnapEnabled = true }: TokenManagerProps) => {
+const TokenManager = ({ mapId, campaignId, encounterId, gridSize, gridSnapEnabled = true, getViewportCenter }: TokenManagerProps) => {
   const [open, setOpen] = useState(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [name, setName] = useState("");
@@ -87,11 +88,11 @@ const TokenManager = ({ mapId, campaignId, encounterId, gridSize, gridSnapEnable
 
     const tokenName = name || characters.find((c) => c.id === selectedCharacterId)?.name || "Token";
 
-    // Place token in center of map
-    let x = 300;
-    let y = 200;
+    // Place token at viewport center
+    const center = getViewportCenter ? getViewportCenter() : { x: 300, y: 200 };
+    let x = center.x;
+    let y = center.y;
     
-    // Apply grid snapping if enabled
     if (gridSnapEnabled) {
       x = Math.round(x / gridSize) * gridSize;
       y = Math.round(y / gridSize) * gridSize;

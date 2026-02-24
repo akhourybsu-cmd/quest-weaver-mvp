@@ -1060,21 +1060,14 @@ const MapViewer = ({
       </div>
 
       <Card className="bg-muted/50 overflow-hidden" style={{ height: "calc(100vh - 280px)" }}>
-        {sidebarCollapsed ? (
-          <div className="h-full p-2">{renderCanvas()}</div>
-        ) : (
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={25} minSize={18} maxSize={40}>
-              <div className="h-full border-r border-border bg-card/50">
-                {renderSidebar()}
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={75}>
-              <div className="h-full p-2">{renderCanvas()}</div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
+        <div className="h-full flex">
+          {!sidebarCollapsed && (
+            <div className="h-full border-r border-border bg-card/50 overflow-hidden" style={{ width: "25%", minWidth: 200, maxWidth: 400 }}>
+              {renderSidebar()}
+            </div>
+          )}
+          <div className="h-full flex-1 p-2">{renderCanvas()}</div>
+        </div>
       </Card>
 
       <NotePinDialog

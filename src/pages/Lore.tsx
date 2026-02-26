@@ -19,7 +19,7 @@ import NPCCreator from "@/components/lore/creators/NPCCreator";
 import HistoryCreator from "@/components/lore/creators/HistoryCreator";
 import MythCreator from "@/components/lore/creators/MythCreator";
 import MagicCreator from "@/components/lore/creators/MagicCreator";
-import BottomNav from "@/components/BottomNav";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 
 interface LorePage {
   id: string;

@@ -64,6 +64,7 @@ const StepLevelChoices = () => {
   const [accumulatedInvocations, setAccumulatedInvocations] = useState<string[]>([]);
   const [accumulatedMetamagic, setAccumulatedMetamagic] = useState<string[]>([]);
   const [accumulatedExpertise, setAccumulatedExpertise] = useState<string[]>([]);
+  const [accumulatedPactBoon, setAccumulatedPactBoon] = useState<string | null>(null);
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
 
   // Levels that need processing (2 to draft.level, since level 1 is handled in base wizard)

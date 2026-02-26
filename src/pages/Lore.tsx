@@ -198,7 +198,7 @@ export default function Lore() {
             <ScrollArea className="h-[calc(100vh-16rem)]">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {loading ? (
-                  <p className="text-muted-foreground col-span-full text-center py-8">Loading...</p>
+                  <div className="col-span-full"><ThemedLoading message="Loading lore..." /></div>
                 ) : filteredPages.length === 0 ? (
                   <Card className="col-span-full">
                     <CardContent className="flex flex-col items-center justify-center py-12">

@@ -27,6 +27,7 @@ const StepBasics = () => {
   const setClass = useSetAtom(setClassAtom);
   const setSubclass = useSetAtom(setSubclassAtom);
   const applyGrants = useSetAtom(applyGrantsAtom);
+  const replaceGrants = useSetAtom(replaceGrantsAtom);
   const setNeeds = useSetAtom(setNeedsAtom);
 
   const [classes, setClasses] = useState<SrdClass[]>([]);

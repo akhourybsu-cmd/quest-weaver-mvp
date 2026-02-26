@@ -634,9 +634,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           const lvl = parseInt(lvlStr);
           if (!lc) continue;
           
-          // Apply ASI
-          if (lc.asiChoices && typeof lc.asiChoices === 'object') {
-            for (const [ability, increase] of Object.entries(lc.asiChoices)) {
+          // Apply ASI (field is abilityIncreases from StepLevelChoices)
+          if (lc.abilityIncreases && typeof lc.abilityIncreases === 'object') {
+            for (const [ability, increase] of Object.entries(lc.abilityIncreases)) {
               const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
               if (key in finalAbilityScores) {
                 finalAbilityScores[key] += Number(increase) || 0;

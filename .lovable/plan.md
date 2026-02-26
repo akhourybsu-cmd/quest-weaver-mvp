@@ -1,166 +1,110 @@
 
+# Character Wizard Audit -- Remaining Issues
 
-# Map Editor Optimization: Comprehensive Overhaul
-
-## Current State Assessment
-
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+After a thorough review of all 11 wizard steps, state management, finalization logic, and rule libraries, here are the remaining issues to fix.
 
 ---
 
-## Critical Issues (Tools That Don't Work)
+## Issue 1: Review page shows only Level 1 HP (StepReview.tsx)
 
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
+**Problem**: Lines 33-35 calculate `maxHP = hitDie + conMod` -- this is only level 1 HP. For a level 5 character, the Review page will show "13 HP" when the finalized character will actually have ~40+. The finalization code (`computeDerivedStats`) correctly sums level-up HP, but the Review page does not.
 
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
+**Fix**: Import `CLASS_LEVEL_UP_RULES` and replicate the full HP calculation (level 1 max + sum of levelChoices HP rolls for levels 2+), matching what `computeDerivedStats` does. This ensures the player sees accurate stats before clicking Finalize.
 
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
-
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
-
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
-
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+**File**: `src/components/character/wizard/StepReview.tsx`
 
 ---
 
-## Performance Issues
+## Issue 2: LiveSummaryPanel shows only Level 1 HP (LiveSummaryPanel.tsx)
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
+**Problem**: Same issue as above -- line 25 shows `hitDie + conMod` regardless of character level. A level 10 Barbarian would show "14 HP" in the sidebar.
 
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
+**Fix**: Same approach as Issue 1 -- compute full HP from level choices data in the draft.
 
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
-
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+**File**: `src/components/character/wizard/LiveSummaryPanel.tsx`
 
 ---
 
-## Functional Gaps
+## Issue 3: Ability bonuses from ancestry not applied to scores (StepAbilities and finalization)
 
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
+**Problem**: Ancestry grants `abilityBonuses` (e.g., Dwarf gets +2 CON, Elf gets +2 DEX), stored in `draft.grants.abilityBonuses`. But these bonuses are never applied to the displayed scores in StepAbilities, the LiveSummaryPanel, the Review page, or the finalization's `computeDerivedStats`. The ability scores saved to the DB are raw scores without ancestry bonuses.
 
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
+**Fix**: In `computeDerivedStats` and in the Review/Summary panels, add `draft.grants.abilityBonuses` to the base ability scores before computing modifiers. The StepAbilities input fields should show the raw scores (so users can edit them), but the modifier display should include ancestry bonuses.
 
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
-
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
-
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
+**Files**: `src/components/character/CharacterWizard.tsx` (computeDerivedStats), `src/components/character/wizard/StepReview.tsx`, `src/components/character/wizard/LiveSummaryPanel.tsx`, `src/components/character/wizard/StepAbilities.tsx`
 
 ---
 
-## Implementation Plan
+## Issue 4: Needs are overwritten not merged when background changes (StepBackground.tsx)
 
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
+**Problem**: When a background is selected on line 47, `setNeeds(needs)` replaces the class needs with background needs. If the class set `needs.skill = { required: 2, from: [...] }` and the background sets `needs.language = { required: 1, from: [...] }`, the class skill needs disappear. The `setNeedsAtom` does a shallow merge (`{ ...d.needs, ...needs }`), so if background doesn't set `skill`, the old class skill needs survive. But if background DOES set `skill` (some backgrounds grant skill choices), it overwrites the class skill needs entirely.
 
-**File: `src/components/maps/MapViewer.tsx`**
+**Fix**: Separate class needs and background needs into distinct tracking, similar to how grants now use sources. Or, in `StepBackground`, only set the keys that the background provides, keeping existing class needs intact. The current `setNeedsAtom` shallow merge actually handles this correctly for most cases, but the issue is in `StepBasics` -- when class changes, it calls `setNeeds(needs)` which only sets `skill` and `tool`, clearing any background `language` needs. Need to ensure both steps merge rather than replace.
 
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
-
-### Phase 2: Wire Drawing Tools
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
-
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
-
-### Phase 3: Wire Measurement, Range, and Terrain
-
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
-
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
-
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
-
-### Phase 4: Fix Fog of War
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
-
-### Phase 5: Fix Grid Snap and Token Context Menu
-
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
-
-### Phase 6: Performance Optimizations
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
+**File**: `src/components/character/wizard/StepBasics.tsx` -- change `setNeeds(needs)` to only set class-specific keys; `src/components/character/wizard/StepBackground.tsx` -- same for background-specific keys.
 
 ---
 
-## Files Modified
+## Issue 5: Changing class does not reset spells/features choices (StepBasics.tsx)
 
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
+**Problem**: In `handleClassChange` (line 53), when switching classes, `setClass` resets `skills` and `tools` choices, but does NOT reset `spellsKnown`, `spellsPrepared`, or `featureChoices`. If a player selects Wizard spells, then switches to Fighter, those Wizard spell IDs remain in the draft. While the Spells step won't show for Fighter, if they switch to another caster, old spell IDs may persist and cause stale data in finalization.
 
-### No database changes required
+**Fix**: In `setClassAtom`, also reset `spellsKnown: []`, `spellsPrepared: []`, `featureChoices: {}`.
 
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+**File**: `src/state/characterWizard.ts` (setClassAtom)
 
+---
+
+## Issue 6: Equipment bundle auto-select doesn't persist to draft (StepEquipment.tsx)
+
+**Problem**: Lines 63-67 auto-select the first bundle via `useEffect`, but `setEquipmentBundle` only fires when `draft.choices.equipmentBundleId` is falsy. If a user goes back from Equipment to Basics, changes class, then returns -- the old bundle ID may still be set from the previous class, pointing to a bundle that no longer exists for the new class. The UI won't highlight anything.
+
+**Fix**: When `bundles` change (due to class change), check if the current `equipmentBundleId` exists in the new bundles. If not, auto-select the first new bundle.
+
+**File**: `src/components/character/wizard/StepEquipment.tsx`
+
+---
+
+## Issue 7: Review page does not show level choices summary
+
+**Problem**: The Review page shows `featureChoices` (from StepFeatures dialog choices), but doesn't summarize the level-up choices from StepLevelChoices -- ASI selections, fighting styles, metamagic, pact boon, invocations, expertise, etc. These are stored under `draft.choices.featureChoices.levelChoices` but the Review page doesn't parse them into a readable summary.
+
+**Fix**: Add a "Level-Up Choices" section to StepReview that iterates over `levelChoices` and displays:
+- HP per level (roll + CON mod)
+- ASI or Feat chosen
+- Fighting style name
+- Metamagic options
+- Invocations
+- Pact boon
+- Expertise skills
+- Favored enemies/terrains
+
+**File**: `src/components/character/wizard/StepReview.tsx`
+
+---
+
+## Issue 8: StepLevelChoices levelChoices array uses wrong index structure
+
+**Problem**: `levelChoices` is initialized as an array of `{ level: N }` objects (line 82), but `updateCurrentChoices` finds the item by `c.level === currentLevel`. Meanwhile, the finalization code treats it as a Record keyed by level number string (`levelChoices[lvl]`). The array format means `levelChoices[2]` returns the object at index 2 (which might be level 4), not level 2.
+
+Actually, looking more carefully: `computeDerivedStats` at line 166 does `for (let lvl = 2; lvl <= draft.level; lvl++)` and accesses `levelChoices[lvl]` -- but `levelChoices` is stored as an array via `setDraft`, and then finalization accesses it as `draft.choices.featureChoices.levelChoices`. The cast to `Record<string, any>` on line 614 means it iterates with `Object.entries(levelChoices)` getting array indices (0, 1, 2...) instead of level numbers (2, 3, 4...).
+
+**Fix**: Convert `levelChoices` storage to a Record keyed by level number instead of an array. In StepLevelChoices, change the save effect to store as `{ [level]: choices }` instead of an array.
+
+**File**: `src/components/character/wizard/StepLevelChoices.tsx`
+
+---
+
+## Files to Modify
+
+| File | Issues |
+|------|--------|
+| `src/state/characterWizard.ts` | #5: Reset spells/features on class change |
+| `src/components/character/wizard/StepReview.tsx` | #1, #3, #7: Full HP calc, ancestry bonuses, level choices summary |
+| `src/components/character/wizard/LiveSummaryPanel.tsx` | #2, #3: Full HP calc, ancestry bonuses |
+| `src/components/character/wizard/StepAbilities.tsx` | #3: Show ancestry bonus in modifier display |
+| `src/components/character/CharacterWizard.tsx` | #3: Apply ancestry bonuses in computeDerivedStats |
+| `src/components/character/wizard/StepBasics.tsx` | #4: Merge needs instead of replace |
+| `src/components/character/wizard/StepBackground.tsx` | #4: Merge needs instead of replace |
+| `src/components/character/wizard/StepEquipment.tsx` | #6: Validate bundle ID on class change |
+| `src/components/character/wizard/StepLevelChoices.tsx` | #8: Store levelChoices as Record not array |

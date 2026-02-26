@@ -16,7 +16,8 @@ import {
   setNeedsAtom
 } from "@/state/characterWizard";
 import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";
-import { grantsFromClass, needsFromClass, grantsFromSubclass } from "@/lib/rules/5eRules";
+import { grantsFromClass, needsFromClass, grantsFromSubclass, emptyGrants } from "@/lib/rules/5eRules";
+import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 const StepBasics = () => {
   const [draft] = useAtom(draftAtom);

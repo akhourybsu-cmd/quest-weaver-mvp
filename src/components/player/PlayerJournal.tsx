@@ -1,22 +1,17 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, BookOpen } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Plus, Trash2, BookOpen, Search, ArrowLeft, Save } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { format } from "date-fns";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 
 interface Note {
   id: string;
@@ -34,16 +29,19 @@ interface PlayerJournalProps {
 export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isNew, setIsNew] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchNotes();
 
     const channel = supabase
-      .channel('player-notes')
+      .channel('player-journal')
       .on(
         'postgres_changes',
         {
@@ -56,9 +54,7 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [campaignId]);
 
   const fetchNotes = async () => {
@@ -74,229 +70,230 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      toast({
-        title: "Error loading notes",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error loading journal", description: error.message, variant: "destructive" });
       return;
     }
-
     setNotes(data || []);
   };
 
-  const handleCreateNote = async () => {
+  const handleSave = async () => {
     if (!title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please enter a title for your note",
-        variant: "destructive",
-      });
+      toast({ title: "Title required", description: "Please enter a title for your entry", variant: "destructive" });
       return;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
-      .from('session_notes')
-      .insert({
+    if (isNew) {
+      const { error } = await supabase.from('session_notes').insert({
         campaign_id: campaignId,
         author_id: user.id,
         title: title.trim(),
         content_markdown: content.trim(),
         visibility: 'PRIVATE',
       });
-
-    if (error) {
-      toast({
-        title: "Error creating note",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Note created",
-      description: "Your journal entry has been saved",
-    });
-
-    setTitle("");
-    setContent("");
-    setIsCreating(false);
-    fetchNotes();
-  };
-
-  const handleUpdateNote = async () => {
-    if (!selectedNote) return;
-
-    const { error } = await supabase
-      .from('session_notes')
-      .update({
+      if (error) {
+        toast({ title: "Error creating entry", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Entry created" });
+    } else if (selectedNote) {
+      const { error } = await supabase.from('session_notes').update({
         title: title.trim(),
         content_markdown: content.trim(),
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', selectedNote.id);
-
-    if (error) {
-      toast({
-        title: "Error updating note",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
+      }).eq('id', selectedNote.id);
+      if (error) {
+        toast({ title: "Error saving", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Entry saved" });
     }
 
-    toast({
-      title: "Note updated",
-      description: "Your changes have been saved",
-    });
-
+    setIsNew(false);
     setSelectedNote(null);
     setTitle("");
     setContent("");
+    if (isMobile) setMobileSheetOpen(false);
     fetchNotes();
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    const { error } = await supabase
-      .from('session_notes')
-      .delete()
-      .eq('id', noteId);
-
+  const handleDelete = async (noteId: string) => {
+    const { error } = await supabase.from('session_notes').delete().eq('id', noteId);
     if (error) {
-      toast({
-        title: "Error deleting note",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error deleting", description: error.message, variant: "destructive" });
       return;
     }
-
-    toast({
-      title: "Note deleted",
-      description: "Your journal entry has been removed",
-    });
-
+    toast({ title: "Entry deleted" });
     if (selectedNote?.id === noteId) {
       setSelectedNote(null);
       setTitle("");
       setContent("");
     }
-
+    if (isMobile) setMobileSheetOpen(false);
     fetchNotes();
   };
 
   const openNote = (note: Note) => {
     setSelectedNote(note);
+    setIsNew(false);
     setTitle(note.title);
     setContent(note.content_markdown);
+    if (isMobile) setMobileSheetOpen(true);
   };
 
-  const resetForm = () => {
+  const startNew = () => {
     setSelectedNote(null);
+    setIsNew(true);
     setTitle("");
     setContent("");
-    setIsCreating(false);
+    if (isMobile) setMobileSheetOpen(true);
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpen className="w-6 h-6" />
-          Personal Journal
-        </h2>
-        <Dialog open={isCreating || selectedNote !== null} onOpenChange={(open) => !open && resetForm()}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsCreating(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Entry
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{selectedNote ? "Edit Entry" : "New Journal Entry"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="note-title">Title</Label>
-                <Input
-                  id="note-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Entry title..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="note-content">Content</Label>
-                <Textarea
-                  id="note-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your thoughts, observations, plans..."
-                  rows={12}
-                  className="resize-none"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={resetForm}>
-                Cancel
-              </Button>
-              <Button onClick={selectedNote ? handleUpdateNote : handleCreateNote}>
-                {selectedNote ? "Save Changes" : "Create Entry"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+  const filteredNotes = notes.filter(note => {
+    const q = searchQuery.toLowerCase();
+    return note.title.toLowerCase().includes(q) || note.content_markdown.toLowerCase().includes(q);
+  });
 
-      {notes.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center text-muted-foreground">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium mb-2">No journal entries yet</p>
-            <p className="text-sm">Create your first entry to start documenting your adventure</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {notes.map((note) => (
-            <Card key={note.id} className="cursor-pointer hover:border-primary transition-colors">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0" onClick={() => openNote(note)}>
-                    <CardTitle className="text-lg mb-2">{note.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {note.content_markdown || "No content"}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteNote(note.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+  if (notes.length === 0 && !isNew) {
+    return (
+      <div className="space-y-4">
+        <PlayerEmptyState
+          icon={BookOpen}
+          title="No Journal Entries"
+          description="Start documenting your adventure — track clues, plans, and session recaps."
+        />
+        <div className="flex justify-center">
+          <Button onClick={startNew} className="bg-brass hover:bg-brass/90 text-brass-foreground">
+            <Plus className="w-4 h-4 mr-2" />
+            New Entry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const editorPanel = (
+    <div className="flex flex-col gap-3 h-full">
+      <Input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Entry title..."
+        className="font-cinzel text-lg border-brass/30 focus-visible:ring-brass"
+      />
+      <Textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Write your thoughts, observations, plans..."
+        className="flex-1 min-h-0 resize-none border-brass/30 focus-visible:ring-brass"
+      />
+      <div className="flex items-center gap-2 shrink-0">
+        <Button onClick={handleSave} className="bg-brass hover:bg-brass/90 text-brass-foreground">
+          <Save className="w-4 h-4 mr-2" />
+          {isNew ? "Create" : "Save"}
+        </Button>
+        {selectedNote && (
+          <Button variant="destructive" size="sm" onClick={() => handleDelete(selectedNote.id)}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </Button>
+        )}
+        <Button variant="ghost" size="sm" onClick={() => { setSelectedNote(null); setIsNew(false); setTitle(""); setContent(""); if (isMobile) setMobileSheetOpen(false); }}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile editor sheet */}
+      <Sheet open={mobileSheetOpen} onOpenChange={(open) => { if (!open) { setMobileSheetOpen(false); } }}>
+        <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+          <SheetHeader className="px-4 pt-4 pb-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setMobileSheetOpen(false)} className="shrink-0">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <SheetTitle className="font-cinzel text-lg truncate">
+                {isNew ? "New Entry" : selectedNote?.title}
+              </SheetTitle>
+            </div>
+          </SheetHeader>
+          <Separator />
+          <div className="flex-1 min-h-0 p-4">
+            {editorPanel}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[300px]">
+        {/* Left: Note list */}
+        <div className="lg:col-span-1 flex flex-col gap-3 min-h-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Search journal..." value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+            </div>
+            <Button size="icon" onClick={startNew} className="bg-brass hover:bg-brass/90 text-brass-foreground shrink-0">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-2 pr-2">
+              {filteredNotes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">No entries match your search</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline">
-                    {new Date(note.updated_at).toLocaleDateString()}
-                  </Badge>
-                </div>
+              ) : (
+                filteredNotes.map(note => (
+                  <Card key={note.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedNote?.id === note.id ? 'border-brass bg-brass/5' : 'border-border'
+                    }`}
+                    onClick={() => openNote(note)}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-cinzel">{note.title}</CardTitle>
+                      <CardDescription className="text-xs line-clamp-2">
+                        {note.content_markdown || "No content"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-3">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(note.updated_at), 'MMM d, yyyy')}
+                      </span>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Right: Editor — desktop only */}
+        <div className="lg:col-span-2 hidden lg:flex flex-col min-h-0">
+          {(selectedNote || isNew) ? (
+            <Card className="flex flex-col flex-1 min-h-0 border-brass/20">
+              <CardContent className="flex-1 min-h-0 p-6 flex flex-col">
+                {editorPanel}
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <Card className="flex-1 border-dashed flex items-center justify-center border-brass/30">
+              <CardContent className="flex flex-col items-center justify-center text-center py-16">
+                <BookOpen className="w-16 h-16 text-brass/40 mb-4" />
+                <h3 className="font-cinzel text-lg font-semibold mb-2">Select or create an entry</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Pick a journal entry from the list, or create a new one to start writing.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

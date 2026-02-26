@@ -213,6 +213,9 @@ export default function PlayerCampaignView() {
           <TabsContent value="notes" className="mt-4">
             {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
           </TabsContent>
+          <TabsContent value="journal" className="mt-4">
+            <PlayerJournal campaignId={campaign.id} characterId={character?.id || ''} />
+          </TabsContent>
         </Tabs>
       </div>
 

@@ -127,13 +127,13 @@ export default function Lore() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <header className="sticky top-0 z-40 bg-card border-b border-brass/20 shadow-sm">
         <div className="container flex h-14 items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Book className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold">Lore & Worldbuilding</h1>
+          <Book className="h-5 w-5 text-brass" />
+          <h1 className="text-lg font-cinzel font-bold">Lore & Worldbuilding</h1>
         </div>
       </header>
 

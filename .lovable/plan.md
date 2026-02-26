@@ -1,166 +1,84 @@
 
 
-# Map Editor Optimization: Comprehensive Overhaul
+# Audit and Fix: Character Creation Wizard -- All 12 Classes, Levels 1-20
 
-## Current State Assessment
+## Issues Found
 
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+After thorough review of the wizard code, SRD data, and level-up rules, here are the issues categorized by severity:
 
----
+### Critical Bugs
 
-## Critical Issues (Tools That Don't Work)
+**1. Subclass level hardcoded to 3 (StepBasics.tsx:87)**
+The wizard blocks subclass selection unless `level >= 3`, but per 5e rules:
+- Cleric, Sorcerer, Warlock: subclass at level 1
+- Druid, Wizard: subclass at level 2
+- All others: subclass at level 3
 
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
+Fix: Look up the actual `unlock_level` from the loaded subclasses data (it's already stored in the DB), or fall back to the `subclassLevel` from `CLASS_LEVEL_UP_RULES`.
 
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
+**2. Grants stack on class switch (StepBasics.tsx:60)**
+When a player changes their class selection, `applyGrants` merges new grants with old ones (e.g., switching from Fighter to Wizard keeps Fighter's armor/weapon proficiencies and saving throws). Should use `replaceGrantsAtom` instead, or reset grants before applying.
 
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
+**3. Spellcasting ability hardcoded to WIS (StepSpells.tsx:91)**
+`getKnownPreparedModel` is called with `draft.abilityScores.WIS` for ALL classes. This means Bard/Sorcerer/Warlock/Paladin (CHA casters) and Wizard (INT caster) get wrong prepared spell counts. For example, a Wizard with INT 16 (+3) would show prepared max based on WIS instead.
 
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
+### Moderate Issues
 
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
+**4. StepLevelChoices doesn't handle spell/cantrip gains per level**
+When creating a level 5+ character, the wizard walks through levels 2-N for HP and feature choices, but never prompts for new spells or cantrips gained at each level. For known casters (Bard, Sorcerer, Warlock, Ranger), each level adds 1-2 new spells known, and cantrip counts increase at levels 4 and 10. These are silently skipped.
 
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+**5. Pact boon not persisted across level steps**
+The Warlock pact boon chosen at level 3 is stored in `levelChoices[level3].pactBoon`, but the Invocation selector at levels 5+ reads from `currentChoices.pactBoon` (the current level's choices), so it can't filter invocations by pact boon prerequisite.
 
----
+**6. Spells step shows for half-casters at level 1**
+Ranger and Paladin get spellcasting at level 2. The `checkIsSpellcaster` function correctly identifies them as casters, but the Spells step is shown even at level 1, where they have 0 slots and 0 spells known. The step gracefully handles this by showing an error, but it's confusing.
 
-## Performance Issues
+### Minor Issues
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
+**7. Orphan spell data in database**
+~826 spells with `level: 0` and empty `classes: []` exist in `srd_spells`. They don't affect gameplay (filtered out by class-based queries) but waste storage.
 
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
-
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
-
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+**8. Paladin max level for features is 19 (not 20)**
+The feature data for Paladin only goes up to level 19. Missing level 20 capstone feature.
 
 ---
 
-## Functional Gaps
+## Planned Fixes
 
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
+### File: `src/components/character/wizard/StepBasics.tsx`
+- Replace hardcoded `minLevelForSubclass = 3` with dynamic lookup from `CLASS_LEVEL_UP_RULES[className].subclassLevel` or the `unlock_level` field from loaded subclasses
+- Change `applyGrants(grants)` to first reset grants, then apply -- use `replaceGrantsAtom` or add a reset step before applying class grants
+- Reset subclass-related grants when class changes
 
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
+### File: `src/components/character/wizard/StepSpells.tsx`
+- Replace hardcoded `draft.abilityScores.WIS` with a lookup based on the class's `spellcasting_ability` field (already available on `selectedClass`)
+- Map ability name to the correct score key (e.g., "Wisdom" -> WIS, "Charisma" -> CHA, "Intelligence" -> INT)
+- Gate the entire Spells step: if the class has 0 slots and 0 known spells at the current level, show an informational message instead of the full spell picker
 
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
+### File: `src/components/character/CharacterWizard.tsx`
+- Refine `checkIsSpellcaster` to also check `draft.level >= 2` for half-casters (Ranger, Paladin) so the Spells step doesn't appear at level 1
 
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
-
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
-
----
-
-## Implementation Plan
-
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
-
-### Phase 2: Wire Drawing Tools
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
-
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
-
-### Phase 3: Wire Measurement, Range, and Terrain
-
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
-
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
-
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
-
-### Phase 4: Fix Fog of War
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
-
-### Phase 5: Fix Grid Snap and Token Context Menu
-
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
-
-### Phase 6: Performance Optimizations
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
+### File: `src/components/character/wizard/StepLevelChoices.tsx`
+- Add cantrip and spell selection steps to `levelRequirements` when the class gains cantrips or known spells at a given level
+- Track accumulated pact boon across levels so invocation filtering works at levels 5+
+- Add `cantripGain` and `spellsKnownGain` checks using existing helper functions from `levelUpRules.ts`
 
 ---
 
-## Files Modified
+## What Will Work After These Fixes
 
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
-
-### No database changes required
-
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+| Class | Subclass Level | Spellcasting | Level 1-20 Progression |
+|-------|---------------|-------------|----------------------|
+| Barbarian | 3 | None | HP + Rage scaling + ASI |
+| Bard | 3 | Known (CHA) | Cantrips + spells + expertise + Magical Secrets |
+| Cleric | 1 | Prepared (WIS) | Domain at 1 + Channel Divinity + cantrips |
+| Druid | 2 | Prepared (WIS) | Circle at 2 + Wild Shape + cantrips |
+| Fighter | 3 | None | Fighting Style + ASI (7 total!) + Action Surge |
+| Monk | 3 | None | Ki scaling + ASI |
+| Paladin | 3 | Prepared (CHA) | Fighting Style at 2 + spells at 2+ + Oath at 3 |
+| Ranger | 3 | Known (WIS) | Favored Enemy/Terrain + Fighting Style + spells at 2+ |
+| Rogue | 3 | None | Expertise at 1 and 6 + ASI |
+| Sorcerer | 1 | Known (CHA) | Origin at 1 + Metamagic + Sorcery Points |
+| Warlock | 1 | Pact (CHA) | Patron at 1 + Invocations + Pact Boon at 3 |
+| Wizard | 2 | Spellbook (INT) | Tradition at 2 + Arcane Recovery + cantrips |
 

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ArrowLeft, ChevronDown, Calendar, Swords, Flag, FileText, User, Package, Download, MapPin, Star, Play, Square } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -177,7 +177,7 @@ const CampaignTimeline = () => {
   return (
     <div className="min-h-screen pb-20 bg-background">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
+      <div className="bg-card border-b border-brass/20 sticky top-0 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button
@@ -300,7 +300,7 @@ const CampaignTimeline = () => {
         )}
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

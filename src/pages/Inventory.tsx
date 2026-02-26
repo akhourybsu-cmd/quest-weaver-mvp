@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, Coins, Sparkles, History, Users, BookOpen } from "lucide-react";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 import { useToast } from "@/hooks/use-toast";
 import { useIsDM } from "@/hooks/useIsDM";
 import ItemEditor from "@/components/inventory/ItemEditor";
@@ -118,7 +119,7 @@ const Inventory = () => {
   if (dmLoading || loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        <ThemedLoading message="Loading inventory..." />
       </div>
     );
   }
@@ -129,7 +130,7 @@ const Inventory = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">DM Inventory Management</h1>
+            <h1 className="text-3xl font-cinzel font-bold">DM Inventory Management</h1>
             <p className="text-muted-foreground">Comprehensive inventory and treasure management</p>
           </div>
         </div>
@@ -236,7 +237,7 @@ const Inventory = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Party Inventory</h1>
+          <h1 className="text-3xl font-cinzel font-bold">Party Inventory</h1>
           <p className="text-muted-foreground">Manage items, equipment, and treasure</p>
         </div>
         <Button onClick={() => setEditorOpen(true)}>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Eye, Heart, Shield, Sword, Users } from "lucide-react";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 import { TurnIndicator } from "@/components/presence/TurnIndicator";
 import CombatLog from "@/components/combat/CombatLog";
 
@@ -155,7 +156,7 @@ const SessionSpectator = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-lg">Loading spectator view...</div>
+        <ThemedLoading message="Loading spectator view..." />
       </div>
     );
   }
@@ -184,8 +185,8 @@ const SessionSpectator = () => {
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Eye className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-cinzel font-bold flex items-center gap-2">
+              <Eye className="w-8 h-8 text-brass" />
               Spectator View
             </h1>
             <p className="text-muted-foreground mt-1">Campaign: {campaignCode}</p>
@@ -195,7 +196,7 @@ const SessionSpectator = () => {
           </Badge>
         </div>
 
-        <h2 className="text-xl font-semibold text-muted-foreground">{encounter.name}</h2>
+        <h2 className="text-xl font-cinzel font-semibold text-muted-foreground">{encounter.name}</h2>
       </div>
 
       <div className="max-w-6xl mx-auto grid gap-6 lg:grid-cols-2">
@@ -223,7 +224,7 @@ const SessionSpectator = () => {
                     key={entry.id}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       entry.is_current_turn
-                        ? "border-primary bg-primary/10 shadow-lg"
+                        ? "border-brass bg-brass/10 shadow-lg"
                         : "border-border bg-card"
                     }`}
                   >

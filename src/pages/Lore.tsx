@@ -19,7 +19,7 @@ import NPCCreator from "@/components/lore/creators/NPCCreator";
 import HistoryCreator from "@/components/lore/creators/HistoryCreator";
 import MythCreator from "@/components/lore/creators/MythCreator";
 import MagicCreator from "@/components/lore/creators/MagicCreator";
-import BottomNav from "@/components/BottomNav";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 
 interface LorePage {
   id: string;
@@ -127,13 +127,13 @@ export default function Lore() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <header className="sticky top-0 z-40 bg-card border-b border-brass/20 shadow-sm">
         <div className="container flex h-14 items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Book className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold">Lore & Worldbuilding</h1>
+          <Book className="h-5 w-5 text-brass" />
+          <h1 className="text-lg font-cinzel font-bold">Lore & Worldbuilding</h1>
         </div>
       </header>
 
@@ -198,7 +198,7 @@ export default function Lore() {
             <ScrollArea className="h-[calc(100vh-16rem)]">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {loading ? (
-                  <p className="text-muted-foreground col-span-full text-center py-8">Loading...</p>
+                  <div className="col-span-full"><ThemedLoading message="Loading lore..." /></div>
                 ) : filteredPages.length === 0 ? (
                   <Card className="col-span-full">
                     <CardContent className="flex flex-col items-center justify-center py-12">
@@ -343,7 +343,7 @@ export default function Lore() {
         </DrawerContent>
       </Drawer>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { useToast } from "@/hooks/use-toast";
 import MapViewer from "@/components/maps/MapViewer";
 import MapUpload from "@/components/maps/MapUpload";
@@ -128,7 +128,7 @@ const WorldMap = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-40 shadow-sm">
+      <div className="bg-card border-b border-brass/20 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
@@ -139,7 +139,7 @@ const WorldMap = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-xl font-bold">World Map</h1>
+            <h1 className="text-xl font-cinzel font-bold">World Map</h1>
             {isDM && campaignId && (
               <MapUpload
                 campaignId={campaignId}
@@ -231,7 +231,7 @@ const WorldMap = () => {
         </div>
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

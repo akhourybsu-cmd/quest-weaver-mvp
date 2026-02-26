@@ -1,118 +1,166 @@
 
-# Comprehensive App Audit: Unification and Polish Plan
 
-## Findings Overview
+# Map Editor Optimization: Comprehensive Overhaul
 
-After scanning all pages, components, routing, and styling patterns, here are the issues that break visual and architectural harmony across the app. They fall into three categories: **Styling Inconsistencies**, **Dead/Broken Routes and Components**, and **Functional Gaps**.
+## Current State Assessment
 
----
-
-## A. Styling Inconsistencies
-
-### 1. NotFound page uses raw Tailwind colors instead of design tokens
-`src/pages/NotFound.tsx` uses `bg-gray-100`, `text-gray-600`, `text-blue-500`, `hover:text-blue-700` -- completely off-brand. It should use the fantasy aesthetic with `bg-background`, `font-cinzel`, brass accents, and a thematic "lost adventurer" message.
-
-### 2. Auth.tsx is off-brand
-`src/components/Auth.tsx` still shows "D&D Campaign Manager" instead of "Quest Weaver", uses `text-primary` and `Dices` icon with no brass/fantasy styling, and references `shadow-elegant` (a class that may not exist in the design system). Meanwhile, `PlayerHub.tsx` has a fully themed auth form with brass accents, `font-cinzel`, and the app's visual identity. These two auth screens are completely inconsistent.
-
-### 3. SessionSpectator page has no fantasy styling
-`src/pages/SessionSpectator.tsx` uses generic `text-primary`, `border-primary`, plain `font-bold` headings. No `font-cinzel`, no brass borders, no gradient backgrounds. It's the plainest page in the app.
-
-### 4. Lore standalone page header is plain
-`src/pages/Lore.tsx` header uses `text-lg font-semibold` instead of `font-cinzel font-bold` and has no brass border accents, unlike the Campaign Timeline page which does use `font-cinzel`.
-
-### 5. Inventory page has no fantasy styling at all
-`src/pages/Inventory.tsx` uses bare `text-3xl font-bold` headings, no `font-cinzel`, no brass borders, no gradient backgrounds. Both the DM and player views are completely unstyled compared to the rest of the app.
-
-### 6. Notes page header is minimal
-`src/pages/Notes.tsx` uses `text-2xl font-bold` with no `font-cinzel` or brass accents on the header.
-
-### 7. WorldMap page header is unstyled
-`src/pages/WorldMap.tsx` uses `text-xl font-bold` with no `font-cinzel` or brass border.
-
-### 8. CombatMap page header is unstyled
-`src/pages/CombatMap.tsx` same issue -- plain `text-xl font-bold`.
+After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
 
 ---
 
-## B. Dead/Broken Routes and Components
+## Critical Issues (Tools That Don't Work)
 
-### 9. BottomNav links to non-existent routes
-`BottomNav.tsx` links to `/combat/dm`, `/combat/player`, `/characters/dm`, `/characters/player`, `/notes/dm`, `/notes/player`, `/reference` -- **none of these routes exist in App.tsx**. Every link except `/session/dm` and `/session/player` leads to a 404. The BottomNav is rendered on 5 standalone pages (CombatMap, WorldMap, CampaignTimeline, Lore, Notes) and is effectively broken.
+### 1. Drawing tools are inert
+`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
+- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
+- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
+- **Text**: Click to place, open inline text input, add `IText` object
 
-### 10. BottomNav is obsolete
-The BottomNav's purpose (mobile tab navigation between Session, Combat, Characters, Notes, Reference) is superseded by the CampaignHub tabs and PlayerCampaignView tabs. The standalone pages that render it (Notes, Lore, Timeline, WorldMap, CombatMap) are accessed via those hubs. The BottomNav creates a confusing navigation dead-end.
+### 2. MeasurementTool is disconnected from canvas
+The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
 
-### 11. Standalone pages are now mostly redundant
-Pages like `/inventory`, `/notes`, `/lore`, `/timeline`, `/world-map` were created before CampaignHub consolidated all DM functionality into tabs. They're still routed but users rarely navigate to them directly -- they're accessed through CampaignHub tabs which render their own components. Keeping both creates maintenance burden and styling drift.
+### 3. RangeIndicator is disconnected from canvas
+Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
+
+### 4. TerrainMarker is disconnected from canvas
+The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
+
+### 5. Fog of War painting doesn't work
+`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
+
+### 6. TokenContextMenu is unused
+The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
 
 ---
 
-## C. Functional Gaps
+## Performance Issues
 
-### 12. Loading states are inconsistent
-Some pages show a themed loading state (PlayerHub: brass gradient + spinner), some show bare `Loading...` text (Inventory, Notes), and some show `Loader2` with no container (CharacterList). A unified loading component would fix this.
+### 7. Map image reloads on every resize
+The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
 
-### 13. Empty states vary wildly
-CampaignTimeline shows a centered Card with icon + message. Inventory shows bare text. Lore shows a Card with icon + CTA button. These should all follow one pattern.
+### 8. Grid redraws hundreds of objects on resize
+The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
+
+### 9. Pan handler causes re-renders on every mouse move
+The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
+
+### 10. Token rendering recreates all objects on any change
+The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+
+---
+
+## Functional Gaps
+
+### 11. Grid snap doesn't actually snap
+`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
+
+### 12. AoE templates always appear at hardcoded (300, 200)
+Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
+
+### 13. CombatMap page duplicates tools
+`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
+
+### 14. No eraser implementation
+The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
+
+### 15. `campaignId` not passed to MapViewer from CombatMap
+`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Unify Auth Screens
-**File: `src/components/Auth.tsx`**
-- Replace "D&D Campaign Manager" with "Quest Weaver"
-- Add `font-cinzel` to the title, brass border accents to the card
-- Replace `Dices` icon with app logo (`/logo.png`) like the Index page uses
-- Use `border-brass/30` and brass gradient background matching PlayerHub's auth style
-- Remove `shadow-elegant` and use `shadow-2xl`
+### Phase 1: Fix the Canvas Event Pipeline (Foundation)
 
-### Phase 2: Restyle NotFound Page
-**File: `src/pages/NotFound.tsx`**
-- Replace raw colors with design tokens (`bg-background`, `text-foreground`, `text-muted-foreground`)
-- Add `font-cinzel` for the heading, a thematic message ("You've wandered off the map..."), and a brass-styled "Return Home" button
-- Add a compass or map icon from lucide-react
+**File: `src/components/maps/MapViewer.tsx`**
 
-### Phase 3: Apply Fantasy Styling to Standalone Pages
-Apply the same header treatment (brass border-b, `font-cinzel` heading, gradient background) to these pages:
-- **`src/pages/SessionSpectator.tsx`** -- Add `font-cinzel`, brass accents to initiative cards, themed "no encounter" empty state
-- **`src/pages/Inventory.tsx`** -- Add `font-cinzel` headings, brass card borders, themed empty states
-- **`src/pages/Notes.tsx`** -- `font-cinzel` header, brass border-b
-- **`src/pages/Lore.tsx`** -- Upgrade header to `font-cinzel font-bold`, add brass border
-- **`src/pages/WorldMap.tsx`** -- `font-cinzel` header, brass border-b
-- **`src/pages/CombatMap.tsx`** -- `font-cinzel` header, brass border-b
+- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
+- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
+  - `"pin"` -- existing behavior (note pin dialog)
+  - `"measure"` -- set start/end points, draw measurement line on canvas
+  - `"range"` -- place range circle at click point
+  - `"terrain"` -- insert terrain marker at click point via `addMarker`
+- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
 
-### Phase 4: Fix or Remove BottomNav
-**File: `src/components/BottomNav.tsx`**
-Since every route it links to (except `/session/dm` and `/session/player`) is a 404, and navigation is now handled by CampaignHub tabs and PlayerCampaignView tabs, the cleanest fix is to **remove BottomNav entirely** and remove its imports from the 5 pages that use it (CombatMap, WorldMap, CampaignTimeline, Lore, Notes). Each of these standalone pages already has a "Back" button in the header.
+### Phase 2: Wire Drawing Tools
 
-### Phase 5: Standardize Loading and Empty States
-**File: `src/components/ui/themed-loading.tsx`** (new)
-- Create a reusable `ThemedLoading` component with brass spinner, optional message text, `font-cinzel` label, and gradient background
-- Create a reusable `ThemedEmpty` component with icon + message + optional CTA button, all brass-themed
-- Replace bare loading/empty states across Inventory, Notes, Lore, and SessionSpectator with these components
+**File: `src/components/maps/MapViewer.tsx`**
+
+- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
+- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
+- **Rectangle tool**: Same pattern with Rect.
+- **Line tool**: Same pattern with Line.
+- **Text tool**: On click, create `IText` at pointer position in editing mode.
+- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
+- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
+
+**File: `src/components/maps/DrawingToolbar.tsx`**
+- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
+
+### Phase 3: Wire Measurement, Range, and Terrain
+
+**File: `src/components/maps/MeasurementTool.tsx`**
+- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
+- Remove internal state; become a display-only panel
+
+**File: `src/components/maps/RangeIndicator.tsx`**
+- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
+- MapViewer draws the Fabric.js Circle on click
+
+**File: `src/components/maps/TerrainMarker.tsx`**
+- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
+- MapViewer handles the insert via `addMarker` on click
+
+### Phase 4: Fix Fog of War
+
+**File: `src/components/maps/MapViewer.tsx`**
+- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
+- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
+- Show a semi-transparent black overlay on the canvas for unrevealed areas
+
+### Phase 5: Fix Grid Snap and Token Context Menu
+
+**File: `src/components/maps/MapViewer.tsx`**
+- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
+- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
+
+### Phase 6: Performance Optimizations
+
+**File: `src/components/maps/MapViewer.tsx`**
+
+- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
+- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
+- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
+- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
+
+### Phase 7: Place Objects at Viewport Center
+
+**File: `src/components/maps/MapViewer.tsx`**
+- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
+- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
+
+### Phase 8: Remove Duplicates in CombatMap
+
+**File: `src/pages/CombatMap.tsx`**
+- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
+- Pass `campaignId` to MapViewer
+- Keep only MapUpload and map selection in the CombatMap header
 
 ---
 
-## Files Changed
+## Files Modified
 
-| File | Change |
-|------|--------|
-| `src/components/Auth.tsx` | Rebrand to Quest Weaver, add fantasy styling |
-| `src/pages/NotFound.tsx` | Replace raw colors with design tokens, add fantasy theme |
-| `src/pages/SessionSpectator.tsx` | Add `font-cinzel`, brass accents, themed empty state |
-| `src/pages/Inventory.tsx` | Add `font-cinzel` headings, brass card borders |
-| `src/pages/Notes.tsx` | Upgrade header styling |
-| `src/pages/Lore.tsx` | Upgrade header to match app style |
-| `src/pages/WorldMap.tsx` | Add `font-cinzel`, brass border to header |
-| `src/pages/CombatMap.tsx` | Add `font-cinzel`, brass border to header |
-| `src/components/BottomNav.tsx` | Delete file |
-| `src/pages/CombatMap.tsx` | Remove BottomNav import/usage |
-| `src/pages/WorldMap.tsx` | Remove BottomNav import/usage |
-| `src/pages/CampaignTimeline.tsx` | Remove BottomNav import/usage |
-| `src/pages/Lore.tsx` | Remove BottomNav import/usage |
-| `src/pages/Notes.tsx` | Remove BottomNav import/usage |
-| `src/components/ui/themed-loading.tsx` | New: reusable ThemedLoading and ThemedEmpty components |
+| File | Changes |
+|------|---------|
+| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
+| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
+| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
+| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
+| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
+| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
+| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
 
-No database changes required.
+### No database changes required
+
+All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+

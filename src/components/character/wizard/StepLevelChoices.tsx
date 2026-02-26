@@ -64,6 +64,7 @@ const StepLevelChoices = () => {
   const [accumulatedInvocations, setAccumulatedInvocations] = useState<string[]>([]);
   const [accumulatedMetamagic, setAccumulatedMetamagic] = useState<string[]>([]);
   const [accumulatedExpertise, setAccumulatedExpertise] = useState<string[]>([]);
+  const [accumulatedPactBoon, setAccumulatedPactBoon] = useState<string | null>(null);
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
 
   // Levels that need processing (2 to draft.level, since level 1 is handled in base wizard)
@@ -210,6 +211,9 @@ const StepLevelChoices = () => {
     }
     if (currentStepName === "expertise" && currentChoices.expertise) {
       setAccumulatedExpertise(prev => [...prev, ...currentChoices.expertise!]);
+    }
+    if (currentStepName === "pact-boon" && currentChoices.pactBoon) {
+      setAccumulatedPactBoon(currentChoices.pactBoon);
     }
 
     if (currentLevelStep < totalStepsForLevel - 1) {
@@ -471,7 +475,7 @@ const StepLevelChoices = () => {
         {currentStepName === "invocations" && (
           <InvocationSelector
             warlockLevel={currentLevel}
-            pactBoon={currentChoices.pactBoon || null}
+            pactBoon={accumulatedPactBoon || currentChoices.pactBoon || null}
             knownCantrips={[]}
             currentInvocations={accumulatedInvocations}
             selectedNewInvocations={currentChoices.invocations || []}

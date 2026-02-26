@@ -85,10 +85,17 @@ const StepSpells = () => {
     return getClassSpellAccess(selectedClass, selectedSubclass || undefined);
   }, [selectedClass, selectedSubclass]);
 
-  // Compute known/prepared model
+  // Compute known/prepared model using the class's actual spellcasting ability
   const knownPreparedModel = useMemo(() => {
     if (!selectedClass) return null;
-    const abilityMod = Math.floor((draft.abilityScores.WIS - 10) / 2); // Default to WIS, adjust per class
+    // Map spellcasting_ability name to the correct ability score key
+    const abilityMap: Record<string, keyof typeof draft.abilityScores> = {
+      'Wisdom': 'WIS', 'WIS': 'WIS',
+      'Charisma': 'CHA', 'CHA': 'CHA',
+      'Intelligence': 'INT', 'INT': 'INT',
+    };
+    const abilityKey = abilityMap[selectedClass.spellcasting_ability || ''] || 'WIS';
+    const abilityMod = Math.floor((draft.abilityScores[abilityKey] - 10) / 2);
     return getKnownPreparedModel(selectedClass.name, draft.level, abilityMod);
   }, [selectedClass, draft.level, draft.abilityScores]);
 

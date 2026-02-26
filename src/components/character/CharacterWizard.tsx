@@ -127,11 +127,16 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   // Auto-seed SRD data if missing
   const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
 
-  // Helper to check if class is a spellcaster
+  // Helper to check if class is a spellcaster at the current level
   const checkIsSpellcaster = (): boolean => {
+    const className = draft.className || "";
+    // Half-casters (Paladin, Ranger) don't get spellcasting until level 2
+    const halfCasters = ["Paladin", "Ranger"];
+    if (halfCasters.some(c => className.toLowerCase() === c.toLowerCase()) && draft.level < 2) {
+      return false;
+    }
     const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
                          "Eldritch Knight", "Arcane Trickster"];
-    const className = draft.className || "";
     return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
   };
 

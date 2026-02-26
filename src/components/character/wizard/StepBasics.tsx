@@ -13,10 +13,12 @@ import {
   setClassAtom, 
   setSubclassAtom,
   applyGrantsAtom,
+  replaceGrantsAtom,
   setNeedsAtom
 } from "@/state/characterWizard";
 import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";
-import { grantsFromClass, needsFromClass, grantsFromSubclass } from "@/lib/rules/5eRules";
+import { grantsFromClass, needsFromClass, grantsFromSubclass, emptyGrants } from "@/lib/rules/5eRules";
+import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 const StepBasics = () => {
   const [draft] = useAtom(draftAtom);
@@ -25,6 +27,7 @@ const StepBasics = () => {
   const setClass = useSetAtom(setClassAtom);
   const setSubclass = useSetAtom(setSubclassAtom);
   const applyGrants = useSetAtom(applyGrantsAtom);
+  const replaceGrants = useSetAtom(replaceGrantsAtom);
   const setNeeds = useSetAtom(setNeedsAtom);
 
   const [classes, setClasses] = useState<SrdClass[]>([]);
@@ -56,9 +59,9 @@ const StepBasics = () => {
     setClass({ classId, className: cls.name });
     setSelectedClass(cls);
 
-    // Auto-grant from class
+    // Reset grants then apply from class (prevents stacking on class switch)
     const grants = grantsFromClass(cls);
-    applyGrants(grants);
+    replaceGrants(grants);
 
     // Set needs
     const needs = needsFromClass(cls);
@@ -84,7 +87,10 @@ const StepBasics = () => {
     return <div className="text-sm text-muted-foreground">Loading classes...</div>;
   }
 
-  const minLevelForSubclass = 3;
+  // Dynamic subclass unlock level per class (Cleric/Sorcerer/Warlock=1, Druid/Wizard=2, others=3)
+  const minLevelForSubclass = selectedClass 
+    ? (CLASS_LEVEL_UP_RULES[selectedClass.name]?.subclassLevel ?? 3) 
+    : 3;
   const canChooseSubclass = draft.level >= minLevelForSubclass && subclasses.length > 0;
 
   return (

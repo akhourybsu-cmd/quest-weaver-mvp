@@ -189,6 +189,7 @@ export default function PlayerCampaignView() {
             <TabsTrigger value="lore">Lore</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="journal">Journal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quests" className="mt-4">

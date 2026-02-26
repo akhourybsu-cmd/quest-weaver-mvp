@@ -185,8 +185,8 @@ const SessionSpectator = () => {
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Eye className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-cinzel font-bold flex items-center gap-2">
+              <Eye className="w-8 h-8 text-brass" />
               Spectator View
             </h1>
             <p className="text-muted-foreground mt-1">Campaign: {campaignCode}</p>

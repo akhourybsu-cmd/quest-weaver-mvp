@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 import { useToast } from "@/hooks/use-toast";
 import MapViewer from "@/components/maps/MapViewer";
 import MapUpload from "@/components/maps/MapUpload";

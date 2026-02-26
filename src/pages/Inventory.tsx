@@ -130,7 +130,7 @@ const Inventory = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">DM Inventory Management</h1>
+            <h1 className="text-3xl font-cinzel font-bold">DM Inventory Management</h1>
             <p className="text-muted-foreground">Comprehensive inventory and treasure management</p>
           </div>
         </div>

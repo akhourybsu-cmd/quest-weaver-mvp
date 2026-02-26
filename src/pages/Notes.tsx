@@ -50,7 +50,7 @@ const Notes = () => {
         />
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

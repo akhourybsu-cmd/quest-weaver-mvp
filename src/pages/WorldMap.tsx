@@ -231,7 +231,7 @@ const WorldMap = () => {
         </div>
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

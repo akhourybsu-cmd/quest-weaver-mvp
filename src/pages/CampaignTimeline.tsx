@@ -300,7 +300,7 @@ const CampaignTimeline = () => {
         )}
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

@@ -146,7 +146,7 @@ const CombatMap = () => {
         )}
       </div>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 };

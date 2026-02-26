@@ -237,7 +237,7 @@ const Inventory = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Party Inventory</h1>
+          <h1 className="text-3xl font-cinzel font-bold">Party Inventory</h1>
           <p className="text-muted-foreground">Manage items, equipment, and treasure</p>
         </div>
         <Button onClick={() => setEditorOpen(true)}>

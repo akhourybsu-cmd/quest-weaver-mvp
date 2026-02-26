@@ -224,7 +224,7 @@ const SessionSpectator = () => {
                     key={entry.id}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       entry.is_current_turn
-                        ? "border-primary bg-primary/10 shadow-lg"
+                        ? "border-brass bg-brass/10 shadow-lg"
                         : "border-border bg-card"
                     }`}
                   >

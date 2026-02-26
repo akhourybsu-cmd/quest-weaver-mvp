@@ -343,7 +343,7 @@ export default function Lore() {
         </DrawerContent>
       </Drawer>
 
-      <BottomNav role={isDM ? "dm" : "player"} />
+      
     </div>
   );
 }

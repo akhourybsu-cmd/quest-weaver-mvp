@@ -475,7 +475,7 @@ const StepLevelChoices = () => {
         {currentStepName === "invocations" && (
           <InvocationSelector
             warlockLevel={currentLevel}
-            pactBoon={currentChoices.pactBoon || null}
+            pactBoon={accumulatedPactBoon || currentChoices.pactBoon || null}
             knownCantrips={[]}
             currentInvocations={accumulatedInvocations}
             selectedNewInvocations={currentChoices.invocations || []}

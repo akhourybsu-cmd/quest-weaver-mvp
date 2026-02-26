@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,7 +15,6 @@ import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
 import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
 import { DeathSavingThrows } from "./DeathSavingThrows";
 
-// Type definitions
 interface AncestryTrait {
   name: string;
   description: string;
@@ -145,7 +143,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [subancestryTraits, setSubancestryTraits] = useState<AncestryTrait[]>([]);
   const [ancestryName, setAncestryName] = useState<string>('');
   const [subancestryName, setSubancestryName] = useState<string>('');
-  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(true);
   const [saveProficiencies, setSaveProficiencies] = useState<Record<string, boolean>>({});
   const [profOpen, setProfOpen] = useState(false);
   const [spellsOpen, setSpellsOpen] = useState(true);
@@ -209,7 +207,6 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         ...data,
         subclass_name: joined.srd_subclasses?.name || null
       } as CharacterData);
-      // Extract ancestry traits (they come as [{name, description}])
       if (joined.srd_ancestries?.traits) {
         setAncestryTraits(joined.srd_ancestries.traits);
         setAncestryName(joined.srd_ancestries.name || '');
@@ -379,563 +376,552 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                       (character.vulnerabilities?.length || 0) > 0;
   const hasSpellcasting = character.spell_ability && character.spell_save_dc;
 
-  return (
-    <>
-      <Card className="fantasy-border-ornaments relative overflow-hidden">
-        {/* Parchment texture overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-parchment/5 via-transparent to-brass/5 pointer-events-none" />
-        
-        {/* Character Header */}
-        <div className="relative p-6 pb-4 border-b-2 border-brass/30 bg-gradient-to-r from-brass/10 via-transparent to-brass/10">
-          <div className="flex items-start gap-4">
-            {/* Portrait Frame */}
-            <div className="relative shrink-0">
-              <div className="w-20 h-20 rounded-lg border-2 border-brass bg-muted/50 overflow-hidden shadow-lg">
-                {character.portrait_url ? (
-                  <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-cinzel text-brass">
-                    {character.name.charAt(0)}
-                  </div>
-                )}
-              </div>
-              {/* Decorative corner */}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 border-r-2 border-b-2 border-brass" />
-            </div>
-            
-            {/* Name & Class */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-cinzel font-bold text-foreground tracking-wide truncate">
-                  {character.name}
-                </h2>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 border-brass/50 hover:border-brass hover:bg-brass/10"
-                  onClick={() => setShowLevelUp(true)}
-                >
-                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
-                  Level Up
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Level {character.level} {character.class}
-              </p>
-              {ancestryName && (
-                <p className="text-xs text-brass mt-0.5">
-                  {subancestryName ? `${subancestryName} ` : ''}{ancestryName}
-                </p>
-              )}
-            </div>
+  // === COLUMN CONTENT RENDERERS ===
+
+  const renderLeftColumn = () => (
+    <div className="space-y-4">
+      {/* HP Section */}
+      <div className="relative p-4 rounded-lg bg-gradient-to-br from-hp-red/10 to-transparent border border-hp-red/20">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 rounded-full bg-hp-red/20 border border-hp-red/30">
+            <Heart className="w-5 h-5 text-hp-red" />
           </div>
+          <span className="font-cinzel font-semibold tracking-wide">Hit Points</span>
         </div>
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="text-4xl font-bold tabular-nums text-foreground">
+            {character.current_hp}
+          </span>
+          <span className="text-xl text-muted-foreground">/ {character.max_hp}</span>
+          {character.temp_hp > 0 && (
+            <Badge className="ml-2 bg-secondary/20 text-secondary border-secondary/30">
+              +{character.temp_hp} temp
+            </Badge>
+          )}
+        </div>
+        <div className="h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
+          <div 
+            className={`h-full ${getHPColor()} transition-all duration-500`}
+            style={{ width: `${Math.min(100, getHPPercentage())}%` }}
+          />
+        </div>
+      </div>
 
-        <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-280px)] sm:h-[calc(100vh-300px)]">
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              
-              {/* HP Section - Dramatic */}
-              <div className="relative p-4 rounded-lg bg-gradient-to-br from-hp-red/10 to-transparent border border-hp-red/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-full bg-hp-red/20 border border-hp-red/30">
-                    <Heart className="w-5 h-5 text-hp-red" />
-                  </div>
-                  <span className="font-cinzel font-semibold tracking-wide">Hit Points</span>
-                </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl font-bold tabular-nums text-foreground">
-                    {character.current_hp}
-                  </span>
-                  <span className="text-xl text-muted-foreground">/ {character.max_hp}</span>
-                  {character.temp_hp > 0 && (
-                    <Badge className="ml-2 bg-secondary/20 text-secondary border-secondary/30">
-                      +{character.temp_hp} temp
-                    </Badge>
-                  )}
-                </div>
-                <div className="h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
-                  <div 
-                    className={`h-full ${getHPColor()} transition-all duration-500`}
-                    style={{ width: `${Math.min(100, getHPPercentage())}%` }}
-                  />
-                </div>
-              </div>
+      {/* Death Saving Throws */}
+      {character.current_hp <= 0 && (
+        <DeathSavingThrows
+          characterId={character.id}
+          successes={character.death_save_success || 0}
+          failures={character.death_save_fail || 0}
+          onUpdate={fetchCharacter}
+        />
+      )}
 
-              {/* Death Saving Throws - shown when HP is 0 */}
-              {character.current_hp <= 0 && (
-                <DeathSavingThrows
-                  characterId={character.id}
-                  successes={character.death_save_success || 0}
-                  failures={character.death_save_fail || 0}
-                  onUpdate={fetchCharacter}
-                />
-              )}
+      {/* Core Stats Grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { icon: Shield, label: 'AC', value: character.ac, color: 'text-brass' },
+          { icon: Zap, label: 'Speed', value: `${character.speed}`, color: 'text-primary' },
+          { icon: Star, label: 'Prof', value: `+${character.proficiency_bonus}`, color: 'text-secondary' },
+          { icon: BookOpen, label: 'Percep', value: character.passive_perception, color: 'text-muted-foreground' },
+        ].map((stat) => (
+          <div 
+            key={stat.label}
+            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors"
+          >
+            <stat.icon className={`w-4 h-4 mx-auto mb-1 ${stat.color}`} />
+            <div className="text-xl font-bold">{stat.value}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{stat.label}</div>
+          </div>
+        ))}
+      </div>
 
-              {/* Exhaustion & Warlock Pact Slots */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ExhaustionManager
-                  characterId={character.id}
-                  characterName={character.name}
-                  currentLevel={character.exhaustion_level || 0}
-                  baseSpeed={character.speed || 30}
-                  baseMaxHP={character.max_hp}
-                  onLevelChange={fetchCharacter}
-                  compact
-                />
-                {character.class?.toLowerCase().includes('warlock') && (
-                  <WarlockPactSlots
-                    characterId={character.id}
-                    characterName={character.name}
-                    pactSlotsMax={character.pact_slots_max || 1}
-                    pactSlotsUsed={character.pact_slots_used || 0}
-                    pactSlotLevel={character.pact_slot_level || 1}
-                    compact
-                  />
-                )}
-              </div>
+      {/* Exhaustion & Warlock Pact Slots */}
+      <div className="space-y-3">
+        <ExhaustionManager
+          characterId={character.id}
+          characterName={character.name}
+          currentLevel={character.exhaustion_level || 0}
+          baseSpeed={character.speed || 30}
+          baseMaxHP={character.max_hp}
+          onLevelChange={fetchCharacter}
+          compact
+        />
+        {character.class?.toLowerCase().includes('warlock') && (
+          <WarlockPactSlots
+            characterId={character.id}
+            characterName={character.name}
+            pactSlotsMax={character.pact_slots_max || 1}
+            pactSlotsUsed={character.pact_slots_used || 0}
+            pactSlotLevel={character.pact_slot_level || 1}
+            compact
+          />
+        )}
+      </div>
 
-              {/* Core Stats Grid - Responsive */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { icon: Shield, label: 'AC', value: character.ac, color: 'text-brass' },
-                  { icon: Zap, label: 'Speed', value: `${character.speed}`, color: 'text-primary' },
-                  { icon: Star, label: 'Prof', value: `+${character.proficiency_bonus}`, color: 'text-secondary' },
-                  { icon: BookOpen, label: 'Percep', value: character.passive_perception, color: 'text-muted-foreground' },
-                ].map((stat) => (
-                  <div 
-                    key={stat.label}
-                    className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors"
-                  >
-                    <stat.icon className={`w-4 h-4 mx-auto mb-1 ${stat.color}`} />
-                    <div className="text-xl font-bold">{stat.value}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{stat.label}</div>
-                  </div>
+      {/* Defenses */}
+      {hasDefenses && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-brass" />
+            <span className="font-cinzel text-sm text-brass tracking-wide">Defenses</span>
+          </div>
+          <div className="space-y-2">
+            {character.resistances && character.resistances.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {character.resistances.map((r: string) => (
+                  <Badge key={r} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                    Resist: {r}
+                  </Badge>
                 ))}
               </div>
+            )}
+            {character.immunities && character.immunities.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {character.immunities.map((i: string) => (
+                  <Badge key={i} variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
+                    Immune: {i}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {character.vulnerabilities && character.vulnerabilities.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {character.vulnerabilities.map((v: string) => (
+                  <Badge key={v} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
+                    Vuln: {v}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-              {/* Ability Scores - Fantasy Hexagons */}
-              {abilities && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
-                    <span className="font-cinzel text-sm text-brass tracking-widest uppercase">Abilities</span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {Object.entries(abilities).map(([key, value]) => {
-                      const mod = getAbilityModifier(value);
-                      return (
-                        <div 
-                          key={key} 
-                          className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/10 to-transparent border-2 border-brass/40 hover:border-brass transition-colors"
-                        >
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1">{key}</div>
-                          <div className="text-2xl font-bold">{value}</div>
-                          <div className={`text-sm font-semibold ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
-                            {formatModifier(mod)}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+      {/* Resources */}
+      {resources.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-warning-amber" />
+            <span className="font-cinzel text-sm text-warning-amber tracking-wide">Resources</span>
+          </div>
+          <div className="space-y-2">
+            {resources.map((res) => (
+              <div key={res.id} className="p-3 rounded-lg bg-warning-amber/5 border border-warning-amber/20">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm">{res.label}</span>
+                  <Badge variant="outline" className="text-[10px] bg-muted/30">
+                    {res.recharge}
+                  </Badge>
                 </div>
-              )}
-
-              {/* Saving Throws */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-brass" />
-                  <span className="font-cinzel text-sm text-brass tracking-wide">Saving Throws</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {[
-                    { label: 'STR', value: character.str_save, key: 'str' },
-                    { label: 'DEX', value: character.dex_save, key: 'dex' },
-                    { label: 'CON', value: character.con_save, key: 'con' },
-                    { label: 'INT', value: character.int_save, key: 'int' },
-                    { label: 'WIS', value: character.wis_save, key: 'wis' },
-                    { label: 'CHA', value: character.cha_save, key: 'cha' },
-                  ].map((save) => {
-                    const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
-                    return (
-                      <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
-                          <span className="text-muted-foreground font-medium">{save.label}</span>
-                        </div>
-                        <span className={`font-mono font-bold ${(save.value || 0) >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
-                          {(save.value || 0) >= 0 ? '+' : ''}{save.value || 0}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="flex gap-1">
+                  {Array.from({ length: res.max_value }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-6 h-6 rounded-full border-2 transition-colors ${
+                        i < res.current_value
+                          ? 'bg-warning-amber border-warning-amber shadow-[0_0_6px_hsl(var(--warning-amber)/0.5)]'
+                          : 'bg-muted/30 border-muted-foreground/30'
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              {/* Spellcasting Stats */}
-              {hasSpellcasting && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Wand2 className="w-4 h-4 text-primary" />
-                    <span className="font-cinzel text-sm text-primary tracking-wide">Spellcasting</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: 'Ability', value: character.spell_ability?.toUpperCase() },
-                      { label: 'Save DC', value: character.spell_save_dc },
-                      { label: 'Attack', value: character.spell_attack_mod && character.spell_attack_mod >= 0 ? `+${character.spell_attack_mod}` : character.spell_attack_mod },
-                    ].map((stat) => (
-                      <div key={stat.label} className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
-                        <div className="text-[10px] uppercase text-muted-foreground">{stat.label}</div>
-                        <div className="text-lg font-bold text-primary">{stat.value}</div>
-                      </div>
-                    ))}
+      {/* Level Up Button */}
+      <Button
+        variant="outline"
+        className="w-full border-brass/50 hover:border-brass hover:bg-brass/10 font-cinzel"
+        onClick={() => setShowLevelUp(true)}
+      >
+        <TrendingUp className="h-4 w-4 mr-2" />
+        Level Up
+      </Button>
+    </div>
+  );
+
+  const renderMiddleColumn = () => (
+    <div className="space-y-4">
+      {/* Ability Scores */}
+      {abilities && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
+            <span className="font-cinzel text-sm text-brass tracking-widest uppercase">Abilities</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(abilities).map(([key, value]) => {
+              const mod = getAbilityModifier(value);
+              return (
+                <div 
+                  key={key} 
+                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/10 to-transparent border-2 border-brass/40 hover:border-brass transition-colors"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1">{key}</div>
+                  <div className="text-2xl font-bold">{value}</div>
+                  <div className={`text-sm font-semibold ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
+                    {formatModifier(mod)}
                   </div>
                 </div>
-              )}
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-              {/* Defenses */}
-              {hasDefenses && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-brass" />
-                    <span className="font-cinzel text-sm text-brass tracking-wide">Defenses</span>
-                  </div>
-                  <div className="space-y-2">
-                    {character.resistances && character.resistances.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {character.resistances.map((r) => (
-                          <Badge key={r} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
-                            Resist: {r}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {character.immunities && character.immunities.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {character.immunities.map((i) => (
-                          <Badge key={i} variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
-                            Immune: {i}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {character.vulnerabilities && character.vulnerabilities.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {character.vulnerabilities.map((v) => (
-                          <Badge key={v} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
-                            Vuln: {v}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+      {/* Saving Throws */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-brass" />
+          <span className="font-cinzel text-sm text-brass tracking-wide">Saving Throws</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          {[
+            { label: 'STR', value: character.str_save, key: 'str' },
+            { label: 'DEX', value: character.dex_save, key: 'dex' },
+            { label: 'CON', value: character.con_save, key: 'con' },
+            { label: 'INT', value: character.int_save, key: 'int' },
+            { label: 'WIS', value: character.wis_save, key: 'wis' },
+            { label: 'CHA', value: character.cha_save, key: 'cha' },
+          ].map((save) => {
+            const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
+            return (
+              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
+                  <span className="text-muted-foreground font-medium">{save.label}</span>
                 </div>
-              )}
+                <span className={`font-mono font-bold ${(save.value || 0) >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
+                  {(save.value || 0) >= 0 ? '+' : ''}{save.value || 0}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Resources */}
-              {resources.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Flame className="w-4 h-4 text-warning-amber" />
-                    <span className="font-cinzel text-sm text-warning-amber tracking-wide">Resources</span>
+      {/* Skills */}
+      {skills.length > 0 && abilities && (
+        <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-brass" />
+              <span className="font-cinzel text-sm tracking-wide">Skills</span>
+              <Badge variant="outline" className="text-xs">{skills.length}</Badge>
+            </div>
+            <ChevronDown className={`w-4 h-4 transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <div className="grid grid-cols-1 gap-1.5 text-sm">
+              {skills.map((skill) => {
+                const abilityKey = getSkillAbility(skill.skill);
+                const abilityScore = abilities[abilityKey];
+                const modifier = getSkillModifier(skill, abilityScore);
+                return (
+                  <div key={skill.skill} className="flex justify-between items-center px-2 py-1 rounded bg-muted/20">
+                    <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                      {skill.skill}
+                      {skill.expertise && <Badge variant="outline" className="text-[8px] h-3 px-1 bg-primary/20">E</Badge>}
+                      {skill.proficient && !skill.expertise && <span className="text-primary text-xs">●</span>}
+                    </span>
+                    <span className={`font-mono font-bold ${modifier >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
+                      {formatModifier(modifier)}
+                    </span>
                   </div>
-                  <div className="space-y-2">
-                    {resources.map((res) => (
-                      <div key={res.id} className="p-3 rounded-lg bg-warning-amber/5 border border-warning-amber/20">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-sm">{res.label}</span>
-                          <Badge variant="outline" className="text-[10px] bg-muted/30">
-                            {res.recharge}
-                          </Badge>
-                        </div>
-                        <div className="flex gap-1">
-                          {Array.from({ length: res.max_value }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-6 h-6 rounded-full border-2 transition-colors ${
-                                i < res.current_value
-                                  ? 'bg-warning-amber border-warning-amber shadow-[0_0_6px_hsl(var(--warning-amber)/0.5)]'
-                                  : 'bg-muted/30 border-muted-foreground/30'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                );
+              })}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Proficiencies */}
+      {Object.keys(groupedProfs).length > 0 && (
+        <Collapsible open={profOpen} onOpenChange={setProfOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2">
+              <Sword className="w-4 h-4 text-brass" />
+              <span className="font-cinzel text-sm tracking-wide">Proficiencies</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 transition-transform ${profOpen ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3 space-y-3">
+            {Object.entries(groupedProfs).map(([type, items]) => (
+              <div key={type}>
+                <span className="text-xs text-muted-foreground capitalize font-medium">{type}</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {items.map((name) => (
+                    <Badge key={name} variant="secondary" className="text-xs bg-secondary/10 border-secondary/30">
+                      {name}
+                    </Badge>
+                  ))}
                 </div>
-              )}
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
-              {/* Skills (Collapsible) */}
-              {skills.length > 0 && abilities && (
-                <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-brass" />
-                      <span className="font-cinzel text-sm tracking-wide">Skills</span>
-                      <Badge variant="outline" className="text-xs">{skills.length}</Badge>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      {skills.map((skill) => {
-                        const abilityKey = getSkillAbility(skill.skill);
-                        const abilityScore = abilities[abilityKey];
-                        const modifier = getSkillModifier(skill, abilityScore);
-                        return (
-                          <div key={skill.skill} className="flex justify-between items-center px-2 py-1 rounded bg-muted/20">
-                            <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                              {skill.skill}
-                              {skill.expertise && <Badge variant="outline" className="text-[8px] h-3 px-1 bg-primary/20">E</Badge>}
-                              {skill.proficient && !skill.expertise && <span className="text-primary text-xs">●</span>}
-                            </span>
-                            <span className={`font-mono font-bold ${modifier >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
-                              {formatModifier(modifier)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+      {/* Languages */}
+      {languages.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Languages className="w-4 h-4 text-brass" />
+            <span className="font-cinzel text-sm tracking-wide">Languages</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {languages.map((lang) => (
+              <Badge key={lang.name} variant="outline" className="text-xs">
+                {lang.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
-              {/* Proficiencies (Collapsible) */}
-              {Object.keys(groupedProfs).length > 0 && (
-                <Collapsible open={profOpen} onOpenChange={setProfOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <Sword className="w-4 h-4 text-brass" />
-                      <span className="font-cinzel text-sm tracking-wide">Proficiencies</span>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${profOpen ? 'rotate-180' : ''}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 space-y-3">
-                    {Object.entries(groupedProfs).map(([type, items]) => (
-                      <div key={type}>
-                        <span className="text-xs text-muted-foreground capitalize font-medium">{type}</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {items.map((name) => (
-                            <Badge key={name} variant="secondary" className="text-xs bg-secondary/10 border-secondary/30">
-                              {name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+  const renderRightColumn = () => (
+    <div className="space-y-4">
+      {/* Spellcasting Stats */}
+      {hasSpellcasting && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-primary" />
+            <span className="font-cinzel text-sm text-primary tracking-wide">Spellcasting</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Ability', value: character.spell_ability?.toUpperCase() },
+              { label: 'Save DC', value: character.spell_save_dc },
+              { label: 'Attack', value: character.spell_attack_mod && character.spell_attack_mod >= 0 ? `+${character.spell_attack_mod}` : character.spell_attack_mod },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="text-[10px] uppercase text-muted-foreground">{stat.label}</div>
+                <div className="text-lg font-bold text-primary">{stat.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              {/* Languages */}
-              {languages.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-brass" />
-                    <span className="font-cinzel text-sm tracking-wide">Languages</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {languages.map((lang) => (
-                      <Badge key={lang.name} variant="outline" className="text-xs">
-                        {lang.name}
+      {/* Spell Slots */}
+      {spellSlots.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <span className="font-cinzel text-sm text-primary tracking-wide">Spell Slots</span>
+          </div>
+          <div className="space-y-2">
+            {spellSlots.map((slot) => (
+              <div key={slot.spell_level} className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
+                <span className="text-sm text-muted-foreground">Level {slot.spell_level}</span>
+                <div className="flex gap-1">
+                  {Array.from({ length: slot.max_slots }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        i < slot.max_slots - slot.used_slots
+                          ? 'bg-primary border-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]'
+                          : 'bg-muted/30 border-muted-foreground/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spellbook */}
+      {spells.length > 0 && (
+        <Collapsible open={spellsOpen} onOpenChange={setSpellsOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="font-cinzel text-sm text-primary tracking-wide">Spellbook</span>
+              <Badge variant="outline" className="text-xs border-primary/30">{spells.length}</Badge>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-primary transition-transform ${spellsOpen ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3 space-y-3">
+            {spells.filter(s => s.spell.level === 0).length > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">Cantrips</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {spells.filter(s => s.spell.level === 0).map((s) => (
+                    <Badge 
+                      key={s.id} 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-primary/10 text-xs border-primary/30"
+                      onClick={() => setSelectedSpell(s.spell)}
+                    >
+                      {s.spell.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => {
+              const levelSpells = spells.filter(s => s.spell.level === level);
+              if (levelSpells.length === 0) return null;
+              return (
+                <div key={level}>
+                  <span className="text-xs text-muted-foreground font-medium">Level {level}</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {levelSpells.map((s) => (
+                      <Badge 
+                        key={s.id} 
+                        variant={s.prepared ? "default" : "outline"}
+                        className="cursor-pointer hover:bg-primary/20 text-xs"
+                        onClick={() => setSelectedSpell(s.spell)}
+                      >
+                        {s.spell.name}
+                        {s.spell.concentration && <span className="ml-1 opacity-70">C</span>}
+                        {s.spell.ritual && <span className="ml-1 opacity-70">R</span>}
                       </Badge>
                     ))}
                   </div>
                 </div>
-              )}
+              );
+            })}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
-              {/* Spell Slots */}
-              {spellSlots.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="font-cinzel text-sm text-primary tracking-wide">Spell Slots</span>
-                  </div>
-                  <div className="space-y-2">
-                    {spellSlots.map((slot) => (
-                      <div key={slot.spell_level} className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
-                        <span className="text-sm text-muted-foreground">Level {slot.spell_level}</span>
-                        <div className="flex gap-1">
-                          {Array.from({ length: slot.max_slots }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-4 h-4 rounded-full border-2 ${
-                                i < slot.max_slots - slot.used_slots
-                                  ? 'bg-primary border-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]'
-                                  : 'bg-muted/30 border-muted-foreground/30'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Spellbook (Collapsible) */}
-              {spells.length > 0 && (
-                <Collapsible open={spellsOpen} onOpenChange={setSpellsOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      <span className="font-cinzel text-sm text-primary tracking-wide">Spellbook</span>
-                      <Badge variant="outline" className="text-xs border-primary/30">{spells.length}</Badge>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 text-primary transition-transform ${spellsOpen ? 'rotate-180' : ''}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 space-y-3">
-                    {/* Cantrips */}
-                    {spells.filter(s => s.spell.level === 0).length > 0 && (
-                      <div>
-                        <span className="text-xs text-muted-foreground font-medium">Cantrips</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {spells.filter(s => s.spell.level === 0).map((s) => (
-                            <Badge 
-                              key={s.id} 
-                              variant="outline" 
-                              className="cursor-pointer hover:bg-primary/10 text-xs border-primary/30"
-                              onClick={() => setSelectedSpell(s.spell)}
-                            >
-                              {s.spell.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Level 1-9 Spells */}
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => {
-                      const levelSpells = spells.filter(s => s.spell.level === level);
-                      if (levelSpells.length === 0) return null;
-                      return (
-                        <div key={level}>
-                          <span className="text-xs text-muted-foreground font-medium">Level {level}</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {levelSpells.map((s) => (
-                              <Badge 
-                                key={s.id} 
-                                variant={s.prepared ? "default" : "outline"}
-                                className="cursor-pointer hover:bg-primary/20 text-xs"
-                                onClick={() => setSelectedSpell(s.spell)}
-                              >
-                                {s.spell.name}
-                                {s.spell.concentration && <span className="ml-1 opacity-70">C</span>}
-                                {s.spell.ritual && <span className="ml-1 opacity-70">R</span>}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* Features & Abilities (Collapsible) */}
-              {(features.length > 0 || ancestryTraits.length > 0 || subancestryTraits.length > 0) && (
-                <Collapsible open={featuresOpen} onOpenChange={setFeaturesOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-brass/5 border border-brass/20 hover:bg-brass/10 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-brass" />
-                      <span className="font-cinzel text-sm text-brass tracking-wide">Features & Abilities</span>
-                      <Badge variant="outline" className="text-xs border-brass/30">
-                        {features.length + ancestryTraits.length + subancestryTraits.length}
+      {/* Features & Abilities */}
+      {(features.length > 0 || ancestryTraits.length > 0 || subancestryTraits.length > 0) && (
+        <Collapsible open={featuresOpen} onOpenChange={setFeaturesOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-brass/5 border border-brass/20 hover:bg-brass/10 transition-colors">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-brass" />
+              <span className="font-cinzel text-sm text-brass tracking-wide">Features & Abilities</span>
+              <Badge variant="outline" className="text-xs border-brass/30">
+                {features.length + ancestryTraits.length + subancestryTraits.length}
+              </Badge>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-brass transition-transform ${featuresOpen ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3 space-y-4">
+            {features.filter(f => f.source === 'Class').length > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">Class Features</span>
+                <div className="space-y-1 mt-1">
+                  {features.filter(f => f.source === 'Class').map((feature) => (
+                    <div 
+                      key={feature.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-blue-500/5 border border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
+                      onClick={() => setSelectedFeature(feature)}
+                    >
+                      <span className="text-sm font-medium">{feature.name}</span>
+                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Class')}`}>
+                        Lvl {feature.level}
                       </Badge>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-brass transition-transform ${featuresOpen ? 'rotate-180' : ''}`} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 space-y-4">
-                    {/* Class Features */}
-                    {features.filter(f => f.source === 'Class').length > 0 && (
-                      <div>
-                        <span className="text-xs text-muted-foreground font-medium">Class Features</span>
-                        <div className="space-y-1 mt-1">
-                          {features.filter(f => f.source === 'Class').map((feature) => (
-                            <div 
-                              key={feature.id}
-                              className="flex items-center justify-between p-2 rounded-lg bg-blue-500/5 border border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
-                              onClick={() => setSelectedFeature(feature)}
-                            >
-                              <span className="text-sm font-medium">{feature.name}</span>
-                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Class')}`}>
-                                Lvl {feature.level}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Subclass Features */}
-                    {features.filter(f => f.source === 'Subclass').length > 0 && (
-                      <div>
-                        <span className="text-xs text-muted-foreground font-medium">Subclass Features</span>
-                        <div className="space-y-1 mt-1">
-                          {features.filter(f => f.source === 'Subclass').map((feature) => (
-                            <div 
-                              key={feature.id}
-                              className="flex items-center justify-between p-2 rounded-lg bg-purple-500/5 border border-purple-500/20 cursor-pointer hover:bg-purple-500/10 transition-colors"
-                              onClick={() => setSelectedFeature(feature)}
-                            >
-                              <span className="text-sm font-medium">{feature.name}</span>
-                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subclass')}`}>
-                                Lvl {feature.level}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Ancestry Traits - FIXED: Now uses trait.name */}
-                    {ancestryTraits.length > 0 && (
-                      <div>
-                        <span className="text-xs text-muted-foreground font-medium">Ancestry Traits</span>
-                        <div className="space-y-1 mt-1">
-                          {ancestryTraits.map((trait, idx) => (
-                            <div 
-                              key={idx}
-                              className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/10 transition-colors"
-                              onClick={() => setSelectedTrait(trait)}
-                            >
-                              <span className="text-sm font-medium">{trait.name}</span>
-                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Ancestry')}`}>
-                                Ancestry
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Subancestry Traits - FIXED: Now uses trait.name */}
-                    {subancestryTraits.length > 0 && (
-                      <div>
-                        <span className="text-xs text-muted-foreground font-medium">Subancestry Traits</span>
-                        <div className="space-y-1 mt-1">
-                          {subancestryTraits.map((trait, idx) => (
-                            <div 
-                              key={idx}
-                              className="flex items-center justify-between p-2 rounded-lg bg-teal-500/5 border border-teal-500/20 cursor-pointer hover:bg-teal-500/10 transition-colors"
-                              onClick={() => setSelectedTrait(trait)}
-                            >
-                              <span className="text-sm font-medium">{trait.name}</span>
-                              <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subancestry')}`}>
-                                Subancestry
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+                  ))}
+                </div>
+              </div>
+            )}
+            {features.filter(f => f.source === 'Subclass').length > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">Subclass Features</span>
+                <div className="space-y-1 mt-1">
+                  {features.filter(f => f.source === 'Subclass').map((feature) => (
+                    <div 
+                      key={feature.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-purple-500/5 border border-purple-500/20 cursor-pointer hover:bg-purple-500/10 transition-colors"
+                      onClick={() => setSelectedFeature(feature)}
+                    >
+                      <span className="text-sm font-medium">{feature.name}</span>
+                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subclass')}`}>
+                        Lvl {feature.level}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {ancestryTraits.length > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">Ancestry Traits</span>
+                <div className="space-y-1 mt-1">
+                  {ancestryTraits.map((trait, idx) => (
+                    <div 
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                      onClick={() => setSelectedTrait(trait)}
+                    >
+                      <span className="text-sm font-medium">{trait.name}</span>
+                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Ancestry')}`}>
+                        Ancestry
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {subancestryTraits.length > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">Subancestry Traits</span>
+                <div className="space-y-1 mt-1">
+                  {subancestryTraits.map((trait, idx) => (
+                    <div 
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded-lg bg-teal-500/5 border border-teal-500/20 cursor-pointer hover:bg-teal-500/10 transition-colors"
+                      onClick={() => setSelectedTrait(trait)}
+                    >
+                      <span className="text-sm font-medium">{trait.name}</span>
+                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subancestry')}`}>
+                        Subancestry
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </div>
+  );
 
+  return (
+    <>
+      {/* 3-Column Desktop / Single-Column Mobile Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-1">
+          <ScrollArea className="lg:h-[calc(100vh-18rem)]">
+            <div className="pr-2">
+              {renderLeftColumn()}
             </div>
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Middle Column */}
+        <div className="lg:col-span-1">
+          <ScrollArea className="lg:h-[calc(100vh-18rem)]">
+            <div className="pr-2">
+              {renderMiddleColumn()}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-1">
+          <ScrollArea className="lg:h-[calc(100vh-18rem)]">
+            <div className="pr-2">
+              {renderRightColumn()}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
 
       {/* Spell Detail Dialog */}
       <Dialog open={!!selectedSpell} onOpenChange={() => setSelectedSpell(null)}>

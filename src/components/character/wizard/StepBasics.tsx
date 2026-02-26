@@ -59,9 +59,9 @@ const StepBasics = () => {
     setClass({ classId, className: cls.name });
     setSelectedClass(cls);
 
-    // Auto-grant from class
+    // Reset grants then apply from class (prevents stacking on class switch)
     const grants = grantsFromClass(cls);
-    applyGrants(grants);
+    replaceGrants(grants);
 
     // Set needs
     const needs = needsFromClass(cls);

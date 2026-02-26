@@ -8,7 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react";
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
+import { emptyGrants } from "@/lib/rules/5eRules";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
+import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 // Wizard steps
 import StepBasics from "./wizard/StepBasics";
@@ -115,6 +117,116 @@ const getSteps = (level: number, isSpellcaster: boolean) => {
   return baseSteps;
 };
 
+// === Helper: deserialize grants from JSON (arrays -> Sets) ===
+function deserializeGrants(raw: any) {
+  return {
+    savingThrows: new Set<string>(raw?.savingThrows || []),
+    skillProficiencies: new Set<string>(raw?.skillProficiencies || []),
+    toolProficiencies: new Set<string>(raw?.toolProficiencies || []),
+    armorProficiencies: new Set<string>(raw?.armorProficiencies || []),
+    weaponProficiencies: new Set<string>(raw?.weaponProficiencies || []),
+    languages: new Set<string>(raw?.languages || []),
+    features: raw?.features || [],
+    traits: raw?.traits || [],
+    abilityBonuses: raw?.abilityBonuses || {},
+  };
+}
+
+// === Helper: serialize grants to JSON (Sets -> arrays) ===
+function serializeGrants(grants: any) {
+  return {
+    savingThrows: Array.from(grants.savingThrows || []),
+    skillProficiencies: Array.from(grants.skillProficiencies || []),
+    toolProficiencies: Array.from(grants.toolProficiencies || []),
+    armorProficiencies: Array.from(grants.armorProficiencies || []),
+    weaponProficiencies: Array.from(grants.weaponProficiencies || []),
+    languages: Array.from(grants.languages || []),
+    features: grants.features || [],
+    traits: grants.traits || [],
+    abilityBonuses: grants.abilityBonuses || {},
+  };
+}
+
+// === Helper: compute derived stats ===
+function computeDerivedStats(draft: any, classRules: any) {
+  const abilityMod = (score: number) => Math.floor((score - 10) / 2);
+  const conMod = abilityMod(draft.abilityScores.CON);
+  const dexMod = abilityMod(draft.abilityScores.DEX);
+  const wisMod = abilityMod(draft.abilityScores.WIS);
+  const intMod = abilityMod(draft.abilityScores.INT);
+  const chaMod = abilityMod(draft.abilityScores.CHA);
+  const strMod = abilityMod(draft.abilityScores.STR);
+  
+  const hitDie = classRules?.hitDie || 8;
+  const profBonus = Math.floor((draft.level - 1) / 4) + 2;
+  
+  // HP calculation: Level 1 = max hit die + CON mod. Levels 2+ from levelChoices or average
+  let maxHp = hitDie + conMod;
+  const levelChoices = draft.choices?.featureChoices?.levelChoices;
+  if (levelChoices && typeof levelChoices === 'object') {
+    for (let lvl = 2; lvl <= draft.level; lvl++) {
+      const lc = levelChoices[lvl];
+      const hpRoll = lc?.hpRoll ?? (Math.floor(hitDie / 2) + 1); // default to average
+      maxHp += hpRoll + conMod;
+    }
+  } else if (draft.level > 1) {
+    // No level choices recorded, use average for all levels
+    for (let lvl = 2; lvl <= draft.level; lvl++) {
+      maxHp += (Math.floor(hitDie / 2) + 1) + conMod;
+    }
+  }
+  maxHp = Math.max(maxHp, draft.level); // minimum 1 HP per level
+  
+  // Check skill proficiencies for passive calculations
+  const allSkills = new Set([
+    ...Array.from(draft.grants?.skillProficiencies || []),
+    ...(draft.choices?.skills || []),
+  ]);
+  
+  const passivePerception = 10 + wisMod + (allSkills.has('Perception') ? profBonus : 0);
+  const passiveInvestigation = 10 + intMod + (allSkills.has('Investigation') ? profBonus : 0);
+  const passiveInsight = 10 + wisMod + (allSkills.has('Insight') ? profBonus : 0);
+  
+  // Saving throw values
+  const saveProficient = draft.grants?.savingThrows || new Set();
+  const saves = {
+    str: strMod + (saveProficient.has('STR') ? profBonus : 0),
+    dex: dexMod + (saveProficient.has('DEX') ? profBonus : 0),
+    con: conMod + (saveProficient.has('CON') ? profBonus : 0),
+    int: intMod + (saveProficient.has('INT') ? profBonus : 0),
+    wis: wisMod + (saveProficient.has('WIS') ? profBonus : 0),
+    cha: chaMod + (saveProficient.has('CHA') ? profBonus : 0),
+  };
+  
+  // Spellcasting stats
+  let spellAbility: string | null = null;
+  let spellSaveDC: number | null = null;
+  let spellAttackMod: number | null = null;
+  
+  if (classRules?.spellcasting?.ability) {
+    const abilityMap: Record<string, number> = { wis: wisMod, cha: chaMod, int: intMod };
+    const castingMod = abilityMap[classRules.spellcasting.ability] || 0;
+    spellAbility = classRules.spellcasting.ability.toUpperCase();
+    spellSaveDC = 8 + profBonus + castingMod;
+    spellAttackMod = profBonus + castingMod;
+  }
+  
+  return {
+    maxHp,
+    profBonus,
+    ac: 10 + dexMod,
+    initiativeBonus: dexMod,
+    passivePerception,
+    passiveInvestigation,
+    passiveInsight,
+    saves,
+    hitDie: `d${hitDie}`,
+    spellAbility,
+    spellSaveDC,
+    spellAttackMod,
+  };
+}
+
 const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: CharacterWizardProps) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
@@ -162,7 +274,6 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const loadExistingCharacter = async (id: string) => {
     setLoading(true);
     try {
-      // Load main character data
       const { data: character, error: charError } = await supabase
         .from("characters")
         .select("*")
@@ -176,24 +287,24 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       if (character.wizard_state && character.creation_status === 'draft') {
         const wizardState = character.wizard_state as any;
         
-        // Restore the full wizard state including current step
         if (wizardState.currentStep !== undefined) {
           setCurrentStep(wizardState.currentStep);
         }
         
         if (wizardState.draft) {
-          // Convert arrays back to Sets for grant collections
+          const wd = wizardState.draft;
+          // Deserialize grantSources
+          const grantSources = {
+            class: deserializeGrants(wd.grantSources?.class),
+            ancestry: deserializeGrants(wd.grantSources?.ancestry),
+            subAncestry: deserializeGrants(wd.grantSources?.subAncestry),
+            background: deserializeGrants(wd.grantSources?.background),
+          };
+          
           const restoredDraft = {
-            ...wizardState.draft,
-            grants: {
-              ...wizardState.draft.grants,
-              savingThrows: new Set(wizardState.draft.grants.savingThrows || []),
-              skillProficiencies: new Set(wizardState.draft.grants.skillProficiencies || []),
-              toolProficiencies: new Set(wizardState.draft.grants.toolProficiencies || []),
-              armorProficiencies: new Set(wizardState.draft.grants.armorProficiencies || []),
-              weaponProficiencies: new Set(wizardState.draft.grants.weaponProficiencies || []),
-              languages: new Set(wizardState.draft.grants.languages || []),
-            }
+            ...wd,
+            grants: deserializeGrants(wd.grants),
+            grantSources,
           };
           
           setDraft(restoredDraft);
@@ -204,50 +315,49 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       }
 
       // Fallback: Load from normalized tables (for completed characters or old drafts)
-      // Load abilities
       const { data: abilities } = await supabase
         .from("character_abilities")
         .select("*")
         .eq("character_id", id)
         .single();
 
-      // Load proficiencies
       const { data: proficiencies } = await supabase
         .from("character_proficiencies")
         .select("*")
         .eq("character_id", id);
 
-      // Load languages
       const { data: languages } = await supabase
         .from("character_languages")
         .select("*")
         .eq("character_id", id);
 
-      // Load equipment
       const { data: equipment } = await supabase
         .from("character_equipment")
         .select("*")
         .eq("character_id", id);
 
-      // Load spells
       const { data: spells } = await supabase
         .from("character_spells")
         .select("*")
         .eq("character_id", id);
 
-      // Load features
       const { data: features } = await supabase
         .from("character_features")
         .select("*")
         .eq("character_id", id);
 
-      // Load skills
       const { data: skills } = await supabase
         .from("character_skills")
         .select("*")
         .eq("character_id", id);
 
-      // Reconstruct draft from database data
+      const emptyGrantSources = {
+        class: emptyGrants(),
+        ancestry: emptyGrants(),
+        subAncestry: emptyGrants(),
+        background: emptyGrants(),
+      };
+
       setDraft({
         name: character.name,
         level: character.level,
@@ -264,10 +374,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         eyes: character.eyes || undefined,
         skin: character.skin || undefined,
         hair: character.hair || undefined,
-        personality: undefined,
-        ideals: undefined,
-        bonds: undefined,
-        flaws: undefined,
+        personality: character.personality_traits || undefined,
+        ideals: character.ideals || undefined,
+        bonds: character.bonds || undefined,
+        flaws: character.flaws || undefined,
         notes: character.notes || undefined,
         abilityScores: abilities ? {
           STR: abilities.str,
@@ -278,6 +388,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           CHA: abilities.cha,
         } : { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
         abilityMethod: abilities?.method || "standard-array",
+        grantSources: emptyGrantSources,
         grants: {
           savingThrows: new Set(),
           skillProficiencies: new Set(
@@ -333,7 +444,6 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   // Auto-save draft on data change
   useEffect(() => {
-    // Save if we have an existing draft, OR if we have minimum data for a new draft
     if (draft.name && (draftId || (draft.classId && draft.className))) {
       saveDraft();
     }
@@ -344,29 +454,23 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Serialize the full wizard state to preserve all selections
-      // Exclude portraitBlob as it can't be serialized
       const { portraitBlob, ...draftWithoutBlob } = draft;
       
       const wizardState = {
         currentStep,
         draft: {
           ...draftWithoutBlob,
-          // Convert Sets to arrays for JSON serialization
-          grants: {
-            ...draft.grants,
-            savingThrows: Array.from(draft.grants.savingThrows),
-            skillProficiencies: Array.from(draft.grants.skillProficiencies),
-            toolProficiencies: Array.from(draft.grants.toolProficiencies),
-            armorProficiencies: Array.from(draft.grants.armorProficiencies),
-            weaponProficiencies: Array.from(draft.grants.weaponProficiencies),
-            languages: Array.from(draft.grants.languages),
-          }
+          grants: serializeGrants(draft.grants),
+          grantSources: {
+            class: serializeGrants(draft.grantSources.class),
+            ancestry: serializeGrants(draft.grantSources.ancestry),
+            subAncestry: serializeGrants(draft.grantSources.subAncestry),
+            background: serializeGrants(draft.grantSources.background),
+          },
         }
       };
 
       if (draftId) {
-        // Update existing draft with full state
         await supabase
           .from("characters")
           .update({ 
@@ -378,7 +482,6 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           })
           .eq("id", draftId);
       } else if (draft.name && draft.classId && draft.className) {
-        // Create new draft with full state
         const { data, error } = await supabase
           .from("characters")
           .insert({
@@ -436,7 +539,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       case "Features":
         return true;
       case "Level Choices":
-        return true; // StepLevelChoices has its own internal validation
+        return true;
       case "Description":
         return true;
       case "Review":
@@ -477,11 +580,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Ensure we have a character ID to work with
       let characterId = draftId;
       
       if (!characterId) {
-        console.log("No draftId found, creating character now...");
         const { data: newChar, error: createError } = await supabase
           .from("characters")
           .insert({
@@ -499,10 +600,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .select()
           .single();
 
-        if (createError) {
-          console.error("Error creating character:", createError);
-          throw createError;
-        }
+        if (createError) throw createError;
         if (!newChar) throw new Error("Failed to create character");
         
         characterId = newChar.id;
@@ -511,13 +609,111 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (!characterId) throw new Error("Unable to create character");
 
+      // === Apply ASI from level choices to ability scores ===
+      const finalAbilityScores = { ...draft.abilityScores };
+      const levelChoices = draft.choices?.featureChoices?.levelChoices as Record<string, any> | undefined;
+      const levelUpFeatures: Array<{ name: string; source: string; level: number; description: string }> = [];
+      
+      if (levelChoices) {
+        for (const [lvlStr, lc] of Object.entries(levelChoices)) {
+          const lvl = parseInt(lvlStr);
+          if (!lc) continue;
+          
+          // Apply ASI
+          if (lc.asiChoices && typeof lc.asiChoices === 'object') {
+            for (const [ability, increase] of Object.entries(lc.asiChoices)) {
+              const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
+              if (key in finalAbilityScores) {
+                finalAbilityScores[key] += Number(increase) || 0;
+              }
+            }
+          }
+          
+          // Collect fighting style
+          if (lc.fightingStyle) {
+            levelUpFeatures.push({
+              name: `Fighting Style: ${lc.fightingStyle}`,
+              source: 'class',
+              level: lvl,
+              description: `Fighting style chosen at level ${lvl}.`,
+            });
+          }
+          
+          // Collect invocations
+          if (Array.isArray(lc.invocations)) {
+            for (const inv of lc.invocations) {
+              levelUpFeatures.push({
+                name: typeof inv === 'string' ? inv : inv.name || inv,
+                source: 'invocation',
+                level: lvl,
+                description: typeof inv === 'object' ? inv.description || '' : '',
+              });
+            }
+          }
+          
+          // Collect metamagic
+          if (Array.isArray(lc.metamagic)) {
+            for (const mm of lc.metamagic) {
+              levelUpFeatures.push({
+                name: typeof mm === 'string' ? mm : mm.name || mm,
+                source: 'metamagic',
+                level: lvl,
+                description: typeof mm === 'object' ? mm.description || '' : '',
+              });
+            }
+          }
+          
+          // Collect pact boon
+          if (lc.pactBoon) {
+            levelUpFeatures.push({
+              name: typeof lc.pactBoon === 'string' ? lc.pactBoon : lc.pactBoon.name || lc.pactBoon,
+              source: 'class',
+              level: lvl,
+              description: typeof lc.pactBoon === 'object' ? lc.pactBoon.description || '' : `Pact boon chosen at level ${lvl}.`,
+            });
+          }
+          
+          // Collect feat
+          if (lc.feat) {
+            levelUpFeatures.push({
+              name: typeof lc.feat === 'string' ? lc.feat : lc.feat.name || lc.feat,
+              source: 'feat',
+              level: lvl,
+              description: typeof lc.feat === 'object' ? lc.feat.description || '' : '',
+            });
+          }
+          
+          // Collect favored enemy/terrain
+          if (lc.favoredEnemy) {
+            levelUpFeatures.push({
+              name: `Favored Enemy: ${lc.favoredEnemy}`,
+              source: 'class',
+              level: lvl,
+              description: '',
+            });
+          }
+          if (lc.favoredTerrain) {
+            levelUpFeatures.push({
+              name: `Favored Terrain: ${lc.favoredTerrain}`,
+              source: 'class',
+              level: lvl,
+              description: '',
+            });
+          }
+        }
+      }
+
+      // === Compute derived stats ===
+      const classRules = draft.className ? CLASS_LEVEL_UP_RULES[draft.className] : null;
+      // Temporarily update draft ability scores for derived stat computation
+      const draftForStats = { ...draft, abilityScores: finalAbilityScores };
+      const derived = computeDerivedStats(draftForStats, classRules);
+
       // Upload portrait if one was selected
       let portraitUrl: string | null = null;
       if (draft.portraitBlob) {
-        console.log("Uploading portrait for user:", user.id, "character:", characterId);
         const fileExt = 'jpg';
         const fileName = `${user.id}/${characterId}.${fileExt}`;
-        console.log("Upload path:", fileName);
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('portraits')
@@ -533,18 +729,28 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             description: uploadError.message || "Could not upload portrait image",
             variant: "destructive"
           });
-          // Don't fail character creation if portrait upload fails
         } else {
-          console.log("Portrait uploaded successfully:", uploadData);
           const { data: { publicUrl } } = supabase.storage
             .from('portraits')
             .getPublicUrl(fileName);
           portraitUrl = publicUrl;
-          console.log("Portrait public URL:", portraitUrl);
         }
       }
 
-      // Update main character record
+      // === Fetch ancestry speed for the character record ===
+      let ancestrySpeed = 30;
+      if (draft.ancestryId) {
+        const { data: ancestryData } = await supabase
+          .from("srd_ancestries")
+          .select("speed")
+          .eq("id", draft.ancestryId)
+          .single();
+        if (ancestryData?.speed) {
+          ancestrySpeed = Number(ancestryData.speed) || 30;
+        }
+      }
+
+      // Update main character record with all derived stats
       const { error: charError } = await supabase
         .from("characters")
         .update({ 
@@ -566,77 +772,101 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           hair: draft.hair || null,
           notes: draft.notes || null,
           portrait_url: portraitUrl,
+          // Fix 5: Persist personality/description
+          personality_traits: draft.personality || null,
+          ideals: draft.ideals || null,
+          bonds: draft.bonds || null,
+          flaws: draft.flaws || null,
+          // Fix 2 & 3: Computed stats
+          max_hp: derived.maxHp,
+          current_hp: derived.maxHp,
+          ac: derived.ac,
+          proficiency_bonus: derived.profBonus,
+          initiative_bonus: derived.initiativeBonus,
+          speed: ancestrySpeed,
+          hit_die: derived.hitDie,
+          hit_dice_total: draft.level,
+          hit_dice_current: draft.level,
+          passive_perception: derived.passivePerception,
+          passive_investigation: derived.passiveInvestigation,
+          passive_insight: derived.passiveInsight,
+          spell_ability: derived.spellAbility,
+          spell_save_dc: derived.spellSaveDC,
+          spell_attack_mod: derived.spellAttackMod,
+          str_save: derived.saves.str,
+          dex_save: derived.saves.dex,
+          con_save: derived.saves.con,
+          int_save: derived.saves.int,
+          wis_save: derived.saves.wis,
+          cha_save: derived.saves.cha,
         })
         .eq("id", characterId);
 
-      if (charError) {
-        console.error("Error updating character:", charError);
-        throw charError;
-      }
+      if (charError) throw charError;
 
-      // Write abilities
+      // Write abilities (with ASI applied)
       const { error: abilitiesError } = await supabase
         .from("character_abilities")
         .upsert({
           character_id: characterId,
-          str: draft.abilityScores.STR,
-          dex: draft.abilityScores.DEX,
-          con: draft.abilityScores.CON,
-          int: draft.abilityScores.INT,
-          wis: draft.abilityScores.WIS,
-          cha: draft.abilityScores.CHA,
+          str: finalAbilityScores.STR,
+          dex: finalAbilityScores.DEX,
+          con: finalAbilityScores.CON,
+          int: finalAbilityScores.INT,
+          wis: finalAbilityScores.WIS,
+          cha: finalAbilityScores.CHA,
           method: draft.abilityMethod,
         });
 
-      if (abilitiesError) {
-        console.error("Error saving abilities:", abilitiesError);
-        throw abilitiesError;
-      }
+      if (abilitiesError) throw abilitiesError;
 
-      // Write saves (from grants)
+      // Write saves (proficiency booleans)
       if (draft.grants.savingThrows.size > 0) {
-        const savesData: any = {
-          character_id: characterId,
-          str: draft.grants.savingThrows.has('STR'),
-          dex: draft.grants.savingThrows.has('DEX'),
-          con: draft.grants.savingThrows.has('CON'),
-          int: draft.grants.savingThrows.has('INT'),
-          wis: draft.grants.savingThrows.has('WIS'),
-          cha: draft.grants.savingThrows.has('CHA'),
-        };
-
         const { error: savesError } = await supabase
           .from("character_saves")
-          .upsert(savesData);
+          .upsert({
+            character_id: characterId,
+            str: draft.grants.savingThrows.has('STR'),
+            dex: draft.grants.savingThrows.has('DEX'),
+            con: draft.grants.savingThrows.has('CON'),
+            int: draft.grants.savingThrows.has('INT'),
+            wis: draft.grants.savingThrows.has('WIS'),
+            cha: draft.grants.savingThrows.has('CHA'),
+          });
 
-        if (savesError) {
-          console.error("Error saving saves:", savesError);
-          throw savesError;
-        }
+        if (savesError) throw savesError;
       }
 
-      // Write skills
-      if (draft.choices.skills.length > 0) {
-        const skillsData = draft.choices.skills.map(skill => ({
+      // Write skills (including expertise from level choices)
+      const expertiseSkills = new Set<string>();
+      if (levelChoices) {
+        for (const lc of Object.values(levelChoices)) {
+          if (Array.isArray((lc as any)?.expertise)) {
+            for (const s of (lc as any).expertise) {
+              expertiseSkills.add(s);
+            }
+          }
+        }
+      }
+      
+      if (draft.choices.skills.length > 0 || expertiseSkills.size > 0) {
+        const allSkillNames = new Set([...draft.choices.skills, ...expertiseSkills]);
+        const skillsData = Array.from(allSkillNames).map(skill => ({
           character_id: characterId,
           skill,
-          proficient: true,
-          expertise: false,
+          proficient: draft.choices.skills.includes(skill),
+          expertise: expertiseSkills.has(skill),
         }));
 
         const { error: skillsError } = await supabase
           .from("character_skills")
           .upsert(skillsData);
 
-        if (skillsError) {
-          console.error("Error saving skills:", skillsError);
-          throw skillsError;
-        }
+        if (skillsError) throw skillsError;
       }
 
       // Write proficiencies
       const proficiencies = [];
-      
       for (const tool of draft.grants.toolProficiencies) {
         proficiencies.push({ character_id: characterId, type: 'tool', name: tool });
       }
@@ -646,58 +876,65 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       for (const weapon of draft.grants.weaponProficiencies) {
         proficiencies.push({ character_id: characterId, type: 'weapon', name: weapon });
       }
+      // Also persist player-chosen tools
+      for (const tool of (draft.choices.tools || [])) {
+        if (!draft.grants.toolProficiencies.has(tool)) {
+          proficiencies.push({ character_id: characterId, type: 'tool', name: tool });
+        }
+      }
 
       if (proficiencies.length > 0) {
         const { error: profError } = await supabase
           .from("character_proficiencies")
           .upsert(proficiencies);
-
-        if (profError) {
-          console.error("Error saving proficiencies:", profError);
-          throw profError;
-        }
+        if (profError) throw profError;
       }
 
-      // Write languages
-      if (draft.grants.languages.size > 0) {
-        const languagesData = Array.from(draft.grants.languages).map(lang => ({
+      // Write languages (granted + player-chosen)
+      const allLanguages = new Set([
+        ...Array.from(draft.grants.languages),
+        ...(draft.choices.languages || []),
+      ]);
+      
+      if (allLanguages.size > 0) {
+        const languagesData = Array.from(allLanguages).map(lang => ({
           character_id: characterId,
           name: lang,
         }));
-
         const { error: langError } = await supabase
           .from("character_languages")
           .upsert(languagesData);
-
-        if (langError) {
-          console.error("Error saving languages:", langError);
-          throw langError;
-        }
+        if (langError) throw langError;
       }
 
-      // Write features
-      if (draft.grants.features.length > 0) {
-        const featuresData = draft.grants.features.map(feature => ({
+      // Write features (grants + level-up features)
+      const allFeatures = [
+        ...draft.grants.features.map(f => ({
           character_id: characterId,
-          source: feature.source,
-          name: feature.name,
-          level: feature.level,
-          description: feature.description,
+          source: f.source,
+          name: f.name,
+          level: f.level || 1,
+          description: f.description || "",
           data: {},
-        }));
+        })),
+        ...levelUpFeatures.map(f => ({
+          character_id: characterId,
+          source: f.source,
+          name: f.name,
+          level: f.level,
+          description: f.description,
+          data: {},
+        })),
+      ];
 
+      if (allFeatures.length > 0) {
         const { error: featuresError } = await supabase
           .from("character_features")
-          .upsert(featuresData);
-
-        if (featuresError) {
-          console.error("Error saving features:", featuresError);
-          throw featuresError;
-        }
+          .upsert(allFeatures);
+        if (featuresError) throw featuresError;
       }
 
-      // Write spells (if caster)
-      // Combine spellsKnown (cantrips + known-caster spells) and spellsPrepared (prepared-caster spells like Wizard/Cleric/Druid)
+      // Write spells
       const allSpellIds = new Set([
         ...(draft.choices.spellsKnown || []),
         ...(draft.choices.spellsPrepared || []),
@@ -715,11 +952,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         const { error: spellsError } = await supabase
           .from("character_spells")
           .upsert(spellsData);
-
-        if (spellsError) {
-          console.error("Error saving spells:", spellsError);
-          throw spellsError;
-        }
+        if (spellsError) throw spellsError;
       }
 
       toast({
@@ -774,7 +1007,6 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   const handleCancel = () => {
     if (currentStep > 0 && draft.name) {
-      // Has progress, confirm before closing
       if (confirm("You have unsaved progress. Do you want to save your draft before closing?")) {
         handleSaveAndExit();
       } else {

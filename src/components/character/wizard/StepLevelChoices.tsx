@@ -212,6 +212,9 @@ const StepLevelChoices = () => {
     if (currentStepName === "expertise" && currentChoices.expertise) {
       setAccumulatedExpertise(prev => [...prev, ...currentChoices.expertise!]);
     }
+    if (currentStepName === "pact-boon" && currentChoices.pactBoon) {
+      setAccumulatedPactBoon(currentChoices.pactBoon);
+    }
 
     if (currentLevelStep < totalStepsForLevel - 1) {
       setCurrentLevelStep(prev => prev + 1);

@@ -118,7 +118,7 @@ const Inventory = () => {
   if (dmLoading || loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        <ThemedLoading message="Loading inventory..." />
       </div>
     );
   }

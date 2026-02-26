@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { calculateModifier, calculateProficiencyBonus, DND_CLASSES } from "@/lib/dnd5e";
+import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
+import { computeTotalHP } from "@/lib/hpCalculation";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
 import { SRD } from "@/lib/srd/SRDClient";
@@ -13,18 +14,18 @@ const LiveSummaryPanel = () => {
   const [ancestryName, setAncestryName] = useState<string>("");
   const [backgroundName, setBackgroundName] = useState<string>("");
 
+  const abilityBonuses = draft.grants.abilityBonuses || {};
   const profBonus = calculateProficiencyBonus(draft.level);
-  const conMod = calculateModifier(draft.abilityScores.CON);
-  const dexMod = calculateModifier(draft.abilityScores.DEX);
+  
+  // Apply ancestry bonuses to DEX for AC/Initiative
+  const dexBonus = abilityBonuses['dex'] || abilityBonuses['DEX'] || abilityBonuses['Dex'] || 0;
+  const effectiveDex = draft.abilityScores.DEX + dexBonus;
+  const dexMod = calculateModifier(effectiveDex);
 
-  // Get class hit die
-  const classData = DND_CLASSES.find(c => c.value === draft.className);
-  const hitDie = classData?.hitDie || 8;
+  // Full HP calculation including all levels and ancestry bonuses
+  const levelChoices = draft.choices?.featureChoices?.levelChoices;
+  const maxHP = computeTotalHP(draft.className, draft.level, draft.abilityScores.CON, levelChoices, abilityBonuses);
 
-  // Calculate HP
-  const maxHP = hitDie + conMod;
-
-  // Calculate AC (unarmored)
   const baseAC = 10 + dexMod;
 
   // Completion tracking
@@ -159,7 +160,7 @@ const LiveSummaryPanel = () => {
         </CardContent>
       </Card>
 
-      {/* Ability Modifiers */}
+      {/* Ability Modifiers (with ancestry bonuses) */}
       <Card className="border-brass/20 animate-fade-in" style={{ animationDelay: '150ms' }}>
         <CardHeader className="pb-2 pt-3">
           <CardTitle className="text-sm font-cinzel text-brass">Ability Modifiers</CardTitle>
@@ -167,13 +168,18 @@ const LiveSummaryPanel = () => {
         <CardContent className="pb-3">
           <div className="grid grid-cols-3 gap-1">
             {Object.entries(draft.abilityScores).map(([ability, score]) => {
-              const modifier = calculateModifier(score);
+              const bonus = abilityBonuses[ability.toLowerCase()] || abilityBonuses[ability] || 0;
+              const effective = score + bonus;
+              const modifier = calculateModifier(effective);
               return (
                 <div key={ability} className="flex flex-col items-center p-1 rounded bg-muted/30 border border-brass/10">
                   <span className="text-xs uppercase text-muted-foreground">{ability}</span>
                   <span className="font-mono font-bold text-sm">
                     {modifier >= 0 ? '+' : ''}{modifier}
                   </span>
+                  {bonus > 0 && (
+                    <span className="text-[10px] text-primary">+{bonus}</span>
+                  )}
                 </div>
               );
             })}

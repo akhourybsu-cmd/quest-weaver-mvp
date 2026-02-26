@@ -241,16 +241,20 @@ const StepLevelChoices = () => {
                      currentLevelStep === totalStepsForLevel - 1 && 
                      canProceedStep();
 
-  // Save all choices to draft
+  // Save all choices to draft as a Record keyed by level number
   useEffect(() => {
     if (levelChoices.length > 0) {
+      const levelChoicesRecord: Record<number, LevelChoices> = {};
+      for (const lc of levelChoices) {
+        levelChoicesRecord[lc.level] = lc;
+      }
       setDraft(prev => ({
         ...prev,
         choices: {
           ...prev.choices,
           featureChoices: {
             ...prev.choices.featureChoices,
-            levelChoices: levelChoices as any,
+            levelChoices: levelChoicesRecord as any,
           }
         }
       }));

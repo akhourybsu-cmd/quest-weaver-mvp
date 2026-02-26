@@ -123,7 +123,15 @@ export const setClassAtom = atom(null, (get, set, payload: { classId: string, cl
     classId: payload.classId,
     className: payload.className,
     subclassId: undefined,
-    choices: { ...d.choices, skills: [], tools: [] }
+    choices: { 
+      ...d.choices, 
+      skills: [], 
+      tools: [],
+      spellsKnown: [],
+      spellsPrepared: [],
+      featureChoices: {},
+      equipmentBundleId: undefined,
+    }
   });
 });
 

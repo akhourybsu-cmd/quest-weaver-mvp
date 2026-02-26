@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
+import { PlayerJournal } from "@/components/player/PlayerJournal";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();

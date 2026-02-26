@@ -211,9 +211,9 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[300px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[300px] overflow-hidden">
         {/* Notes List */}
-        <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
+        <div className="lg:col-span-1 flex flex-col gap-4 min-h-0 overflow-hidden">
           <div className="relative shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search shared notes..." value={searchQuery}

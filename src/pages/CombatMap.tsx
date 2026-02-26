@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import BottomNav from "@/components/BottomNav";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import MapViewer from "@/components/maps/MapViewer";

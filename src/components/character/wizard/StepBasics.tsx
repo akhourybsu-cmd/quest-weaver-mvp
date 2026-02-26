@@ -13,6 +13,7 @@ import {
   setClassAtom, 
   setSubclassAtom,
   applyGrantsAtom,
+  replaceGrantsAtom,
   setNeedsAtom
 } from "@/state/characterWizard";
 import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";

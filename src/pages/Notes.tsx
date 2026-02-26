@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import BottomNav from "@/components/BottomNav";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 import { Button } from "@/components/ui/button";
 import NotesBoard from "@/components/notes/NotesBoard";
 import { ArrowLeft } from "lucide-react";

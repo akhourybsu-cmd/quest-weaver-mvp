@@ -211,7 +211,7 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-24rem)] min-h-[300px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[300px]">
         {/* Notes List */}
         <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
           <div className="relative shrink-0">

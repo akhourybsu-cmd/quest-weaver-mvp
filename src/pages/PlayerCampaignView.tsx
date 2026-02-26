@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
+import { PlayerJournal } from "@/components/player/PlayerJournal";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
@@ -188,6 +189,7 @@ export default function PlayerCampaignView() {
             <TabsTrigger value="lore">Lore</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="journal">Journal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quests" className="mt-4">
@@ -210,6 +212,9 @@ export default function PlayerCampaignView() {
           </TabsContent>
           <TabsContent value="notes" className="mt-4">
             {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
+          </TabsContent>
+          <TabsContent value="journal" className="mt-4">
+            <PlayerJournal campaignId={campaign.id} characterId={character?.id || ''} />
           </TabsContent>
         </Tabs>
       </div>

@@ -196,7 +196,7 @@ const SessionSpectator = () => {
           </Badge>
         </div>
 
-        <h2 className="text-xl font-semibold text-muted-foreground">{encounter.name}</h2>
+        <h2 className="text-xl font-cinzel font-semibold text-muted-foreground">{encounter.name}</h2>
       </div>
 
       <div className="max-w-6xl mx-auto grid gap-6 lg:grid-cols-2">

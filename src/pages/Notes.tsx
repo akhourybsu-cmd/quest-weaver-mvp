@@ -22,11 +22,7 @@ const Notes = () => {
   }, []);
 
   if (!campaignId || !userId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
+    return <ThemedLoading message="Loading notes..." />;
   }
 
   return (

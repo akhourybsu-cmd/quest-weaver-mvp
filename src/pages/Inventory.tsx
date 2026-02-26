@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, Coins, Sparkles, History, Users, BookOpen } from "lucide-react";
+import { ThemedLoading } from "@/components/ui/themed-loading";
 import { useToast } from "@/hooks/use-toast";
 import { useIsDM } from "@/hooks/useIsDM";
 import ItemEditor from "@/components/inventory/ItemEditor";

@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Dices } from "lucide-react";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -37,7 +36,6 @@ const Auth = () => {
       }
     });
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/');
@@ -50,7 +48,7 @@ const Auth = () => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (loading) return; // Prevent double submission
+    if (loading) return;
     
     setLoading(true);
 
@@ -59,7 +57,6 @@ const Auth = () => {
         console.log("Auth attempt:", { isLogin });
       }
       
-      // Validate input
       const validation = authSchema.safeParse({ email, password });
       if (!validation.success) {
         const firstError = validation.error.issues[0];
@@ -89,7 +86,6 @@ const Auth = () => {
           if (import.meta.env.DEV) {
             console.error("Sign in error:", error);
           }
-          // Provide more helpful error messages
           if (error.message.includes("Invalid login credentials")) {
             throw new Error("Invalid email or password. Please check your credentials or sign up if you don't have an account.");
           }
@@ -116,7 +112,6 @@ const Auth = () => {
           if (import.meta.env.DEV) {
             console.error("Sign up error:", error);
           }
-          // Handle specific signup errors
           if (error.message.includes("User already registered")) {
             throw new Error("An account with this email already exists. Please sign in instead.");
           }
@@ -130,8 +125,8 @@ const Auth = () => {
           title: "Account created!",
           description: "You can now sign in with your credentials.",
         });
-        setIsLogin(true); // Switch to login mode
-        setPassword(""); // Clear password
+        setIsLogin(true);
+        setPassword("");
       }
     } catch (error: any) {
       if (import.meta.env.DEV) {
@@ -152,12 +147,12 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-elegant">
+      <Card className="w-full max-w-md shadow-2xl border-brass/30">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Dices className="w-12 h-12 text-primary" />
+            <img src="/logo.png" alt="Quest Weaver" className="w-16 h-16" />
           </div>
-          <CardTitle className="text-3xl">D&D Campaign Manager</CardTitle>
+          <CardTitle className="text-3xl font-cinzel">Quest Weaver</CardTitle>
           <CardDescription>
             {isLogin ? "Sign in to your account" : "Create a new account"}
           </CardDescription>
@@ -190,7 +185,7 @@ const Auth = () => {
                 Minimum 6 characters
               </p>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-brass hover:bg-brass/90 text-brass-foreground" disabled={loading}>
               {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAtom, useSetAtom } from "jotai";
-import { draftAtom, setAncestryAtom, setSubAncestryAtom, applyGrantsAtom } from "@/state/characterWizard";
+import { draftAtom, setAncestryAtom, setSubAncestryAtom, setSourceGrantsAtom } from "@/state/characterWizard";
 import { SRD, type SrdAncestry, type SrdSubAncestry } from "@/lib/srd/SRDClient";
 import { grantsFromAncestry, grantsFromSubAncestry } from "@/lib/rules/5eRules";
 
@@ -13,7 +13,7 @@ const StepAncestry = () => {
   const [draft] = useAtom(draftAtom);
   const setAncestry = useSetAtom(setAncestryAtom);
   const setSubAncestry = useSetAtom(setSubAncestryAtom);
-  const applyGrants = useSetAtom(applyGrantsAtom);
+  const setSourceGrants = useSetAtom(setSourceGrantsAtom);
 
   const [ancestries, setAncestries] = useState<SrdAncestry[]>([]);
   const [subAncestries, setSubAncestries] = useState<SrdSubAncestry[]>([]);
@@ -49,9 +49,11 @@ const StepAncestry = () => {
 
     setAncestry(ancestryId);
     setSelectedAncestry(ancestry);
+    setSelectedSubancestry(null);
 
+    // Source-tracked: replaces previous ancestry grants cleanly, also clears subAncestry
     const grants = grantsFromAncestry(ancestry);
-    applyGrants(grants);
+    setSourceGrants({ source: 'ancestry', grants });
 
     const subs = await SRD.subAncestries(ancestryId);
     setSubAncestries(subs);
@@ -64,8 +66,9 @@ const StepAncestry = () => {
     setSubAncestry(subancestryId);
     setSelectedSubancestry(subAncestry);
 
+    // Source-tracked: replaces previous subAncestry grants cleanly
     const grants = grantsFromSubAncestry(subAncestry);
-    applyGrants(grants);
+    setSourceGrants({ source: 'subAncestry', grants });
   };
 
   return (
@@ -129,6 +132,7 @@ const StepAncestry = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Show ancestry-specific grants only */}
             {Array.isArray(selectedAncestry.ability_bonuses) && selectedAncestry.ability_bonuses.length > 0 && (
               <div>
                 <h4 className="font-medium mb-2">Ability Score Bonuses</h4>

@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAtom, useSetAtom } from "jotai";
-import { draftAtom, setBackgroundAtom, applyGrantsAtom, setNeedsAtom } from "@/state/characterWizard";
+import { draftAtom, setBackgroundAtom, setSourceGrantsAtom, setNeedsAtom } from "@/state/characterWizard";
 import { SRD, type SrdBackground } from "@/lib/srd/SRDClient";
 import { grantsFromBackground, needsFromBackground } from "@/lib/rules/5eRules";
 
 const StepBackground = () => {
   const [draft] = useAtom(draftAtom);
   const setBackground = useSetAtom(setBackgroundAtom);
-  const applyGrants = useSetAtom(applyGrantsAtom);
+  const setSourceGrants = useSetAtom(setSourceGrantsAtom);
   const setNeeds = useSetAtom(setNeedsAtom);
 
   const [backgrounds, setBackgrounds] = useState<SrdBackground[]>([]);
@@ -38,19 +38,21 @@ const StepBackground = () => {
     setBackground(backgroundId);
     setSelectedBackground(bg);
 
-    // Auto-grant from background
+    // Source-tracked: replaces previous background grants cleanly
     const grants = grantsFromBackground(bg);
-    applyGrants(grants);
+    setSourceGrants({ source: 'background', grants });
 
     // Set needs for choices
     const needs = needsFromBackground(bg);
     setNeeds(needs);
   };
 
-  const skills = Array.from(draft.grants.skillProficiencies);
-  const tools = Array.from(draft.grants.toolProficiencies);
-  const languages = Array.from(draft.grants.languages);
-  const features = draft.grants.features.filter(f => f.source === "background");
+  // Display background-specific grants only (from grantSources.background)
+  const bgGrants = draft.grantSources.background;
+  const skills = Array.from(bgGrants.skillProficiencies);
+  const tools = Array.from(bgGrants.toolProficiencies);
+  const languages = Array.from(bgGrants.languages);
+  const features = bgGrants.features.filter(f => f.source === "background");
 
   return (
     <div className="space-y-6">

@@ -12,12 +12,11 @@ import {
   setLevelAtom, 
   setClassAtom, 
   setSubclassAtom,
-  applyGrantsAtom,
-  replaceGrantsAtom,
+  setSourceGrantsAtom,
   setNeedsAtom
 } from "@/state/characterWizard";
 import { SRD, type SrdClass, type SrdSubclass } from "@/lib/srd/SRDClient";
-import { grantsFromClass, needsFromClass, grantsFromSubclass, emptyGrants } from "@/lib/rules/5eRules";
+import { grantsFromClass, needsFromClass, grantsFromSubclass, emptyGrants, mergeGrants } from "@/lib/rules/5eRules";
 import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 const StepBasics = () => {
@@ -26,8 +25,7 @@ const StepBasics = () => {
   const setLevel = useSetAtom(setLevelAtom);
   const setClass = useSetAtom(setClassAtom);
   const setSubclass = useSetAtom(setSubclassAtom);
-  const applyGrants = useSetAtom(applyGrantsAtom);
-  const replaceGrants = useSetAtom(replaceGrantsAtom);
+  const setSourceGrants = useSetAtom(setSourceGrantsAtom);
   const setNeeds = useSetAtom(setNeedsAtom);
 
   const [classes, setClasses] = useState<SrdClass[]>([]);
@@ -59,9 +57,9 @@ const StepBasics = () => {
     setClass({ classId, className: cls.name });
     setSelectedClass(cls);
 
-    // Reset grants then apply from class (prevents stacking on class switch)
+    // Use source-tracked grants (replaces old class grants cleanly)
     const grants = grantsFromClass(cls);
-    replaceGrants(grants);
+    setSourceGrants({ source: 'class', grants });
 
     // Set needs
     const needs = needsFromClass(cls);
@@ -78,16 +76,17 @@ const StepBasics = () => {
 
     setSubclass(subclassId);
 
-    // Auto-grant subclass features up to current level
-    const grants = grantsFromSubclass(subclass, draft.level);
-    applyGrants(grants);
+    // Subclass features go into the class source (they're class-derived)
+    const subGrants = grantsFromSubclass(subclass, draft.level);
+    const classGrants = grantsFromClass(selectedClass!);
+    setSourceGrants({ source: 'class', grants: mergeGrants(classGrants, subGrants) });
   };
 
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading classes...</div>;
   }
 
-  // Dynamic subclass unlock level per class (Cleric/Sorcerer/Warlock=1, Druid/Wizard=2, others=3)
+  // Dynamic subclass unlock level per class
   const minLevelForSubclass = selectedClass 
     ? (CLASS_LEVEL_UP_RULES[selectedClass.name]?.subclassLevel ?? 3) 
     : 3;

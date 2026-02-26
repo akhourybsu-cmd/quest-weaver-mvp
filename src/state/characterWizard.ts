@@ -2,6 +2,13 @@ import { atom } from "jotai";
 import type { Grants, ChoiceNeeds } from "@/lib/rules/5eRules";
 import { emptyGrants, mergeGrants } from "@/lib/rules/5eRules";
 
+export type GrantSources = {
+  class: Grants;
+  ancestry: Grants;
+  subAncestry: Grants;
+  background: Grants;
+};
+
 export type WizardDraft = {
   // Core identity
   name: string;
@@ -51,12 +58,33 @@ export type WizardDraft = {
     featureChoices: Record<string, string[]>;
   };
   
-  // Auto-granted by rules
+  // Per-source grant tracking
+  grantSources: GrantSources;
+  
+  // Merged grants (computed from grantSources)
   grants: Grants;
   
   // Current needs (computed from selections)
   needs: ChoiceNeeds;
 };
+
+function emptyGrantSources(): GrantSources {
+  return {
+    class: emptyGrants(),
+    ancestry: emptyGrants(),
+    subAncestry: emptyGrants(),
+    background: emptyGrants(),
+  };
+}
+
+function recomputeGrants(sources: GrantSources): Grants {
+  let result = emptyGrants();
+  result = mergeGrants(result, sources.class);
+  result = mergeGrants(result, sources.ancestry);
+  result = mergeGrants(result, sources.subAncestry);
+  result = mergeGrants(result, sources.background);
+  return result;
+}
 
 export const draftAtom = atom<WizardDraft>({
   name: "",
@@ -71,6 +99,7 @@ export const draftAtom = atom<WizardDraft>({
     spellsPrepared: [],
     featureChoices: {},
   },
+  grantSources: emptyGrantSources(),
   grants: emptyGrants(),
   needs: {},
 });
@@ -142,6 +171,25 @@ export const setAbilityMethodAtom = atom(null, (get, set, method: string) => {
   set(draftAtom, { ...d, abilityMethod: method });
 });
 
+// Source-aware grant setter: sets grants for a specific source and recomputes merged grants
+export const setSourceGrantsAtom = atom(
+  null,
+  (get, set, payload: { source: keyof GrantSources; grants: Grants }) => {
+    const d = get(draftAtom);
+    const newSources = { ...d.grantSources, [payload.source]: payload.grants };
+    // When ancestry changes, clear subAncestry grants
+    if (payload.source === 'ancestry') {
+      newSources.subAncestry = emptyGrants();
+    }
+    set(draftAtom, {
+      ...d,
+      grantSources: newSources,
+      grants: recomputeGrants(newSources),
+    });
+  }
+);
+
+// Legacy atoms kept for backward compat but should prefer setSourceGrantsAtom
 export const applyGrantsAtom = atom(null, (get, set, newGrants: Grants) => {
   const d = get(draftAtom);
   set(draftAtom, {
@@ -219,6 +267,7 @@ export const resetDraftAtom = atom(null, (get, set) => {
       spellsPrepared: [],
       featureChoices: {},
     },
+    grantSources: emptyGrantSources(),
     grants: emptyGrants(),
     needs: {},
   });

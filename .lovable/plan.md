@@ -1,166 +1,158 @@
 
+# Fix All Character Wizard Bugs
 
-# Map Editor Optimization: Comprehensive Overhaul
-
-## Current State Assessment
-
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+## Overview
+Six fixes addressing grant stacking, HP calculation, derived stats, finalization persistence, and display issues across the character creation wizard.
 
 ---
 
-## Critical Issues (Tools That Don't Work)
+## Fix 1: Ancestry Grant Stacking (StepAncestry.tsx)
 
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
+**Problem**: Switching ancestry calls `applyGrants` which merges with existing grants (including previous ancestry). Same issue with sub-ancestry.
 
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
+**Solution**: 
+- Import `replaceGrantsAtom` and use a source-aware replacement strategy
+- When ancestry changes: rebuild grants from scratch using only class grants + new ancestry grants (clear sub-ancestry too)
+- When sub-ancestry changes: rebuild from class + ancestry + new sub-ancestry
+- Add a new `resetAndReapplyGrantsAtom` or use a helper that collects current class grants from the draft state and re-merges with new ancestry/subancestry grants
 
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
+**Implementation**: 
+- Create a new `replaceSourceGrantsAtom` in `characterWizard.ts` that takes a `source` string and new grants, strips old grants of that source, then merges
+- Simpler approach: since ancestry step runs after class step, we can store class-only grants separately OR just re-derive. Simplest: when ancestry changes, reset grants to `emptyGrants()`, re-apply class grants from the selected class (need to reload or cache), then apply ancestry grants
+- Actually simplest: add a `clearNonClassGrantsAtom` or just track sources. Let me use the practical approach -- add source tagging to the state.
 
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
+**Practical approach** (minimal changes):
+- In `StepAncestry.tsx`, when handling ancestry change, build combined grants from class + ancestry and use `replaceGrants` instead of `applyGrants`. The class grants can be re-derived from `draft.classId` by loading the class again, but that's async. Better: store the class SrdClass data in the wizard state or just re-derive grants.
+- Simplest fix: Add a new atom `replaceAncestryGrantsAtom` that takes ancestry grants and rebuilds the full grants set by keeping only class-sourced grants (saving throws, armor, weapons) and adding ancestry grants. Since class grants only add to `savingThrows`, `armorProficiencies`, `weaponProficiencies`, we can preserve those and replace everything else from ancestry.
 
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
+**Final approach** (cleanest):
+- Add a `grantSourcesAtom` that stores `{ class: Grants, ancestry: Grants, subAncestry: Grants, background: Grants }` separately
+- Add a derived `computedGrantsAtom` that merges all sources
+- This is the right architecture but too invasive. Instead:
 
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+**Minimal viable fix**:
+- In `characterWizard.ts`, add a new atom `rebuildGrantsAtom` that accepts `{ source: string, grants: Grants }` and stores per-source grants in a new `grantSources` field, then recomputes the merged `grants` field.
+- Update `StepAncestry`, `StepBackground`, and `StepBasics` to use this atom.
 
----
+Actually, the simplest viable approach that doesn't require architecture changes:
 
-## Performance Issues
+- **StepAncestry.tsx**: When ancestry changes, clear sub-ancestry. Then call a new action that: (1) keeps only class grants (savingThrows + armorProficiencies + weaponProficiencies from the class), (2) merges in the new ancestry grants. We'll add `rebuildGrantsFromSourcesAtom` to the state.
+- **StepBackground.tsx**: Same pattern -- keep class+ancestry grants, add background grants.
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
+Let me go with source-tracked grants in the state.
 
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
+**Changes to `src/state/characterWizard.ts`**:
+- Add `grantSources: { class: Grants, ancestry: Grants, subAncestry: Grants, background: Grants }` to `WizardDraft`
+- Add `setSourceGrantsAtom` that sets grants for a specific source and recomputes merged `grants`
+- Keep `grants` as the merged result for backward compat
 
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
+**Changes to `src/components/character/wizard/StepAncestry.tsx`**:
+- Use `setSourceGrantsAtom('ancestry', grants)` instead of `applyGrants(grants)`
+- Use `setSourceGrantsAtom('subAncestry', grants)` for sub-ancestry
+- Clear sub-ancestry source when ancestry changes
 
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+**Changes to `src/components/character/wizard/StepBackground.tsx`**:
+- Use `setSourceGrantsAtom('background', grants)` instead of `applyGrants(grants)`
+- Filter displayed skills/tools/languages to show only background-sourced ones
 
----
-
-## Functional Gaps
-
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
-
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
-
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
-
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
-
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
+**Changes to `src/components/character/wizard/StepBasics.tsx`**:
+- Use `setSourceGrantsAtom('class', grants)` instead of `replaceGrants(grants)`
 
 ---
 
-## Implementation Plan
+## Fix 2: HP Calculation in Finalization (CharacterWizard.tsx)
 
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
+**Problem**: `max_hp` is hardcoded to `10`. Level-up HP rolls from `StepLevelChoices` are stored in `draft.choices.featureChoices.levelChoices` but never read during finalization.
 
-**File: `src/components/maps/MapViewer.tsx`**
+**Solution**: In `handleFinalizeCharacter`, compute max_hp:
+- Level 1 HP = hitDie + CON modifier
+- For levels 2+, sum up `levelChoices[i].hpRoll + conMod` for each level
+- Use `calculateLevel1HP` from `dnd5e.ts` and the level choices data
 
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
+```
+const hitDie = CLASS_LEVEL_UP_RULES[draft.className]?.hitDie || 8;
+const conMod = Math.floor((draft.abilityScores.CON - 10) / 2);
+let maxHp = hitDie + conMod; // Level 1
 
-### Phase 2: Wire Drawing Tools
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
-
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
-
-### Phase 3: Wire Measurement, Range, and Terrain
-
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
-
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
-
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
-
-### Phase 4: Fix Fog of War
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
-
-### Phase 5: Fix Grid Snap and Token Context Menu
-
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
-
-### Phase 6: Performance Optimizations
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
+const levelChoices = (draft.choices.featureChoices.levelChoices as LevelChoices[]) || [];
+for (const lc of levelChoices) {
+  maxHp += (lc.hpRoll || (Math.floor(hitDie / 2) + 1)) + conMod;
+}
+maxHp = Math.max(maxHp, draft.level); // Min 1 HP per level
+```
 
 ---
 
-## Files Modified
+## Fix 3: Derived Stats in Finalization (CharacterWizard.tsx)
 
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
+**Problem**: `proficiency_bonus`, `ac`, `initiative_bonus`, `passive_perception`, `speed`, `spell_save_dc`, `spell_attack_mod`, saving throw values are all hardcoded or zeroed.
 
-### No database changes required
+**Solution**: Compute all derived stats before writing to DB:
+- `proficiency_bonus` = `calculateProficiencyBonus(draft.level)`
+- `ac` = `10 + DEX modifier` (unarmored default)
+- `initiative_bonus` = DEX modifier
+- `passive_perception` = 10 + WIS modifier + (proficiency if perception proficient)
+- `passive_investigation` = 10 + INT modifier + (proficiency if investigation proficient)  
+- `passive_insight` = 10 + WIS modifier + (proficiency if insight proficient)
+- `speed` = ancestry speed (from selected ancestry data) or 30
+- `hit_die` = `d{hitDie}`
+- `hit_dice_total` = `draft.level`
+- `hit_dice_current` = `draft.level`
+- Saving throws: compute each save value (ability mod + proficiency if proficient)
+- Spellcasting: `spell_ability`, `spell_save_dc`, `spell_attack_mod` from class spellcasting ability
 
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+---
 
+## Fix 4: Persist Level-Up Feature Choices (CharacterWizard.tsx)
+
+**Problem**: ASI ability increases, selected feats, fighting styles, invocations, metamagic, pact boon, expertise, favored enemies/terrains, and magical secrets from `StepLevelChoices` are stored in `draft.choices.featureChoices.levelChoices` but never written to the database.
+
+**Solution**: During finalization, iterate over `levelChoices` and:
+- **ASI**: Apply ability score increases to the ability scores before writing to `character_abilities`
+- **Feats**: Write to `character_features` with source "feat"
+- **Fighting Style**: Write to `character_features` with source "class"
+- **Expertise**: Write to `character_skills` with `expertise: true`
+- **Invocations**: Write to `character_features` with source "invocation"
+- **Metamagic**: Write to `character_features` with source "metamagic"
+- **Pact Boon**: Write to `character_features` with source "class"
+- **Favored Enemy/Terrain**: Write to `character_features`
+- **Magical Secrets**: Add to spells known
+
+---
+
+## Fix 5: Persist Description/Personality (CharacterWizard.tsx)
+
+**Problem**: `personality_traits`, `ideals`, `bonds`, `flaws` fields exist on the characters table but the finalization doesn't write `draft.personality`, `draft.ideals`, `draft.bonds`, `draft.flaws`.
+
+**Solution**: Add these fields to the character update in finalization:
+```
+personality_traits: draft.personality || null,
+ideals: draft.ideals || null,
+bonds: draft.bonds || null,
+flaws: draft.flaws || null,
+```
+
+---
+
+## Fix 6: Background Display Shows All Grants (StepBackground.tsx)
+
+**Problem**: Lines 50-53 display `draft.grants.skillProficiencies` which includes ALL skills (class + background), not just background-sourced ones.
+
+**Solution**: With the source-tracked grants from Fix 1, display only `grantSources.background` skills/tools/languages. Or filter by checking against the selected background's known grants.
+
+---
+
+## Files to Modify
+
+| File | Fixes |
+|------|-------|
+| `src/state/characterWizard.ts` | Fix 1: Add `grantSources` field and `setSourceGrantsAtom` |
+| `src/components/character/wizard/StepBasics.tsx` | Fix 1: Use source-tracked grants |
+| `src/components/character/wizard/StepAncestry.tsx` | Fix 1: Use source-tracked grants |
+| `src/components/character/wizard/StepBackground.tsx` | Fix 1, 6: Use source-tracked grants, filter display |
+| `src/components/character/CharacterWizard.tsx` | Fix 2, 3, 4, 5: Compute HP, derived stats, persist all choices |
+
+## Implementation Order
+1. State changes (characterWizard.ts) -- foundation for everything
+2. StepBasics, StepAncestry, StepBackground -- use new source-tracked grants
+3. CharacterWizard finalization -- HP, derived stats, persistence

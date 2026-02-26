@@ -61,9 +61,9 @@ const StepBasics = () => {
     const grants = grantsFromClass(cls);
     setSourceGrants({ source: 'class', grants });
 
-    // Set needs
+    // Set class-specific needs only (preserve background needs)
     const needs = needsFromClass(cls);
-    setNeeds(needs);
+    setNeeds({ skill: needs.skill, tool: needs.tool });
 
     // Load subclasses
     const subs = await SRD.subclasses(classId);

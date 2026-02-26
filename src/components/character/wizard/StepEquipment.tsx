@@ -59,10 +59,13 @@ const StepEquipment = () => {
     loadClassEquipment();
   }, [draft.classId]);
 
-  // Auto-select first bundle if none selected
+  // Auto-select first bundle if none selected or current bundle doesn't exist in new bundles
   useEffect(() => {
-    if (bundles.length > 0 && !draft.choices.equipmentBundleId) {
-      setEquipmentBundle(bundles[0].id);
+    if (bundles.length > 0) {
+      const currentExists = bundles.some(b => b.id === draft.choices.equipmentBundleId);
+      if (!draft.choices.equipmentBundleId || !currentExists) {
+        setEquipmentBundle(bundles[0].id);
+      }
     }
   }, [bundles, draft.choices.equipmentBundleId, setEquipmentBundle]);
 

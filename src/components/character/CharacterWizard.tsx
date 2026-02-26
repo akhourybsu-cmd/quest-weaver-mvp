@@ -148,14 +148,29 @@ function serializeGrants(grants: any) {
 }
 
 // === Helper: compute derived stats ===
+function applyAncestryBonuses(baseScores: Record<string, number>, abilityBonuses: Record<string, number>): Record<string, number> {
+  const result = { ...baseScores };
+  for (const [ability, bonus] of Object.entries(abilityBonuses)) {
+    const key = ability.toUpperCase();
+    if (key in result) {
+      result[key] += bonus;
+    }
+  }
+  return result;
+}
+
 function computeDerivedStats(draft: any, classRules: any) {
+  // Apply ancestry ability bonuses before computing modifiers
+  const bonuses = draft.grants?.abilityBonuses || {};
+  const scores = applyAncestryBonuses(draft.abilityScores, bonuses);
+  
   const abilityMod = (score: number) => Math.floor((score - 10) / 2);
-  const conMod = abilityMod(draft.abilityScores.CON);
-  const dexMod = abilityMod(draft.abilityScores.DEX);
-  const wisMod = abilityMod(draft.abilityScores.WIS);
-  const intMod = abilityMod(draft.abilityScores.INT);
-  const chaMod = abilityMod(draft.abilityScores.CHA);
-  const strMod = abilityMod(draft.abilityScores.STR);
+  const conMod = abilityMod(scores.CON);
+  const dexMod = abilityMod(scores.DEX);
+  const wisMod = abilityMod(scores.WIS);
+  const intMod = abilityMod(scores.INT);
+  const chaMod = abilityMod(scores.CHA);
+  const strMod = abilityMod(scores.STR);
   
   const hitDie = classRules?.hitDie || 8;
   const profBonus = Math.floor((draft.level - 1) / 4) + 2;
@@ -619,9 +634,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           const lvl = parseInt(lvlStr);
           if (!lc) continue;
           
-          // Apply ASI
-          if (lc.asiChoices && typeof lc.asiChoices === 'object') {
-            for (const [ability, increase] of Object.entries(lc.asiChoices)) {
+          // Apply ASI (field is abilityIncreases from StepLevelChoices)
+          if (lc.abilityIncreases && typeof lc.abilityIncreases === 'object') {
+            for (const [ability, increase] of Object.entries(lc.abilityIncreases)) {
               const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
               if (key in finalAbilityScores) {
                 finalAbilityScores[key] += Number(increase) || 0;

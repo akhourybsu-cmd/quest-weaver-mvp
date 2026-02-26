@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, Heart, Shield, Zap, BookOpen, Sparkles, CheckCircle } from "lucide-react";
-import { calculateModifier, calculateProficiencyBonus, DND_CLASSES } from "@/lib/dnd5e";
+import { Check, Heart, Shield, Zap, BookOpen, Sparkles, CheckCircle, TrendingUp } from "lucide-react";
+import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
+import { computeTotalHP } from "@/lib/hpCalculation";
 import { useAtom } from "jotai";
 import { draftAtom } from "@/state/characterWizard";
 import { SRD } from "@/lib/srd/SRDClient";
@@ -15,6 +16,11 @@ interface StepReviewProps {
   loading: boolean;
 }
 
+function getEffectiveScore(base: number, ability: string, bonuses: Record<string, number>): number {
+  const bonus = bonuses[ability.toLowerCase()] || bonuses[ability.toUpperCase()] || bonuses[ability] || 0;
+  return base + bonus;
+}
+
 const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
   const [draft] = useAtom(draftAtom);
   const [ancestryName, setAncestryName] = useState<string>("");
@@ -22,22 +28,19 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
   const [subclassName, setSubclassName] = useState<string>("");
   const [spellNames, setSpellNames] = useState<string[]>([]);
 
+  const abilityBonuses = draft.grants.abilityBonuses || {};
   const profBonus = calculateProficiencyBonus(draft.level);
-  const conMod = calculateModifier(draft.abilityScores.CON);
-  const dexMod = calculateModifier(draft.abilityScores.DEX);
-  const wisMod = calculateModifier(draft.abilityScores.WIS);
+  
+  const effectiveDex = getEffectiveScore(draft.abilityScores.DEX, 'DEX', abilityBonuses);
+  const effectiveWis = getEffectiveScore(draft.abilityScores.WIS, 'WIS', abilityBonuses);
+  const dexMod = calculateModifier(effectiveDex);
+  const wisMod = calculateModifier(effectiveWis);
 
-  // Get class hit die
-  const classData = DND_CLASSES.find(c => c.value === draft.className);
-  const hitDie = classData?.hitDie || 8;
+  // Full HP calculation including all levels and ancestry bonuses
+  const levelChoices = draft.choices?.featureChoices?.levelChoices;
+  const maxHP = computeTotalHP(draft.className, draft.level, draft.abilityScores.CON, levelChoices, abilityBonuses);
 
-  // Calculate HP: At level 1, max hit die + CON modifier
-  const maxHP = hitDie + conMod;
-
-  // Calculate base AC (unarmored)
   const baseAC = 10 + dexMod;
-
-  // Calculate passive perception
   const passivePerception = 10 + wisMod + (draft.choices.skills.includes("Perception") ? profBonus : 0);
 
   // Get selected equipment bundle items
@@ -76,6 +79,43 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
 
     loadNames();
   }, [draft.ancestryId, draft.backgroundId, draft.subclassId, draft.classId, draft.choices.spellsKnown]);
+
+  // Parse level-up choices for display
+  const levelChoicesSummary: Array<{ level: number; items: string[] }> = [];
+  if (levelChoices && typeof levelChoices === 'object') {
+    const entries = Array.isArray(levelChoices) 
+      ? levelChoices.map((lc: any, i: number) => [lc.level || i + 2, lc])
+      : Object.entries(levelChoices);
+    
+    for (const [lvlKey, lc] of entries) {
+      if (!lc) continue;
+      const lvl = Number(lvlKey);
+      const items: string[] = [];
+      const conMod = calculateModifier(getEffectiveScore(draft.abilityScores.CON, 'CON', abilityBonuses));
+      
+      if (lc.hpRoll !== undefined) {
+        items.push(`HP: +${lc.hpRoll + conMod} (${lc.useAverage ? 'avg' : 'rolled'} ${lc.hpRoll} + ${conMod} CON)`);
+      }
+      if (lc.asiChoice === 'asi' && lc.abilityIncreases) {
+        const increases = Object.entries(lc.abilityIncreases)
+          .filter(([, v]) => (v as number) > 0)
+          .map(([k, v]) => `${k} +${v}`);
+        if (increases.length) items.push(`ASI: ${increases.join(', ')}`);
+      }
+      if (lc.asiChoice === 'feat' && lc.selectedFeat) items.push(`Feat: ${lc.selectedFeat}`);
+      if (lc.fightingStyle) items.push(`Fighting Style: ${lc.fightingStyle}`);
+      if (lc.expertise?.length) items.push(`Expertise: ${lc.expertise.join(', ')}`);
+      if (lc.metamagic?.length) items.push(`Metamagic: ${lc.metamagic.join(', ')}`);
+      if (lc.invocations?.length) items.push(`Invocations: ${lc.invocations.join(', ')}`);
+      if (lc.pactBoon) items.push(`Pact Boon: ${lc.pactBoon}`);
+      if (lc.favoredEnemy) items.push(`Favored Enemy: ${lc.favoredEnemy}`);
+      if (lc.favoredTerrain) items.push(`Favored Terrain: ${lc.favoredTerrain}`);
+      
+      if (items.length > 0) {
+        levelChoicesSummary.push({ level: lvl, items });
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -129,7 +169,7 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              HP = d{hitDie} (max) + CON mod ({conMod >= 0 ? '+' : ''}{conMod}) • Passive Perception: {passivePerception}
+              Passive Perception: {passivePerception}
             </p>
           </div>
 
@@ -140,11 +180,16 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
             <h4 className="font-medium mb-3">Ability Scores</h4>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {Object.entries(draft.abilityScores).map(([ability, score]) => {
-                const modifier = calculateModifier(score);
+                const effectiveScore = getEffectiveScore(score, ability, abilityBonuses);
+                const bonus = effectiveScore - score;
+                const modifier = calculateModifier(effectiveScore);
                 return (
                   <div key={ability} className="flex flex-col items-center p-2 rounded bg-muted/50">
                     <span className="text-xs font-medium uppercase text-muted-foreground">{ability}</span>
-                    <span className="text-xl font-bold">{score}</span>
+                    <span className="text-xl font-bold">
+                      {effectiveScore}
+                      {bonus > 0 && <span className="text-xs text-primary ml-0.5">+{bonus}</span>}
+                    </span>
                     <span className="text-xs text-muted-foreground">
                       ({modifier >= 0 ? '+' : ''}{modifier})
                     </span>
@@ -242,17 +287,46 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
           )}
 
           {/* Feature Choices */}
-          {Object.keys(draft.choices.featureChoices).length > 0 && (
+          {Object.keys(draft.choices.featureChoices).filter(k => k !== 'levelChoices').length > 0 && (
             <>
               <Separator />
               <div>
                 <h4 className="font-medium mb-3">Feature Choices</h4>
                 <div className="space-y-1">
-                  {Object.entries(draft.choices.featureChoices).map(([featureId, choices]) => (
-                    <div key={featureId} className="text-sm">
-                      <Badge variant="outline" className="text-xs">
-                        {Array.isArray(choices) ? choices.join(", ") : choices}
-                      </Badge>
+                  {Object.entries(draft.choices.featureChoices)
+                    .filter(([key]) => key !== 'levelChoices')
+                    .map(([featureId, choices]) => (
+                      <div key={featureId} className="text-sm">
+                        <Badge variant="outline" className="text-xs">
+                          {Array.isArray(choices) ? choices.join(", ") : choices}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Level-Up Choices Summary */}
+          {levelChoicesSummary.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Level-Up Choices
+                </h4>
+                <div className="space-y-2">
+                  {levelChoicesSummary.map(({ level, items }) => (
+                    <div key={level} className="text-sm">
+                      <span className="font-medium text-muted-foreground">Level {level}:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {items.map((item, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

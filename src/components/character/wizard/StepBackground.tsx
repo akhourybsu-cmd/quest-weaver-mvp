@@ -42,9 +42,9 @@ const StepBackground = () => {
     const grants = grantsFromBackground(bg);
     setSourceGrants({ source: 'background', grants });
 
-    // Set needs for choices
+    // Set background-specific needs only (preserve class needs)
     const needs = needsFromBackground(bg);
-    setNeeds(needs);
+    setNeeds({ language: needs.language });
   };
 
   // Display background-specific grants only (from grantSources.background)

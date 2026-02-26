@@ -159,11 +159,18 @@ const StepAbilities = () => {
           <h4 className="font-cinzel font-medium mb-3 text-brass">Your Modifiers</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
             {ABILITIES.map((ability) => {
-              const score = draft.abilityScores[ability.key];
-              const modifier = calculateModifier(score);
+              const baseScore = draft.abilityScores[ability.key];
+              const abilityBonuses = draft.grants.abilityBonuses || {};
+              const bonus = abilityBonuses[ability.key.toLowerCase()] || abilityBonuses[ability.key] || 0;
+              const effectiveScore = baseScore + bonus;
+              const modifier = calculateModifier(effectiveScore);
               return (
                 <div key={ability.key} className="flex justify-between">
-                  <span className="text-muted-foreground">{ability.label}:</span>
+                  <span className="text-muted-foreground">
+                    {ability.label}
+                    {bonus > 0 && <span className="text-primary text-xs ml-1">(+{bonus})</span>}
+                    :
+                  </span>
                   <span className="font-mono font-bold">
                     {modifier >= 0 ? '+' : ''}{modifier}
                   </span>

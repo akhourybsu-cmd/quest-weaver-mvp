@@ -155,7 +155,7 @@ const SessionSpectator = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-lg">Loading spectator view...</div>
+        <ThemedLoading message="Loading spectator view..." />
       </div>
     );
   }

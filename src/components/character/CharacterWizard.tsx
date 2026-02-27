@@ -970,6 +970,84 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (spellsError) throw spellsError;
       }
 
+      // Write character class levels (per-level HP tracking)
+      if (draft.classId) {
+        const classLevelsData = [];
+        for (let lvl = 1; lvl <= draft.level; lvl++) {
+          const lc = levelChoices?.[lvl] as any;
+          const hpGained = lvl === 1 
+            ? derived.maxHp - (draft.level > 1 ? derived.maxHp : 0) // Level 1 is max die + CON
+            : (lc?.hpRoll ?? (Math.floor((classRules?.hitDie || 8) / 2) + 1)) + Math.floor((finalAbilityScores.CON - 10) / 2);
+          classLevelsData.push({
+            character_id: characterId,
+            class_id: draft.classId,
+            subclass_id: draft.subclassId || null,
+            level: lvl,
+            hp_gained: lvl === 1 ? (classRules?.hitDie || 8) + Math.floor((finalAbilityScores.CON - 10) / 2) : hpGained,
+            hit_dice_remaining: 1,
+          });
+        }
+        const { error: clError } = await supabase
+          .from("character_class_levels")
+          .upsert(classLevelsData);
+        if (clError) console.error("Error writing class levels:", clError);
+      }
+
+      // Write spell slots
+      if (derived.spellAbility && classRules) {
+        const { getSpellSlotInfo } = await import("@/lib/rules/spellRules");
+        const slotInfo = getSpellSlotInfo([{ className: draft.className || "", level: draft.level }]);
+        const slotRows: Array<{ character_id: string; spell_level: number; max_slots: number; used_slots: number }> = [];
+        
+        if (slotInfo.shared) {
+          for (const [lvlStr, count] of Object.entries(slotInfo.shared.slots)) {
+            slotRows.push({
+              character_id: characterId!,
+              spell_level: Number(lvlStr),
+              max_slots: count,
+              used_slots: 0,
+            });
+          }
+        }
+        if (slotInfo.pact) {
+          // Store pact slots as a special entry (level = pact slot level)
+          slotRows.push({
+            character_id: characterId!,
+            spell_level: slotInfo.pact.pactSlotLevel,
+            max_slots: slotInfo.pact.pactSlots,
+            used_slots: 0,
+          });
+        }
+        if (slotRows.length > 0) {
+          const { error: slotsError } = await supabase
+            .from("character_spell_slots")
+            .upsert(slotRows);
+          if (slotsError) console.error("Error writing spell slots:", slotsError);
+        }
+      }
+
+      // Write class resources (rage, ki, sorcery points, etc.)
+      if (classRules?.resourceProgression && classRules.resourceProgression.length > 0) {
+        const resourceRows = classRules.resourceProgression
+          .filter(r => draft.level >= (r.startLevel || 1))
+          .map(r => {
+            const maxVal = r.formula(draft.level);
+            return {
+              character_id: characterId!,
+              resource_key: r.key,
+              label: r.label,
+              max_value: maxVal,
+              current_value: maxVal,
+              recharge: r.recharge,
+            };
+          });
+        if (resourceRows.length > 0) {
+          const { error: resError } = await supabase
+            .from("character_resources")
+            .upsert(resourceRows);
+          if (resError) console.error("Error writing resources:", resError);
+        }
+
       toast({
         title: "Character Created!",
         description: `${draft.name} is ready for adventure.`,

@@ -68,14 +68,20 @@ const StepLevelChoices = () => {
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
-  // Levels that need processing (2 to draft.level, since level 1 is handled in base wizard)
+  // Levels that need processing
+  // Level 1 is included if the class has level 1 feature choices (e.g. Fighter fighting style, Ranger favored enemy)
   const levelsToProcess = useMemo(() => {
     const levels: number[] = [];
+    const classRulesCheck = getClassRules(draft.className || "");
+    const hasLevel1Choices = classRulesCheck?.featureChoiceLevels?.[1]?.length ?? 0;
+    if (hasLevel1Choices > 0) {
+      levels.push(1);
+    }
     for (let i = 2; i <= draft.level; i++) {
       levels.push(i);
     }
     return levels;
-  }, [draft.level]);
+  }, [draft.level, draft.className]);
 
   // Initialize or restore level choices from draft
   useEffect(() => {

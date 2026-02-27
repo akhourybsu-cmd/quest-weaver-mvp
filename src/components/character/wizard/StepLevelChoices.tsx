@@ -77,11 +77,46 @@ const StepLevelChoices = () => {
     return levels;
   }, [draft.level]);
 
-  // Initialize level choices
+  // Initialize or restore level choices from draft
   useEffect(() => {
-    if (levelsToProcess.length > 0 && levelChoices.length === 0) {
-      const initialChoices = levelsToProcess.map(level => ({ level }));
-      setLevelChoices(initialChoices);
+    if (levelsToProcess.length > 0 && levelChoices.length === 0 && !restoredFromDraft) {
+      // Try to restore from draft first
+      const saved = draft.choices?.featureChoices?.levelChoices as Record<number, LevelChoices> | undefined;
+      if (saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
+        const restored: LevelChoices[] = levelsToProcess.map(level => {
+          const lc = saved[level];
+          return lc ? { ...lc, level } : { level };
+        });
+        setLevelChoices(restored);
+        
+        // Restore accumulated state from saved choices
+        const enemies: string[] = [];
+        const terrains: string[] = [];
+        const invocations: string[] = [];
+        const metamagic: string[] = [];
+        const expertise: string[] = [];
+        let pactBoon: string | null = null;
+        
+        for (const lc of restored) {
+          if (lc.favoredEnemy) enemies.push(lc.favoredEnemy);
+          if (lc.favoredTerrain) terrains.push(lc.favoredTerrain);
+          if (lc.invocations) invocations.push(...lc.invocations);
+          if (lc.metamagic) metamagic.push(...lc.metamagic);
+          if (lc.expertise) expertise.push(...lc.expertise);
+          if (lc.pactBoon) pactBoon = lc.pactBoon;
+        }
+        
+        setAccumulatedFavoredEnemies(enemies);
+        setAccumulatedFavoredTerrains(terrains);
+        setAccumulatedInvocations(invocations);
+        setAccumulatedMetamagic(metamagic);
+        setAccumulatedExpertise(expertise);
+        setAccumulatedPactBoon(pactBoon);
+      } else {
+        const initialChoices = levelsToProcess.map(level => ({ level }));
+        setLevelChoices(initialChoices);
+      }
+      setRestoredFromDraft(true);
     }
     // Set proficient skills from draft choices
     setProficientSkills(draft.choices.skills);

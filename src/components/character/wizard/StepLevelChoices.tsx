@@ -66,6 +66,7 @@ const StepLevelChoices = () => {
   const [accumulatedExpertise, setAccumulatedExpertise] = useState<string[]>([]);
   const [accumulatedPactBoon, setAccumulatedPactBoon] = useState<string | null>(null);
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
   // Levels that need processing (2 to draft.level, since level 1 is handled in base wizard)
   const levelsToProcess = useMemo(() => {
@@ -76,11 +77,46 @@ const StepLevelChoices = () => {
     return levels;
   }, [draft.level]);
 
-  // Initialize level choices
+  // Initialize or restore level choices from draft
   useEffect(() => {
-    if (levelsToProcess.length > 0 && levelChoices.length === 0) {
-      const initialChoices = levelsToProcess.map(level => ({ level }));
-      setLevelChoices(initialChoices);
+    if (levelsToProcess.length > 0 && levelChoices.length === 0 && !restoredFromDraft) {
+      // Try to restore from draft first
+      const saved = (draft.choices?.featureChoices as any)?.levelChoices as Record<number, LevelChoices> | undefined;
+      if (saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
+        const restored: LevelChoices[] = levelsToProcess.map(level => {
+          const lc = saved[level];
+          return lc ? { ...lc, level } : { level };
+        });
+        setLevelChoices(restored);
+        
+        // Restore accumulated state from saved choices
+        const enemies: string[] = [];
+        const terrains: string[] = [];
+        const invocations: string[] = [];
+        const metamagic: string[] = [];
+        const expertise: string[] = [];
+        let pactBoon: string | null = null;
+        
+        for (const lc of restored) {
+          if (lc.favoredEnemy) enemies.push(lc.favoredEnemy);
+          if (lc.favoredTerrain) terrains.push(lc.favoredTerrain);
+          if (lc.invocations) invocations.push(...lc.invocations);
+          if (lc.metamagic) metamagic.push(...lc.metamagic);
+          if (lc.expertise) expertise.push(...lc.expertise);
+          if (lc.pactBoon) pactBoon = lc.pactBoon;
+        }
+        
+        setAccumulatedFavoredEnemies(enemies);
+        setAccumulatedFavoredTerrains(terrains);
+        setAccumulatedInvocations(invocations);
+        setAccumulatedMetamagic(metamagic);
+        setAccumulatedExpertise(expertise);
+        setAccumulatedPactBoon(pactBoon);
+      } else {
+        const initialChoices = levelsToProcess.map(level => ({ level }));
+        setLevelChoices(initialChoices);
+      }
+      setRestoredFromDraft(true);
     }
     // Set proficient skills from draft choices
     setProficientSkills(draft.choices.skills);
@@ -144,9 +180,11 @@ const StepLevelChoices = () => {
     );
   };
 
-  // HP calculation
+  // HP calculation (include ancestry CON bonus)
   const hitDie = classRules?.hitDie || 8;
-  const conMod = Math.floor((draft.abilityScores.CON - 10) / 2);
+  const abilityBonuses = draft.grants?.abilityBonuses || {};
+  const conBonus = abilityBonuses['con'] || abilityBonuses['CON'] || abilityBonuses['Con'] || 0;
+  const conMod = Math.floor((draft.abilityScores.CON + conBonus - 10) / 2);
 
   const handleHpRoll = () => {
     const roll = Math.floor(Math.random() * hitDie) + 1;

@@ -205,31 +205,74 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
           <div>
             <h4 className="font-medium mb-3">Proficiencies</h4>
             <div className="space-y-3">
-              {draft.choices.skills.length > 0 && (
+              {/* All skills: granted + chosen */}
+              {(draft.choices.skills.length > 0 || draft.grants.skillProficiencies.size > 0) && (
                 <div>
                   <span className="text-sm text-muted-foreground">Skills: </span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {draft.choices.skills.map((skill, idx) => (
+                    {Array.from(draft.grants.skillProficiencies).map((skill, idx) => (
+                      <Badge key={`g-${idx}`} variant="outline" className="text-xs border-primary/40">
+                        {skill} <span className="text-muted-foreground ml-1">(granted)</span>
+                      </Badge>
+                    ))}
+                    {draft.choices.skills
+                      .filter(s => !draft.grants.skillProficiencies.has(s))
+                      .map((skill, idx) => (
+                        <Badge key={`c-${idx}`} variant="secondary" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Saving Throws */}
+              {draft.grants.savingThrows.size > 0 && (
+                <div>
+                  <span className="text-sm text-muted-foreground">Saving Throws: </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {Array.from(draft.grants.savingThrows).map((save, idx) => (
                       <Badge key={idx} variant="secondary" className="text-xs">
-                        {skill}
+                        {save}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
               
-              {draft.choices.languages.length > 0 && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Languages: </span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {draft.choices.languages.map((lang, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {lang}
-                      </Badge>
-                    ))}
+              {/* All languages: granted + chosen */}
+              {(() => {
+                const allLangs = new Set([
+                  ...Array.from(draft.grants.languages),
+                  ...(draft.choices.languages || []),
+                ]);
+                return allLangs.size > 0 ? (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Languages: </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Array.from(allLangs).map((lang, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {lang}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
+
+              {/* Tools: granted + chosen */}
+              {(() => {
+                const allTools = new Set([
+                  ...Array.from(draft.grants.toolProficiencies),
+                  ...(draft.choices.tools || []),
+                ]);
+                return allTools.size > 0 ? (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Tools: </span>
+                    <span className="text-sm">{Array.from(allTools).join(", ")}</span>
+                  </div>
+                ) : null;
+              })()}
 
               {draft.grants.armorProficiencies && draft.grants.armorProficiencies.size > 0 && (
                 <div>

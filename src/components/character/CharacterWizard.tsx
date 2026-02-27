@@ -270,7 +270,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   // Compute steps dynamically based on level and class
   const STEPS = useMemo(() => {
-    return getSteps(draft.level, checkIsSpellcaster());
+    return getSteps(draft.level, checkIsSpellcaster(), draft.className);
   }, [draft.level, draft.className]);
 
   // Reset draft when dialog opens

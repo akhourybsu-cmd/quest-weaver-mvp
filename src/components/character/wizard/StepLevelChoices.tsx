@@ -180,9 +180,11 @@ const StepLevelChoices = () => {
     );
   };
 
-  // HP calculation
+  // HP calculation (include ancestry CON bonus)
   const hitDie = classRules?.hitDie || 8;
-  const conMod = Math.floor((draft.abilityScores.CON - 10) / 2);
+  const abilityBonuses = draft.grants?.abilityBonuses || {};
+  const conBonus = abilityBonuses['con'] || abilityBonuses['CON'] || abilityBonuses['Con'] || 0;
+  const conMod = Math.floor((draft.abilityScores.CON + conBonus - 10) / 2);
 
   const handleHpRoll = () => {
     const roll = Math.floor(Math.random() * hitDie) + 1;

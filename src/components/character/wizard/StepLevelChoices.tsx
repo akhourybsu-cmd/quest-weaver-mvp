@@ -68,13 +68,21 @@ const StepLevelChoices = () => {
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
+  // Subclass-type choices that are handled by the subclass dropdown, not level choice steps
+  const SUBCLASS_CHOICE_TYPES = new Set([
+    'divine_domain', 'sorcerous_origin', 'otherworldly_patron', 'monastic_tradition',
+    'sacred_oath', 'ranger_archetype', 'roguish_archetype', 'arcane_tradition',
+    'land_circle', 'totem', 'martial_archetype',
+  ]);
+
   // Levels that need processing
-  // Level 1 is included if the class has level 1 feature choices (e.g. Fighter fighting style, Ranger favored enemy)
+  // Level 1 is included if the class has actionable level 1 feature choices (not subclass picks)
   const levelsToProcess = useMemo(() => {
     const levels: number[] = [];
     const classRulesCheck = getClassRules(draft.className || "");
-    const hasLevel1Choices = classRulesCheck?.featureChoiceLevels?.[1]?.length ?? 0;
-    if (hasLevel1Choices > 0) {
+    const level1Choices = classRulesCheck?.featureChoiceLevels?.[1] || [];
+    const hasActionableLevel1Choices = level1Choices.some(c => !SUBCLASS_CHOICE_TYPES.has(c.type));
+    if (hasActionableLevel1Choices) {
       levels.push(1);
     }
     for (let i = 2; i <= draft.level; i++) {
@@ -148,8 +156,9 @@ const StepLevelChoices = () => {
       steps.push("hp");
     }
     
-    // Feature choices
+    // Feature choices (exclude subclass-type choices handled by StepBasics)
     featureChoices.forEach(choice => {
+      if (SUBCLASS_CHOICE_TYPES.has(choice.type)) return; // Skip subclass picks
       if (choice.type === "fighting_style") steps.push("fighting-style");
       if (choice.type === "expertise") steps.push("expertise");
       if (choice.type === "metamagic") steps.push("metamagic");

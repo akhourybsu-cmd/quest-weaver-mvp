@@ -321,11 +321,11 @@ const StepLevelChoices = () => {
     }
   }, [levelChoices]);
 
-  if (draft.level <= 1) {
+  if (levelsToProcess.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No additional level choices needed for level 1 characters.
+          No additional level choices needed for this character.
         </CardContent>
       </Card>
     );

@@ -624,8 +624,16 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (!characterId) throw new Error("Unable to create character");
 
-      // === Apply ASI from level choices to ability scores ===
+      // === Apply ancestry bonuses + ASI from level choices to ability scores ===
       const finalAbilityScores = { ...draft.abilityScores };
+      // Apply ancestry ability bonuses first (these are permanent racial modifiers)
+      const ancestryBonuses = draft.grants?.abilityBonuses || {};
+      for (const [ability, bonus] of Object.entries(ancestryBonuses)) {
+        const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
+        if (key in finalAbilityScores) {
+          finalAbilityScores[key] += Number(bonus) || 0;
+        }
+      }
       const levelChoices = draft.choices?.featureChoices?.levelChoices as Record<string, any> | undefined;
       const levelUpFeatures: Array<{ name: string; source: string; level: number; description: string }> = [];
       

@@ -68,14 +68,20 @@ const StepLevelChoices = () => {
   const [proficientSkills, setProficientSkills] = useState<string[]>([]);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
-  // Levels that need processing (2 to draft.level, since level 1 is handled in base wizard)
+  // Levels that need processing
+  // Level 1 is included if the class has level 1 feature choices (e.g. Fighter fighting style, Ranger favored enemy)
   const levelsToProcess = useMemo(() => {
     const levels: number[] = [];
+    const classRulesCheck = getClassRules(draft.className || "");
+    const hasLevel1Choices = classRulesCheck?.featureChoiceLevels?.[1]?.length ?? 0;
+    if (hasLevel1Choices > 0) {
+      levels.push(1);
+    }
     for (let i = 2; i <= draft.level; i++) {
       levels.push(i);
     }
     return levels;
-  }, [draft.level]);
+  }, [draft.level, draft.className]);
 
   // Initialize or restore level choices from draft
   useEffect(() => {
@@ -137,8 +143,10 @@ const StepLevelChoices = () => {
     const steps: string[] = [];
     const featureChoices = getFeatureChoicesAtLevel(draft.className || "", currentLevel);
     
-    // HP is always needed for level 2+
-    steps.push("hp");
+    // HP is always needed for level 2+ (not level 1)
+    if (currentLevel >= 2) {
+      steps.push("hp");
+    }
     
     // Feature choices
     featureChoices.forEach(choice => {
@@ -267,11 +275,25 @@ const StepLevelChoices = () => {
     if (currentLevelStep > 0) {
       setCurrentLevelStep(prev => prev - 1);
     } else if (currentLevelIndex > 0) {
-      setCurrentLevelIndex(prev => prev - 1);
-      const prevLevel = levelsToProcess[currentLevelIndex - 1];
-      const prevLevelSteps = getFeatureChoicesAtLevel(draft.className || "", prevLevel);
-      // Set to last step of previous level
-      setCurrentLevelStep(Math.max(0, prevLevelSteps.length)); // Approximate
+      const prevLevelIdx = currentLevelIndex - 1;
+      const prevLevel = levelsToProcess[prevLevelIdx];
+      setCurrentLevelIndex(prevLevelIdx);
+      // Compute actual step count for previous level (including HP step if level >= 2)
+      const prevFeatureChoices = getFeatureChoicesAtLevel(draft.className || "", prevLevel);
+      let prevStepCount = prevLevel >= 2 ? 1 : 0; // HP step
+      prevFeatureChoices.forEach(choice => {
+        if (choice.type === "fighting_style") prevStepCount++;
+        if (choice.type === "expertise") prevStepCount++;
+        if (choice.type === "metamagic") prevStepCount++;
+        if (choice.type === "magical_secrets") prevStepCount++;
+        if (choice.type === "favored_enemy") prevStepCount++;
+        if (choice.type === "favored_terrain") prevStepCount++;
+      });
+      if (draft.className === "Warlock" && prevLevel === 3) prevStepCount++; // pact boon
+      const prevInv = getInvocationsKnownAtLevel(prevLevel) - getInvocationsKnownAtLevel(prevLevel - 1);
+      if (draft.className === "Warlock" && prevInv > 0) prevStepCount++;
+      if (isASILevel(draft.className || "", prevLevel)) prevStepCount++;
+      setCurrentLevelStep(Math.max(0, prevStepCount - 1));
     }
   };
 
@@ -299,11 +321,11 @@ const StepLevelChoices = () => {
     }
   }, [levelChoices]);
 
-  if (draft.level <= 1) {
+  if (levelsToProcess.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No additional level choices needed for level 1 characters.
+          No additional level choices needed for this character.
         </CardContent>
       </Card>
     );

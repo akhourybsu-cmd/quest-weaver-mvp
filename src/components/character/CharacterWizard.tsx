@@ -91,7 +91,7 @@ export interface WizardData {
 }
 
 // Steps are now computed dynamically based on level
-const getSteps = (level: number, isSpellcaster: boolean) => {
+const getSteps = (level: number, isSpellcaster: boolean, className?: string) => {
   const baseSteps = [
     "Basics",
     "Ancestry",
@@ -107,8 +107,9 @@ const getSteps = (level: number, isSpellcaster: boolean) => {
   
   baseSteps.push("Features");
   
-  // Add level choices step if level > 1
-  if (level > 1) {
+  // Add level choices step if level > 1, or if the class has level 1 feature choices
+  const hasLevel1Choices = className && CLASS_LEVEL_UP_RULES[className]?.featureChoiceLevels?.[1]?.length;
+  if (level > 1 || hasLevel1Choices) {
     baseSteps.push("Level Choices");
   }
   
@@ -269,7 +270,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   // Compute steps dynamically based on level and class
   const STEPS = useMemo(() => {
-    return getSteps(draft.level, checkIsSpellcaster());
+    return getSteps(draft.level, checkIsSpellcaster(), draft.className);
   }, [draft.level, draft.className]);
 
   // Reset draft when dialog opens
@@ -624,8 +625,16 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (!characterId) throw new Error("Unable to create character");
 
-      // === Apply ASI from level choices to ability scores ===
+      // === Apply ancestry bonuses + ASI from level choices to ability scores ===
       const finalAbilityScores = { ...draft.abilityScores };
+      // Apply ancestry ability bonuses first (these are permanent racial modifiers)
+      const ancestryBonuses = draft.grants?.abilityBonuses || {};
+      for (const [ability, bonus] of Object.entries(ancestryBonuses)) {
+        const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
+        if (key in finalAbilityScores) {
+          finalAbilityScores[key] += Number(bonus) || 0;
+        }
+      }
       const levelChoices = draft.choices?.featureChoices?.levelChoices as Record<string, any> | undefined;
       const levelUpFeatures: Array<{ name: string; source: string; level: number; description: string }> = [];
       
@@ -852,7 +861,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (savesError) throw savesError;
       }
 
-      // Write skills (including expertise from level choices)
+      // Write skills (granted + chosen + expertise from level choices)
       const expertiseSkills = new Set<string>();
       if (levelChoices) {
         for (const lc of Object.values(levelChoices)) {
@@ -864,12 +873,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
       
-      if (draft.choices.skills.length > 0 || expertiseSkills.size > 0) {
-        const allSkillNames = new Set([...draft.choices.skills, ...expertiseSkills]);
+      // Combine granted skills (from background/ancestry) + player-chosen skills + expertise
+      const grantedSkills = Array.from(draft.grants.skillProficiencies || []);
+      const allSkillNames = new Set([...grantedSkills, ...draft.choices.skills, ...expertiseSkills]);
+      
+      if (allSkillNames.size > 0) {
         const skillsData = Array.from(allSkillNames).map(skill => ({
           character_id: characterId,
           skill,
-          proficient: draft.choices.skills.includes(skill),
+          proficient: true,
           expertise: expertiseSkills.has(skill),
         }));
 

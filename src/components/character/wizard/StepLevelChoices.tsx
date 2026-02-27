@@ -156,8 +156,9 @@ const StepLevelChoices = () => {
       steps.push("hp");
     }
     
-    // Feature choices
+    // Feature choices (exclude subclass-type choices handled by StepBasics)
     featureChoices.forEach(choice => {
+      if (SUBCLASS_CHOICE_TYPES.has(choice.type)) return; // Skip subclass picks
       if (choice.type === "fighting_style") steps.push("fighting-style");
       if (choice.type === "expertise") steps.push("expertise");
       if (choice.type === "metamagic") steps.push("metamagic");

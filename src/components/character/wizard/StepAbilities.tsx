@@ -21,7 +21,11 @@ const ABILITIES = [
 const StepAbilities = () => {
   const [draft] = useAtom(draftAtom);
   const [, setAbilityScores] = useAtom(setAbilityScoresAtom);
-  const [method, setMethod] = useState<"standard-array" | "point-buy" | "rolled">("standard-array");
+  const setAbilityMethod = useSetAtom(setAbilityMethodAtom);
+  const method = (draft.abilityMethod || "standard-array") as "standard-array" | "point-buy" | "rolled";
+  const setMethod = (m: "standard-array" | "point-buy" | "rolled") => {
+    setAbilityMethod(m);
+  };
 
   const updateScore = (ability: keyof typeof draft.abilityScores, value: number) => {
     setAbilityScores({

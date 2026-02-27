@@ -143,8 +143,10 @@ const StepLevelChoices = () => {
     const steps: string[] = [];
     const featureChoices = getFeatureChoicesAtLevel(draft.className || "", currentLevel);
     
-    // HP is always needed for level 2+
-    steps.push("hp");
+    // HP is always needed for level 2+ (not level 1)
+    if (currentLevel >= 2) {
+      steps.push("hp");
+    }
     
     // Feature choices
     featureChoices.forEach(choice => {

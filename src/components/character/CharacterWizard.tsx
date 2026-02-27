@@ -1047,6 +1047,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             .upsert(resourceRows);
           if (resError) console.error("Error writing resources:", resError);
         }
+      }
 
       toast({
         title: "Character Created!",

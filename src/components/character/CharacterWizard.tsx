@@ -107,9 +107,16 @@ const getSteps = (level: number, isSpellcaster: boolean, className?: string) => 
   
   baseSteps.push("Features");
   
-  // Add level choices step if level > 1, or if the class has level 1 feature choices
-  const hasLevel1Choices = className && CLASS_LEVEL_UP_RULES[className]?.featureChoiceLevels?.[1]?.length;
-  if (level > 1 || hasLevel1Choices) {
+  // Add level choices step if level > 1, or if the class has actionable level 1 feature choices
+  // (exclude subclass-type choices which are handled by the subclass dropdown on StepBasics)
+  const SUBCLASS_CHOICE_TYPES = new Set([
+    'divine_domain', 'sorcerous_origin', 'otherworldly_patron', 'monastic_tradition',
+    'sacred_oath', 'ranger_archetype', 'roguish_archetype', 'arcane_tradition',
+    'land_circle', 'totem', 'martial_archetype',
+  ]);
+  const level1Choices = className ? CLASS_LEVEL_UP_RULES[className]?.featureChoiceLevels?.[1] || [] : [];
+  const hasActionableLevel1Choices = level1Choices.some(c => !SUBCLASS_CHOICE_TYPES.has(c.type));
+  if (level > 1 || hasActionableLevel1Choices) {
     baseSteps.push("Level Choices");
   }
   

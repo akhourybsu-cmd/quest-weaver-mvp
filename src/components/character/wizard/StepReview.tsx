@@ -41,7 +41,11 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
   const maxHP = computeTotalHP(draft.className, draft.level, draft.abilityScores.CON, levelChoices, abilityBonuses);
 
   const baseAC = 10 + dexMod;
-  const passivePerception = 10 + wisMod + (draft.choices.skills.includes("Perception") ? profBonus : 0);
+  const allSkillsForPassive = new Set([
+    ...Array.from(draft.grants.skillProficiencies || []),
+    ...draft.choices.skills,
+  ]);
+  const passivePerception = 10 + wisMod + (allSkillsForPassive.has("Perception") ? profBonus : 0);
 
   // Get selected equipment bundle items
   const equipmentData = draft.className ? getEquipmentBundlesForClass(draft.className) : undefined;

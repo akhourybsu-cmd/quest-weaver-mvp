@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateModifier } from "@/lib/dnd5e";
 import { Brain } from "lucide-react";
 import { STANDARD_ARRAY, validatePointBuy } from "@/lib/characterRules";
-import { useAtom } from "jotai";
-import { draftAtom, setAbilityScoresAtom } from "@/state/characterWizard";
+import { useAtom, useSetAtom } from "jotai";
+import { draftAtom, setAbilityScoresAtom, setAbilityMethodAtom } from "@/state/characterWizard";
 
 const ABILITIES = [
   { key: "STR", label: "Strength" },

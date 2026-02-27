@@ -91,7 +91,7 @@ export interface WizardData {
 }
 
 // Steps are now computed dynamically based on level
-const getSteps = (level: number, isSpellcaster: boolean) => {
+const getSteps = (level: number, isSpellcaster: boolean, className?: string) => {
   const baseSteps = [
     "Basics",
     "Ancestry",
@@ -107,8 +107,9 @@ const getSteps = (level: number, isSpellcaster: boolean) => {
   
   baseSteps.push("Features");
   
-  // Add level choices step if level > 1
-  if (level > 1) {
+  // Add level choices step if level > 1, or if the class has level 1 feature choices
+  const hasLevel1Choices = className && CLASS_LEVEL_UP_RULES[className]?.featureChoiceLevels?.[1]?.length;
+  if (level > 1 || hasLevel1Choices) {
     baseSteps.push("Level Choices");
   }
   

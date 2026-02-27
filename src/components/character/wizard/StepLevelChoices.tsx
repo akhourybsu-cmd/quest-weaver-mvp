@@ -275,11 +275,25 @@ const StepLevelChoices = () => {
     if (currentLevelStep > 0) {
       setCurrentLevelStep(prev => prev - 1);
     } else if (currentLevelIndex > 0) {
-      setCurrentLevelIndex(prev => prev - 1);
-      const prevLevel = levelsToProcess[currentLevelIndex - 1];
-      const prevLevelSteps = getFeatureChoicesAtLevel(draft.className || "", prevLevel);
-      // Set to last step of previous level
-      setCurrentLevelStep(Math.max(0, prevLevelSteps.length)); // Approximate
+      const prevLevelIdx = currentLevelIndex - 1;
+      const prevLevel = levelsToProcess[prevLevelIdx];
+      setCurrentLevelIndex(prevLevelIdx);
+      // Compute actual step count for previous level (including HP step if level >= 2)
+      const prevFeatureChoices = getFeatureChoicesAtLevel(draft.className || "", prevLevel);
+      let prevStepCount = prevLevel >= 2 ? 1 : 0; // HP step
+      prevFeatureChoices.forEach(choice => {
+        if (choice.type === "fighting_style") prevStepCount++;
+        if (choice.type === "expertise") prevStepCount++;
+        if (choice.type === "metamagic") prevStepCount++;
+        if (choice.type === "magical_secrets") prevStepCount++;
+        if (choice.type === "favored_enemy") prevStepCount++;
+        if (choice.type === "favored_terrain") prevStepCount++;
+      });
+      if (draft.className === "Warlock" && prevLevel === 3) prevStepCount++; // pact boon
+      const prevInv = getInvocationsKnownAtLevel(prevLevel) - getInvocationsKnownAtLevel(prevLevel - 1);
+      if (draft.className === "Warlock" && prevInv > 0) prevStepCount++;
+      if (isASILevel(draft.className || "", prevLevel)) prevStepCount++;
+      setCurrentLevelStep(Math.max(0, prevStepCount - 1));
     }
   };
 

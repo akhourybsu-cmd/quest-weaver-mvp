@@ -860,7 +860,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (savesError) throw savesError;
       }
 
-      // Write skills (including expertise from level choices)
+      // Write skills (granted + chosen + expertise from level choices)
       const expertiseSkills = new Set<string>();
       if (levelChoices) {
         for (const lc of Object.values(levelChoices)) {
@@ -872,12 +872,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
       
-      if (draft.choices.skills.length > 0 || expertiseSkills.size > 0) {
-        const allSkillNames = new Set([...draft.choices.skills, ...expertiseSkills]);
+      // Combine granted skills (from background/ancestry) + player-chosen skills + expertise
+      const grantedSkills = Array.from(draft.grants.skillProficiencies || []);
+      const allSkillNames = new Set([...grantedSkills, ...draft.choices.skills, ...expertiseSkills]);
+      
+      if (allSkillNames.size > 0) {
         const skillsData = Array.from(allSkillNames).map(skill => ({
           character_id: characterId,
           skill,
-          proficient: draft.choices.skills.includes(skill),
+          proficient: true,
           expertise: expertiseSkills.has(skill),
         }));
 

@@ -81,7 +81,7 @@ const StepLevelChoices = () => {
   useEffect(() => {
     if (levelsToProcess.length > 0 && levelChoices.length === 0 && !restoredFromDraft) {
       // Try to restore from draft first
-      const saved = draft.choices?.featureChoices?.levelChoices as Record<number, LevelChoices> | undefined;
+      const saved = (draft.choices?.featureChoices as any)?.levelChoices as Record<number, LevelChoices> | undefined;
       if (saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
         const restored: LevelChoices[] = levelsToProcess.map(level => {
           const lc = saved[level];

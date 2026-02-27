@@ -987,9 +987,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         const classLevelsData = [];
         for (let lvl = 1; lvl <= draft.level; lvl++) {
           const lc = levelChoices?.[lvl] as any;
+          const conMod = Math.floor((finalAbilityScores.CON - 10) / 2);
           const hpGained = lvl === 1 
-            ? derived.maxHp - (draft.level > 1 ? derived.maxHp : 0) // Level 1 is max die + CON
-            : (lc?.hpRoll ?? (Math.floor((classRules?.hitDie || 8) / 2) + 1)) + Math.floor((finalAbilityScores.CON - 10) / 2);
+            ? (classRules?.hitDie || 8) + conMod // Level 1: max hit die + CON mod
+            : (lc?.hpRoll ?? (Math.floor((classRules?.hitDie || 8) / 2) + 1)) + conMod;
           classLevelsData.push({
             character_id: characterId,
             class_id: draft.classId,

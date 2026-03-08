@@ -39,6 +39,7 @@ interface PlayerFactionsViewProps {
 export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
   const [factions, setFactions] = useState<Faction[]>([]);
   const [reputations, setReputations] = useState<Reputation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFaction, setSelectedFaction] = useState<Faction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

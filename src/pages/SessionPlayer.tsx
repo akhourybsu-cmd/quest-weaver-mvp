@@ -63,7 +63,7 @@ const SessionPlayer = () => {
     const { data } = await supabase
       .from("characters").select("*")
       .eq("campaign_id", campaign.id)
-      .eq("user_id", user.id).maybeSingle();
+      .eq("user_id", userId).maybeSingle();
 
     if (!data) {
       setShowCharacterSelection(true);

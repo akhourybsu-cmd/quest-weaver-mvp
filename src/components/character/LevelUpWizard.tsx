@@ -1297,8 +1297,10 @@ export const LevelUpWizard = ({
           used_slots: 0,
         });
         // Clean up old pact slot level if it changed
+        // Only delete if it's not also used as a shared caster slot level
         const oldPactLevel = slotInfo.pact.pactSlotLevel - 1;
-        if (oldPactLevel >= 1) {
+        const hasSharedSlotAtOldLevel = slotInfo.shared?.slots?.[oldPactLevel];
+        if (oldPactLevel >= 1 && !hasSharedSlotAtOldLevel) {
           await supabase
             .from("character_spell_slots")
             .delete()

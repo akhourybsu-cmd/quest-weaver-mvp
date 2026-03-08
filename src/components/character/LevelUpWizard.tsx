@@ -1257,7 +1257,19 @@ export const LevelUpWizard = ({
   const updateSpellSlots = async () => {
     if (!classRules || classRules.spellcasting.type === 'none') return;
 
-    const slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+    // BUG FIX: For multiclass characters, calculate spell slots using multiclass caster level
+    // instead of just the primary class level
+    let slotInfo;
+    if (characterClasses.length > 1) {
+      // Build the updated class levels (with the class being leveled having +1)
+      const updatedClasses = characterClasses.map(c => ({
+        className: c.className,
+        level: c.classId === selectedClassToLevel?.classId ? c.level + 1 : c.level,
+      }));
+      slotInfo = getSpellSlotInfo(updatedClasses);
+    } else {
+      slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+    }
 
     if (slotInfo.shared) {
       for (const [level, count] of Object.entries(slotInfo.shared.slots)) {

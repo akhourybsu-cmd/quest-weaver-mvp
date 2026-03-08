@@ -988,13 +988,24 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const allSpellIds = new Set([...knownSpellIds, ...preparedSpellIds]);
 
       if (allSpellIds.size > 0) {
-        const spellsData = Array.from(allSpellIds).map(spellId => ({
-          character_id: characterId,
-          spell_id: spellId,
-          known: knownSpellIds.includes(spellId),
-          prepared: preparedSpellIds.includes(spellId),
-          source: 'class',
-        }));
+        // BUG FIX: Handle cantrips vs leveled spells correctly
+        // Cantrips are always "known" and "prepared" (always available)
+        // For known casters: leveled spells are "known" and typically "prepared" (always available)
+        // For prepared casters: leveled spells are in spellbook (known=true) but may or may not be prepared
+        const spellsData = Array.from(allSpellIds).map(spellId => {
+          const isKnown = knownSpellIds.includes(spellId);
+          const isPrepared = preparedSpellIds.includes(spellId);
+          return {
+            character_id: characterId,
+            spell_id: spellId,
+            // For prepared casters (Wizard/Cleric/Druid), spells in spellbook are "known"
+            // For known casters (Bard/Sorcerer/Warlock/Ranger), selected spells are "known"
+            known: isKnown || isPrepared,
+            // Prepared means ready to cast today
+            prepared: isPrepared || isKnown, // For known casters, known spells are always prepared
+            source: 'class',
+          };
+        });
 
         const { error: spellsError } = await supabase
           .from("character_spells")

@@ -67,8 +67,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
 
   const fetchSenderName = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       // Check if user is DM
       const { data: campaign } = await supabase
@@ -77,7 +76,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
         .eq('id', campaignId)
         .single();
 
-      if (campaign?.dm_user_id === user.id) {
+      if (campaign?.dm_user_id === userId) {
         setSenderName('Dungeon Master');
       } else {
         // Get player name from characters table
@@ -85,7 +84,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
           .from('characters')
           .select('name')
           .eq('campaign_id', campaignId)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .maybeSingle();
 
         setSenderName(character?.name || 'Player');

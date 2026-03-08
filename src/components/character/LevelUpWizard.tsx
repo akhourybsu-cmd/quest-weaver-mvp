@@ -1580,7 +1580,7 @@ export const LevelUpWizard = ({
           {step === "spells" && (
             <SpellSelectionStep
               className={character?.class || ""}
-              availableSpells={availableSpells}
+              availableSpells={availableSpells.filter(s => s.level <= maxSpellLevel)}
               currentSpellIds={currentSpellIds}
               selectedNewSpells={newSpells}
               onNewSpellToggle={(id) => toggleSpell(id, newSpells, setNewSpells, spellsKnownGain)}

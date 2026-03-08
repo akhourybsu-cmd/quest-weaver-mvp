@@ -976,18 +976,17 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (featuresError) throw featuresError;
       }
 
-      // Write spells
-      const allSpellIds = new Set([
-        ...(draft.choices.spellsKnown || []),
-        ...(draft.choices.spellsPrepared || []),
-      ]);
+      // Write spells (handle both known-casters and prepared-casters)
+      const knownSpellIds = draft.choices.spellsKnown || [];
+      const preparedSpellIds = draft.choices.spellsPrepared || [];
+      const allSpellIds = new Set([...knownSpellIds, ...preparedSpellIds]);
 
       if (allSpellIds.size > 0) {
         const spellsData = Array.from(allSpellIds).map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
-          known: true,
-          prepared: draft.choices.spellsPrepared?.includes(spellId) || false,
+          known: knownSpellIds.includes(spellId),
+          prepared: preparedSpellIds.includes(spellId),
           source: 'class',
         }));
 

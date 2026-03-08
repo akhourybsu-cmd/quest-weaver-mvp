@@ -68,6 +68,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
   const [justSaved, setJustSaved] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
 
   // Reset all form state when switching tools
   useEffect(() => {

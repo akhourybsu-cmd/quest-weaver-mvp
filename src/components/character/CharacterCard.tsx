@@ -36,7 +36,8 @@ interface CharacterCardProps {
   };
   campaignId: string;
   onResumeCreation?: (characterId: string) => void;
-  onDelete?: () => void; // BUG FIX: Add callback for deletion instead of page reload
+  onDelete?: () => void;
+  onRefresh?: () => void; // BUG FIX: Separate callback for data refresh after level-up
 }
 
 const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: CharacterCardProps) => {

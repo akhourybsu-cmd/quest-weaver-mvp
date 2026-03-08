@@ -83,6 +83,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setSelectedCampaignId("");
     setSaveTags("");
     setJustSaved(false);
+    setRefinePrompt("");
   }, [tool.id]);
 
   useEffect(() => {

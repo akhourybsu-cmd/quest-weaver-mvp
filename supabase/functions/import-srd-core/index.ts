@@ -401,7 +401,7 @@ async function importArmor(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Armor', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const armors = await fetchAllPages(`${OPEN5E_BASE}/v2/armor/?document__slug=${SRD_SLUG}&limit=100`);
+    const armors = await fetchAllPages(`${OPEN5E_BASE}/v2/armor/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const armor of armors) {
       const category = armor.category ? 

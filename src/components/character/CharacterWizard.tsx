@@ -977,10 +977,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
+      // BUG FIX: Use delete-then-insert pattern to avoid upsert requiring unique constraint
       if (proficiencies.length > 0) {
+        await supabase
+          .from("character_proficiencies")
+          .delete()
+          .eq("character_id", characterId);
         const { error: profError } = await supabase
           .from("character_proficiencies")
-          .upsert(proficiencies);
+          .insert(proficiencies);
         if (profError) throw profError;
       }
 

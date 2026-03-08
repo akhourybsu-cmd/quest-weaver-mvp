@@ -39,12 +39,14 @@ export function useSRDAutoSeed() {
         { count: subancestryCount },
         { count: toolsCount },
         { data: spellsData },
+        { count: equipmentCount },
       ] = await Promise.all([
         supabase.from("srd_class_features").select("*", { count: "exact", head: true }),
         supabase.from("srd_subclasses").select("*", { count: "exact", head: true }),
         supabase.from("srd_subancestries").select("*", { count: "exact", head: true }),
         supabase.from("srd_tools").select("*", { count: "exact", head: true }),
         supabase.from("srd_spells").select("id, classes, level").limit(100),
+        supabase.from("srd_equipment").select("*", { count: "exact", head: true }),
       ]);
 
       // Check if spells have proper class assignments
@@ -53,12 +55,22 @@ export function useSRDAutoSeed() {
       ).length || 0;
       const spellsNeedFix = spellsData && spellsData.length > 0 && spellsWithClasses < spellsData.length * 0.5;
 
+      // Check for subclass feature gaps (e.g. Eldritch Knight, Arcane Trickster)
+      const { data: subclassesWithFeatures } = await supabase
+        .from("srd_subclasses")
+        .select("id, name, srd_subclass_features(id)")
+      const subclassGaps = subclassesWithFeatures?.some(
+        (sc: any) => !sc.srd_subclass_features || sc.srd_subclass_features.length === 0
+      ) || false;
+
       const needsSeeding: SeedStatus = {
         classFeatures: (featuresCount || 0) === 0,
         subclasses: (subclassCount || 0) === 0,
         subancestries: (subancestryCount || 0) === 0,
         tools: (toolsCount || 0) === 0,
         spells: spellsNeedFix,
+        equipment: (equipmentCount || 0) === 0,
+        subclassFeatureGaps: subclassGaps,
       };
 
       const anyNeedsSeeding = Object.values(needsSeeding).some(v => v);

@@ -74,6 +74,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A cheerful halfling innkeeper who runs a secret smuggling ring',
       'A noble diplomat hiding a dark secret about the royal family',
     ],
+    outputHints: ['name', 'personality', 'goals', 'secrets', 'faction ties'],
   },
   {
     id: 'villain-generator',

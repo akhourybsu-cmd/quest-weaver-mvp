@@ -60,8 +60,7 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
   }, [campaignId]);
 
   const fetchNotes = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     const { data, error } = await supabase
       .from('session_notes')

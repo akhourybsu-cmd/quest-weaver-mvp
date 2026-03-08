@@ -54,6 +54,7 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
         title: "Short Rest Complete",
         description: `${restoredCount} resource(s) restored. Use hit dice to regain HP.`,
       });
+      onUpdate?.();
     } catch (error) {
       console.error('Error during short rest:', error);
       toast({

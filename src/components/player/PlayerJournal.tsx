@@ -28,6 +28,7 @@ interface PlayerJournalProps {
 }
 
 export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
+  const { userId } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");

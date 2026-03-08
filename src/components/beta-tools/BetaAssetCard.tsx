@@ -69,8 +69,9 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-7 w-7 shrink-0 focus-visible:ring-1 focus-visible:ring-ring"
             onClick={() => onToggleFavorite?.(asset)}
+            aria-label={asset.is_favorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Star className={cn("h-4 w-4", asset.is_favorite ? "fill-brand-brass text-brand-brass" : "text-muted-foreground")} />
           </Button>

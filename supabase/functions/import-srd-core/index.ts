@@ -375,16 +375,49 @@ async function importBackgrounds(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Backgrounds', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?document__key=${SRD_V2_KEY}&limit=100`);
+    // Fetch broadly (many sources) since SRD only has 1 background (Acolyte)
+    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?limit=100`);
+
+    // Track names to skip duplicates from different sources
+    const imported = new Set<string>();
 
     for (const bg of backgrounds) {
+      if (imported.has(bg.name)) { result.skipped++; continue; }
+      imported.add(bg.name);
+
+      // v2 API returns a `benefits` array with typed entries
+      const benefits = Array.isArray(bg.benefits) ? bg.benefits : [];
+      
+      const skillProfs = benefits
+        .filter((b: any) => b.type === 'skill_proficiency')
+        .map((b: any) => b.desc || b.name)
+        .filter(Boolean);
+      
+      const toolProfs = benefits
+        .filter((b: any) => b.type === 'tool_proficiency')
+        .map((b: any) => b.desc || b.name)
+        .filter(Boolean);
+      
+      const languages = benefits
+        .filter((b: any) => b.type === 'language')
+        .map((b: any) => b.desc || b.name)
+        .filter(Boolean);
+      
+      const equipment = benefits
+        .filter((b: any) => b.type === 'equipment')
+        .map((b: any) => b.desc || b.name)
+        .filter(Boolean);
+      
+      const feature = benefits
+        .find((b: any) => b.type === 'feature');
+
       const { error } = await supabase.from('srd_backgrounds').upsert({
         name: bg.name,
-        skill_proficiencies: bg.skill_proficiencies || [],
-        tool_proficiencies: bg.tool_proficiencies || [],
-        languages: bg.languages || [],
-        equipment: bg.equipment || [],
-        feature: bg.feature || ''
+        skill_proficiencies: skillProfs,
+        tool_proficiencies: toolProfs,
+        languages,
+        equipment,
+        feature: feature?.desc || bg.desc || ''
       }, { onConflict: 'name' });
 
       if (error) result.errors.push(`${bg.name}: ${error.message}`);

@@ -83,13 +83,12 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     if (isNew) {
       const { error } = await supabase.from('session_notes').insert({
         campaign_id: campaignId,
-        author_id: user.id,
+        author_id: userId,
         title: title.trim(),
         content_markdown: content.trim(),
         visibility: 'PRIVATE',

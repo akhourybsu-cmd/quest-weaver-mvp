@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const PlayerCharacterViewPage = () => {
   const { characterId } = useParams();
   const { player, loading: playerLoading } = usePlayer();
+  const { userId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [character, setCharacter] = useState<any>(null);

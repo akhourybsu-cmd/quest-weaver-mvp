@@ -28,6 +28,15 @@ const StepProficiencies = () => {
   const validSelectedSkills = selectedSkills.filter(skill => 
     classSkillNeeds?.from.includes(skill) && !grantedSkills.includes(skill)
   );
+
+  // BUG FIX: Auto-remove orphaned skills from draft when detected
+  useEffect(() => {
+    const orphanedSkills = selectedSkills.filter(skill => !validSelectedSkills.includes(skill));
+    if (orphanedSkills.length > 0) {
+      // Remove each orphaned skill by toggling it off
+      orphanedSkills.forEach(skill => toggleSkill(skill));
+    }
+  }, [validSelectedSkills.length, selectedSkills.length]);
   
   const remainingSkills = classSkillNeeds 
     ? remaining(classSkillNeeds.required, validSelectedSkills)

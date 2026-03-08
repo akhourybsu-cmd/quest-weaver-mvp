@@ -54,7 +54,7 @@ export const PlayerWaitingRoom = () => {
     if (!playerRecord) {
       const { data: newPlayer, error: createError } = await supabase
         .from('players')
-        .insert({ user_id: user.id, name: user.email || 'Player' })
+        .insert({ user_id: userId, name: user?.email || 'Player' })
         .select('id, name')
         .single();
 

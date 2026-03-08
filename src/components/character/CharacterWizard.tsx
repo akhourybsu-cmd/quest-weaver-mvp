@@ -650,12 +650,12 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           const lvl = parseInt(lvlStr);
           if (!lc) continue;
           
-          // Apply ASI (field is abilityIncreases from StepLevelChoices)
+          // Apply ASI (field is abilityIncreases from StepLevelChoices), capped at 20
           if (lc.abilityIncreases && typeof lc.abilityIncreases === 'object') {
             for (const [ability, increase] of Object.entries(lc.abilityIncreases)) {
               const key = ability.toUpperCase() as keyof typeof finalAbilityScores;
               if (key in finalAbilityScores) {
-                finalAbilityScores[key] += Number(increase) || 0;
+                finalAbilityScores[key] = Math.min(20, finalAbilityScores[key] + (Number(increase) || 0));
               }
             }
           }
@@ -736,8 +736,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       // === Compute derived stats ===
       const classRules = draft.className ? CLASS_LEVEL_UP_RULES[draft.className] : null;
-      // Temporarily update draft ability scores for derived stat computation
-      const draftForStats = { ...draft, abilityScores: finalAbilityScores };
+      // finalAbilityScores already includes ancestry bonuses + ASI, so clear abilityBonuses
+      // to prevent computeDerivedStats from double-applying them
+      const draftForStats = { 
+        ...draft, 
+        abilityScores: finalAbilityScores,
+        grants: { ...draft.grants, abilityBonuses: {} },
+      };
       const derived = computeDerivedStats(draftForStats, classRules);
 
       // Upload portrait if one was selected
@@ -1058,6 +1063,26 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             .from("character_spell_slots")
             .upsert(slotRows);
           if (slotsError) console.error("Error writing spell slots:", slotsError);
+        }
+      }
+
+      // Write equipment from selected bundle
+      if (draft.choices.equipmentBundleId && draft.className) {
+        const { getEquipmentBundlesForClass } = await import("@/data/srd/equipmentBundlesSeed");
+        const eqData = getEquipmentBundlesForClass(draft.className);
+        const bundle = eqData?.bundles.find(b => b.id === draft.choices.equipmentBundleId);
+        const items = bundle?.items || eqData?.default || [];
+        if (items.length > 0) {
+          const equipRows = items.map(item => ({
+            character_id: characterId!,
+            item_ref: item.name,
+            qty: item.qty || 1,
+            equipped: false,
+          }));
+          const { error: eqError } = await supabase
+            .from("character_equipment")
+            .upsert(equipRows);
+          if (eqError) console.error("Error writing equipment:", eqError);
         }
       }
 

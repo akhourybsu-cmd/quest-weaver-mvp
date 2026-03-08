@@ -1066,6 +1066,26 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
+      // Write equipment from selected bundle
+      if (draft.choices.equipmentBundleId && draft.className) {
+        const { getEquipmentBundlesForClass } = await import("@/data/srd/equipmentBundlesSeed");
+        const eqData = getEquipmentBundlesForClass(draft.className);
+        const bundle = eqData?.bundles.find(b => b.id === draft.choices.equipmentBundleId);
+        const items = bundle?.items || eqData?.default || [];
+        if (items.length > 0) {
+          const equipRows = items.map(item => ({
+            character_id: characterId!,
+            item_ref: item.name,
+            qty: item.qty || 1,
+            equipped: false,
+          }));
+          const { error: eqError } = await supabase
+            .from("character_equipment")
+            .upsert(equipRows);
+          if (eqError) console.error("Error writing equipment:", eqError);
+        }
+      }
+
       // Write class resources (rage, ki, sorcery points, etc.)
       if (classRules?.resourceProgression && classRules.resourceProgression.length > 0) {
         const resourceRows = classRules.resourceProgression

@@ -29,7 +29,7 @@ export interface BetaTool {
   status: 'active' | 'coming_soon';
   fields: FieldSchema[];
   examplePrompts: string[];
-  outputHints: string[];
+  outputHints?: string[];
 }
 
 export interface ToolCategory {

@@ -114,21 +114,72 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
           <TabsContent value="edit" className="flex-1 min-h-0 mt-3">
             <ScrollArea className="h-full">
               <div className="space-y-3 pr-4 pb-2">
-                {Object.entries(data).map(([key, value]) => (
-                  <div key={key} className="space-y-1">
-                    <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
-                    <Textarea
-                      value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || '')}
-                      onChange={(e) => {
-                        const newVal = Array.isArray(value)
-                          ? e.target.value.split('\n').filter(Boolean)
-                          : e.target.value;
-                        setData(prev => ({ ...prev, [key]: newVal }));
-                      }}
-                      className="text-sm min-h-[50px]"
-                    />
-                  </div>
-                ))}
+                {Object.entries(data).map(([key, value]) => {
+                  // Array of objects: render mini-cards
+                  if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                    return (
+                      <div key={key} className="space-y-2">
+                        <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                        {value.map((item, idx) => (
+                          <div key={idx} className="border border-border rounded-md p-3 space-y-2 bg-muted/30">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">#{idx + 1}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  const updated = [...value];
+                                  updated.splice(idx, 1);
+                                  setData(prev => ({ ...prev, [key]: updated }));
+                                }}
+                              >×</Button>
+                            </div>
+                            {Object.entries(item).map(([subKey, subVal]) => (
+                              <div key={subKey} className="space-y-0.5">
+                                <Label className="text-[10px] text-muted-foreground capitalize">{subKey.replace(/_/g, ' ')}</Label>
+                                <Input
+                                  value={String(subVal || '')}
+                                  onChange={(e) => {
+                                    const updated = [...value];
+                                    updated[idx] = { ...updated[idx], [subKey]: e.target.value };
+                                    setData(prev => ({ ...prev, [key]: updated }));
+                                  }}
+                                  className="text-sm h-8"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs"
+                          onClick={() => {
+                            const template = Object.fromEntries(Object.keys(value[0]).map(k => [k, '']));
+                            setData(prev => ({ ...prev, [key]: [...value, template] }));
+                          }}
+                        >+ Add {key.replace(/_/g, ' ').replace(/s$/, '')}</Button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={key} className="space-y-1">
+                      <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                      <Textarea
+                        value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || '')}
+                        onChange={(e) => {
+                          const newVal = Array.isArray(value)
+                            ? e.target.value.split('\n').filter(Boolean)
+                            : e.target.value;
+                          setData(prev => ({ ...prev, [key]: newVal }));
+                        }}
+                        className="text-sm min-h-[50px]"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </TabsContent>

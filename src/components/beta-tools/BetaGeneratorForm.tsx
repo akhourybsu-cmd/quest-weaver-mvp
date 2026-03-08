@@ -131,7 +131,10 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
           asset_type: tool.assetType,
           user_prompt: prompt || `Generate a ${tool.name.toLowerCase()}`,
           existing_fields: existingFields,
-          locked_fields: Object.keys(existingFields),
+          locked_fields: Object.keys(existingFields).filter(k => {
+            const v = existingFields[k];
+            return v !== undefined && v !== null && v !== '' && v !== false;
+          }),
           campaign_context: campaignContext,
           standalone,
         },
@@ -157,6 +160,17 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       setIsGenerating(false);
     }
   }, [prompt, structuredFields, useCampaignContext, selectedCampaignId, tool, toast]);
+
+  // Warn before navigating away with unsaved results
+  useEffect(() => {
+    if (!result || justSaved) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [result, justSaved]);
 
   // Ctrl+Enter keyboard shortcut
   useEffect(() => {
@@ -307,16 +321,24 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                       </SelectContent>
                     </Select>
                   ) : field.type === 'boolean' ? (
-                    <Switch
-                      checked={!!structuredFields[field.key]}
-                      onCheckedChange={(v) => setStructuredFields(prev => ({ ...prev, [field.key]: v }))}
-                    />
+                    <div className="space-y-1">
+                      <Switch
+                        checked={!!structuredFields[field.key]}
+                        onCheckedChange={(v) => setStructuredFields(prev => ({ ...prev, [field.key]: v }))}
+                      />
+                      {field.placeholder && (
+                        <p className="text-[10px] text-muted-foreground">{field.placeholder}</p>
+                      )}
+                    </div>
                   ) : (
                     <Input
                       value={structuredFields[field.key] || ''}
                       onChange={(e) => setStructuredFields(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder || ''}
                     />
+                  )}
+                  {field.type !== 'boolean' && field.placeholder && (
+                    <p className="text-[10px] text-muted-foreground/70">{field.placeholder}</p>
                   )}
                 </div>
               ))}

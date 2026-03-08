@@ -238,6 +238,7 @@ export function getKnownPreparedModel(
     };
   }
 
+  // Paladin/Ranger are half-casters - use half level (rounded down) for prepared
   if (className === "Paladin") {
     return {
       model: "prepared",
@@ -245,8 +246,16 @@ export function getKnownPreparedModel(
     };
   }
 
+  // Ranger uses known spells, not prepared
+  if (className === "Ranger") {
+    return {
+      model: "known",
+      knownMax: getKnownSpellsCount("Ranger", level),
+    };
+  }
+
   // Known casters
-  if (["Bard", "Sorcerer", "Warlock", "Ranger"].includes(className)) {
+  if (["Bard", "Sorcerer", "Warlock"].includes(className)) {
     return {
       model: "known",
       knownMax: getKnownSpellsCount(className, level),

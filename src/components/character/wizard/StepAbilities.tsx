@@ -28,9 +28,18 @@ const StepAbilities = () => {
   };
 
   const updateScore = (ability: keyof typeof draft.abilityScores, value: number) => {
+    // BUG FIX: Clamp to method-specific ranges (point-buy: 8-15, standard-array: 8-15, rolled: 3-18)
+    let min = 1, max = 20;
+    if (method === "point-buy" || method === "standard-array") {
+      min = 8;
+      max = 15;
+    } else if (method === "rolled") {
+      min = 3;
+      max = 18;
+    }
     setAbilityScores({
       ...draft.abilityScores,
-      [ability]: Math.max(1, Math.min(20, value))
+      [ability]: Math.max(min, Math.min(max, value))
     });
   };
 

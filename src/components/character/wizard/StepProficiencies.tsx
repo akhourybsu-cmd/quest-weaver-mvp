@@ -18,13 +18,18 @@ const StepProficiencies = () => {
   const grantedSkills = Array.from(draft.grants.skillProficiencies);
   const selectedSkills = draft.choices.skills;
   
-  // Filter legal choices (can't select already granted skills)
+  // BUG FIX: Filter legal choices - can't select skills already granted OR already selected
   const legalSkillChoices = classSkillNeeds 
-    ? classSkillNeeds.from.filter(skill => !grantedSkills.includes(skill))
+    ? classSkillNeeds.from.filter(skill => !grantedSkills.includes(skill) && !selectedSkills.includes(skill))
     : [];
   
+  // BUG FIX: Filter out any selected skills that are no longer legal (e.g., user changed class)
+  const validSelectedSkills = selectedSkills.filter(skill => 
+    classSkillNeeds?.from.includes(skill) && !grantedSkills.includes(skill)
+  );
+  
   const remainingSkills = classSkillNeeds 
-    ? remaining(classSkillNeeds.required, selectedSkills)
+    ? remaining(classSkillNeeds.required, validSelectedSkills)
     : 0;
 
   const toolNeeds = draft.needs.tool;

@@ -65,6 +65,7 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
     if (!error && data) {
       setNpcs(data as NPC[]);
     }
+    setLoading(false);
   };
 
   const filteredNPCs = npcs.filter((npc) => {

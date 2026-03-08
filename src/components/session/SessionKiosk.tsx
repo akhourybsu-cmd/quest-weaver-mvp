@@ -157,7 +157,7 @@ export const SessionKiosk = ({
     return () => {
       supabase.removeChannel(characterChannel);
       supabase.removeChannel(encounterChannel);
-      supabase.removeChannel(initiativeChannel);
+      if (initiativeChannel) supabase.removeChannel(initiativeChannel);
       supabase.removeChannel(sessionEndChannel);
     };
   }, [character.id, campaignId, activeEncounter]);

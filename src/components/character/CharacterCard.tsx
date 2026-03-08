@@ -39,13 +39,17 @@ interface CharacterCardProps {
   onDelete?: () => void; // BUG FIX: Add callback for deletion instead of page reload
 }
 
-const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCardProps) => {
+const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: CharacterCardProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const isIncomplete = character.creation_status === 'draft';
   const hpPercent = (character.current_hp / character.max_hp) * 100;
+  
+  // BUG FIX: Use class-specific subclass level from rules
+  const classRules = CLASS_LEVEL_UP_RULES[character.class];
+  const subclassLevel = classRules?.subclassLevel ?? 3;
 
   const handleDelete = async () => {
     setIsDeleting(true);

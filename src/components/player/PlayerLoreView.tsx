@@ -57,6 +57,7 @@ const CATEGORIES = [
 
 export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
   const [lorePages, setLorePages] = useState<LorePage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLore, setSelectedLore] = useState<LorePage | null>(null);

@@ -607,12 +607,25 @@ const StepLevelChoices = () => {
                   {["STR", "DEX", "CON", "INT", "WIS", "CHA"].map(ability => {
                     const currentIncrease = currentChoices.abilityIncreases?.[ability] || 0;
                     const totalUsed = Object.values(currentChoices.abilityIncreases || {}).reduce((s, v) => s + v, 0);
-                    const canAdd = totalUsed < 2 && currentIncrease < 2;
+                    
+                    // Compute effective score: base + ancestry bonus + all prior ASIs from earlier levels
+                    const baseScore = draft.abilityScores[ability as keyof typeof draft.abilityScores] || 10;
+                    const ancestryBonus = (draft.grants?.abilityBonuses || {})[ability.toLowerCase()] 
+                      || (draft.grants?.abilityBonuses || {})[ability] || 0;
+                    let priorASI = 0;
+                    for (const lc of levelChoices) {
+                      if (lc.level < currentLevel && lc.abilityIncreases) {
+                        priorASI += lc.abilityIncreases[ability] || 0;
+                      }
+                    }
+                    const effectiveScore = baseScore + Number(ancestryBonus) + priorASI + currentIncrease;
+                    const canAdd = totalUsed < 2 && currentIncrease < 2 && effectiveScore < 20;
                     
                     return (
                       <div key={ability} className="flex items-center justify-between p-2 rounded border">
                         <span className="font-medium">{ability}</span>
                         <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{effectiveScore}</Badge>
                           <Button
                             size="sm"
                             variant="outline"

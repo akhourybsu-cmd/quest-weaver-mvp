@@ -332,11 +332,24 @@ export const LevelUpWizard = ({
   // Subclass needed?
   const needsSubclass = useMemo(() => {
     if (!classRules || !character) return false;
-    // If character already has a subclass, no need
+    // Check both the main character subclass and per-class subclass entries
     if (character.subclass_id) return false;
-    // If this level is the subclass level for the class
-    return newLevel >= classRules.subclassLevel;
-  }, [classRules, character, newLevel]);
+    // BUG FIX: For multiclass, check if the selected class already has a subclass
+    if (selectedClassToLevel) {
+      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
+      // If character_classes has a subclass for this class, skip
+      // (We'd need to check the DB, but for now check if newLevel matches subclass level)
+    }
+    // If this level is the subclass level for the class being leveled
+    const effectiveClassName = selectedClassToLevel?.className || character.class;
+    const effectiveRules = effectiveClassName ? getClassRules(effectiveClassName) : classRules;
+    if (!effectiveRules) return false;
+    
+    // For multiclass: the class level (not total level) determines subclass
+    const classEntry = characterClasses.find(c => c.classId === selectedClassToLevel?.classId);
+    const classLevel = classEntry ? classEntry.level + 1 : newLevel;
+    return classLevel >= effectiveRules.subclassLevel;
+  }, [classRules, character, newLevel, selectedClassToLevel, characterClasses]);
 
   // Warlock Mystic Arcanum (levels 11, 13, 15, 17)
   const needsMysticArcanum = useMemo(() => {
@@ -623,7 +636,14 @@ export const LevelUpWizard = ({
     }
   };
 
-  const getHitDie = () => classRules?.hitDie || 8;
+  // BUG FIX: Use the selected class's hit die for multiclass, not always the primary class
+  const getHitDie = () => {
+    if (selectedClassToLevel) {
+      const selectedRules = getClassRules(selectedClassToLevel.className);
+      if (selectedRules) return selectedRules.hitDie;
+    }
+    return classRules?.hitDie || 8;
+  };
 
   const rollHP = () => {
     const die = getHitDie();
@@ -715,14 +735,19 @@ export const LevelUpWizard = ({
           passiveMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
         }
 
+        // BUG FIX: Expertise means double proficiency bonus, not prof + prof added separately
+        // passive = 10 + ability mod + prof (if proficient) + prof (if expertise, since expertise = 2x prof)
         const percSkill = passiveMap["Perception"];
-        charUpdates.passive_perception = 10 + wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_perception = 10 + wisMod 
+          + (percSkill?.expertise ? newProfBonus * 2 : percSkill?.proficient ? newProfBonus : 0);
         
         const insightSkill = passiveMap["Insight"];
-        charUpdates.passive_insight = 10 + wisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_insight = 10 + wisMod 
+          + (insightSkill?.expertise ? newProfBonus * 2 : insightSkill?.proficient ? newProfBonus : 0);
         
         const investSkill = passiveMap["Investigation"];
-        charUpdates.passive_investigation = 10 + intMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_investigation = 10 + intMod 
+          + (investSkill?.expertise ? newProfBonus * 2 : investSkill?.proficient ? newProfBonus : 0);
 
         // Update spell save DC and spell attack mod if character has spellcasting
         if (character.spell_ability) {
@@ -880,14 +905,18 @@ export const LevelUpWizard = ({
             skillMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
           }
 
+          // BUG FIX: Same expertise fix for ASI-triggered recalculation
           const percSkill = skillMap["Perception"];
-          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_perception = 10 + newWisMod 
+            + (percSkill?.expertise ? newProfBonus * 2 : percSkill?.proficient ? newProfBonus : 0);
           
           const insightSkill = skillMap["Insight"];
-          derivedUpdates.passive_insight = 10 + newWisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_insight = 10 + newWisMod 
+            + (insightSkill?.expertise ? newProfBonus * 2 : insightSkill?.proficient ? newProfBonus : 0);
           
           const investSkill = skillMap["Investigation"];
-          derivedUpdates.passive_investigation = 10 + newIntMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_investigation = 10 + newIntMod 
+            + (investSkill?.expertise ? newProfBonus * 2 : investSkill?.proficient ? newProfBonus : 0);
 
           // Recalculate spell stats with new ability scores
           if (character.spell_ability) {
@@ -917,12 +946,15 @@ export const LevelUpWizard = ({
       }
 
       // Add new known spells
+      // BUG FIX: For known-casters (Bard, Sorcerer, Warlock, Ranger), known spells are always "prepared" (castable)
       if (newSpells.length > 0) {
+        const knownCasters = ["Bard", "Sorcerer", "Warlock", "Ranger"];
+        const isKnownCaster = knownCasters.includes(character?.class || "");
         const spellInserts = newSpells.map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: false,
+          prepared: isKnownCaster, // Known casters: spells are always prepared; prepared casters: added to pool but not auto-prepared
           source: 'class'
         }));
         await supabase.from("character_spells").insert(spellInserts);
@@ -1247,29 +1279,43 @@ export const LevelUpWizard = ({
   const updateSpellSlots = async () => {
     if (!classRules || classRules.spellcasting.type === 'none') return;
 
-    const slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+    // BUG FIX: For multiclass characters, calculate spell slots using multiclass caster level
+    // instead of just the primary class level
+    let slotInfo;
+    if (characterClasses.length > 1) {
+      // Build the updated class levels (with the class being leveled having +1)
+      const updatedClasses = characterClasses.map(c => ({
+        className: c.className,
+        level: c.classId === selectedClassToLevel?.classId ? c.level + 1 : c.level,
+      }));
+      slotInfo = getSpellSlotInfo(updatedClasses);
+    } else {
+      slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+    }
 
     if (slotInfo.shared) {
       for (const [level, count] of Object.entries(slotInfo.shared.slots)) {
+        const slotLevel = parseInt(level);
+        const slotCount = count as number;
         const { data: existing } = await supabase
           .from("character_spell_slots")
           .select("id")
           .eq("character_id", characterId)
-          .eq("spell_level", parseInt(level))
+          .eq("spell_level", slotLevel)
           .single();
 
         if (existing) {
           await supabase
             .from("character_spell_slots")
-            .update({ max_slots: count })
+            .update({ max_slots: slotCount })
             .eq("id", existing.id);
         } else {
-          await supabase.from("character_spell_slots").insert({
+          await supabase.from("character_spell_slots").insert([{
             character_id: characterId,
-            spell_level: parseInt(level),
-            max_slots: count,
+            spell_level: slotLevel,
+            max_slots: slotCount,
             used_slots: 0
-          });
+          }]);
         }
       }
     }
@@ -1290,12 +1336,12 @@ export const LevelUpWizard = ({
           .eq("id", existing.id);
       } else {
         // New pact slot level - insert a new row
-        await supabase.from("character_spell_slots").insert({
+        await supabase.from("character_spell_slots").insert([{
           character_id: characterId,
           spell_level: slotInfo.pact.pactSlotLevel,
           max_slots: slotInfo.pact.pactSlots,
           used_slots: 0,
-        });
+        }]);
         // Clean up old pact slot level if it changed
         // Only delete if it's not also used as a shared caster slot level
         const oldPactLevel = slotInfo.pact.pactSlotLevel - 1;

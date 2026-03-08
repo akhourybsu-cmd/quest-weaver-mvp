@@ -129,14 +129,17 @@ export const SessionKiosk = ({
       }, () => fetchEncounterStatus())
       .subscribe();
 
-    const initiativeChannel = supabase
-      .channel(`kiosk-init:${campaignId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'initiative',
-      }, () => {
-        if (activeEncounter) checkMyTurn(activeEncounter, character.id);
-      })
-      .subscribe();
+    const initiativeChannel = activeEncounter
+      ? supabase
+          .channel(`kiosk-init:${campaignId}:${activeEncounter}`)
+          .on('postgres_changes', {
+            event: '*', schema: 'public', table: 'initiative',
+            filter: `encounter_id=eq.${activeEncounter}`,
+          }, () => {
+            checkMyTurn(activeEncounter, character.id);
+          })
+          .subscribe()
+      : null;
 
     const sessionEndChannel = supabase
       .channel(`kiosk-session-end:${campaignId}`)

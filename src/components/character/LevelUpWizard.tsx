@@ -1336,12 +1336,12 @@ export const LevelUpWizard = ({
           .eq("id", existing.id);
       } else {
         // New pact slot level - insert a new row
-        await supabase.from("character_spell_slots").insert({
+        await supabase.from("character_spell_slots").insert([{
           character_id: characterId,
           spell_level: slotInfo.pact.pactSlotLevel,
           max_slots: slotInfo.pact.pactSlots,
           used_slots: 0,
-        });
+        }]);
         // Clean up old pact slot level if it changed
         // Only delete if it's not also used as a shared caster slot level
         const oldPactLevel = slotInfo.pact.pactSlotLevel - 1;

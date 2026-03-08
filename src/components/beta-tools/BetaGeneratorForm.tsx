@@ -33,6 +33,21 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedResult, setEditedResult] = useState<Record<string, any> | null>(null);
+  const [useCampaignContext, setUseCampaignContext] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!useCampaignContext || !userId) return;
+    supabase
+      .from("campaigns")
+      .select("id, name")
+      .eq("dm_user_id", userId)
+      .order("updated_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setCampaigns(data);
+      });
+  }, [useCampaignContext, userId]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() && Object.values(structuredFields).every(v => !v)) {

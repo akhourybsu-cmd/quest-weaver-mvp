@@ -134,6 +134,8 @@ export function grantsFromSubAncestry(sa: SrdSubAncestry): Grants {
   });
   
   (sa.ability_bonuses || []).forEach(bonus => {
+    // BUG FIX: Handle cases where ability is undefined or null
+    if (!bonus.ability) return;
     const ability = bonus.ability.toUpperCase();
     if (ability !== 'ALL') {
       g.abilityBonuses[ability] = (g.abilityBonuses[ability] || 0) + bonus.bonus;

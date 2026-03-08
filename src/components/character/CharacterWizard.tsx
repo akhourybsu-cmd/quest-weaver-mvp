@@ -270,6 +270,12 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     if (halfCasters.some(c => className.toLowerCase() === c.toLowerCase()) && draft.level < 2) {
       return false;
     }
+    // Third-casters (Eldritch Knight, Arcane Trickster) don't get spellcasting until level 3
+    // These are subclasses, typically handled differently, but we check for completeness
+    const thirdCasters = ["Eldritch Knight", "Arcane Trickster"];
+    if (thirdCasters.some(c => className.toLowerCase().includes(c.toLowerCase())) && draft.level < 3) {
+      return false;
+    }
     const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
                          "Eldritch Knight", "Arcane Trickster"];
     return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));

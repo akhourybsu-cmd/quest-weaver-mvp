@@ -76,10 +76,13 @@ const StepBasics = () => {
 
     setSubclass(subclassId);
 
-    // Subclass features go into the class source (they're class-derived)
-    const subGrants = grantsFromSubclass(subclass, draft.level);
-    const classGrants = grantsFromClass(selectedClass!);
-    setSourceGrants({ source: 'class', grants: mergeGrants(classGrants, subGrants) });
+    // BUG FIX: Only merge subclass grants if we have a selected class
+    if (selectedClass) {
+      // Subclass features go into the class source (they're class-derived)
+      const subGrants = grantsFromSubclass(subclass, draft.level);
+      const classGrants = grantsFromClass(selectedClass);
+      setSourceGrants({ source: 'class', grants: mergeGrants(classGrants, subGrants) });
+    }
   };
 
   if (loading) {

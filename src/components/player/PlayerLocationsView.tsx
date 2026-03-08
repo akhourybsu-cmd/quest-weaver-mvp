@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Search, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,

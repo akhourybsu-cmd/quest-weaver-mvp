@@ -827,7 +827,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           skin: draft.skin || null,
           hair: draft.hair || null,
           notes: draft.notes || null,
-          portrait_url: portraitUrl,
+          // BUG FIX: Only set portrait_url if we uploaded a new one; preserve existing URL otherwise
+          portrait_url: portraitUrl || draft.portraitUrl || null,
           // Fix 5: Persist personality/description
           personality_traits: draft.personality || null,
           ideals: draft.ideals || null,

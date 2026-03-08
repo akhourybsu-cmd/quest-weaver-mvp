@@ -14,10 +14,10 @@ const SessionPlayer = () => {
   const campaignCode = searchParams.get("campaign");
   const { toast } = useToast();
 
+  const { userId } = useAuth();
   const [character, setCharacter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [campaignId, setCampaignId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
 
   useEffect(() => {
@@ -25,13 +25,11 @@ const SessionPlayer = () => {
       navigate(`/player-hub`);
       return;
     }
-    fetchCharacter();
-  }, [campaignCode, navigate]);
+    if (userId) fetchCharacter();
+  }, [campaignCode, navigate, userId]);
 
   const fetchCharacter = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setCurrentUserId(user.id);
+    if (!userId) return;
 
     const { data: campaign } = await supabase
       .from("campaigns")

@@ -321,16 +321,24 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                       </SelectContent>
                     </Select>
                   ) : field.type === 'boolean' ? (
-                    <Switch
-                      checked={!!structuredFields[field.key]}
-                      onCheckedChange={(v) => setStructuredFields(prev => ({ ...prev, [field.key]: v }))}
-                    />
+                    <div className="space-y-1">
+                      <Switch
+                        checked={!!structuredFields[field.key]}
+                        onCheckedChange={(v) => setStructuredFields(prev => ({ ...prev, [field.key]: v }))}
+                      />
+                      {field.placeholder && (
+                        <p className="text-[10px] text-muted-foreground">{field.placeholder}</p>
+                      )}
+                    </div>
                   ) : (
                     <Input
                       value={structuredFields[field.key] || ''}
                       onChange={(e) => setStructuredFields(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder || ''}
                     />
+                  )}
+                  {field.type !== 'boolean' && field.placeholder && (
+                    <p className="text-[10px] text-muted-foreground/70">{field.placeholder}</p>
                   )}
                 </div>
               ))}

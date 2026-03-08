@@ -27,9 +27,34 @@ const BetaToolsGenerator = () => {
     );
   }
 
+  const firstInCategory = getToolsByCategory(tool.category).find(t => t.status === 'active');
+
   return (
     <BetaToolsLayout title={tool.name} showBackButton>
       <div className="max-w-3xl mx-auto p-6 space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild><Link to="/beta-tools">Beta Tools</Link></BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {firstInCategory ? (
+                <BreadcrumbLink asChild>
+                  <Link to={`/beta-tools/generate/${firstInCategory.id}`}>{tool.categoryLabel}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>{tool.categoryLabel}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{tool.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-lg bg-primary/10">
@@ -40,7 +65,6 @@ const BetaToolsGenerator = () => {
               <p className="text-sm text-muted-foreground">{tool.description}</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-primary/30 text-primary">{tool.categoryLabel}</Badge>
         </div>
 
         {tool.assetType === 'lore_gap' ? (

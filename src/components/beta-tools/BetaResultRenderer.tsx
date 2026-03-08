@@ -101,17 +101,39 @@ function StatBox({ label, value }: { label: string; value: any }) {
   );
 }
 
+function CopyFieldButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+      title="Copy field"
+    >
+      {copied ? <Check className="h-3 w-3 text-secondary" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+    </button>
+  );
+}
+
 function FieldDisplay({ label, value }: { label: string; value: any }) {
   const formatted = formatValue(value);
   const isMultiline = formatted.includes('\n');
+  // Plain text version for copying
+  const plainText = formatted.replace(/\*\*(.*?)\*\*/g, '$1');
   
   return (
-    <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground capitalize">{label.replace(/_/g, ' ')}</Label>
+    <div className="space-y-1 group/field relative">
+      <div className="flex items-center gap-1.5">
+        <Label className="text-xs text-muted-foreground capitalize">{label.replace(/_/g, ' ')}</Label>
+        <CopyFieldButton text={plainText} />
+      </div>
       {isMultiline ? (
         <div className="text-sm text-foreground space-y-0.5">
           {formatted.split('\n').map((line, i) => {
-            // Render bold markers
             const parts = line.split(/\*\*(.*?)\*\*/);
             return (
               <p key={i} className="whitespace-pre-wrap">

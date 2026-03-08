@@ -371,9 +371,15 @@ export const LevelUpWizard = ({
   useEffect(() => {
     if (open) {
       loadCharacter();
-      loadFeatures();
     }
   }, [open, characterId]);
+
+  // Load features when selectedClassToLevel is set (after loadCharacter resolves)
+  useEffect(() => {
+    if (open && selectedClassToLevel) {
+      loadFeatures();
+    }
+  }, [open, selectedClassToLevel]);
 
   useEffect(() => {
     if (character?.class) {

@@ -735,14 +735,19 @@ export const LevelUpWizard = ({
           passiveMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
         }
 
+        // BUG FIX: Expertise means double proficiency bonus, not prof + prof added separately
+        // passive = 10 + ability mod + prof (if proficient) + prof (if expertise, since expertise = 2x prof)
         const percSkill = passiveMap["Perception"];
-        charUpdates.passive_perception = 10 + wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_perception = 10 + wisMod 
+          + (percSkill?.expertise ? newProfBonus * 2 : percSkill?.proficient ? newProfBonus : 0);
         
         const insightSkill = passiveMap["Insight"];
-        charUpdates.passive_insight = 10 + wisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_insight = 10 + wisMod 
+          + (insightSkill?.expertise ? newProfBonus * 2 : insightSkill?.proficient ? newProfBonus : 0);
         
         const investSkill = passiveMap["Investigation"];
-        charUpdates.passive_investigation = 10 + intMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
+        charUpdates.passive_investigation = 10 + intMod 
+          + (investSkill?.expertise ? newProfBonus * 2 : investSkill?.proficient ? newProfBonus : 0);
 
         // Update spell save DC and spell attack mod if character has spellcasting
         if (character.spell_ability) {

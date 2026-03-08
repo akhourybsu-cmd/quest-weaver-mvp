@@ -147,6 +147,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       setEditedResult(null);
       setPrompt("");
       setStructuredFields({});
+      setSaveTags("");
     } catch (err) {
       toast({ title: "Save failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {

@@ -28,6 +28,11 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
     { label: "Complications", icon: <Zap className="h-3.5 w-3.5" />, fields: ["complications", "twists", "encounters", "obstacles"] },
     { label: "Rewards & Resolution", fields: ["rewards", "consequences", "resolution", "reward_gp", "reward_xp"] },
   ],
+  lore: [
+    { label: "Content", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["content", "names", "rumors"] },
+    { label: "Significance", fields: ["significance", "truthfulness", "cultural_notes"] },
+    { label: "Connections & Seeds", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["connections", "mysteries", "plot_seeds", "hooks", "sources"] },
+  ],
   settlement: [
     { label: "Overview", icon: <MapPin className="h-3.5 w-3.5" />, fields: ["settlement_type", "population", "government", "description", "sensory_description"] },
     { label: "Notable Locations", fields: ["notable_locations", "landmarks", "districts"] },

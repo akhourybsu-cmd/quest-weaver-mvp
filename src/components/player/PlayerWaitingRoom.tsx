@@ -38,7 +38,7 @@ export const PlayerWaitingRoom = () => {
     const { data: existingPlayers, error: playerFetchError } = await supabase
       .from('players')
       .select('id, name')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     const existingPlayer = existingPlayers && existingPlayers.length > 0 ? existingPlayers[0] : null;
 

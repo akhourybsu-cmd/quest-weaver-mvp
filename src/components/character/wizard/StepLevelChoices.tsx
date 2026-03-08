@@ -331,16 +331,6 @@ const StepLevelChoices = () => {
     }
   }, [levelChoices]);
 
-  if (levelsToProcess.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          No additional level choices needed for this character.
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Compute total steps completed and total steps across all levels for accurate progress
   const totalStepsAllLevels = useMemo(() => {
     let total = 0;
@@ -378,6 +368,16 @@ const StepLevelChoices = () => {
   }, [currentLevelIndex, currentLevelStep, levelsToProcess, draft.className]);
 
   const progressPercent = (completedSteps / Math.max(1, totalStepsAllLevels)) * 100;
+
+  if (levelsToProcess.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          No additional level choices needed for this character.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">

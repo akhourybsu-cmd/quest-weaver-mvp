@@ -840,7 +840,7 @@ export const BETA_TOOLS: BetaTool[] = [
   },
 ];
 
-const FEATURED_IDS = ['npc-generator', 'monster-generator', 'quest-generator', 'settlement-generator'];
+const FEATURED_IDS = ['npc-generator', 'monster-generator', 'quest-generator', 'settlement-generator', 'dungeon-generator', 'magic-item-generator', 'puzzle-generator', 'faction-generator'];
 export const HERO_TOOLS = BETA_TOOLS.filter(t => FEATURED_IDS.includes(t.id));
 
 export function getToolById(id: string): BetaTool | undefined {

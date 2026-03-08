@@ -296,6 +296,9 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                   spells={spells}
                   character={character}
                   abilities={abilities}
+                  onOpenSpellPreparation={() => setShowSpellPreparation(true)}
+                  onOpenCustomSpell={() => setShowCustomSpell(true)}
+                  onOpenSpellbook={() => setShowSpellbook(true)}
                 />
               </TabsContent>
             )}

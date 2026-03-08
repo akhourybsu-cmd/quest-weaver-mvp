@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { LevelUpWizard } from "./LevelUpWizard";
 import { CharacterExporter } from "./CharacterExporter";
+import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 interface CharacterCardProps {
   character: {

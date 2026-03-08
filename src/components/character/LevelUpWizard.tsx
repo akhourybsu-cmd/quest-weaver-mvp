@@ -924,12 +924,15 @@ export const LevelUpWizard = ({
       }
 
       // Add new known spells
+      // BUG FIX: For known-casters (Bard, Sorcerer, Warlock, Ranger), known spells are always "prepared" (castable)
       if (newSpells.length > 0) {
+        const knownCasters = ["Bard", "Sorcerer", "Warlock", "Ranger"];
+        const isKnownCaster = knownCasters.includes(character?.class || "");
         const spellInserts = newSpells.map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: false,
+          prepared: isKnownCaster, // Known casters: spells are always prepared; prepared casters: added to pool but not auto-prepared
           source: 'class'
         }));
         await supabase.from("character_spells").insert(spellInserts);

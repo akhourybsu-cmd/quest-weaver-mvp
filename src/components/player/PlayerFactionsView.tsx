@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, Search, Target } from "lucide-react";
+import { Shield, Search, Target, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,

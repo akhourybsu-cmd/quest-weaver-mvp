@@ -5,6 +5,7 @@ import { SUBCLASSES_SRD, SUBCLASS_FEATURES_SRD } from "@/data/srd/subclassesSeed
 import { SUBANCESTRIES_SRD } from "@/data/srd/subancestriesSeed";
 import { TOOLS_SRD } from "@/data/srd/toolsSeed";
 import { SPELLS_SRD } from "@/data/srd/spellsSeed";
+import { EQUIPMENT_SRD } from "@/data/srd/equipmentSeed";
 
 interface SeedStatus {
   classFeatures: boolean;
@@ -12,6 +13,8 @@ interface SeedStatus {
   subancestries: boolean;
   tools: boolean;
   spells: boolean;
+  equipment: boolean;
+  subclassFeatureGaps: boolean;
 }
 
 export function useSRDAutoSeed() {
@@ -36,12 +39,14 @@ export function useSRDAutoSeed() {
         { count: subancestryCount },
         { count: toolsCount },
         { data: spellsData },
+        { count: equipmentCount },
       ] = await Promise.all([
         supabase.from("srd_class_features").select("*", { count: "exact", head: true }),
         supabase.from("srd_subclasses").select("*", { count: "exact", head: true }),
         supabase.from("srd_subancestries").select("*", { count: "exact", head: true }),
         supabase.from("srd_tools").select("*", { count: "exact", head: true }),
         supabase.from("srd_spells").select("id, classes, level").limit(100),
+        supabase.from("srd_equipment").select("*", { count: "exact", head: true }),
       ]);
 
       // Check if spells have proper class assignments
@@ -50,12 +55,22 @@ export function useSRDAutoSeed() {
       ).length || 0;
       const spellsNeedFix = spellsData && spellsData.length > 0 && spellsWithClasses < spellsData.length * 0.5;
 
+      // Check for subclass feature gaps (e.g. Eldritch Knight, Arcane Trickster)
+      const { data: subclassesWithFeatures } = await supabase
+        .from("srd_subclasses")
+        .select("id, name, srd_subclass_features(id)")
+      const subclassGaps = subclassesWithFeatures?.some(
+        (sc: any) => !sc.srd_subclass_features || sc.srd_subclass_features.length === 0
+      ) || false;
+
       const needsSeeding: SeedStatus = {
         classFeatures: (featuresCount || 0) === 0,
         subclasses: (subclassCount || 0) === 0,
         subancestries: (subancestryCount || 0) === 0,
         tools: (toolsCount || 0) === 0,
         spells: spellsNeedFix,
+        equipment: (equipmentCount || 0) === 0,
+        subclassFeatureGaps: subclassGaps,
       };
 
       const anyNeedsSeeding = Object.values(needsSeeding).some(v => v);
@@ -91,6 +106,16 @@ export function useSRDAutoSeed() {
       if (needsSeeding.spells) {
         setSeedingStatus("Fixing spell data...");
         await fixSpellData();
+      }
+
+      if (needsSeeding.equipment) {
+        setSeedingStatus("Seeding equipment...");
+        await seedEquipment();
+      }
+
+      if (needsSeeding.subclassFeatureGaps) {
+        setSeedingStatus("Seeding missing subclass features...");
+        await seedMissingSubclassFeatures();
       }
 
       setSeedComplete(true);
@@ -314,6 +339,69 @@ export function useSRDAutoSeed() {
       console.log(`Successfully seeded ${SPELLS_SRD.length} spells from local data`);
     } catch (error) {
       console.error("Error seeding spells from local:", error);
+    }
+  };
+  const seedEquipment = async () => {
+    try {
+      const equipment = EQUIPMENT_SRD.map(e => ({
+        name: e.name,
+        type: e.type,
+        cost_gp: e.cost_gp,
+        weight: e.weight,
+        description: e.description,
+      }));
+
+      const { error } = await supabase.from("srd_equipment").insert(equipment);
+      if (error) {
+        console.error("Error inserting equipment:", error);
+        return;
+      }
+      console.log(`Auto-seeded ${equipment.length} equipment items`);
+    } catch (error) {
+      console.error("Error seeding equipment:", error);
+    }
+  };
+
+  const seedMissingSubclassFeatures = async () => {
+    try {
+      // Find subclasses with zero features
+      const { data: subclasses } = await supabase
+        .from("srd_subclasses")
+        .select("id, name, class_id, srd_subclass_features(id)");
+
+      if (!subclasses) return;
+
+      const { data: classes } = await supabase.from("srd_classes").select("id, name");
+      const classNameMap = new Map(classes?.map(c => [c.id, c.name]) || []);
+
+      const emptySubclasses = subclasses.filter(
+        (sc: any) => !sc.srd_subclass_features || sc.srd_subclass_features.length === 0
+      );
+
+      if (emptySubclasses.length === 0) return;
+
+      for (const sc of emptySubclasses) {
+        const className = classNameMap.get(sc.class_id);
+        const features = SUBCLASS_FEATURES_SRD
+          .filter(f => f.subclass_name === sc.name && f.class_name === className)
+          .map(f => ({
+            subclass_id: sc.id,
+            level: f.level,
+            name: f.name,
+            description: f.description,
+          }));
+
+        if (features.length > 0) {
+          const { error } = await supabase.from("srd_subclass_features").insert(features);
+          if (error) {
+            console.error(`Error inserting features for ${sc.name}:`, error);
+          } else {
+            console.log(`Auto-seeded ${features.length} features for ${sc.name}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error seeding missing subclass features:", error);
     }
   };
 

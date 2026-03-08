@@ -168,7 +168,7 @@ export const useCombatActions = () => {
           {
             maxRetries: 2,
             onRetry: (attempt, err) => {
-              console.log(`Retrying heal application (attempt ${attempt}):`, err);
+              if (import.meta.env.DEV) console.log(`Retrying heal application (attempt ${attempt}):`, err);
               toast({
                 title: "Retrying...",
                 description: `Network issue detected, retrying (${attempt}/2)`,

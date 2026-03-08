@@ -87,6 +87,7 @@ export const BETA_TOOLS: BetaTool[] = [
     status: 'coming_soon',
     fields: [],
     examplePrompts: [],
+    outputHints: [],
   },
   {
     id: 'merchant-generator',

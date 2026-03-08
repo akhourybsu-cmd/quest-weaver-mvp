@@ -432,7 +432,7 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Weapons', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__slug=${SRD_SLUG}&limit=100`);
+    const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const weapon of weapons) {
       const properties = Array.isArray(weapon.properties)

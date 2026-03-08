@@ -599,9 +599,20 @@ export const BETA_TOOLS: BetaTool[] = [
     description: 'Names for NPCs, locations, items, and factions.',
     icon: Type,
     assetType: 'lore',
-    status: 'coming_soon',
-    fields: [],
-    examplePrompts: [],
+    status: 'active',
+    fields: [
+      { key: 'category', label: 'Category', type: 'select', options: ['NPC Names', 'Location Names', 'Tavern/Inn Names', 'Item Names', 'Faction Names', 'Ship Names', 'Fantasy Surnames', 'Mixed'] },
+      { key: 'culture', label: 'Cultural Inspiration', type: 'string', placeholder: 'e.g. Norse, Arabic, Elven, Dwarven' },
+      { key: 'tone', label: 'Tone', type: 'select', options: ['Serious', 'Whimsical', 'Dark', 'Noble', 'Rustic', 'Exotic'] },
+      { key: 'count', label: 'Number of Names', type: 'select', options: ['5', '10', '15', '20'] },
+    ],
+    examplePrompts: [
+      'Dwarven clan names inspired by mining and metalwork',
+      'Mysterious elven location names for an ancient forest',
+      'Gritty tavern names for a port city\'s dockside district',
+      'Noble family surnames for a medieval kingdom',
+    ],
+    outputHints: ['names', 'meanings', 'cultural notes'],
   },
   {
     id: 'weather-generator',

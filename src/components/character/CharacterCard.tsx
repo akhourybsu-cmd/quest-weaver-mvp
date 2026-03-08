@@ -40,7 +40,7 @@ interface CharacterCardProps {
   onRefresh?: () => void; // BUG FIX: Separate callback for data refresh after level-up
 }
 
-const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: CharacterCardProps) => {
+const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete, onRefresh }: CharacterCardProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

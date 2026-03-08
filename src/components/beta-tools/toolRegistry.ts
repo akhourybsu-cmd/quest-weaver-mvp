@@ -29,6 +29,7 @@ export interface BetaTool {
   status: 'active' | 'coming_soon';
   fields: FieldSchema[];
   examplePrompts: string[];
+  outputHints?: string[];
 }
 
 export interface ToolCategory {
@@ -73,6 +74,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A cheerful halfling innkeeper who runs a secret smuggling ring',
       'A noble diplomat hiding a dark secret about the royal family',
     ],
+    outputHints: ['name', 'personality', 'goals', 'secrets', 'faction ties'],
   },
   {
     id: 'villain-generator',
@@ -85,6 +87,7 @@ export const BETA_TOOLS: BetaTool[] = [
     status: 'coming_soon',
     fields: [],
     examplePrompts: [],
+    outputHints: [],
   },
   {
     id: 'merchant-generator',
@@ -158,6 +161,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'An ancient construct guardian of a forgotten temple',
       'A swamp-dwelling aberration that mimics voices of loved ones',
     ],
+    outputHints: ['stat block', 'abilities', 'tactics', 'habitat', 'lore'],
   },
   {
     id: 'boss-generator',
@@ -219,6 +223,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A vibrant coastal trading port ruled by a council of merchant guilds',
       'A hidden elven settlement deep in an ancient forest',
     ],
+    outputHints: ['NPCs', 'economy', 'atmosphere', 'plot hooks'],
   },
   {
     id: 'region-generator',
@@ -316,6 +321,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A heist to steal back a sacred relic from a corrupt noble',
       'An escort mission through monster-infested mountain passes',
     ],
+    outputHints: ['objectives', 'complications', 'twists', 'rewards'],
   },
   {
     id: 'side-quest-generator',
@@ -401,6 +407,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A humble-looking compass that points toward the nearest source of danger',
       'An ancient ring that grants invisibility but attracts undead attention',
     ],
+    outputHints: ['properties', 'lore', 'quirks', 'attunement'],
   },
   {
     id: 'artifact-generator',
@@ -486,6 +493,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A dense forest clearing with ancient standing stones',
       'A multi-level tavern with breakable furniture and a secret basement',
     ],
+    outputHints: ['terrain', 'cover', 'hazards', 'tactical notes'],
   },
   {
     id: 'dungeon-generator',
@@ -633,6 +641,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A magical anomaly causes wild magic surges across the region',
       'A massive dragon migrates into settled territory seeking a new lair',
     ],
+    outputHints: ['consequences', 'factions', 'timeline', 'rumors'],
   },
   {
     id: 'missing-lore-detector',
@@ -650,6 +659,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'Check quests for missing rewards or unclear objectives',
       'Find locations with minimal descriptions',
     ],
+    outputHints: ['gap analysis', 'fix suggestions', 'priority ranking'],
   },
   {
     id: 'lore-expansion',

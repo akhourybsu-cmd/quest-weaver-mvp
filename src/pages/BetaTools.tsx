@@ -4,72 +4,185 @@ import { BetaToolsLayout } from "@/components/beta-tools/BetaToolsLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight, Library, Info } from "lucide-react";
-import { HERO_TOOLS, TOOL_CATEGORIES, getToolsByCategory, ASSET_TYPE_LABELS } from "@/components/beta-tools/toolRegistry";
+import {
+  Sparkles, ArrowRight, Library, Info, Package, FileEdit,
+  Upload, Star, User, Skull, ScrollText, Building2,
+} from "lucide-react";
+import { HERO_TOOLS, TOOL_CATEGORIES, getToolsByCategory } from "@/components/beta-tools/toolRegistry";
 import { BetaAssetCard, BetaAsset } from "@/components/beta-tools/BetaAssetCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+const QUICK_LAUNCH = [
+  { label: "Create NPC", toolId: "npc-generator", icon: User },
+  { label: "Build Monster", toolId: "monster-generator", icon: Skull },
+  { label: "Generate Quest", toolId: "quest-generator", icon: ScrollText },
+  { label: "Make Settlement", toolId: "settlement-generator", icon: Building2 },
+];
 
 const BetaTools = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const [recentAssets, setRecentAssets] = useState<BetaAsset[]>([]);
+  const [stats, setStats] = useState({ total: 0, drafts: 0, imported: 0, favorites: 0 });
 
   useEffect(() => {
     if (!userId) return;
-    supabase
-      .from('beta_assets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
+    // Fetch recent assets and stats in parallel
+    const fetchRecent = supabase
+      .from("beta_assets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
       .limit(4)
       .then(({ data }) => {
         if (data) setRecentAssets(data as BetaAsset[]);
+      });
+
+    const fetchStats = supabase
+      .from("beta_assets")
+      .select("status, is_favorite")
+      .eq("user_id", userId)
+      .then(({ data }) => {
+        if (data) {
+          setStats({
+            total: data.length,
+            drafts: data.filter((a) => a.status === "draft").length,
+            imported: data.filter((a) => a.status === "imported" || a.status === "imported_adapted").length,
+            favorites: data.filter((a) => a.is_favorite).length,
+          });
+        }
       });
   }, [userId]);
 
   return (
     <BetaToolsLayout>
-      <div className="max-w-6xl mx-auto p-6 space-y-10">
+      <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Hero */}
-        <div className="text-center space-y-4 py-8">
-          <div className="flex items-center justify-center gap-3">
-            <Sparkles className="h-8 w-8 text-amber-400" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">
-              The Creator's Forge
-            </h1>
+        <div className="relative rounded-xl border border-amber-500/15 bg-gradient-to-b from-amber-950/40 to-card/80 overflow-hidden">
+          {/* Radial glow */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-amber-500/8 rounded-full blur-3xl" />
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your standalone homebrew workshop. Generate, refine, and experiment with campaign content freely — nothing here touches your campaigns unless you choose to import it.
-          </p>
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-semibold"
-              onClick={() => navigate('/beta-tools/generate/npc-generator')}
-            >
-              <Sparkles className="h-5 w-5 mr-2" />
-              Start Creating
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
-              onClick={() => navigate('/beta-tools/library')}
-            >
-              <Library className="h-5 w-5 mr-2" />
-              My Library
-            </Button>
+
+          <div className="relative text-center space-y-5 py-10 px-6">
+            <div className="flex items-center justify-center gap-3">
+              <Sparkles className="h-8 w-8 text-amber-400 animate-pulse" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">
+                The Creator's Forge
+              </h1>
+            </div>
+            <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Your standalone homebrew workshop. Generate, refine, and experiment freely —
+              nothing here touches your live campaigns unless you choose to import it.
+            </p>
+
+            {/* Main CTAs */}
+            <div className="flex items-center justify-center gap-3 pt-1">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-semibold shadow-lg shadow-amber-500/20 transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-[1.02]"
+                onClick={() => navigate("/beta-tools/generate/npc-generator")}
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                Start Creating
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10 transition-all duration-200"
+                onClick={() => navigate("/beta-tools/library")}
+              >
+                <Library className="h-5 w-5 mr-2" />
+                My Library
+              </Button>
+            </div>
+
+            {/* Quick-launch chips */}
+            <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+              {QUICK_LAUNCH.map((q) => (
+                <Button
+                  key={q.toolId}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-500/20 text-amber-400/80 hover:bg-amber-500/10 hover:text-amber-300 hover:border-amber-500/40 text-xs transition-all duration-200"
+                  onClick={() => navigate(`/beta-tools/generate/${q.toolId}`)}
+                >
+                  <q.icon className="h-3.5 w-3.5 mr-1.5" />
+                  {q.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Info callout */}
-        <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5">
+        {/* Library Stats Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { icon: Package, label: "Created", value: stats.total, color: "text-amber-400" },
+            { icon: FileEdit, label: "Drafts", value: stats.drafts, color: "text-amber-400/70" },
+            { icon: Upload, label: "Imported", value: stats.imported, color: "text-emerald-400" },
+            { icon: Star, label: "Favorites", value: stats.favorites, color: "text-yellow-400" },
+          ].map((s) => (
+            <Card
+              key={s.label}
+              className="border-amber-500/10 bg-card/50 backdrop-blur-sm cursor-pointer hover:border-amber-500/25 transition-all duration-200"
+              onClick={() => navigate("/beta-tools/library")}
+            >
+              <div className="p-4 flex items-center gap-3">
+                <s.icon className={`h-5 w-5 ${s.color} shrink-0`} />
+                <div>
+                  <div className="text-2xl font-bold text-foreground">{s.value}</div>
+                  <div className="text-xs text-muted-foreground">{s.label}</div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Sandbox Banner */}
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/20 border-l-4 border-l-amber-500 bg-amber-950/20">
           <Info className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
-            <span className="text-amber-300 font-medium">Sandbox Mode</span> — Everything you create here lives in your personal Beta Library. Import your best creations into any campaign whenever you're ready, or keep them standalone forever. No live campaign data is affected.
+            <span className="text-amber-300 font-semibold">Sandbox Mode</span> — Everything
+            created here stays in your Beta Library until you explicitly import it into a
+            campaign. No live campaign data is affected.
           </div>
         </div>
+
+        {/* Recent Creations */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground">Recent Creations</h2>
+            {recentAssets.length > 0 && (
+              <Button
+                variant="link"
+                className="text-amber-400"
+                onClick={() => navigate("/beta-tools/library")}
+              >
+                View All <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            )}
+          </div>
+          {recentAssets.length === 0 ? (
+            <Card className="border-dashed border-amber-500/15 bg-card/30">
+              <div className="p-8 text-center space-y-2">
+                <Sparkles className="h-8 w-8 text-amber-400/30 mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  Your workshop is empty. Start creating to see your work here.
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recentAssets.map((asset, i) => (
+                <div key={asset.id} className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
+                  <BetaAssetCard asset={asset} onEdit={() => navigate("/beta-tools/library")} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Featured Tools */}
         <section className="space-y-4">
@@ -78,7 +191,7 @@ const BetaTools = () => {
             {HERO_TOOLS.map((tool) => (
               <Card
                 key={tool.id}
-                className="group cursor-pointer border-amber-500/10 hover:border-amber-500/30 bg-card/50 backdrop-blur-sm transition-all hover:shadow-lg hover:shadow-amber-500/5"
+                className="group cursor-pointer border-amber-500/10 hover:border-amber-500/30 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/10 hover:scale-[1.02]"
                 onClick={() => navigate(`/beta-tools/generate/${tool.id}`)}
               >
                 <div className="p-5 space-y-3">
@@ -86,13 +199,25 @@ const BetaTools = () => {
                     <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
                       <tool.icon className="h-6 w-6" />
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      Open Tool <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">{tool.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tool.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {tool.description}
+                    </p>
                   </div>
-                  <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">
+                  {tool.outputHints && tool.outputHints.length > 0 && (
+                    <p className="text-[10px] text-amber-400/50 truncate">
+                      {tool.outputHints.join(" · ")}
+                    </p>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] border-amber-500/30 text-amber-400"
+                  >
                     {tool.categoryLabel}
                   </Badge>
                 </div>
@@ -101,30 +226,13 @@ const BetaTools = () => {
           </div>
         </section>
 
-        {/* Recent Creations */}
-        {recentAssets.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">Recent Creations</h2>
-              <Button variant="link" className="text-amber-400" onClick={() => navigate('/beta-tools/library')}>
-                View All <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {recentAssets.map((asset) => (
-                <BetaAssetCard key={asset.id} asset={asset} onEdit={() => navigate('/beta-tools/library')} />
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* All Categories */}
         <section className="space-y-4">
           <h2 className="text-xl font-bold text-foreground">All Categories</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {TOOL_CATEGORIES.map((cat) => {
               const tools = getToolsByCategory(cat.id);
-              const activeCount = tools.filter(t => t.status === 'active').length;
+              const activeCount = tools.filter((t) => t.status === "active").length;
               return (
                 <Card key={cat.id} className="border-border/50 bg-card/30">
                   <div className="p-4 space-y-2">

@@ -150,7 +150,7 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
         {!canImport ? (
           <div className="py-4 text-center text-muted-foreground">
             <p>This asset type ({asset?.asset_type}) cannot be imported to campaigns yet.</p>
-            <p className="text-xs mt-1">Import is available for NPCs, Quests, Magic Items, and Settlements.</p>
+            <p className="text-xs mt-1">Import is available for NPCs, Quests, Magic Items, Settlements, Factions, and Monsters.</p>
           </div>
         ) : (
           <div className="space-y-4 py-2">

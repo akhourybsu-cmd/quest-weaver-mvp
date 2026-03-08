@@ -129,7 +129,7 @@ const StepBasics = () => {
               setLevel(Math.max(1, Math.min(20, val)));
             }}
             onChange={(e) => { 
-              const level = parseInt(e.target.value) || 1;
+              const level = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
               setLevel(level);
             }}
           />

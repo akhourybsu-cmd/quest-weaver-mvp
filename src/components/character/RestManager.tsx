@@ -18,9 +18,10 @@ interface RestManagerProps {
     level: number;
     con_save: number;
   };
+  onUpdate?: () => void;
 }
 
-const RestManager = ({ characterId, character }: RestManagerProps) => {
+const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 

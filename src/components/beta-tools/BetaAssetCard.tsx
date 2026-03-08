@@ -32,10 +32,10 @@ interface BetaAssetCardProps {
 
 const statusColors: Record<string, string> = {
   draft: 'border-muted-foreground/40 text-muted-foreground',
-  standalone: 'border-amber-500/40 text-amber-400',
-  canon_ready: 'border-green-500/40 text-green-400',
-  imported: 'border-blue-500/40 text-blue-400',
-  imported_adapted: 'border-purple-500/40 text-purple-400',
+  standalone: 'border-secondary/40 text-secondary',
+  canon_ready: 'border-status-buff/40 text-status-buff',
+  imported: 'border-primary/40 text-primary',
+  imported_adapted: 'border-status-debuff/40 text-status-debuff',
 };
 
 export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFavorite, onImport }: BetaAssetCardProps) {
@@ -43,13 +43,13 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 
   return (
-    <Card className="group border-amber-500/10 hover:border-amber-500/30 transition-colors bg-card/50 backdrop-blur-sm">
+    <Card className="group border-border hover:border-secondary/30 transition-colors card-glow bg-card">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-foreground truncate">{asset.name}</h3>
+            <h3 className="font-cinzel font-semibold text-foreground truncate">{asset.name}</h3>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">
+              <Badge variant="outline" className="text-[10px]">
                 {ASSET_TYPE_LABELS[asset.asset_type] || asset.asset_type}
               </Badge>
               <Badge variant="outline" className={cn("text-[10px]", statusColors[asset.status] || '')}>
@@ -63,7 +63,7 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
             className="h-7 w-7 shrink-0"
             onClick={() => onToggleFavorite?.(asset)}
           >
-            <Star className={cn("h-4 w-4", asset.is_favorite ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
+            <Star className={cn("h-4 w-4", asset.is_favorite ? "fill-brand-brass text-brand-brass" : "text-muted-foreground")} />
           </Button>
         </div>
 

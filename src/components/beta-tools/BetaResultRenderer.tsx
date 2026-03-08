@@ -46,7 +46,7 @@ function formatValue(value: any): string {
 
 function StatBox({ label, value }: { label: string; value: any }) {
   return (
-    <div className="text-center p-2 rounded-md bg-card/80 border border-amber-500/10">
+    <div className="text-center p-2 rounded-md bg-muted border border-border">
       <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
       <div className="text-sm font-bold text-foreground mt-0.5">{String(value)}</div>
     </div>
@@ -57,7 +57,7 @@ function FieldDisplay({ label, value }: { label: string; value: any }) {
   const displayValue = Array.isArray(value) ? '• ' + formatValue(value) : formatValue(value);
   return (
     <div className="space-y-1">
-      <Label className="text-xs text-amber-400/70 capitalize">{label.replace(/_/g, ' ')}</Label>
+      <Label className="text-xs text-muted-foreground capitalize">{label.replace(/_/g, ' ')}</Label>
       <p className="text-sm text-foreground whitespace-pre-wrap">{displayValue}</p>
     </div>
   );
@@ -77,9 +77,9 @@ function MonsterRenderer({ data }: { data: Record<string, any> }) {
       </div>
       {(data.size || data.type || data.challenge_rating) && (
         <div className="flex gap-2 flex-wrap">
-          {data.size && <Badge variant="outline" className="border-amber-500/30 text-amber-300">{data.size}</Badge>}
-          {data.type && <Badge variant="outline" className="border-amber-500/30 text-amber-300">{data.type}</Badge>}
-          {data.challenge_rating && <Badge variant="outline" className="border-red-500/30 text-red-300">CR {data.challenge_rating}</Badge>}
+          {data.size && <Badge variant="outline">{data.size}</Badge>}
+          {data.type && <Badge variant="outline">{data.type}</Badge>}
+          {data.challenge_rating && <Badge variant="outline" className="border-destructive/30 text-destructive">CR {data.challenge_rating}</Badge>}
         </div>
       )}
       {/* Ability scores */}
@@ -137,10 +137,10 @@ function renderGroupedFields(
     elements.push(
       <div key={group.label} className="space-y-2">
         <div className="flex items-center gap-1.5">
-          {group.icon && <span className="text-amber-400">{group.icon}</span>}
-          <span className="text-xs font-semibold uppercase tracking-wider text-amber-300/80">{group.label}</span>
+          {group.icon && <span className="text-brand-brass">{group.icon}</span>}
+          <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</span>
         </div>
-        <Separator className="bg-amber-500/10" />
+        <Separator className="bg-border" />
         <div className="grid gap-2.5">
           {fields.map(f => <FieldDisplay key={f} label={f} value={data[f]} />)}
         </div>
@@ -153,8 +153,8 @@ function renderGroupedFields(
   if (remaining.length > 0) {
     elements.push(
       <div key="__remaining" className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Other Details</span>
-        <Separator className="bg-amber-500/10" />
+        <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-muted-foreground">Other Details</span>
+        <Separator className="bg-border" />
         <div className="grid gap-2.5">
           {remaining.map(([k, v]) => <FieldDisplay key={k} label={k} value={v} />)}
         </div>

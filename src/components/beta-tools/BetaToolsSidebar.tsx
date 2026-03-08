@@ -22,8 +22,8 @@ export function BetaToolsSidebar() {
   const currentPath = location.pathname;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-amber-500/20">
-      <SidebarContent className="bg-gradient-to-b from-amber-950/20 to-background">
+    <Sidebar collapsible="icon" className="border-r border-border">
+      <SidebarContent className="bg-card">
         {/* Top nav */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -32,9 +32,9 @@ export function BetaToolsSidebar() {
                 <SidebarMenuButton
                   onClick={() => navigate("/beta-tools")}
                   isActive={currentPath === "/beta-tools"}
-                  className="data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400"
+                  className="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-primary"
                 >
-                  <FlaskConical className="h-4 w-4 text-amber-400" />
+                  <FlaskConical className="h-4 w-4 text-brand-brass" />
                   {!collapsed && <span>Workshop</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -42,9 +42,9 @@ export function BetaToolsSidebar() {
                 <SidebarMenuButton
                   onClick={() => navigate("/beta-tools/library")}
                   isActive={currentPath === "/beta-tools/library"}
-                  className="data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400"
+                  className="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-primary"
                 >
-                  <Library className="h-4 w-4 text-amber-400" />
+                  <Library className="h-4 w-4 text-brand-brass" />
                   {!collapsed && <span>My Library</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -52,7 +52,7 @@ export function BetaToolsSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {!collapsed && <Separator className="bg-amber-500/15 mx-3" />}
+        {!collapsed && <Separator className="bg-border mx-3" />}
 
         {/* Tool categories */}
         {TOOL_CATEGORIES.map((cat) => {
@@ -60,7 +60,7 @@ export function BetaToolsSidebar() {
 
           return (
             <SidebarGroup key={cat.id} className="pt-2">
-              <SidebarGroupLabel className="text-amber-400/70 uppercase text-[10px] tracking-wider border-b border-amber-500/10 pb-1 mb-1">
+              <SidebarGroupLabel className="text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border/50 pb-1 mb-1">
                 {!collapsed && cat.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -77,7 +77,7 @@ export function BetaToolsSidebar() {
                           disabled={isComingSoon}
                           className={`
                             transition-all duration-150
-                            data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400
+                            data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-primary
                             ${isComingSoon ? "opacity-30 hover:opacity-50" : ""}
                           `}
                         >

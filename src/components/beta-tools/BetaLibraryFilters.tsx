@@ -29,11 +29,11 @@ export function BetaLibraryFilters({
           placeholder="Search assets..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 border-amber-500/20 focus-visible:ring-amber-500/30"
+          className="pl-9"
         />
       </div>
       <Select value={typeFilter} onValueChange={onTypeFilterChange}>
-        <SelectTrigger className="w-[160px] border-amber-500/20">
+        <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
         <SelectContent>
@@ -44,7 +44,7 @@ export function BetaLibraryFilters({
         </SelectContent>
       </Select>
       <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-[150px] border-amber-500/20">
+        <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="All Statuses" />
         </SelectTrigger>
         <SelectContent>
@@ -57,7 +57,7 @@ export function BetaLibraryFilters({
       <Toggle
         pressed={favoritesOnly}
         onPressedChange={onFavoritesOnlyChange}
-        className="data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400"
+        className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
         aria-label="Show favorites only"
       >
         <Star className="h-4 w-4 mr-1" />

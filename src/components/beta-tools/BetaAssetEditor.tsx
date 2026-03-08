@@ -65,7 +65,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Asset</DialogTitle>
+          <DialogTitle className="font-cinzel">Edit Asset</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
@@ -93,8 +93,8 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
           </div>
 
           {/* Data fields */}
-          <div className="space-y-3 border-t pt-3">
-            <Label className="text-amber-400">Asset Data</Label>
+          <div className="space-y-3 border-t border-border pt-3">
+            <Label className="text-foreground font-cinzel">Asset Data</Label>
             {Object.entries(data).map(([key, value]) => (
               <div key={key} className="space-y-1">
                 <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>

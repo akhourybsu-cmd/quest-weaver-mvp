@@ -476,6 +476,8 @@ export const LevelUpWizard = ({
         .eq("character_id", characterId);
 
       if (choices) {
+        const invocations: string[] = [];
+        const metamagic: string[] = [];
         const favoredEnemies: string[] = [];
         const favoredTerrains: string[] = [];
         
@@ -484,10 +486,12 @@ export const LevelUpWizard = ({
             setCurrentPactBoon((choice.value_json as any)?.id || null);
           }
           if (choice.choice_key === "invocation") {
-            setCurrentInvocations(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+            const id = (choice.value_json as any)?.id;
+            if (id) invocations.push(id);
           }
           if (choice.choice_key === "metamagic") {
-            setCurrentMetamagic(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+            const id = (choice.value_json as any)?.id;
+            if (id) metamagic.push(id);
           }
           if (choice.choice_key === "favored_enemy") {
             favoredEnemies.push((choice.value_json as any)?.id);
@@ -497,6 +501,8 @@ export const LevelUpWizard = ({
           }
         });
         
+        setCurrentInvocations(invocations);
+        setCurrentMetamagic(metamagic);
         setCurrentFavoredEnemies(favoredEnemies.filter(Boolean));
         setCurrentFavoredTerrains(favoredTerrains.filter(Boolean));
       }

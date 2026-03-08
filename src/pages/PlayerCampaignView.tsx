@@ -139,20 +139,26 @@ export default function PlayerCampaignView() {
         <div className="flex items-center gap-3 mt-2 pb-2.5 border-b border-border/50">
           {character ? (
             <>
-              <Avatar className="w-10 h-10 border-2 border-brass/40 shrink-0 rounded-full overflow-hidden">
-                <AvatarImage src={character.portrait_url} className="object-cover object-top" />
-                <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-sm">
-                  {character.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-semibold text-sm leading-tight truncate">{character.name}</span>
-                <span className="text-muted-foreground text-xs leading-tight">
-                  Lv{character.level} {character.class}
-                  {(character as any).srd_subclasses?.name && (
-                    <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
-                  )}
-                </span>
+              <div
+                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate(`/player/${player.id}/characters/${character.id}`)}
+                title="View character sheet"
+              >
+                <Avatar className="w-10 h-10 border-2 border-brass/40 shrink-0 rounded-full overflow-hidden">
+                  <AvatarImage src={character.portrait_url} className="object-cover object-top" />
+                  <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-sm">
+                    {character.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-semibold text-sm leading-tight truncate">{character.name}</span>
+                  <span className="text-muted-foreground text-xs leading-tight">
+                    Lv{character.level} {character.class}
+                    {(character as any).srd_subclasses?.name && (
+                      <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
+                    )}
+                  </span>
+                </div>
               </div>
               <Button
                 variant="ghost"

@@ -279,7 +279,7 @@ export const useCombatActions = () => {
           {
             maxRetries: 2,
             onRetry: (attempt) => {
-              console.log(`Retrying turn advance (attempt ${attempt})`);
+              if (import.meta.env.DEV) console.log(`Retrying turn advance (attempt ${attempt})`);
             },
           }
         ),

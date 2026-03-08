@@ -83,7 +83,7 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
           <span className="text-[10px] text-muted-foreground">
             {formatDistanceToNow(new Date(asset.updated_at), { addSuffix: true })}
           </span>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit?.(asset)} title="Edit">
               <Pencil className="h-3.5 w-3.5" />
             </Button>

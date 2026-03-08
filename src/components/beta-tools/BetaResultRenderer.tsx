@@ -29,9 +29,9 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
     { label: "Rewards & Resolution", fields: ["rewards", "consequences", "resolution", "reward_gp", "reward_xp"] },
   ],
   lore: [
-    { label: "Content", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["content", "names", "rumors"] },
-    { label: "Significance", fields: ["significance", "truthfulness", "cultural_notes"] },
-    { label: "Connections & Seeds", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["connections", "mysteries", "plot_seeds", "hooks", "sources"] },
+    { label: "Content", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["content", "names", "rumors", "entries", "handout_text", "document_text", "solution", "trigger", "effects", "hints", "bypass_options"] },
+    { label: "Significance", fields: ["significance", "truthfulness", "cultural_notes", "difficulty", "lethality", "die_type", "usage_notes"] },
+    { label: "Connections & Seeds", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["connections", "mysteries", "plot_seeds", "hooks", "sources", "hidden_clues", "context"] },
   ],
   settlement: [
     { label: "Overview", icon: <MapPin className="h-3.5 w-3.5" />, fields: ["settlement_type", "population", "government", "description", "sensory_description"] },
@@ -47,8 +47,8 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
   ],
   magic_item: [
     { label: "Overview", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["item_type", "rarity", "attunement", "description", "appearance"] },
-    { label: "Properties", icon: <Zap className="h-3.5 w-3.5" />, fields: ["properties", "effects", "charges", "recharge", "activation"] },
-    { label: "Lore & History", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["history", "creator", "origin", "curse", "sentience", "quirks", "side_effects"] },
+    { label: "Properties", icon: <Zap className="h-3.5 w-3.5" />, fields: ["properties", "effects", "charges", "recharge", "activation", "duration", "ingredients", "side_effects"] },
+    { label: "Lore & History", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["history", "creator", "origin", "curse", "sentience", "quirks"] },
   ],
   battle_map: [
     { label: "Layout", icon: <MapPin className="h-3.5 w-3.5" />, fields: ["environment", "theme", "dimensions", "rooms", "room_count", "corridors", "entry_points", "exits"] },
@@ -66,8 +66,27 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
 const TITLE_KEYS = ['name', 'title', 'event_name'];
 
 function formatValue(value: any): string {
-  if (Array.isArray(value)) return value.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join('\n• ');
-  if (typeof value === 'object' && value !== null) return JSON.stringify(value, null, 2);
+  if (Array.isArray(value)) {
+    return value.map(v => {
+      if (typeof v === 'object' && v !== null) {
+        // Format objects in arrays nicely (e.g., actions, traits)
+        const name = v.name || v.title || v.label || '';
+        const desc = v.description || v.desc || v.effect || v.text || '';
+        if (name && desc) return `**${name}**: ${desc}`;
+        if (name) return name;
+        if (desc) return desc;
+        return Object.entries(v).map(([k, val]) => `${k}: ${val}`).join(', ');
+      }
+      return String(v);
+    }).join('\n• ');
+  }
+  if (typeof value === 'object' && value !== null) {
+    // Format single objects as key-value pairs
+    return Object.entries(value)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `**${k.replace(/_/g, ' ')}**: ${v}`)
+      .join('\n');
+  }
   return String(value);
 }
 
@@ -81,11 +100,29 @@ function StatBox({ label, value }: { label: string; value: any }) {
 }
 
 function FieldDisplay({ label, value }: { label: string; value: any }) {
-  const displayValue = Array.isArray(value) ? '• ' + formatValue(value) : formatValue(value);
+  const formatted = formatValue(value);
+  const isMultiline = formatted.includes('\n');
+  
   return (
     <div className="space-y-1">
       <Label className="text-xs text-muted-foreground capitalize">{label.replace(/_/g, ' ')}</Label>
-      <p className="text-sm text-foreground whitespace-pre-wrap">{displayValue}</p>
+      {isMultiline ? (
+        <div className="text-sm text-foreground space-y-0.5">
+          {formatted.split('\n').map((line, i) => {
+            // Render bold markers
+            const parts = line.split(/\*\*(.*?)\*\*/);
+            return (
+              <p key={i} className="whitespace-pre-wrap">
+                {parts.map((part, j) => j % 2 === 1 ? <span key={j} className="font-semibold text-foreground">{part}</span> : part)}
+              </p>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-sm text-foreground whitespace-pre-wrap">
+          {formatted.split(/\*\*(.*?)\*\*/).map((part, j) => j % 2 === 1 ? <span key={j} className="font-semibold">{part}</span> : part)}
+        </p>
+      )}
     </div>
   );
 }
@@ -93,15 +130,20 @@ function FieldDisplay({ label, value }: { label: string; value: any }) {
 function MonsterRenderer({ data }: { data: Record<string, any> }) {
   const statKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
   const hasStats = statKeys.some(k => data[k] !== undefined);
+  const combatStats = [
+    { key: 'hit_points', label: 'HP' },
+    { key: 'armor_class', label: 'AC' },
+    { key: 'speed', label: 'Speed' },
+  ].filter(s => data[s.key]);
 
   return (
     <div className="space-y-4">
-      {/* Combat header */}
-      <div className="grid grid-cols-3 gap-2">
-        {data.hit_points && <StatBox label="HP" value={data.hit_points} />}
-        {data.armor_class && <StatBox label="AC" value={data.armor_class} />}
-        {data.speed && <StatBox label="Speed" value={data.speed} />}
-      </div>
+      {/* Combat header - only render present stats */}
+      {combatStats.length > 0 && (
+        <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${combatStats.length}, 1fr)` }}>
+          {combatStats.map(s => <StatBox key={s.key} label={s.label} value={data[s.key]} />)}
+        </div>
+      )}
       {(data.size || data.type || data.challenge_rating) && (
         <div className="flex gap-2 flex-wrap">
           {data.size && <Badge variant="outline">{data.size}</Badge>}
@@ -109,10 +151,10 @@ function MonsterRenderer({ data }: { data: Record<string, any> }) {
           {data.challenge_rating && <Badge variant="outline" className="border-destructive/30 text-destructive">CR {data.challenge_rating}</Badge>}
         </div>
       )}
-      {/* Ability scores */}
+      {/* Ability scores - only render present ones */}
       {hasStats && (
-        <div className="grid grid-cols-6 gap-1.5">
-          {statKeys.map(k => data[k] !== undefined && <StatBox key={k} label={k.toUpperCase()} value={data[k]} />)}
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${statKeys.filter(k => data[k] !== undefined).length}, 1fr)` }}>
+          {statKeys.filter(k => data[k] !== undefined).map(k => <StatBox key={k} label={k.toUpperCase()} value={data[k]} />)}
         </div>
       )}
     </div>

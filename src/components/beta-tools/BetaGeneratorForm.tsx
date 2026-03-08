@@ -34,6 +34,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedResult, setEditedResult] = useState<Record<string, any> | null>(null);
+  const [saveTags, setSaveTags] = useState("");
   const [useCampaignContext, setUseCampaignContext] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
@@ -49,6 +50,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setIsEditing(false);
     setUseCampaignContext(false);
     setSelectedCampaignId("");
+    setSaveTags("");
   }, [tool.id]);
 
   useEffect(() => {
@@ -127,11 +129,13 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setIsSaving(true);
     try {
       const name = editedResult.name || editedResult.title || editedResult.event_name || `Untitled ${tool.name}`;
+      const tags = saveTags.split(',').map(t => t.trim()).filter(Boolean);
       const { data, error } = await supabase.from('beta_assets').insert({
         user_id: userId,
         asset_type: tool.assetType,
         name,
         data: editedResult,
+        tags: tags.length > 0 ? tags : null,
         status: 'draft',
       }).select('id').single();
 
@@ -143,6 +147,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       setEditedResult(null);
       setPrompt("");
       setStructuredFields({});
+      setSaveTags("");
     } catch (err) {
       toast({ title: "Save failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
@@ -288,9 +293,21 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
         <Card className="border-border bg-card">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-cinzel font-bold text-lg text-foreground">
-                {displayResult.name || displayResult.title || displayResult.event_name || 'Generated Result'}
-              </h3>
+              {isEditing ? (
+                <Input
+                  value={displayResult.name || displayResult.title || displayResult.event_name || ''}
+                  onChange={(e) => {
+                    const nameKey = displayResult.title ? 'title' : displayResult.event_name ? 'event_name' : 'name';
+                    setEditedResult(prev => prev ? { ...prev, [nameKey]: e.target.value } : null);
+                  }}
+                  className="font-cinzel font-bold text-lg text-foreground max-w-[60%]"
+                  placeholder="Asset name..."
+                />
+              ) : (
+                <h3 className="font-cinzel font-bold text-lg text-foreground">
+                  {displayResult.name || displayResult.title || displayResult.event_name || 'Generated Result'}
+                </h3>
+              )}
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                   <Pencil className="h-3.5 w-3.5 mr-1" />
@@ -338,6 +355,17 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                 </ul>
               </div>
             )}
+
+            {/* Tags input */}
+            <div className="border-t border-border pt-3 space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Tags (optional, comma-separated)</Label>
+              <Input
+                value={saveTags}
+                onChange={(e) => setSaveTags(e.target.value)}
+                placeholder="e.g. villain, underdark, tier-3"
+                className="text-sm"
+              />
+            </div>
 
             {/* Save button */}
             <Button

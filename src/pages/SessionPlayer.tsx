@@ -21,7 +21,7 @@ const SessionPlayer = () => {
 
   useEffect(() => {
     if (!campaignCode) {
-      navigate(`/player/dashboard`);
+      navigate(`/player-hub`);
       return;
     }
     fetchCharacter();

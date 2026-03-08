@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Shield, Settings, ChevronLeft, ChevronRight, LogOut, Crown, ScrollText } from 'lucide-react';
+import { Home, Shield, Settings, ChevronLeft, ChevronRight, LogOut, Crown, ScrollText, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlayer } from '@/hooks/usePlayer';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -19,23 +20,20 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { player } = usePlayer();
+  const { userId } = useAuth();
 
   useEffect(() => {
+    if (!userId) return;
     const checkIfDM = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data } = await supabase
         .from('campaigns')
         .select('id')
-        .eq('dm_user_id', user.id)
+        .eq('dm_user_id', userId)
         .limit(1);
-
       setIsDM((data?.length || 0) > 0);
     };
-
     checkIfDM();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     localStorage.setItem('playerNavCollapsed', collapsed.toString());
@@ -50,6 +48,7 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
     { icon: Home, label: 'Dashboard', path: `/player/${playerId}` },
     { icon: Shield, label: 'My Characters', path: `/player/${playerId}/characters` },
     { icon: ScrollText, label: 'Shared Notes', path: `/player/${playerId}/notes` },
+    { icon: MessageCircle, label: 'Community', path: '/community' },
     { icon: Settings, label: 'Settings', path: `/player/${playerId}/settings` },
   ];
 

@@ -18,7 +18,7 @@ interface HitDiceManagerProps {
     level: number;
     con_save: number; // Legacy - we now load actual CON from character_abilities
   };
-  onHeal: (amount: number) => void;
+  onHeal: (amount: number, newHp: number, newHitDice: number) => void;
 }
 
 const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps) => {

@@ -59,8 +59,7 @@ export default function PlayerCampaignView() {
 
   const loadCharacter = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { data: campaignData } = await supabase
         .from('campaigns').select('id').eq('code', campaignCode).single();
@@ -70,7 +69,7 @@ export default function PlayerCampaignView() {
         .from('characters')
         .select('id, name, class, level, portrait_url, subclass_id, srd_subclasses(name)')
         .eq('campaign_id', campaignData.id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;

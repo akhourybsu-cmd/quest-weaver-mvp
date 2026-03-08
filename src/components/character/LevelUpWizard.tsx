@@ -645,6 +645,10 @@ export const LevelUpWizard = ({
     
     if (newValue < 0 || newValue > 2) return;
     
+    // Check that resulting score doesn't exceed 20
+    const currentScore = character?.character_abilities?.[0]?.[ability.toLowerCase()] || 10;
+    if (currentScore + newValue > 20) return;
+    
     const totalIncreases = Object.values(abilityIncreases).reduce((sum, val) => sum + val, 0);
     if (totalIncreases - current + newValue > 2) return;
 

@@ -83,6 +83,7 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
     if (!error && data) {
       setFactions(data as Faction[]);
     }
+    setLoading(false);
   };
 
   const loadReputations = async () => {

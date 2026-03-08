@@ -40,7 +40,7 @@ const SpellScalingSeedButton = () => {
           }
         } else {
           notFound++;
-          console.log(`Spell not found: ${scalingData.spellName}`);
+          if (import.meta.env.DEV) console.log(`Spell not found: ${scalingData.spellName}`);
         }
       }
 

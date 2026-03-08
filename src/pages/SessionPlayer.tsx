@@ -60,6 +60,19 @@ const SessionPlayer = () => {
       return;
     }
 
+    // Ensure campaign_members entry exists (prevents RLS issues)
+    const { data: memberExists } = await supabase
+      .from("campaign_members").select("id")
+      .eq("campaign_id", campaign.id).eq("user_id", userId).maybeSingle();
+
+    if (!memberExists) {
+      await supabase.from("campaign_members").insert({
+        campaign_id: campaign.id,
+        user_id: userId,
+        role: 'PLAYER',
+      });
+    }
+
     const { data } = await supabase
       .from("characters").select("*")
       .eq("campaign_id", campaign.id)

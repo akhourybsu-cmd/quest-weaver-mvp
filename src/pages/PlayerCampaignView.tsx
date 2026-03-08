@@ -38,6 +38,36 @@ export default function PlayerCampaignView() {
     if (userId) loadCharacter();
   }, [campaignCode, userId]);
 
+  // Real-time session status listener
+  useEffect(() => {
+    if (!campaign?.id) return;
+
+    const channel = supabase
+      .channel(`pcv-session:${campaign.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'campaigns',
+        filter: `id=eq.${campaign.id}`,
+      }, async (payload: any) => {
+        const newLiveId = payload.new.live_session_id;
+        if (newLiveId) {
+          const { data: sess } = await supabase
+            .from('campaign_sessions').select('status')
+            .eq('id', newLiveId).maybeSingle();
+          const s = sess?.status;
+          if (s === 'live' || s === 'paused') {
+            setSessionStatus(s);
+            toast({ title: "🔴 Session is Live!", description: "The DM has started a session." });
+          }
+        } else {
+          setSessionStatus('offline');
+          toast({ title: "Session Ended", description: "The session has concluded." });
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [campaign?.id]);
+
   const loadCampaign = async () => {
     const { data } = await supabase
       .from("campaigns")

@@ -323,7 +323,8 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 
 // Tab Components
 const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
-  const initiative = calculateModifier(abilities.dex);
+  // BUG FIX: Use stored initiative_bonus which includes feats like Alert
+  const initiative = character.initiative_bonus ?? calculateModifier(abilities.dex);
   
   return (
     <div className="space-y-6">

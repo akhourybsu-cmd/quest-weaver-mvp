@@ -861,19 +861,31 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (charError) throw charError;
 
-      // Write abilities (with ASI applied)
+      // Write abilities (with ASI applied) - BUG FIX: upsert needs a unique conflict target
+      const { data: existingAbilities } = await supabase
+        .from("character_abilities")
+        .select("id")
+        .eq("character_id", characterId)
+        .maybeSingle();
+      
+      const abilitiesPayload: any = {
+        character_id: characterId,
+        str: finalAbilityScores.STR,
+        dex: finalAbilityScores.DEX,
+        con: finalAbilityScores.CON,
+        int: finalAbilityScores.INT,
+        wis: finalAbilityScores.WIS,
+        cha: finalAbilityScores.CHA,
+        method: draft.abilityMethod,
+      };
+      
+      if (existingAbilities?.id) {
+        abilitiesPayload.id = existingAbilities.id;
+      }
+      
       const { error: abilitiesError } = await supabase
         .from("character_abilities")
-        .upsert({
-          character_id: characterId,
-          str: finalAbilityScores.STR,
-          dex: finalAbilityScores.DEX,
-          con: finalAbilityScores.CON,
-          int: finalAbilityScores.INT,
-          wis: finalAbilityScores.WIS,
-          cha: finalAbilityScores.CHA,
-          method: draft.abilityMethod,
-        });
+        .upsert(abilitiesPayload);
 
       if (abilitiesError) throw abilitiesError;
 

@@ -422,6 +422,7 @@ export const LevelUpWizard = ({
           class_level,
           is_primary,
           class_id,
+          subclass_id,
           srd_classes!inner(id, name)
         `)
         .eq("character_id", characterId);
@@ -432,6 +433,7 @@ export const LevelUpWizard = ({
           classId: c.class_id,
           level: c.class_level,
           isPrimary: c.is_primary || false,
+          subclassId: c.subclass_id || null,
         }));
         setCharacterClasses(classes);
         

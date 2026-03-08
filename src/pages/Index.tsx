@@ -193,6 +193,15 @@ const Index = ({ session }: IndexProps) => {
             <Button 
               variant="ghost" 
               size="sm" 
+              onClick={() => navigate("/beta-tools")}
+              className="mx-1"
+            >
+              <FlaskConical className="w-4 h-4 mr-1" />
+              Beta Tools
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
               onClick={() => navigate("/campaign-hub")}
             >
               Campaign Hub

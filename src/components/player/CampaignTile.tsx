@@ -121,14 +121,13 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
 
   const checkUnreadMessages = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       const { data, error } = await supabase
         .from('campaign_messages')
         .select('id')
         .eq('campaign_id', link.campaign_id)
         .gt('created_at', link.last_joined_at || new Date(0).toISOString())
-        .neq('sender_id', user.id);
+        .neq('sender_id', userId);
       if (error) throw error;
       setUnreadMessages(data?.length || 0);
     } catch (error) {

@@ -24,7 +24,7 @@ export function resilientChannel(
       return;
     }
     const delay = baseDelayMs * Math.pow(2, retries++);
-    console.log(`[resilientChannel] Reconnecting to "${topic}" in ${delay}ms (attempt ${retries})`);
+    if (import.meta.env.DEV) console.log(`[resilientChannel] Reconnecting to "${topic}" in ${delay}ms (attempt ${retries})`);
     setTimeout(() => {
       channel = supabase.channel(topic);
       attach();
@@ -38,7 +38,7 @@ export function resilientChannel(
       .on("system", { event: "timed_out" }, rejoin)
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          console.log(`[resilientChannel] Successfully subscribed to "${topic}"`);
+          if (import.meta.env.DEV) console.log(`[resilientChannel] Successfully subscribed to "${topic}"`);
           retries = 0;
         }
       });

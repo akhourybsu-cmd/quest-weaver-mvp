@@ -663,8 +663,8 @@ const CampaignHub = () => {
         activeCampaignId={activeCampaign?.id || null}
         onCampaignSelect={handleCampaignSelect}
         onNewCampaign={handleNewCampaign}
-        onImport={() => console.log("Import")}
-        onArchive={() => console.log("Archive")}
+        onImport={() => {}}
+        onArchive={() => {}}
         inspectorOpen={inspectorOpen}
         onInspectorClose={() => setInspectorOpen(false)}
         inspectorContent={null}

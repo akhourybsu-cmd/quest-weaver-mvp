@@ -102,7 +102,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
 
   const loadLinkedNotes = async () => {
     if (!npc) return;
-    console.log(`[NPCDetailDrawer] Loading notes for NPC: ${npc.name} (${npc.id})`);
+    
     
     // Get notes that have this NPC linked (using uppercase NPC)
     const { data: links, error: linksError } = await supabase
@@ -111,7 +111,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
       .eq("link_type", "NPC")
       .eq("link_id", npc.id);
 
-    console.log(`[NPCDetailDrawer] Found ${links?.length || 0} note links`, links);
+    
     
     if (linksError) {
       console.error("[NPCDetailDrawer] Error loading note links:", linksError);
@@ -139,7 +139,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
 
     const { data: notes, error: notesError } = await query.order("updated_at", { ascending: false });
 
-    console.log(`[NPCDetailDrawer] Loaded ${notes?.length || 0} notes for display`, notes);
+    
     
     if (notesError) {
       console.error("[NPCDetailDrawer] Error loading notes:", notesError);

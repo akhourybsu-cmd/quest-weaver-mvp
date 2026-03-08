@@ -163,7 +163,7 @@ export default function LoreEditor({ campaignId, page, onSave, onCancel }: LoreE
         }
       } catch (error) {
         // Entity not found, keep link without ID
-        console.log(`Could not resolve ${link.type}: ${link.label}`);
+        
       }
       
       resolvedLinks.push({

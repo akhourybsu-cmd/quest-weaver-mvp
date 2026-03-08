@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Pause, StopCircle, Loader2, Swords } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTenant } from "@/contexts/TenantContext";
 import InitiativeTracker from "@/components/combat/InitiativeTracker";
 import CombatLog from "@/components/combat/CombatLog";
 import MonsterRoster from "@/components/monsters/MonsterRoster";
@@ -19,7 +18,7 @@ interface SessionTabProps {
 }
 
 export function SessionTab({ session, onSessionEnd }: SessionTabProps) {
-  const { campaignId } = useTenant();
+  const campaignId = session?.campaign_id || null;
   const [loading, setLoading] = useState(false);
   const [encounter, setEncounter] = useState<any>(null);
 

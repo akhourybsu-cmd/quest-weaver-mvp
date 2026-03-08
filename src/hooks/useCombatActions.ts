@@ -63,7 +63,7 @@ export const useCombatActions = () => {
           {
             maxRetries: 2,
             onRetry: (attempt, err) => {
-              console.log(`Retrying damage application (attempt ${attempt}):`, err);
+              if (import.meta.env.DEV) console.log(`Retrying damage application (attempt ${attempt}):`, err);
               toast({
                 title: "Retrying...",
                 description: `Network issue detected, retrying (${attempt}/2)`,
@@ -168,7 +168,7 @@ export const useCombatActions = () => {
           {
             maxRetries: 2,
             onRetry: (attempt, err) => {
-              console.log(`Retrying heal application (attempt ${attempt}):`, err);
+              if (import.meta.env.DEV) console.log(`Retrying heal application (attempt ${attempt}):`, err);
               toast({
                 title: "Retrying...",
                 description: `Network issue detected, retrying (${attempt}/2)`,
@@ -279,7 +279,7 @@ export const useCombatActions = () => {
           {
             maxRetries: 2,
             onRetry: (attempt) => {
-              console.log(`Retrying turn advance (attempt ${attempt})`);
+              if (import.meta.env.DEV) console.log(`Retrying turn advance (attempt ${attempt})`);
             },
           }
         ),

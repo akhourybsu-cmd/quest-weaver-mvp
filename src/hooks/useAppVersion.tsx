@@ -1,47 +1,42 @@
 import { useEffect, useRef } from 'react';
 
-const BUILD_TIME = new Date().getTime();
 const CHECK_INTERVAL = 60000; // Check every 60 seconds
 
 /**
  * Hook that checks if a new version of the app is available
- * by fetching index.html and comparing its content hash
+ * by using a HEAD request and comparing ETag/Last-Modified headers
  */
 export function useAppVersion() {
-  const initialHashRef = useRef<string | null>(null);
+  const initialETagRef = useRef<string | null>(null);
 
   useEffect(() => {
     const checkVersion = async () => {
       try {
         const response = await fetch('/index.html', {
+          method: 'HEAD',
           cache: 'no-cache',
-          headers: {
-            'Cache-Control': 'no-cache',
-          },
         });
         
         if (!response.ok) return;
         
-        const html = await response.text();
-        const currentHash = hashCode(html);
+        const etag = response.headers.get('etag') || response.headers.get('last-modified') || '';
+        
+        if (!etag) return; // Server doesn't support ETag/Last-Modified
 
-        if (initialHashRef.current === null) {
-          // First check - store the initial hash
-          initialHashRef.current = currentHash;
-        } else if (initialHashRef.current !== currentHash) {
-          // Hash changed - new version detected
-          console.log('[useAppVersion] New version detected, refreshing...');
+        if (initialETagRef.current === null) {
+          initialETagRef.current = etag;
+        } else if (initialETagRef.current !== etag) {
+          if (import.meta.env.DEV) {
+            console.log('[useAppVersion] New version detected, refreshing...');
+          }
           window.location.reload();
         }
-      } catch (error) {
-        console.error('[useAppVersion] Error checking version:', error);
+      } catch {
+        // Silently ignore version check errors
       }
     };
 
-    // Initial check after a delay
     const initialTimeout = setTimeout(checkVersion, 10000);
-
-    // Then check periodically
     const interval = setInterval(checkVersion, CHECK_INTERVAL);
 
     return () => {
@@ -49,15 +44,4 @@ export function useAppVersion() {
       clearInterval(interval);
     };
   }, []);
-}
-
-// Simple hash function for string comparison
-function hashCode(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString();
 }

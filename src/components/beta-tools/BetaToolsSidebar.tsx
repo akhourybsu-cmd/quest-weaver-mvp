@@ -1,5 +1,7 @@
+import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, Library, Lock } from "lucide-react";
+import { FlaskConical, Library, Lock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,

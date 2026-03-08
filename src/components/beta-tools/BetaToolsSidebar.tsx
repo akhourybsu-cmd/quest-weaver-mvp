@@ -82,8 +82,10 @@ export function BetaToolsSidebar() {
         )}
 
         {/* Tool categories */}
-        {(filteredCategories || TOOL_CATEGORIES.map(cat => ({ ...cat, tools: getToolsByCategory(cat.id) }))).map((cat) => {
-          const tools = 'tools' in cat ? cat.tools : getToolsByCategory(cat.id);
+        {TOOL_CATEGORIES.map((cat) => {
+          const allTools = getToolsByCategory(cat.id);
+          const tools = filteredCategories ? filteredCategories.find(fc => fc.id === cat.id)?.tools : allTools;
+          if (filteredCategories && !tools) return null;
 
           return (
             <SidebarGroup key={cat.id} className="pt-2">

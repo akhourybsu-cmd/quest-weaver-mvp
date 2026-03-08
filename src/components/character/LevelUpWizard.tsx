@@ -623,7 +623,14 @@ export const LevelUpWizard = ({
     }
   };
 
-  const getHitDie = () => classRules?.hitDie || 8;
+  // BUG FIX: Use the selected class's hit die for multiclass, not always the primary class
+  const getHitDie = () => {
+    if (selectedClassToLevel) {
+      const selectedRules = getClassRules(selectedClassToLevel.className);
+      if (selectedRules) return selectedRules.hitDie;
+    }
+    return classRules?.hitDie || 8;
+  };
 
   const rollHP = () => {
     const die = getHitDie();

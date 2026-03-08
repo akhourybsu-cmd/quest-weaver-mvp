@@ -271,7 +271,7 @@ async function importClasses(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Classes', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const classes = await fetchAllPages(`${OPEN5E_BASE}/v1/classes/?document__slug=${SRD_SLUG}&limit=100`);
+    const classes = await fetchAllPages(`${OPEN5E_BASE}/v1/classes/?document__slug=${SRD_V1_SLUG}&limit=100`);
 
     for (const cls of classes) {
       const classData = {

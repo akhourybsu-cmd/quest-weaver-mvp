@@ -331,6 +331,44 @@ const StepLevelChoices = () => {
     }
   }, [levelChoices]);
 
+  // Compute total steps completed and total steps across all levels for accurate progress
+  const totalStepsAllLevels = useMemo(() => {
+    let total = 0;
+    for (const lvl of levelsToProcess) {
+      let count = lvl >= 2 ? 1 : 0; // HP step
+      const fc = getFeatureChoicesAtLevel(draft.className || "", lvl);
+      fc.forEach(choice => {
+        if (SUBCLASS_CHOICE_TYPES.has(choice.type)) return;
+        if (['fighting_style', 'expertise', 'metamagic', 'magical_secrets', 'favored_enemy', 'favored_terrain'].includes(choice.type)) count++;
+      });
+      if (draft.className === "Warlock" && lvl === 3) count++;
+      if (draft.className === "Warlock" && getInvocationsKnownAtLevel(lvl) > getInvocationsKnownAtLevel(lvl - 1)) count++;
+      if (isASILevel(draft.className || "", lvl)) count++;
+      total += Math.max(1, count);
+    }
+    return total;
+  }, [levelsToProcess, draft.className]);
+
+  const completedSteps = useMemo(() => {
+    let done = 0;
+    for (let i = 0; i < currentLevelIndex; i++) {
+      const lvl = levelsToProcess[i];
+      let count = lvl >= 2 ? 1 : 0;
+      const fc = getFeatureChoicesAtLevel(draft.className || "", lvl);
+      fc.forEach(choice => {
+        if (SUBCLASS_CHOICE_TYPES.has(choice.type)) return;
+        if (['fighting_style', 'expertise', 'metamagic', 'magical_secrets', 'favored_enemy', 'favored_terrain'].includes(choice.type)) count++;
+      });
+      if (draft.className === "Warlock" && lvl === 3) count++;
+      if (draft.className === "Warlock" && getInvocationsKnownAtLevel(lvl) > getInvocationsKnownAtLevel(lvl - 1)) count++;
+      if (isASILevel(draft.className || "", lvl)) count++;
+      done += Math.max(1, count);
+    }
+    return done + currentLevelStep + 1;
+  }, [currentLevelIndex, currentLevelStep, levelsToProcess, draft.className]);
+
+  const progressPercent = (completedSteps / Math.max(1, totalStepsAllLevels)) * 100;
+
   if (levelsToProcess.length === 0) {
     return (
       <Card>
@@ -340,9 +378,6 @@ const StepLevelChoices = () => {
       </Card>
     );
   }
-
-  const progressPercent = ((currentLevelIndex * totalStepsForLevel + currentLevelStep + 1) / 
-                          (levelsToProcess.length * Math.max(1, totalStepsForLevel))) * 100;
 
   return (
     <div className="space-y-4">
@@ -607,12 +642,25 @@ const StepLevelChoices = () => {
                   {["STR", "DEX", "CON", "INT", "WIS", "CHA"].map(ability => {
                     const currentIncrease = currentChoices.abilityIncreases?.[ability] || 0;
                     const totalUsed = Object.values(currentChoices.abilityIncreases || {}).reduce((s, v) => s + v, 0);
-                    const canAdd = totalUsed < 2 && currentIncrease < 2;
+                    
+                    // Compute effective score: base + ancestry bonus + all prior ASIs from earlier levels
+                    const baseScore = draft.abilityScores[ability as keyof typeof draft.abilityScores] || 10;
+                    const ancestryBonus = (draft.grants?.abilityBonuses || {})[ability.toLowerCase()] 
+                      || (draft.grants?.abilityBonuses || {})[ability] || 0;
+                    let priorASI = 0;
+                    for (const lc of levelChoices) {
+                      if (lc.level < currentLevel && lc.abilityIncreases) {
+                        priorASI += lc.abilityIncreases[ability] || 0;
+                      }
+                    }
+                    const effectiveScore = baseScore + Number(ancestryBonus) + priorASI + currentIncrease;
+                    const canAdd = totalUsed < 2 && currentIncrease < 2 && effectiveScore < 20;
                     
                     return (
                       <div key={ability} className="flex items-center justify-between p-2 rounded border">
                         <span className="font-medium">{ability}</span>
                         <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{effectiveScore}</Badge>
                           <Button
                             size="sm"
                             variant="outline"

@@ -77,6 +77,7 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
     }
   };
 
+  const availableQuests = quests.filter(q => q.status === 'available' || q.status === 'not_started');
   const activeQuests = quests.filter(q => q.status === 'in_progress');
   const completedQuests = quests.filter(q => q.status === 'completed');
   

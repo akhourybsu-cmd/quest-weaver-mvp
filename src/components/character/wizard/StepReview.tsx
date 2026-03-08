@@ -72,9 +72,14 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
         setSubclassName(subclass?.name || "");
       }
 
-      if (draft.choices.spellsKnown.length > 0) {
+      // BUG FIX: Show both known AND prepared spells in review
+      const allSelectedSpellIds = new Set([
+        ...draft.choices.spellsKnown,
+        ...draft.choices.spellsPrepared,
+      ]);
+      if (allSelectedSpellIds.size > 0) {
         const allSpells = await SRD.allSpells();
-        const names = draft.choices.spellsKnown
+        const names = Array.from(allSelectedSpellIds)
           .map(id => allSpells.find(s => s.id === id)?.name)
           .filter(Boolean) as string[];
         setSpellNames(names);

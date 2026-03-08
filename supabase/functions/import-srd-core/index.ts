@@ -621,51 +621,66 @@ async function importMonsters(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Monsters', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_SLUG}&format=json`);
+    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_SLUG}&format=json&limit=100`);
+    console.log(`Fetched ${monsters.length} SRD monsters`);
     
     for (const monster of monsters) {
+      const ac = typeof monster.armor_class === 'number'
+        ? monster.armor_class
+        : Array.isArray(monster.armor_class)
+          ? (monster.armor_class[0]?.value || monster.armor_class[0] || 10)
+          : 10;
+
+      const saves: Record<string, number> = {};
+      if (monster.strength_save != null) saves.str = monster.strength_save;
+      if (monster.dexterity_save != null) saves.dex = monster.dexterity_save;
+      if (monster.constitution_save != null) saves.con = monster.constitution_save;
+      if (monster.intelligence_save != null) saves.int = monster.intelligence_save;
+      if (monster.wisdom_save != null) saves.wis = monster.wisdom_save;
+      if (monster.charisma_save != null) saves.cha = monster.charisma_save;
+
       const { error } = await supabase.from('monster_catalog').upsert({
         slug: monster.slug,
         name: monster.name,
         size: monster.size?.toLowerCase() || 'medium',
-        type: monster.type || 'beast',
+        type: (monster.type || 'beast').toLowerCase(),
         alignment: monster.alignment || null,
-        ac: monster.armor_class || 10,
-        hp: monster.hit_points || 1,
-        hit_dice: monster.hit_dice || '1d8',
+        ac,
+        hp_avg: monster.hit_points || 1,
+        hp_formula: monster.hit_dice || null,
         speed: monster.speed || {},
-        str: monster.strength || 10,
-        dex: monster.dexterity || 10,
-        con: monster.constitution || 10,
-        int: monster.intelligence || 10,
-        wis: monster.wisdom || 10,
-        cha: monster.charisma || 10,
-        saves: monster.strength_save ? {
-          str: monster.strength_save,
-          dex: monster.dexterity_save,
-          con: monster.constitution_save,
-          int: monster.intelligence_save,
-          wis: monster.wisdom_save,
-          cha: monster.charisma_save,
-        } : {},
+        abilities: {
+          str: monster.strength || 10,
+          dex: monster.dexterity || 10,
+          con: monster.constitution || 10,
+          int: monster.intelligence || 10,
+          wis: monster.wisdom || 10,
+          cha: monster.charisma || 10,
+        },
+        saves,
         skills: monster.skills || {},
-        damage_vulnerabilities: monster.damage_vulnerabilities || null,
-        damage_resistances: monster.damage_resistances || null,
-        damage_immunities: monster.damage_immunities || null,
-        condition_immunities: monster.condition_immunities || null,
-        senses: monster.senses || null,
+        senses: typeof monster.senses === 'string' 
+          ? { raw: monster.senses } 
+          : monster.senses || {},
         languages: monster.languages || null,
-        cr: monster.challenge_rating || '0',
+        cr: parseFloat(monster.challenge_rating) || 0,
+        vulnerabilities: monster.damage_vulnerabilities || [],
+        resistances: monster.damage_resistances || [],
+        immunities: monster.damage_immunities || [],
         traits: monster.special_abilities || [],
         actions: monster.actions || [],
         reactions: monster.reactions || [],
         legendary_actions: monster.legendary_actions || [],
-        source_type: 'srd',
+        lair_actions: [],
+        proficiency_bonus: 2,
+        source: 'Open5e SRD',
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${monster.slug}: ${error.message}`);
       else result.imported++;
     }
+    
+    console.log(`Monsters: ${result.imported} imported, ${result.errors.length} errors`);
   } catch (error) {
     result.errors.push(`Monsters import failed: ${error instanceof Error ? error.message : 'Unknown'}`);
   }

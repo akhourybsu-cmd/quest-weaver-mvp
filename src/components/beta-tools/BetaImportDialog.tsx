@@ -96,6 +96,26 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
           details: d,
         });
         if (error) throw error;
+      } else if (asset.asset_type === 'faction') {
+        const { error } = await supabase.from('factions').insert({
+          campaign_id: selectedCampaign,
+          name: asset.name,
+          description: d.public_goal || d.description || null,
+          gm_notes: [d.true_goal, d.weakness, d.methods].filter(Boolean).join('\n\n') || null,
+          secrets: d.weakness || null,
+        });
+        if (error) throw error;
+      } else if (asset.asset_type === 'monster') {
+        // Monsters import as NPCs with monster-type role
+        const { error } = await supabase.from('npcs').insert({
+          campaign_id: selectedCampaign,
+          name: asset.name,
+          role: `${d.creature_type || 'Monster'} (CR ${d.challenge_rating || '?'})`,
+          description: [d.lore, d.habitat].filter(Boolean).join('\n\n') || null,
+          gm_notes: [d.tactics, `HP: ${d.hit_points || '?'}`, `AC: ${d.armor_class || '?'}`].filter(Boolean).join('\n'),
+          status: importMode === 'canon' ? 'alive' : 'unknown',
+        });
+        if (error) throw error;
       }
 
       // Update beta asset status

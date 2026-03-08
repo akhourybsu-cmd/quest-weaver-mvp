@@ -167,16 +167,20 @@ const StepSpells = () => {
   );
   const selectedPrepared = draft.choices.spellsPrepared;
 
-  const cantripValid = selectedCantrips.length === cantripCount;
+  // BUG FIX: cantripCount can be 0 for half-casters like Paladin/Ranger
+  const cantripValid = cantripCount === 0 || selectedCantrips.length === cantripCount;
   const leveledValid = useMemo(() => {
     if (!knownPreparedModel) return false;
     if (knownPreparedModel.model === "known") {
-      return selectedLeveled.length === (knownPreparedModel.knownMax || 0);
+      // Allow completing the step if no spells are available (e.g. level 1 Ranger/Paladin)
+      const maxKnown = knownPreparedModel.knownMax || 0;
+      if (maxKnown === 0) return true;
+      return selectedLeveled.length === maxKnown;
     } else {
       const preparedCount = selectedPrepared.length;
-      const autoPreparedCount = autoPreparedSpells.length;
-      const totalPrepared = preparedCount + autoPreparedCount;
-      return preparedCount <= (knownPreparedModel.preparedMax || 0);
+      const maxPrepared = knownPreparedModel.preparedMax || 0;
+      // Prepared casters can prepare up to their max, or fewer if they haven't filled all slots
+      return preparedCount <= maxPrepared;
     }
   }, [knownPreparedModel, selectedLeveled, selectedPrepared, autoPreparedSpells]);
 

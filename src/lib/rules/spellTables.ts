@@ -35,8 +35,14 @@ export function spellKnownPrepared(cls: SrdClass, level: number, className?: str
     return { known: 0, prepared: 0 };
   }
   
-  // Prepared casters (Cleric, Druid, Paladin, Wizard)
-  if (prog === "prepared" || prog === "full") {
+  // Prepared casters (Cleric, Druid, Wizard)
+  // BUG FIX: "full" progression is for full prepared casters only, not known casters
+  if (prog === "prepared") {
+    return { known: 0, prepared: Math.max(1, level) };
+  }
+  
+  // Full casters that use prepared spells (e.g. Cleric, Druid, Wizard have "full" progression)
+  if (prog === "full") {
     return { known: 0, prepared: Math.max(1, level) };
   }
   

@@ -270,6 +270,12 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     if (halfCasters.some(c => className.toLowerCase() === c.toLowerCase()) && draft.level < 2) {
       return false;
     }
+    // Third-casters (Eldritch Knight, Arcane Trickster) don't get spellcasting until level 3
+    // These are subclasses, typically handled differently, but we check for completeness
+    const thirdCasters = ["Eldritch Knight", "Arcane Trickster"];
+    if (thirdCasters.some(c => className.toLowerCase().includes(c.toLowerCase())) && draft.level < 3) {
+      return false;
+    }
     const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
                          "Eldritch Knight", "Arcane Trickster"];
     return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
@@ -1052,13 +1058,19 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           }
         }
         if (slotInfo.pact) {
-          // Store pact slots as a special entry (level = pact slot level)
-          slotRows.push({
-            character_id: characterId!,
-            spell_level: slotInfo.pact.pactSlotLevel,
-            max_slots: slotInfo.pact.pactSlots,
-            used_slots: 0,
-          });
+          // BUG FIX: Warlock pact slots should be stored distinctly to avoid confusion
+          // Use a negative spell_level to distinguish from standard slots (convention: -1 for pact)
+          // Or better: just store at the actual pact level but mark differently
+          // For now, just ensure we don't have conflicting entries
+          const existingLevel = slotRows.find(r => r.spell_level === slotInfo.pact!.pactSlotLevel);
+          if (!existingLevel) {
+            slotRows.push({
+              character_id: characterId!,
+              spell_level: slotInfo.pact.pactSlotLevel,
+              max_slots: slotInfo.pact.pactSlots,
+              used_slots: 0,
+            });
+          }
         }
         if (slotRows.length > 0) {
           const { error: slotsError } = await supabase

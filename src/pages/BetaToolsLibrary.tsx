@@ -7,7 +7,11 @@ import { BetaImportDialog } from "@/components/beta-tools/BetaImportDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { FlaskConical, Plus } from "lucide-react";
+import { FlaskConical, Plus, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -25,6 +29,7 @@ const BetaToolsLibrary = () => {
 
   const [editingAsset, setEditingAsset] = useState<BetaAsset | null>(null);
   const [importingAsset, setImportingAsset] = useState<BetaAsset | null>(null);
+  const [deletingAsset, setDeletingAsset] = useState<BetaAsset | null>(null);
 
   const fetchAssets = useCallback(async () => {
     if (!userId) return;
@@ -80,12 +85,14 @@ const BetaToolsLibrary = () => {
     }
   };
 
-  const handleDelete = async (asset: BetaAsset) => {
-    const { error } = await supabase.from('beta_assets').delete().eq('id', asset.id);
+  const handleDeleteConfirm = async () => {
+    if (!deletingAsset) return;
+    const { error } = await supabase.from('beta_assets').delete().eq('id', deletingAsset.id);
     if (!error) {
-      setAssets(prev => prev.filter(a => a.id !== asset.id));
+      setAssets(prev => prev.filter(a => a.id !== deletingAsset.id));
       toast({ title: "Asset deleted" });
     }
+    setDeletingAsset(null);
   };
 
   return (
@@ -133,7 +140,7 @@ const BetaToolsLibrary = () => {
                 asset={asset}
                 onEdit={(a) => setEditingAsset(a)}
                 onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
+                onDelete={(a) => setDeletingAsset(a)}
                 onToggleFavorite={handleToggleFavorite}
                 onImport={(a) => setImportingAsset(a)}
               />
@@ -155,6 +162,23 @@ const BetaToolsLibrary = () => {
         asset={importingAsset}
         onImported={fetchAssets}
       />
+
+      <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deletingAsset?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this asset from your Beta Library. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </BetaToolsLayout>
   );
 };

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { BetaToolsLayout } from "@/components/beta-tools/BetaToolsLayout";
 import { BetaGeneratorForm } from "@/components/beta-tools/BetaGeneratorForm";
+import { MissingLoreDetector } from "@/components/beta-tools/MissingLoreDetector";
 import { getToolById } from "@/components/beta-tools/toolRegistry";
 import { Badge } from "@/components/ui/badge";
 
@@ -39,11 +40,15 @@ const BetaToolsGenerator = () => {
           <Badge variant="outline" className="border-amber-500/30 text-amber-400">{tool.categoryLabel}</Badge>
         </div>
 
-        {/* Generator form */}
-        <BetaGeneratorForm
-          tool={tool}
-          onSaved={() => navigate('/beta-tools/library')}
-        />
+        {/* Generator form or specialized UI */}
+        {tool.assetType === 'lore_gap' ? (
+          <MissingLoreDetector />
+        ) : (
+          <BetaGeneratorForm
+            tool={tool}
+            onSaved={() => navigate('/beta-tools/library')}
+          />
+        )}
       </div>
     </BetaToolsLayout>
   );

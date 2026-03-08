@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil, Globe } from "lucide-react";
 import { BetaTool } from "./toolRegistry";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { buildCampaignContext } from "@/lib/campaignContextBuilder";
+import type { AssetType } from "@/lib/campaignContextBuilder";
 
 interface BetaGeneratorFormProps {
   tool: BetaTool;
@@ -31,6 +33,21 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedResult, setEditedResult] = useState<Record<string, any> | null>(null);
+  const [useCampaignContext, setUseCampaignContext] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!useCampaignContext || !userId) return;
+    supabase
+      .from("campaigns")
+      .select("id, name")
+      .eq("dm_user_id", userId)
+      .order("updated_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setCampaigns(data);
+      });
+  }, [useCampaignContext, userId]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() && Object.values(structuredFields).every(v => !v)) {
@@ -47,14 +64,26 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
         if (value && value !== '') existingFields[key] = value;
       }
 
+      // Build campaign context if enabled
+      let campaignContext = null;
+      let standalone = true;
+      if (useCampaignContext && selectedCampaignId) {
+        const CONTEXT_ASSET_TYPES: AssetType[] = ['npc', 'location', 'faction', 'item', 'quest', 'lore'];
+        const contextType = CONTEXT_ASSET_TYPES.includes(tool.assetType as AssetType)
+          ? (tool.assetType as AssetType)
+          : 'npc';
+        campaignContext = await buildCampaignContext(selectedCampaignId, contextType);
+        standalone = false;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-asset', {
         body: {
           asset_type: tool.assetType,
           user_prompt: prompt || `Generate a ${tool.name.toLowerCase()}`,
           existing_fields: existingFields,
           locked_fields: Object.keys(existingFields),
-          campaign_context: null,
-          standalone: true,
+          campaign_context: campaignContext,
+          standalone,
         },
       });
 
@@ -184,6 +213,42 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
           </CollapsibleContent>
         </Collapsible>
       )}
+
+      {/* Campaign context toggle */}
+      <Card className="border-amber-500/10 bg-card/50 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-amber-400" />
+            <Label className="text-sm text-amber-200">Use Campaign Context</Label>
+          </div>
+          <Switch
+            checked={useCampaignContext}
+            onCheckedChange={setUseCampaignContext}
+          />
+        </div>
+        {useCampaignContext && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Campaign</Label>
+            {campaigns.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No campaigns found.</p>
+            ) : (
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger className="border-amber-500/20">
+                  <SelectValue placeholder="Choose a campaign..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Generation will reference your campaign's NPCs, factions, locations, and lore for consistency.
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Generate button */}
       <Button

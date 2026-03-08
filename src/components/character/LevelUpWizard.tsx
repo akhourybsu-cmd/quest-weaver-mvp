@@ -1295,25 +1295,27 @@ export const LevelUpWizard = ({
 
     if (slotInfo.shared) {
       for (const [level, count] of Object.entries(slotInfo.shared.slots)) {
+        const slotLevel = parseInt(level);
+        const slotCount = count as number;
         const { data: existing } = await supabase
           .from("character_spell_slots")
           .select("id")
           .eq("character_id", characterId)
-          .eq("spell_level", parseInt(level))
+          .eq("spell_level", slotLevel)
           .single();
 
         if (existing) {
           await supabase
             .from("character_spell_slots")
-            .update({ max_slots: count })
+            .update({ max_slots: slotCount })
             .eq("id", existing.id);
         } else {
-          await supabase.from("character_spell_slots").insert({
+          await supabase.from("character_spell_slots").insert([{
             character_id: characterId,
-            spell_level: parseInt(level),
-            max_slots: count,
+            spell_level: slotLevel,
+            max_slots: slotCount,
             used_slots: 0
-          });
+          }]);
         }
       }
     }

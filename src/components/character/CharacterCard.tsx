@@ -185,12 +185,14 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: Ch
         </div>
       </CardContent>
 
+      {/* BUG FIX: Add key prop to force re-initialization between level-ups */}
       <LevelUpWizard
+        key={character.level}
         open={showLevelUp}
         onOpenChange={setShowLevelUp}
         characterId={character.id}
         currentLevel={character.level}
-        onComplete={() => window.location.reload()}
+        onComplete={() => onDelete ? onDelete() : window.location.reload()}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

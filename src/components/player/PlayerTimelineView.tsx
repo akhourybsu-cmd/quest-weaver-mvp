@@ -101,6 +101,7 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
     if (!error && data) {
       setEvents(data as TimelineEvent[]);
     }
+    setLoading(false);
   };
 
   const filteredEvents = events.filter((event) => {

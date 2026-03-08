@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { resilientChannel } from '@/lib/realtime';
 import CharacterSelectionDialog from '@/components/character/CharacterSelectionDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CampaignTileProps {
   link: PlayerCampaignLink;
@@ -31,6 +32,7 @@ interface CampaignTileProps {
 export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userId } = useAuth();
   const { getCampaignStatus, togglePin, updateLastJoined, unlinkCampaign } = usePlayerLinks(playerId);
   const [status, setStatus] = useState<CampaignStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,13 +90,12 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
 
   const loadCharacter = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       const { data, error } = await supabase
         .from('characters')
         .select('id, name, class, level, portrait_url')
         .eq('campaign_id', link.campaign_id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       if (error) throw error;
       setCharacter(data);
@@ -120,14 +121,13 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
 
   const checkUnreadMessages = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       const { data, error } = await supabase
         .from('campaign_messages')
         .select('id')
         .eq('campaign_id', link.campaign_id)
         .gt('created_at', link.last_joined_at || new Date(0).toISOString())
-        .neq('sender_id', user.id);
+        .neq('sender_id', userId);
       if (error) throw error;
       setUnreadMessages(data?.length || 0);
     } catch (error) {
@@ -226,9 +226,14 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
               <Eye className="w-4 h-4 mr-2" />View Campaign
             </Button>
             {status?.hasLiveSession ? (
-              <Button className="flex-1" onClick={handleJoinSession} disabled={loading || !character}>
-                <Swords className="w-4 h-4 mr-2" />Join Session
-              </Button>
+              <div className="flex-1 flex flex-col gap-1">
+                <Button className="w-full" onClick={handleJoinSession} disabled={loading || !character}>
+                  <Swords className="w-4 h-4 mr-2" />Join Session
+                </Button>
+                {!character && (
+                  <p className="text-xs text-muted-foreground text-center">Assign a character to join</p>
+                )}
+              </div>
             ) : (
               <Button className="flex-1" variant="outline" disabled>
                 <Swords className="w-4 h-4 mr-2" />No Session

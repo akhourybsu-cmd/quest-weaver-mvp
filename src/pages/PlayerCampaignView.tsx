@@ -18,11 +18,13 @@ import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
 import { PlayerJournal } from "@/components/player/PlayerJournal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
   const navigate = useNavigate();
   const { player, loading: playerLoading } = usePlayer();
+  const { userId } = useAuth();
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sessionStatus, setSessionStatus] = useState<'live' | 'paused' | 'offline'>('offline');
@@ -57,8 +59,7 @@ export default function PlayerCampaignView() {
 
   const loadCharacter = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { data: campaignData } = await supabase
         .from('campaigns').select('id').eq('code', campaignCode).single();
@@ -68,7 +69,7 @@ export default function PlayerCampaignView() {
         .from('characters')
         .select('id, name, class, level, portrait_url, subclass_id, srd_subclasses(name)')
         .eq('campaign_id', campaignData.id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
@@ -138,20 +139,26 @@ export default function PlayerCampaignView() {
         <div className="flex items-center gap-3 mt-2 pb-2.5 border-b border-border/50">
           {character ? (
             <>
-              <Avatar className="w-10 h-10 border-2 border-brass/40 shrink-0 rounded-full overflow-hidden">
-                <AvatarImage src={character.portrait_url} className="object-cover object-top" />
-                <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-sm">
-                  {character.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-semibold text-sm leading-tight truncate">{character.name}</span>
-                <span className="text-muted-foreground text-xs leading-tight">
-                  Lv{character.level} {character.class}
-                  {(character as any).srd_subclasses?.name && (
-                    <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
-                  )}
-                </span>
+              <div
+                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate(`/player/${player.id}/characters/${character.id}`)}
+                title="View character sheet"
+              >
+                <Avatar className="w-10 h-10 border-2 border-brass/40 shrink-0 rounded-full overflow-hidden">
+                  <AvatarImage src={character.portrait_url} className="object-cover object-top" />
+                  <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-sm">
+                    {character.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-semibold text-sm leading-tight truncate">{character.name}</span>
+                  <span className="text-muted-foreground text-xs leading-tight">
+                    Lv{character.level} {character.class}
+                    {(character as any).srd_subclasses?.name && (
+                      <span className="text-brass ml-1">· {(character as any).srd_subclasses.name}</span>
+                    )}
+                  </span>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -214,7 +221,14 @@ export default function PlayerCampaignView() {
             {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
           </TabsContent>
           <TabsContent value="journal" className="mt-4">
-            <PlayerJournal campaignId={campaign.id} characterId={character?.id || ''} />
+            {character?.id ? (
+              <PlayerJournal campaignId={campaign.id} characterId={character.id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-cinzel text-lg mb-1">No Character Assigned</p>
+                <p className="text-sm">Assign a character to this campaign to start journaling.</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

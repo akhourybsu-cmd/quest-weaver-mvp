@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface PlayerJournalProps {
 }
 
 export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
+  const { userId } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");
@@ -58,14 +60,13 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
   }, [campaignId]);
 
   const fetchNotes = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     const { data, error } = await supabase
       .from('session_notes')
       .select('*')
       .eq('campaign_id', campaignId)
-      .eq('author_id', user.id)
+      .eq('author_id', userId)
       .eq('visibility', 'PRIVATE')
       .order('updated_at', { ascending: false });
 
@@ -82,13 +83,12 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     if (isNew) {
       const { error } = await supabase.from('session_notes').insert({
         campaign_id: campaignId,
-        author_id: user.id,
+        author_id: userId,
         title: title.trim(),
         content_markdown: content.trim(),
         visibility: 'PRIVATE',

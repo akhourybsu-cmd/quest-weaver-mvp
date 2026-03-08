@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PlayerCharacterViewPage = () => {
   const { characterId } = useParams();
   const { player, loading: playerLoading } = usePlayer();
+  const { userId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [character, setCharacter] = useState<any>(null);
@@ -25,14 +27,13 @@ const PlayerCharacterViewPage = () => {
 
   const loadCharacter = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { data, error } = await supabase
         .from('characters')
         .select('*, srd_subclasses(name)')
         .eq('id', characterId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (error) throw error;

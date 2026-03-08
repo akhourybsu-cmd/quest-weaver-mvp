@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ interface PlayerCharacterListProps {
 
 export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -69,8 +71,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
   const loadCharacters = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { data, error } = await supabase
         .from('characters')
@@ -79,7 +80,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
           campaign:campaigns(id, name),
           srd_subclasses(name)
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

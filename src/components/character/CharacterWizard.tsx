@@ -736,8 +736,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       // === Compute derived stats ===
       const classRules = draft.className ? CLASS_LEVEL_UP_RULES[draft.className] : null;
-      // Temporarily update draft ability scores for derived stat computation
-      const draftForStats = { ...draft, abilityScores: finalAbilityScores };
+      // finalAbilityScores already includes ancestry bonuses + ASI, so clear abilityBonuses
+      // to prevent computeDerivedStats from double-applying them
+      const draftForStats = { 
+        ...draft, 
+        abilityScores: finalAbilityScores,
+        grants: { ...draft.grants, abilityBonuses: {} },
+      };
       const derived = computeDerivedStats(draftForStats, classRules);
 
       // Upload portrait if one was selected

@@ -23,7 +23,7 @@ export function BetaToolsSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent className="bg-card">
+      <SidebarContent className="bg-card overflow-y-auto">
         {/* Top nav */}
         <SidebarGroup>
           <SidebarGroupContent>

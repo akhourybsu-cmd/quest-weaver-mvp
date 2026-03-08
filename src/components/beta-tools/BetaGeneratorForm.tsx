@@ -64,14 +64,26 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
         if (value && value !== '') existingFields[key] = value;
       }
 
+      // Build campaign context if enabled
+      let campaignContext = null;
+      let standalone = true;
+      if (useCampaignContext && selectedCampaignId) {
+        const CONTEXT_ASSET_TYPES: AssetType[] = ['npc', 'location', 'faction', 'item', 'quest', 'lore'];
+        const contextType = CONTEXT_ASSET_TYPES.includes(tool.assetType as AssetType)
+          ? (tool.assetType as AssetType)
+          : 'npc';
+        campaignContext = await buildCampaignContext(selectedCampaignId, contextType);
+        standalone = false;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-asset', {
         body: {
           asset_type: tool.assetType,
           user_prompt: prompt || `Generate a ${tool.name.toLowerCase()}`,
           existing_fields: existingFields,
           locked_fields: Object.keys(existingFields),
-          campaign_context: null,
-          standalone: true,
+          campaign_context: campaignContext,
+          standalone,
         },
       });
 

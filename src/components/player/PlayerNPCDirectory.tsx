@@ -96,6 +96,14 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
     }
   };
 
+  if (loading) {
+    return (
+      <Card className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-brass" />
+      </Card>
+    );
+  }
+
   if (npcs.length === 0) {
     return (
       <PlayerEmptyState

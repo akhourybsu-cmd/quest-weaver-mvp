@@ -223,6 +223,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A vibrant coastal trading port ruled by a council of merchant guilds',
       'A hidden elven settlement deep in an ancient forest',
     ],
+    outputHints: ['NPCs', 'economy', 'atmosphere', 'plot hooks'],
   },
   {
     id: 'region-generator',

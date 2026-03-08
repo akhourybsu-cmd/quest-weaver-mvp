@@ -111,7 +111,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
       .eq("link_type", "NPC")
       .eq("link_id", npc.id);
 
-    console.log(`[NPCDetailDrawer] Found ${links?.length || 0} note links`, links);
+    
     
     if (linksError) {
       console.error("[NPCDetailDrawer] Error loading note links:", linksError);

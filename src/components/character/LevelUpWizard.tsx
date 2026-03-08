@@ -1075,13 +1075,14 @@ export const LevelUpWizard = ({
       }
 
       // Save Magical Secrets spells (Bard)
+      // BUG FIX: Bard is a known caster, so Magical Secrets spells should be prepared
       if (magicalSecretsSpells.length > 0) {
         // Add spells to character_spells
         const secretsInserts = magicalSecretsSpells.map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: false,
+          prepared: true, // Bards always have their known spells prepared
           source: 'magical_secrets'
         }));
         await supabase.from("character_spells").insert(secretsInserts);

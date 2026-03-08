@@ -473,7 +473,10 @@ const SkillsTab = ({ skills, abilities, profBonus, proficiencies, languages }: a
               const hasExpertise = skillData?.expertise || false;
               const abilityScore = abilities[skill.ability];
               const modifier = calculateModifier(abilityScore);
-              const bonus = modifier + (isProficient ? profBonus : 0) + (hasExpertise ? profBonus : 0);
+              // BUG FIX: Expertise means 2x proficiency, not proficiency + proficiency
+              // If expertise, just add 2*profBonus. If only proficient, add profBonus. Otherwise 0.
+              const proficiencyBonus = hasExpertise ? profBonus * 2 : (isProficient ? profBonus : 0);
+              const bonus = modifier + proficiencyBonus;
 
               return (
                 <div key={skill.name} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">

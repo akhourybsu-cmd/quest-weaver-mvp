@@ -286,9 +286,10 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   };
 
   // Compute steps dynamically based on level and class
+  // BUG FIX: Include subclassId in dependencies for third-caster detection
   const STEPS = useMemo(() => {
     return getSteps(draft.level, checkIsSpellcaster(), draft.className);
-  }, [draft.level, draft.className]);
+  }, [draft.level, draft.className, draft.subclassId, draft.subclassName]);
 
   // Reset draft when dialog opens
   useEffect(() => {

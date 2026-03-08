@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,6 +116,19 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
             <ScrollArea className="h-full">
               <div className="space-y-3 pr-4 pb-2">
                 {Object.entries(data).map(([key, value]) => {
+                  // Boolean fields
+                  if (typeof value === 'boolean') {
+                    return (
+                      <div key={key} className="flex items-center justify-between py-1">
+                        <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                        <Switch
+                          checked={value}
+                          onCheckedChange={(v) => setData(prev => ({ ...prev, [key]: v }))}
+                        />
+                      </div>
+                    );
+                  }
+
                   // Array of objects: render mini-cards
                   if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
                     return (
@@ -128,6 +142,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-2 text-destructive hover:text-destructive"
+                                aria-label={`Remove item ${idx + 1}`}
                                 onClick={() => {
                                   const updated = [...value];
                                   updated.splice(idx, 1);
@@ -139,7 +154,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
                               <div key={subKey} className="space-y-0.5">
                                 <Label className="text-[10px] text-muted-foreground capitalize">{subKey.replace(/_/g, ' ')}</Label>
                                 <Input
-                                  value={String(subVal || '')}
+                                  value={String(subVal ?? '')}
                                   onChange={(e) => {
                                     const updated = [...value];
                                     updated[idx] = { ...updated[idx], [subKey]: e.target.value };
@@ -164,11 +179,28 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
                     );
                   }
 
+                  // Empty arrays
+                  if (Array.isArray(value) && value.length === 0) {
+                    return (
+                      <div key={key} className="space-y-1">
+                        <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                        <Textarea
+                          value=""
+                          onChange={(e) => {
+                            setData(prev => ({ ...prev, [key]: e.target.value.split('\n').filter(Boolean) }));
+                          }}
+                          placeholder="One item per line..."
+                          className="text-sm min-h-[50px]"
+                        />
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={key} className="space-y-1">
                       <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
                       <Textarea
-                        value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || '')}
+                        value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value ?? '')}
                         onChange={(e) => {
                           const newVal = Array.isArray(value)
                             ? e.target.value.split('\n').filter(Boolean)

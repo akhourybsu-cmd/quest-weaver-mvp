@@ -23,13 +23,32 @@ interface BetaGeneratorFormProps {
   onSaved?: (assetId: string) => void;
 }
 
+const GENERATING_MESSAGES = [
+  "Consulting the ancient tomes...",
+  "Rolling for inspiration...",
+  "Weaving campaign threads...",
+  "Crafting your asset...",
+  "Channeling creative energy...",
+];
+
 function GeneratingSkeleton() {
+  const [msgIdx, setMsgIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIdx(prev => (prev + 1) % GENERATING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <Card className="border-border bg-card animate-pulse">
+    <Card className="border-border bg-card">
       <div className="p-5 space-y-4">
         <div className="flex items-center gap-3">
           <Sparkles className="h-5 w-5 text-primary animate-spin" />
-          <span className="text-sm font-medium text-muted-foreground">Creating your asset...</span>
+          <span className="text-sm font-medium text-muted-foreground animate-pulse transition-all">
+            {GENERATING_MESSAGES[msgIdx]}
+          </span>
         </div>
         <Skeleton className="h-6 w-3/4" />
         <div className="space-y-3">
@@ -411,6 +430,19 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
 
       {/* Loading skeleton */}
       {isGenerating && <GeneratingSkeleton />}
+
+      {/* Empty state when no result yet */}
+      {!result && !isGenerating && (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-3 opacity-60">
+          <Sparkles className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">
+            Your generated {tool.name.replace(' Generator', '').toLowerCase()} will appear here.
+          </p>
+          <p className="text-[11px] text-muted-foreground/60">
+            Write a prompt above and hit Generate to get started.
+          </p>
+        </div>
+      )}
 
       {/* Result preview */}
       {displayResult && !isGenerating && (

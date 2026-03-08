@@ -69,8 +69,9 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-7 w-7 shrink-0 focus-visible:ring-1 focus-visible:ring-ring"
             onClick={() => onToggleFavorite?.(asset)}
+            aria-label={asset.is_favorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Star className={cn("h-4 w-4", asset.is_favorite ? "fill-brand-brass text-brand-brass" : "text-muted-foreground")} />
           </Button>
@@ -92,20 +93,20 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
           <span className="text-[10px] text-muted-foreground">
             {formatDistanceToNow(new Date(asset.updated_at), { addSuffix: true })}
           </span>
-          <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit?.(asset)} title="Edit">
+          <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-7 w-7 focus-visible:ring-1 focus-visible:ring-ring" onClick={() => onEdit?.(asset)} title="Edit" aria-label="Edit asset">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate?.(asset)} title="Duplicate">
+            <Button variant="ghost" size="icon" className="h-7 w-7 focus-visible:ring-1 focus-visible:ring-ring" onClick={() => onDuplicate?.(asset)} title="Duplicate" aria-label="Duplicate asset">
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyMarkdown} title="Copy as Markdown">
+            <Button variant="ghost" size="icon" className="h-7 w-7 focus-visible:ring-1 focus-visible:ring-ring" onClick={handleCopyMarkdown} title="Copy as Markdown" aria-label="Copy as Markdown">
               <FileText className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onImport?.(asset)} title="Import to Campaign">
+            <Button variant="ghost" size="icon" className="h-7 w-7 focus-visible:ring-1 focus-visible:ring-ring" onClick={() => onImport?.(asset)} title="Import to Campaign" aria-label="Import to campaign">
               <Upload className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete?.(asset)} title="Delete">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive focus-visible:ring-1 focus-visible:ring-ring" onClick={() => onDelete?.(asset)} title="Delete" aria-label="Delete asset">
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>

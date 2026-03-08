@@ -59,7 +59,7 @@ export function BetaToolsSidebar() {
           const hasActiveTool = tools.some(t => currentPath.includes(`/generate/${t.id}`));
 
           return (
-            <SidebarGroup key={cat.id} defaultOpen={hasActiveTool}>
+            <SidebarGroup key={cat.id}>
               <SidebarGroupLabel className="text-amber-400/70 uppercase text-[10px] tracking-wider">
                 {!collapsed && cat.label}
               </SidebarGroupLabel>

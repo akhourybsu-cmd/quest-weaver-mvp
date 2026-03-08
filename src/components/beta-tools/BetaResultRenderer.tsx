@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Heart, Zap, Swords, User, MapPin, ScrollText, Sparkles } from "lucide-react";
+import { Shield, Heart, Zap, Swords, User, MapPin, ScrollText, Sparkles, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface BetaResultRendererProps {
   assetType: string;

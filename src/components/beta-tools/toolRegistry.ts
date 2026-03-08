@@ -390,9 +390,20 @@ export const BETA_TOOLS: BetaTool[] = [
     description: 'Tavern gossip, street whispers, and false leads.',
     icon: MessageCircle,
     assetType: 'lore',
-    status: 'coming_soon',
-    fields: [],
-    examplePrompts: [],
+    status: 'active',
+    fields: [
+      { key: 'setting', label: 'Setting', type: 'string', placeholder: 'e.g. A dockside tavern, a noble court' },
+      { key: 'theme', label: 'Theme', type: 'select', options: ['Political Intrigue', 'Monster Sighting', 'Hidden Treasure', 'Missing Person', 'War & Conflict', 'Supernatural', 'Scandal', 'Trade & Economy', 'Random'] },
+      { key: 'truthfulness', label: 'Truthfulness', type: 'select', options: ['Mostly True', 'Half-True', 'Mostly False', 'Mixed Bag'] },
+      { key: 'count', label: 'Number of Rumors', type: 'select', options: ['3', '5', '8', '10'] },
+    ],
+    examplePrompts: [
+      'Tavern gossip about strange happenings in the abandoned mine',
+      'Court whispers about the queen\'s secret meetings',
+      'Street rumors about a new thieves guild moving into town',
+      'Dockside chatter about ghost ships and cursed cargo',
+    ],
+    outputHints: ['rumors', 'truth level', 'hooks', 'sources'],
   },
   {
     id: 'travel-event-generator',

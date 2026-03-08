@@ -124,6 +124,10 @@ const StepBasics = () => {
             min={1}
             max={20}
             value={draft.level}
+            onBlur={(e) => {
+              const val = parseInt(e.target.value) || 1;
+              setLevel(Math.max(1, Math.min(20, val)));
+            }}
             onChange={(e) => { 
               const level = parseInt(e.target.value) || 1;
               setLevel(level);

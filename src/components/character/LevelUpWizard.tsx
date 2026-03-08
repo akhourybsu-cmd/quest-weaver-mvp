@@ -332,18 +332,21 @@ export const LevelUpWizard = ({
   // Subclass needed?
   const needsSubclass = useMemo(() => {
     if (!classRules || !character) return false;
-    // Check both the main character subclass and per-class subclass entries
-    if (character.subclass_id) return false;
-    // BUG FIX: For multiclass, check if the selected class already has a subclass
-    if (selectedClassToLevel) {
-      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
-      // If character_classes has a subclass for this class, skip
-      // (We'd need to check the DB, but for now check if newLevel matches subclass level)
-    }
-    // If this level is the subclass level for the class being leveled
+    
+    // BUG FIX: For multiclass, check if the *specific class being leveled* already has a subclass
     const effectiveClassName = selectedClassToLevel?.className || character.class;
     const effectiveRules = effectiveClassName ? getClassRules(effectiveClassName) : classRules;
     if (!effectiveRules) return false;
+    
+    // Check per-class subclass in character_classes table
+    if (selectedClassToLevel) {
+      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
+      // If this class already has a subclass assigned, no need to pick one
+      if (selectedClassEntry?.subclassId) return false;
+    } else {
+      // Single class - check top-level subclass_id
+      if (character.subclass_id) return false;
+    }
     
     // For multiclass: the class level (not total level) determines subclass
     const classEntry = characterClasses.find(c => c.classId === selectedClassToLevel?.classId);

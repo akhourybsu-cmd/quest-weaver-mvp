@@ -162,10 +162,9 @@ export function calculateMulticlassSpellcasterLevel(
     if (FULL_CASTERS.includes(cls.className)) {
       spellcasterLevel += cls.level;
     } else if (HALF_CASTERS.includes(cls.className)) {
-      // Only counts if level 2+ per PHB multiclass rules
-      if (cls.level >= 2) {
-        spellcasterLevel += Math.floor(cls.level / 2);
-      }
+      // BUG FIX: Remove level >= 2 guard to match getSpellSlotInfo behavior
+      // floor(1/2) = 0 naturally handles the case, no need for the guard
+      spellcasterLevel += Math.floor(cls.level / 2);
     } else if (cls.className === 'Fighter' && cls.subclass === 'Eldritch Knight') {
       // Only counts if level 3+
       if (cls.level >= 3) {

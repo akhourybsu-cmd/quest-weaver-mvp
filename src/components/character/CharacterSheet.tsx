@@ -721,22 +721,25 @@ const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpe
               <div className="flex items-center justify-between">
                 <CardTitle>Spellcasting</CardTitle>
                 <div className="flex gap-2">
-                  {canPrepareSpells && (
+                  {/* BUG FIX: Guard callback invocations - only show buttons if callbacks are provided */}
+                  {canPrepareSpells && onOpenSpellPreparation && (
                     <Button size="sm" variant="outline" onClick={onOpenSpellPreparation}>
                       <BookOpen className="h-4 w-4 mr-2" />
                       Prepare Spells
                     </Button>
                   )}
-                  {isWizard && (
+                  {isWizard && onOpenSpellbook && (
                     <Button size="sm" variant="outline" onClick={onOpenSpellbook}>
                       <BookMarked className="h-4 w-4 mr-2" />
                       Spellbook
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={onOpenCustomSpell}>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Custom Spell
-                  </Button>
+                  {onOpenCustomSpell && (
+                    <Button size="sm" variant="outline" onClick={onOpenCustomSpell}>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Custom Spell
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>

@@ -11,7 +11,8 @@ const corsHeaders = {
 };
 
 const OPEN5E_BASE = "https://api.open5e.com";
-const SRD_SLUG = "5esrd";
+const SRD_V1_SLUG = "wotc-srd";      // v1 endpoints use document__slug=wotc-srd
+const SRD_V2_KEY = "srd-2014";        // v2 endpoints use document__key=srd-2014
 
 // Known SRD document slugs to accept
 const SRD_SLUGS = new Set(["5esrd", "wotc-srd", "srd"]);

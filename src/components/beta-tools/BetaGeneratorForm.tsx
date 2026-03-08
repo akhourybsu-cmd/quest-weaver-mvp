@@ -431,6 +431,19 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       {/* Loading skeleton */}
       {isGenerating && <GeneratingSkeleton />}
 
+      {/* Empty state when no result yet */}
+      {!result && !isGenerating && (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-3 opacity-60">
+          <Sparkles className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">
+            Your generated {tool.name.replace(' Generator', '').toLowerCase()} will appear here.
+          </p>
+          <p className="text-[11px] text-muted-foreground/60">
+            Write a prompt above and hit Generate to get started.
+          </p>
+        </div>
+      )}
+
       {/* Result preview */}
       {displayResult && !isGenerating && (
         <Card className="border-border bg-card animate-fade-in">

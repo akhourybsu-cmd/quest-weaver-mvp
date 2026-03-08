@@ -68,10 +68,12 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
 const TITLE_KEYS = ['name', 'title', 'event_name'];
 
 function formatValue(value: any): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
     return value.map(v => {
       if (typeof v === 'object' && v !== null) {
-        // Format objects in arrays nicely (e.g., actions, traits)
         const name = v.name || v.title || v.label || '';
         const desc = v.description || v.desc || v.effect || v.text || '';
         if (name && desc) return `**${name}**: ${desc}`;
@@ -83,11 +85,9 @@ function formatValue(value: any): string {
     }).join('\n• ');
   }
   if (typeof value === 'object' && value !== null) {
-    // Format single objects as key-value pairs
-    return Object.entries(value)
-      .filter(([, v]) => v !== null && v !== undefined && v !== '')
-      .map(([k, v]) => `**${k.replace(/_/g, ' ')}**: ${v}`)
-      .join('\n');
+    const entries = Object.entries(value).filter(([, v]) => v !== null && v !== undefined && v !== '');
+    if (entries.length === 0) return '—';
+    return entries.map(([k, v]) => `**${k.replace(/_/g, ' ')}**: ${v}`).join('\n');
   }
   return String(value);
 }

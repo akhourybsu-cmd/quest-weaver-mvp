@@ -11,6 +11,7 @@ export const PlayerWaitingRoom = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { userId, user } = useAuth();
   const campaignCode = searchParams.get('campaign');
 
   const [checking, setChecking] = useState(true);
@@ -19,17 +20,16 @@ export const PlayerWaitingRoom = () => {
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
-    initializeWaitingRoom();
+    if (userId) initializeWaitingRoom();
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, []);
+  }, [userId]);
 
   const initializeWaitingRoom = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!userId) {
       navigate('/');
       return;
     }

@@ -1,7 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Copy, Trash2, Upload, Pencil } from "lucide-react";
+import { Star, Copy, Trash2, Upload, Pencil, FileText } from "lucide-react";
+import { assetToMarkdown } from "@/lib/assetToMarkdown";
+import { useToast } from "@/hooks/use-toast";
 import { ASSET_TYPE_LABELS, STATUS_LABELS } from "./toolRegistry";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";

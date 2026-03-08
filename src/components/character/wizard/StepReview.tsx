@@ -87,7 +87,7 @@ const StepReview = ({ onFinalize, loading }: StepReviewProps) => {
     };
 
     loadNames();
-  }, [draft.ancestryId, draft.backgroundId, draft.subclassId, draft.classId, draft.choices.spellsKnown]);
+  }, [draft.ancestryId, draft.backgroundId, draft.subclassId, draft.classId, draft.choices.spellsKnown, draft.choices.spellsPrepared]);
 
   // Parse level-up choices for display
   const levelChoicesSummary: Array<{ level: number; items: string[] }> = [];

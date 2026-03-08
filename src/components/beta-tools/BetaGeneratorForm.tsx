@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil, Globe } from "lucide-react";
 import { BetaTool } from "./toolRegistry";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { buildCampaignContext } from "@/lib/campaignContextBuilder";
+import type { AssetType } from "@/lib/campaignContextBuilder";
 
 interface BetaGeneratorFormProps {
   tool: BetaTool;

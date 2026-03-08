@@ -325,7 +325,7 @@ async function importAncestries(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Ancestries', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const races = await fetchAllPages(`${OPEN5E_BASE}/v1/races/?document__slug=${SRD_SLUG}&limit=100`);
+    const races = await fetchAllPages(`${OPEN5E_BASE}/v1/races/?document__slug=${SRD_V1_SLUG}&limit=100`);
 
     for (const race of races) {
       const ancestryData = {

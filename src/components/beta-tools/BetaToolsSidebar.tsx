@@ -66,9 +66,24 @@ export function BetaToolsSidebar() {
 
         {!collapsed && <Separator className="bg-border mx-3" />}
 
+        {/* Search */}
+        {!collapsed && (
+          <div className="px-3 pt-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter tools..."
+                className="h-8 pl-8 text-xs bg-muted/50 border-border/50"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Tool categories */}
-        {TOOL_CATEGORIES.map((cat) => {
-          const tools = getToolsByCategory(cat.id);
+        {(filteredCategories || TOOL_CATEGORIES.map(cat => ({ ...cat, tools: getToolsByCategory(cat.id) }))).map((cat) => {
+          const tools = 'tools' in cat ? cat.tools : getToolsByCategory(cat.id);
 
           return (
             <SidebarGroup key={cat.id} className="pt-2">

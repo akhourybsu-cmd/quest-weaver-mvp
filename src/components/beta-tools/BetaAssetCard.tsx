@@ -99,6 +99,9 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate?.(asset)} title="Duplicate">
               <Copy className="h-3.5 w-3.5" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyMarkdown} title="Copy as Markdown">
+              <FileText className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onImport?.(asset)} title="Import to Campaign">
               <Upload className="h-3.5 w-3.5" />
             </Button>

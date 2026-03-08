@@ -196,6 +196,47 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     }
   };
 
+  const handleRefine = useCallback(async () => {
+    if (!refinePrompt.trim() || !editedResult) return;
+    setIsGenerating(true);
+    try {
+      let campaignContext = null;
+      let standalone = true;
+      if (useCampaignContext && selectedCampaignId) {
+        const CONTEXT_ASSET_TYPES: AssetType[] = ['npc', 'location', 'faction', 'item', 'quest', 'lore'];
+        const contextType = CONTEXT_ASSET_TYPES.includes(tool.assetType as AssetType)
+          ? (tool.assetType as AssetType) : 'npc';
+        campaignContext = await buildCampaignContext(selectedCampaignId, contextType);
+        standalone = false;
+      }
+
+      const { data, error } = await supabase.functions.invoke('generate-asset', {
+        body: {
+          asset_type: tool.assetType,
+          user_prompt: refinePrompt,
+          existing_fields: editedResult,
+          locked_fields: [],
+          campaign_context: campaignContext,
+          standalone,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      const refined = { ...editedResult, ...data.filled_fields };
+      setResult(refined);
+      setEditedResult(refined);
+      setAssumptions(data.assumptions || []);
+      setRefinePrompt("");
+      toast({ title: "Result refined!" });
+    } catch (err) {
+      toast({ title: "Refinement failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [refinePrompt, editedResult, useCampaignContext, selectedCampaignId, tool, toast]);
+
   const handleGenerateAnother = () => {
     setResult(null);
     setEditedResult(null);
@@ -204,6 +245,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setSaveTags("");
     setJustSaved(false);
     setIsEditing(false);
+    setRefinePrompt("");
   };
 
   const displayResult = isEditing ? editedResult : result;

@@ -262,6 +262,25 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   // Auto-seed SRD data if missing
   const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
 
+  // State for subclass name (loaded async for third-caster check)
+  const [loadedSubclassName, setLoadedSubclassName] = useState<string | null>(null);
+  
+  // Load subclass name when subclassId changes
+  useEffect(() => {
+    if (draft.subclassId) {
+      supabase
+        .from('srd_subclasses')
+        .select('name')
+        .eq('id', draft.subclassId)
+        .single()
+        .then(({ data }) => {
+          setLoadedSubclassName(data?.name || null);
+        });
+    } else {
+      setLoadedSubclassName(null);
+    }
+  }, [draft.subclassId]);
+
   // Helper to check if class is a spellcaster at the current level
   const checkIsSpellcaster = (): boolean => {
     const className = draft.className || "";
@@ -272,12 +291,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     }
     // Third-casters (Eldritch Knight, Arcane Trickster) are subclasses of Fighter/Rogue
     // BUG FIX: Check subclass name, not class name
-    if ((className === "Fighter" || className === "Rogue") && draft.subclassId) {
-      // We need to check if the subclass grants spellcasting (level 3+)
-      // For now, assume if a Fighter/Rogue has a subclass at level 3+, check it
-      const subclassName = draft.subclassName || "";
+    if ((className === "Fighter" || className === "Rogue") && draft.subclassId && loadedSubclassName) {
       const thirdCasters = ["Eldritch Knight", "Arcane Trickster"];
-      if (thirdCasters.some(c => subclassName.toLowerCase().includes(c.toLowerCase()))) {
+      if (thirdCasters.some(c => loadedSubclassName.toLowerCase().includes(c.toLowerCase()))) {
         return draft.level >= 3;
       }
     }
@@ -289,7 +305,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   // BUG FIX: Include subclassId in dependencies for third-caster detection
   const STEPS = useMemo(() => {
     return getSteps(draft.level, checkIsSpellcaster(), draft.className);
-  }, [draft.level, draft.className, draft.subclassId, draft.subclassName]);
+  }, [draft.level, draft.className, draft.subclassId, loadedSubclassName]);
 
   // Reset draft when dialog opens
   useEffect(() => {

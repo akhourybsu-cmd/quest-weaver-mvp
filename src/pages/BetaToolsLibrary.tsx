@@ -160,9 +160,33 @@ const BetaToolsLibrary = () => {
           </p>
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="text-muted-foreground">Loading...</div>
+      {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="border-border bg-card">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-4 w-14" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-7 w-7 rounded" />
+                  </div>
+                  <Skeleton className="h-8 w-full" />
+                  <div className="flex gap-1">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-4 w-10" />
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-border/50">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-7 w-24" />
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         ) : filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 space-y-3">

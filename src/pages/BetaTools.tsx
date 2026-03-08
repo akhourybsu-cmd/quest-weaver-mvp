@@ -28,7 +28,6 @@ const BetaTools = () => {
 
   useEffect(() => {
     if (!userId) return;
-    // Fetch recent assets and stats in parallel
     const fetchRecent = supabase
       .from("beta_assets")
       .select("*")
@@ -59,16 +58,15 @@ const BetaTools = () => {
     <BetaToolsLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Hero */}
-        <div className="relative rounded-xl border border-amber-500/15 bg-gradient-to-b from-amber-950/40 to-card/80 overflow-hidden">
-          {/* Radial glow */}
+        <div className="relative rounded-xl border border-border bg-gradient-to-b from-brand-obsidian to-card overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-amber-500/8 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
           </div>
 
           <div className="relative text-center space-y-5 py-10 px-6">
             <div className="flex items-center justify-center gap-3">
-              <Sparkles className="h-8 w-8 text-amber-400 animate-pulse" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">
+              <Sparkles className="h-8 w-8 text-brand-brass animate-pulse" />
+              <h1 className="font-cinzel text-4xl font-bold text-foreground">
                 The Creator's Forge
               </h1>
             </div>
@@ -77,11 +75,10 @@ const BetaTools = () => {
               nothing here touches your live campaigns unless you choose to import it.
             </p>
 
-            {/* Main CTAs */}
             <div className="flex items-center justify-center gap-3 pt-1">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-semibold shadow-lg shadow-amber-500/20 transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-[1.02]"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
                 onClick={() => navigate("/beta-tools/generate/npc-generator")}
               >
                 <Sparkles className="h-5 w-5 mr-2" />
@@ -90,7 +87,7 @@ const BetaTools = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10 transition-all duration-200"
+                className="border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
                 onClick={() => navigate("/beta-tools/library")}
               >
                 <Library className="h-5 w-5 mr-2" />
@@ -98,14 +95,13 @@ const BetaTools = () => {
               </Button>
             </div>
 
-            {/* Quick-launch chips */}
             <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
               {QUICK_LAUNCH.map((q) => (
                 <Button
                   key={q.toolId}
                   variant="outline"
                   size="sm"
-                  className="border-amber-500/20 text-amber-400/80 hover:bg-amber-500/10 hover:text-amber-300 hover:border-amber-500/40 text-xs transition-all duration-200"
+                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground text-xs transition-all duration-200"
                   onClick={() => navigate(`/beta-tools/generate/${q.toolId}`)}
                 >
                   <q.icon className="h-3.5 w-3.5 mr-1.5" />
@@ -119,14 +115,14 @@ const BetaTools = () => {
         {/* Library Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: Package, label: "Created", value: stats.total, color: "text-amber-400" },
-            { icon: FileEdit, label: "Drafts", value: stats.drafts, color: "text-amber-400/70" },
-            { icon: Upload, label: "Imported", value: stats.imported, color: "text-emerald-400" },
-            { icon: Star, label: "Favorites", value: stats.favorites, color: "text-yellow-400" },
+            { icon: Package, label: "Created", value: stats.total, color: "text-brand-brass" },
+            { icon: FileEdit, label: "Drafts", value: stats.drafts, color: "text-muted-foreground" },
+            { icon: Upload, label: "Imported", value: stats.imported, color: "text-secondary" },
+            { icon: Star, label: "Favorites", value: stats.favorites, color: "text-brand-brass" },
           ].map((s) => (
             <Card
               key={s.label}
-              className="border-amber-500/10 bg-card/50 backdrop-blur-sm cursor-pointer hover:border-amber-500/25 transition-all duration-200"
+              className="border-border bg-card/50 backdrop-blur-sm cursor-pointer hover:border-primary/25 transition-all duration-200"
               onClick={() => navigate("/beta-tools/library")}
             >
               <div className="p-4 flex items-center gap-3">
@@ -141,10 +137,10 @@ const BetaTools = () => {
         </div>
 
         {/* Sandbox Banner */}
-        <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-500/20 border-l-4 border-l-amber-500 bg-amber-950/20">
-          <Info className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-border border-l-4 border-l-primary bg-muted/30">
+          <Info className="h-5 w-5 text-brand-brass shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
-            <span className="text-amber-300 font-semibold">Sandbox Mode</span> — Everything
+            <span className="text-foreground font-semibold">Sandbox Mode</span> — Everything
             created here stays in your Beta Library until you explicitly import it into a
             campaign. No live campaign data is affected.
           </div>
@@ -153,11 +149,11 @@ const BetaTools = () => {
         {/* Recent Creations */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Recent Creations</h2>
+            <h2 className="font-cinzel text-xl font-bold text-foreground">Recent Creations</h2>
             {recentAssets.length > 0 && (
               <Button
                 variant="link"
-                className="text-amber-400"
+                className="text-primary"
                 onClick={() => navigate("/beta-tools/library")}
               >
                 View All <ArrowRight className="h-4 w-4 ml-1" />
@@ -165,9 +161,9 @@ const BetaTools = () => {
             )}
           </div>
           {recentAssets.length === 0 ? (
-            <Card className="border-dashed border-amber-500/15 bg-card/30">
+            <Card className="border-dashed border-border bg-card/30">
               <div className="p-8 text-center space-y-2">
-                <Sparkles className="h-8 w-8 text-amber-400/30 mx-auto" />
+                <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto" />
                 <p className="text-sm text-muted-foreground">
                   Your workshop is empty. Start creating to see your work here.
                 </p>
@@ -186,17 +182,17 @@ const BetaTools = () => {
 
         {/* Featured Tools */}
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground">Featured Tools</h2>
+          <h2 className="font-cinzel text-xl font-bold text-foreground">Featured Tools</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {HERO_TOOLS.map((tool) => (
               <Card
                 key={tool.id}
-                className="group cursor-pointer border-amber-500/10 hover:border-amber-500/30 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/10 hover:scale-[1.02]"
+                className="group cursor-pointer border-border hover:border-primary/30 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02]"
                 onClick={() => navigate(`/beta-tools/generate/${tool.id}`)}
               >
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between">
-                    <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                    <div className="p-2.5 rounded-lg bg-primary/10 text-brand-brass group-hover:bg-primary/20 transition-colors">
                       <tool.icon className="h-6 w-6" />
                     </div>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -204,19 +200,19 @@ const BetaTools = () => {
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">{tool.name}</h3>
+                    <h3 className="font-cinzel font-semibold text-foreground">{tool.name}</h3>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {tool.description}
                     </p>
                   </div>
                   {tool.outputHints && tool.outputHints.length > 0 && (
-                    <p className="text-[10px] text-amber-400/50 truncate">
+                    <p className="text-[10px] text-muted-foreground/50 truncate">
                       {tool.outputHints.join(" · ")}
                     </p>
                   )}
                   <Badge
                     variant="outline"
-                    className="text-[10px] border-amber-500/30 text-amber-400"
+                    className="text-[10px] border-primary/30 text-primary"
                   >
                     {tool.categoryLabel}
                   </Badge>
@@ -228,7 +224,7 @@ const BetaTools = () => {
 
         {/* All Categories */}
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground">All Categories</h2>
+          <h2 className="font-cinzel text-xl font-bold text-foreground">All Categories</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {TOOL_CATEGORIES.map((cat) => {
               const tools = getToolsByCategory(cat.id);
@@ -237,8 +233,8 @@ const BetaTools = () => {
                 <Card key={cat.id} className="border-border/50 bg-card/30">
                   <div className="p-4 space-y-2">
                     <div className="flex items-center gap-2">
-                      <cat.icon className="h-5 w-5 text-amber-400" />
-                      <h3 className="font-semibold">{cat.label}</h3>
+                      <cat.icon className="h-5 w-5 text-brand-brass" />
+                      <h3 className="font-cinzel font-semibold">{cat.label}</h3>
                     </div>
                     <p className="text-xs text-muted-foreground">{cat.description}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

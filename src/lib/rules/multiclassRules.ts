@@ -154,10 +154,15 @@ export function calculateMulticlassSpellcasterLevel(
   let spellcasterLevel = 0;
 
   for (const cls of classes) {
+    // BUG FIX: Warlock uses pact magic, NOT spell slots - exclude from multiclass calculation
+    if (cls.className === 'Warlock') {
+      // Warlock pact slots are tracked separately, don't add to shared pool
+      continue;
+    }
     if (FULL_CASTERS.includes(cls.className)) {
       spellcasterLevel += cls.level;
     } else if (HALF_CASTERS.includes(cls.className)) {
-      // Only counts if level 2+
+      // Only counts if level 2+ per PHB multiclass rules
       if (cls.level >= 2) {
         spellcasterLevel += Math.floor(cls.level / 2);
       }

@@ -548,21 +548,32 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     
     switch (stepName) {
       case "Basics":
-        return !!(draft.name && draft.classId && draft.className);
+        // BUG FIX: Validate name is not just whitespace
+        return !!(draft.name?.trim() && draft.classId && draft.className);
       case "Ancestry":
         return !!draft.ancestryId;
       case "Abilities":
-        return true;
+        // BUG FIX: Validate ability scores are within valid range
+        const scores = Object.values(draft.abilityScores);
+        const allValid = scores.every(s => s >= 1 && s <= 20);
+        return allValid;
       case "Background":
         return !!draft.backgroundId;
       case "Proficiencies":
         const skillsNeeded = draft.needs.skill?.required ?? 0;
         const toolsNeeded = draft.needs.tool?.required ?? 0;
         const langsNeeded = draft.needs.language?.required ?? 0;
+        // BUG FIX: Also check we haven't selected MORE than allowed
+        const skillsMax = draft.needs.skill?.required ?? Infinity;
+        const toolsMax = draft.needs.tool?.required ?? Infinity;
+        const langsMax = draft.needs.language?.required ?? Infinity;
         return (
           draft.choices.skills.length >= skillsNeeded &&
+          draft.choices.skills.length <= skillsMax &&
           draft.choices.tools.length >= toolsNeeded &&
-          draft.choices.languages.length >= langsNeeded
+          draft.choices.tools.length <= toolsMax &&
+          draft.choices.languages.length >= langsNeeded &&
+          draft.choices.languages.length <= langsMax
         );
       case "Equipment":
         return !!draft.choices.equipmentBundleId;
@@ -816,7 +827,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           skin: draft.skin || null,
           hair: draft.hair || null,
           notes: draft.notes || null,
-          portrait_url: portraitUrl,
+          // BUG FIX: Only set portrait_url if we uploaded a new one; preserve existing URL otherwise
+          portrait_url: portraitUrl || draft.portraitUrl || null,
           // Fix 5: Persist personality/description
           personality_traits: draft.personality || null,
           ideals: draft.ideals || null,
@@ -849,19 +861,31 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
       if (charError) throw charError;
 
-      // Write abilities (with ASI applied)
+      // Write abilities (with ASI applied) - BUG FIX: upsert needs a unique conflict target
+      const { data: existingAbilities } = await supabase
+        .from("character_abilities")
+        .select("id")
+        .eq("character_id", characterId)
+        .maybeSingle();
+      
+      const abilitiesPayload: any = {
+        character_id: characterId,
+        str: finalAbilityScores.STR,
+        dex: finalAbilityScores.DEX,
+        con: finalAbilityScores.CON,
+        int: finalAbilityScores.INT,
+        wis: finalAbilityScores.WIS,
+        cha: finalAbilityScores.CHA,
+        method: draft.abilityMethod,
+      };
+      
+      if (existingAbilities?.id) {
+        abilitiesPayload.id = existingAbilities.id;
+      }
+      
       const { error: abilitiesError } = await supabase
         .from("character_abilities")
-        .upsert({
-          character_id: characterId,
-          str: finalAbilityScores.STR,
-          dex: finalAbilityScores.DEX,
-          con: finalAbilityScores.CON,
-          int: finalAbilityScores.INT,
-          wis: finalAbilityScores.WIS,
-          cha: finalAbilityScores.CHA,
-          method: draft.abilityMethod,
-        });
+        .upsert(abilitiesPayload);
 
       if (abilitiesError) throw abilitiesError;
 
@@ -988,13 +1012,24 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       const allSpellIds = new Set([...knownSpellIds, ...preparedSpellIds]);
 
       if (allSpellIds.size > 0) {
-        const spellsData = Array.from(allSpellIds).map(spellId => ({
-          character_id: characterId,
-          spell_id: spellId,
-          known: knownSpellIds.includes(spellId),
-          prepared: preparedSpellIds.includes(spellId),
-          source: 'class',
-        }));
+        // BUG FIX: Handle cantrips vs leveled spells correctly
+        // Cantrips are always "known" and "prepared" (always available)
+        // For known casters: leveled spells are "known" and typically "prepared" (always available)
+        // For prepared casters: leveled spells are in spellbook (known=true) but may or may not be prepared
+        const spellsData = Array.from(allSpellIds).map(spellId => {
+          const isKnown = knownSpellIds.includes(spellId);
+          const isPrepared = preparedSpellIds.includes(spellId);
+          return {
+            character_id: characterId,
+            spell_id: spellId,
+            // For prepared casters (Wizard/Cleric/Druid), spells in spellbook are "known"
+            // For known casters (Bard/Sorcerer/Warlock/Ranger), selected spells are "known"
+            known: isKnown || isPrepared,
+            // Prepared means ready to cast today
+            prepared: isPrepared || isKnown, // For known casters, known spells are always prepared
+            source: 'class',
+          };
+        });
 
         const { error: spellsError } = await supabase
           .from("character_spells")

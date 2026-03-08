@@ -29,6 +29,7 @@ const BetaToolsLibrary = () => {
 
   const [editingAsset, setEditingAsset] = useState<BetaAsset | null>(null);
   const [importingAsset, setImportingAsset] = useState<BetaAsset | null>(null);
+  const [deletingAsset, setDeletingAsset] = useState<BetaAsset | null>(null);
 
   const fetchAssets = useCallback(async () => {
     if (!userId) return;

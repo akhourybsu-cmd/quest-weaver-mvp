@@ -38,6 +38,19 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
 
+  // Reset all form state when switching tools
+  useEffect(() => {
+    setPrompt("");
+    setStructuredFields({});
+    setShowFields(false);
+    setResult(null);
+    setEditedResult(null);
+    setAssumptions([]);
+    setIsEditing(false);
+    setUseCampaignContext(false);
+    setSelectedCampaignId("");
+  }, [tool.id]);
+
   useEffect(() => {
     if (!useCampaignContext || !userId) return;
     supabase

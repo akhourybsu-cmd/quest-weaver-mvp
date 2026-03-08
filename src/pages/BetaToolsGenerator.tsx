@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { BetaToolsLayout } from "@/components/beta-tools/BetaToolsLayout";
 import { BetaGeneratorForm } from "@/components/beta-tools/BetaGeneratorForm";
+import { MissingLoreDetector } from "@/components/beta-tools/MissingLoreDetector";
 import { getToolById } from "@/components/beta-tools/toolRegistry";
 import { Badge } from "@/components/ui/badge";
 

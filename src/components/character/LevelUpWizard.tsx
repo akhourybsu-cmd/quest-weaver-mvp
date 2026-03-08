@@ -78,6 +78,7 @@ interface CharacterClass {
   classId: string;
   level: number;
   isPrimary: boolean;
+  subclassId?: string | null;
 }
 
 interface SpellOption {

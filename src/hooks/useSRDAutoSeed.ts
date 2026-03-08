@@ -341,6 +341,69 @@ export function useSRDAutoSeed() {
       console.error("Error seeding spells from local:", error);
     }
   };
+  const seedEquipment = async () => {
+    try {
+      const equipment = EQUIPMENT_SRD.map(e => ({
+        name: e.name,
+        type: e.type,
+        cost_gp: e.cost_gp,
+        weight: e.weight,
+        description: e.description,
+      }));
+
+      const { error } = await supabase.from("srd_equipment").insert(equipment);
+      if (error) {
+        console.error("Error inserting equipment:", error);
+        return;
+      }
+      console.log(`Auto-seeded ${equipment.length} equipment items`);
+    } catch (error) {
+      console.error("Error seeding equipment:", error);
+    }
+  };
+
+  const seedMissingSubclassFeatures = async () => {
+    try {
+      // Find subclasses with zero features
+      const { data: subclasses } = await supabase
+        .from("srd_subclasses")
+        .select("id, name, class_id, srd_subclass_features(id)");
+
+      if (!subclasses) return;
+
+      const { data: classes } = await supabase.from("srd_classes").select("id, name");
+      const classNameMap = new Map(classes?.map(c => [c.id, c.name]) || []);
+
+      const emptySubclasses = subclasses.filter(
+        (sc: any) => !sc.srd_subclass_features || sc.srd_subclass_features.length === 0
+      );
+
+      if (emptySubclasses.length === 0) return;
+
+      for (const sc of emptySubclasses) {
+        const className = classNameMap.get(sc.class_id);
+        const features = SUBCLASS_FEATURES_SRD
+          .filter(f => f.subclass_name === sc.name && f.class_name === className)
+          .map(f => ({
+            subclass_id: sc.id,
+            level: f.level,
+            name: f.name,
+            description: f.description,
+          }));
+
+        if (features.length > 0) {
+          const { error } = await supabase.from("srd_subclass_features").insert(features);
+          if (error) {
+            console.error(`Error inserting features for ${sc.name}:`, error);
+          } else {
+            console.log(`Auto-seeded ${features.length} features for ${sc.name}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error seeding missing subclass features:", error);
+    }
+  };
 
   return { isSeeding, seedComplete, seedingStatus };
 }

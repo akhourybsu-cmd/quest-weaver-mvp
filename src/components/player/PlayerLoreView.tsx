@@ -96,6 +96,7 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
     if (!error && data) {
       setLorePages(data as LorePage[]);
     }
+    setLoading(false);
   };
 
   const filteredLore = lorePages.filter((page) => {

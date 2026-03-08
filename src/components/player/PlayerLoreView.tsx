@@ -231,10 +231,11 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
           ) : (
             <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="space-y-3">
-                {filteredLore.map((page) => (
+                {filteredLore.map((page, index) => (
                   <Card
                     key={page.id}
-                    className="cursor-pointer hover:shadow-md hover:border-brass/40 transition-all border-brass/20"
+                    className="cursor-pointer hover:shadow-md hover:border-brass/40 transition-all border-brass/20 card-glow opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
                     onClick={() => handleViewLore(page)}
                   >
                     <CardContent className="p-4">

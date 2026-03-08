@@ -71,8 +71,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
   const loadCharacters = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { data, error } = await supabase
         .from('characters')

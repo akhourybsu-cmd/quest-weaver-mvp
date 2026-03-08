@@ -131,7 +131,10 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
           asset_type: tool.assetType,
           user_prompt: prompt || `Generate a ${tool.name.toLowerCase()}`,
           existing_fields: existingFields,
-          locked_fields: Object.keys(existingFields),
+          locked_fields: Object.keys(existingFields).filter(k => {
+            const v = existingFields[k];
+            return v !== undefined && v !== null && v !== '' && v !== false;
+          }),
           campaign_context: campaignContext,
           standalone,
         },

@@ -67,13 +67,7 @@ export function PartyRestManager({ campaignId, characters, onUpdate }: PartyRest
           })
           .eq("id", char.id);
 
-        // Restore all character_resources (short + long recharge)
-        await supabase
-          .from("character_resources")
-          .update({ current_value: supabase.rpc ? 0 : 0 }) // placeholder
-          .eq("character_id", char.id);
-
-        // Actually restore resources to max by fetching then updating
+        // Restore all character_resources to max by fetching then updating
         const { data: resources } = await supabase
           .from("character_resources")
           .select("id, max_value")

@@ -29,6 +29,7 @@ interface PlayerChatProps {
 
 export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerChatProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);

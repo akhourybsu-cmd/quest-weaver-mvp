@@ -905,14 +905,18 @@ export const LevelUpWizard = ({
             skillMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
           }
 
+          // BUG FIX: Same expertise fix for ASI-triggered recalculation
           const percSkill = skillMap["Perception"];
-          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_perception = 10 + newWisMod 
+            + (percSkill?.expertise ? newProfBonus * 2 : percSkill?.proficient ? newProfBonus : 0);
           
           const insightSkill = skillMap["Insight"];
-          derivedUpdates.passive_insight = 10 + newWisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_insight = 10 + newWisMod 
+            + (insightSkill?.expertise ? newProfBonus * 2 : insightSkill?.proficient ? newProfBonus : 0);
           
           const investSkill = skillMap["Investigation"];
-          derivedUpdates.passive_investigation = 10 + newIntMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
+          derivedUpdates.passive_investigation = 10 + newIntMod 
+            + (investSkill?.expertise ? newProfBonus * 2 : investSkill?.proficient ? newProfBonus : 0);
 
           // Recalculate spell stats with new ability scores
           if (character.spell_ability) {

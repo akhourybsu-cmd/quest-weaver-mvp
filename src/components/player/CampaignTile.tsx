@@ -90,13 +90,12 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
 
   const loadCharacter = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       const { data, error } = await supabase
         .from('characters')
         .select('id, name, class, level, portrait_url')
         .eq('campaign_id', link.campaign_id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       if (error) throw error;
       setCharacter(data);

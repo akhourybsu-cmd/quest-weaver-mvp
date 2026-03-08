@@ -18,7 +18,7 @@ interface SessionTabProps {
 }
 
 export function SessionTab({ session, onSessionEnd }: SessionTabProps) {
-  const { campaignId } = useTenant();
+  const campaignId = session?.campaign_id || null;
   const [loading, setLoading] = useState(false);
   const [encounter, setEncounter] = useState<any>(null);
 

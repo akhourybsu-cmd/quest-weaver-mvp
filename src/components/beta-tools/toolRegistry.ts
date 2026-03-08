@@ -161,6 +161,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'An ancient construct guardian of a forgotten temple',
       'A swamp-dwelling aberration that mimics voices of loved ones',
     ],
+    outputHints: ['stat block', 'abilities', 'tactics', 'habitat', 'lore'],
   },
   {
     id: 'boss-generator',

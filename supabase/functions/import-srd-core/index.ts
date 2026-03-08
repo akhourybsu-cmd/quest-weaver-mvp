@@ -465,7 +465,11 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Weapons', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__key=${SRD_V2_KEY}&limit=100`);
+    const allWeapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__key=${SRD_V2_KEY}&limit=100`);
+    
+    // Filter to only srd-2014 documents (API may return srd-2024 too)
+    const weapons = allWeapons.filter((w: any) => w.document?.key === SRD_V2_KEY);
+    console.log(`Weapons: ${allWeapons.length} fetched, ${weapons.length} after filtering to ${SRD_V2_KEY}`);
 
     for (const weapon of weapons) {
       const properties = Array.isArray(weapon.properties)

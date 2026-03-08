@@ -96,7 +96,8 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: Ch
                 <span className="text-primary"> • {character.subclass_name}</span>
               )}
             </p>
-            {character.level >= 3 && !character.subclass_name && (
+            {/* BUG FIX: Use class-specific subclass level instead of hardcoded 3 */}
+            {character.level >= subclassLevel && !character.subclass_name && (
               <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500 mt-1">
                 Subclass Available
               </Badge>

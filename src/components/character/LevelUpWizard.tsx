@@ -476,6 +476,8 @@ export const LevelUpWizard = ({
         .eq("character_id", characterId);
 
       if (choices) {
+        const invocations: string[] = [];
+        const metamagic: string[] = [];
         const favoredEnemies: string[] = [];
         const favoredTerrains: string[] = [];
         
@@ -484,10 +486,12 @@ export const LevelUpWizard = ({
             setCurrentPactBoon((choice.value_json as any)?.id || null);
           }
           if (choice.choice_key === "invocation") {
-            setCurrentInvocations(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+            const id = (choice.value_json as any)?.id;
+            if (id) invocations.push(id);
           }
           if (choice.choice_key === "metamagic") {
-            setCurrentMetamagic(prev => [...prev, (choice.value_json as any)?.id].filter(Boolean));
+            const id = (choice.value_json as any)?.id;
+            if (id) metamagic.push(id);
           }
           if (choice.choice_key === "favored_enemy") {
             favoredEnemies.push((choice.value_json as any)?.id);
@@ -497,6 +501,8 @@ export const LevelUpWizard = ({
           }
         });
         
+        setCurrentInvocations(invocations);
+        setCurrentMetamagic(metamagic);
         setCurrentFavoredEnemies(favoredEnemies.filter(Boolean));
         setCurrentFavoredTerrains(favoredTerrains.filter(Boolean));
       }
@@ -638,6 +644,10 @@ export const LevelUpWizard = ({
     const newValue = current + delta;
     
     if (newValue < 0 || newValue > 2) return;
+    
+    // Check that resulting score doesn't exceed 20
+    const currentScore = character?.character_abilities?.[0]?.[ability.toLowerCase()] || 10;
+    if (currentScore + newValue > 20) return;
     
     const totalIncreases = Object.values(abilityIncreases).reduce((sum, val) => sum + val, 0);
     if (totalIncreases - current + newValue > 2) return;
@@ -1265,7 +1275,7 @@ export const LevelUpWizard = ({
     }
 
     if (slotInfo.pact) {
-      // Handle warlock pact slots separately if needed
+      // Handle warlock pact slots - update or insert
       const { data: existing } = await supabase
         .from("character_spell_slots")
         .select("id")
@@ -1278,6 +1288,23 @@ export const LevelUpWizard = ({
           .from("character_spell_slots")
           .update({ max_slots: slotInfo.pact.pactSlots })
           .eq("id", existing.id);
+      } else {
+        // New pact slot level - insert a new row
+        await supabase.from("character_spell_slots").insert({
+          character_id: characterId,
+          spell_level: slotInfo.pact.pactSlotLevel,
+          max_slots: slotInfo.pact.pactSlots,
+          used_slots: 0,
+        });
+        // Clean up old pact slot level if it changed
+        const oldPactLevel = slotInfo.pact.pactSlotLevel - 1;
+        if (oldPactLevel >= 1) {
+          await supabase
+            .from("character_spell_slots")
+            .delete()
+            .eq("character_id", characterId)
+            .eq("spell_level", oldPactLevel);
+        }
       }
     }
   };

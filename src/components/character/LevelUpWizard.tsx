@@ -980,11 +980,13 @@ export const LevelUpWizard = ({
           .eq("character_id", characterId)
           .eq("spell_id", spellToSwap);
 
+        // BUG FIX: Known casters should have swapped spells marked as prepared
+        const isKnownCaster = ['Bard', 'Sorcerer', 'Warlock', 'Ranger'].includes(character?.class || '');
         await supabase.from("character_spells").insert({
           character_id: characterId,
           spell_id: swapReplacement,
           known: true,
-          prepared: false,
+          prepared: isKnownCaster, // Known casters always have their spells prepared
           source: 'class'
         });
       }

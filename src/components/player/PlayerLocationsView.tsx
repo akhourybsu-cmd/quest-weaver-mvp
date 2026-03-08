@@ -78,6 +78,7 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
     if (!error && data) {
       setLocations(data as Location[]);
     }
+    setLoading(false);
   };
 
   const filteredLocations = locations.filter((location) => {

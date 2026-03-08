@@ -40,6 +40,7 @@ const terrainColors: Record<string, string> = {
 
 export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

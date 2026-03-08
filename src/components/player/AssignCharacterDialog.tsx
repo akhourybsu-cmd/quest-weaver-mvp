@@ -36,6 +36,7 @@ export const AssignCharacterDialog = ({
   currentCampaignId,
 }: AssignCharacterDialogProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);

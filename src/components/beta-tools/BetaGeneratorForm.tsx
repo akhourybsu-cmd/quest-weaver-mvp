@@ -214,6 +214,42 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
         </Collapsible>
       )}
 
+      {/* Campaign context toggle */}
+      <Card className="border-amber-500/10 bg-card/50 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-amber-400" />
+            <Label className="text-sm text-amber-200">Use Campaign Context</Label>
+          </div>
+          <Switch
+            checked={useCampaignContext}
+            onCheckedChange={setUseCampaignContext}
+          />
+        </div>
+        {useCampaignContext && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Campaign</Label>
+            {campaigns.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No campaigns found.</p>
+            ) : (
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger className="border-amber-500/20">
+                  <SelectValue placeholder="Choose a campaign..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Generation will reference your campaign's NPCs, factions, locations, and lore for consistency.
+            </p>
+          </div>
+        )}
+      </Card>
+
       {/* Generate button */}
       <Button
         onClick={handleGenerate}

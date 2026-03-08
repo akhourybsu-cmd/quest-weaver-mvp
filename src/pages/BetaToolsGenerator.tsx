@@ -40,11 +40,15 @@ const BetaToolsGenerator = () => {
           <Badge variant="outline" className="border-amber-500/30 text-amber-400">{tool.categoryLabel}</Badge>
         </div>
 
-        {/* Generator form */}
-        <BetaGeneratorForm
-          tool={tool}
-          onSaved={() => navigate('/beta-tools/library')}
-        />
+        {/* Generator form or specialized UI */}
+        {tool.assetType === 'lore_gap' ? (
+          <MissingLoreDetector />
+        ) : (
+          <BetaGeneratorForm
+            tool={tool}
+            onSaved={() => navigate('/beta-tools/library')}
+          />
+        )}
       </div>
     </BetaToolsLayout>
   );

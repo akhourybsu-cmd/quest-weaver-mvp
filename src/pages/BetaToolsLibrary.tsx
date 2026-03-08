@@ -162,6 +162,23 @@ const BetaToolsLibrary = () => {
         asset={importingAsset}
         onImported={fetchAssets}
       />
+
+      <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deletingAsset?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this asset from your Beta Library. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </BetaToolsLayout>
   );
 };

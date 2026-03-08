@@ -27,14 +27,14 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset when asset changes
-  useState(() => {
+  useEffect(() => {
     if (asset) {
       setName(asset.name);
       setStatus(asset.status);
       setTagsInput(asset.tags?.join(', ') || '');
       setData(asset.data || {});
     }
-  });
+  }, [asset]);
 
   const handleSave = async () => {
     if (!asset) return;

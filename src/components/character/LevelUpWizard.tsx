@@ -690,16 +690,29 @@ export const LevelUpWizard = ({
           charUpdates[saveKey] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
         });
 
-        // Update passive perception
+        // Update all passive senses
         const wisMod = Math.floor(((abilities.wis || 10) - 10) / 2);
-        const { data: percSkill } = await supabase
+        const intMod = Math.floor(((abilities.int || 10) - 10) / 2);
+        
+        const { data: passiveSkills } = await supabase
           .from("character_skills")
-          .select("proficient, expertise")
+          .select("skill, proficient, expertise")
           .eq("character_id", characterId)
-          .eq("skill", "Perception")
-          .single();
-        const percBonus = wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
-        charUpdates.passive_perception = 10 + percBonus;
+          .in("skill", ["Perception", "Insight", "Investigation"]);
+
+        const passiveMap: Record<string, { proficient: boolean; expertise: boolean }> = {};
+        for (const s of (passiveSkills || [])) {
+          passiveMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
+        }
+
+        const percSkill = passiveMap["Perception"];
+        charUpdates.passive_perception = 10 + wisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+        
+        const insightSkill = passiveMap["Insight"];
+        charUpdates.passive_insight = 10 + wisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+        
+        const investSkill = passiveMap["Investigation"];
+        charUpdates.passive_investigation = 10 + intMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
 
         // Update spell save DC and spell attack mod if character has spellcasting
         if (character.spell_ability) {
@@ -821,15 +834,50 @@ export const LevelUpWizard = ({
             derivedUpdates[`${ab}_save`] = mod + (saveProficiencies.has(ab.toUpperCase()) ? newProfBonus : 0);
           });
 
-          // Recalculate passive perception with new WIS
+          // CON ASI: retroactively gain HP for all character levels per 5e rules
+          const oldConMod = Math.floor(((abilities.con || 10) - 10) / 2);
+          const newConMod = Math.floor(((newAbilities.con || 10) - 10) / 2);
+          if (newConMod > oldConMod) {
+            const retroactiveHp = (newConMod - oldConMod) * newLevel;
+            derivedUpdates.max_hp = (charUpdates.max_hp || (character?.max_hp || 0) + hpGain) + retroactiveHp;
+            derivedUpdates.current_hp = (charUpdates.current_hp || (character?.current_hp || 0) + hpGain) + retroactiveHp;
+          }
+
+          // DEX ASI: recalculate AC and initiative
+          const newDexMod = Math.floor(((newAbilities.dex || 10) - 10) / 2);
+          const oldDexMod = Math.floor(((abilities.dex || 10) - 10) / 2);
+          if (newDexMod !== oldDexMod) {
+            // Base AC = 10 + DEX mod (armor handling would need equipped armor check)
+            derivedUpdates.initiative_bonus = newDexMod;
+            // Only update AC if character uses unarmored (10 + DEX)
+            if ((character?.ac || 10) === 10 + oldDexMod) {
+              derivedUpdates.ac = 10 + newDexMod;
+            }
+          }
+
+          // Recalculate all passive senses with new ability scores
           const newWisMod = Math.floor(((newAbilities.wis || 10) - 10) / 2);
-          const { data: percSkill2 } = await supabase
+          const newIntMod = Math.floor(((newAbilities.int || 10) - 10) / 2);
+
+          const { data: skillsData } = await supabase
             .from("character_skills")
-            .select("proficient, expertise")
+            .select("skill, proficient, expertise")
             .eq("character_id", characterId)
-            .eq("skill", "Perception")
-            .single();
-          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill2?.proficient ? newProfBonus : 0) + (percSkill2?.expertise ? newProfBonus : 0);
+            .in("skill", ["Perception", "Insight", "Investigation"]);
+
+          const skillMap: Record<string, { proficient: boolean; expertise: boolean }> = {};
+          for (const s of (skillsData || [])) {
+            skillMap[s.skill] = { proficient: !!s.proficient, expertise: !!s.expertise };
+          }
+
+          const percSkill = skillMap["Perception"];
+          derivedUpdates.passive_perception = 10 + newWisMod + (percSkill?.proficient ? newProfBonus : 0) + (percSkill?.expertise ? newProfBonus : 0);
+          
+          const insightSkill = skillMap["Insight"];
+          derivedUpdates.passive_insight = 10 + newWisMod + (insightSkill?.proficient ? newProfBonus : 0) + (insightSkill?.expertise ? newProfBonus : 0);
+          
+          const investSkill = skillMap["Investigation"];
+          derivedUpdates.passive_investigation = 10 + newIntMod + (investSkill?.proficient ? newProfBonus : 0) + (investSkill?.expertise ? newProfBonus : 0);
 
           // Recalculate spell stats with new ability scores
           if (character.spell_ability) {

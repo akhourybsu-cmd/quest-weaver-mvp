@@ -1014,6 +1014,20 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (clError) console.error("Error writing class levels:", clError);
       }
 
+      // Write character_classes entry (for multiclass/level-up support)
+      if (draft.classId) {
+        const { error: ccError } = await supabase
+          .from("character_classes")
+          .upsert({
+            character_id: characterId,
+            class_id: draft.classId,
+            class_level: draft.level,
+            is_primary: true,
+            subclass_id: draft.subclassId || null,
+          });
+        if (ccError) console.error("Error writing character_classes:", ccError);
+      }
+
       // Write spell slots
       if (derived.spellAbility && classRules) {
         const { getSpellSlotInfo } = await import("@/lib/rules/spellRules");

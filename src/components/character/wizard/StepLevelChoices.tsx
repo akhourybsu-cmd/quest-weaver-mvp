@@ -291,6 +291,7 @@ const StepLevelChoices = () => {
       const prevFeatureChoices = getFeatureChoicesAtLevel(draft.className || "", prevLevel);
       let prevStepCount = prevLevel >= 2 ? 1 : 0; // HP step
       prevFeatureChoices.forEach(choice => {
+        if (SUBCLASS_CHOICE_TYPES.has(choice.type)) return; // Skip subclass-type picks
         if (choice.type === "fighting_style") prevStepCount++;
         if (choice.type === "expertise") prevStepCount++;
         if (choice.type === "metamagic") prevStepCount++;

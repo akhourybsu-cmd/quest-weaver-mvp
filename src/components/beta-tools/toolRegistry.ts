@@ -321,6 +321,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A heist to steal back a sacred relic from a corrupt noble',
       'An escort mission through monster-infested mountain passes',
     ],
+    outputHints: ['objectives', 'complications', 'twists', 'rewards'],
   },
   {
     id: 'side-quest-generator',

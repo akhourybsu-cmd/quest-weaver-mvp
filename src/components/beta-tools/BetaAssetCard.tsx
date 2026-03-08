@@ -41,7 +41,14 @@ const statusColors: Record<string, string> = {
 };
 
 export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFavorite, onImport }: BetaAssetCardProps) {
+  const { toast } = useToast();
   const description = asset.data?.description || asset.data?.personality || asset.data?.content || '';
+
+  const handleCopyMarkdown = async () => {
+    const md = assetToMarkdown(asset);
+    await navigator.clipboard.writeText(md);
+    toast({ title: "Copied as Markdown" });
+  };
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 
   return (

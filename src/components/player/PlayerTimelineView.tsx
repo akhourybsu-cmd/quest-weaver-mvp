@@ -65,6 +65,7 @@ const KIND_LABELS: Record<string, string> = {
 
 export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {

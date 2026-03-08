@@ -472,45 +472,39 @@ async function importSpells(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Spells', imported: 0, skipped: 0, errors: [] };
   
   try {
-    console.log("Fetching spells from Open5e v1 API...");
-    const allSpells = await fetchAllPages(`${OPEN5E_BASE}/v1/spells/?limit=100`);
-    console.log(`Fetched ${allSpells.length} total spells`);
-    
-    // STRICT FILTER: Only keep spells from SRD documents that have valid class assignments
-    const spellsToImport = allSpells.filter((s: any) => {
-      // Must be from an SRD document
-      if (s.document__slug && !isSrdDoc(s.document__slug)) {
-        return false;
-      }
-      // Must have class assignments (dnd_class field)
-      if (!s.dnd_class || s.dnd_class.trim().length === 0) {
-        return false;
-      }
-      return true;
-    });
-    
-    console.log(`Filtered to ${spellsToImport.length} valid SRD spells`);
+    console.log("Fetching spells from Open5e v2 API (SRD-2014 only)...");
+    const allSpells = await fetchAllPages(`${OPEN5E_BASE}/v2/spells/?document__key=srd-2014&limit=100`);
+    console.log(`Fetched ${allSpells.length} SRD spells from v2 API`);
 
-    for (const spell of spellsToImport) {
-      const classesArray = spell.dnd_class
-        .split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
-      
-      let spellLevel = 0;
-      if (typeof spell.level_int === 'number') {
-        spellLevel = spell.level_int;
-      } else if (typeof spell.level === 'string') {
-        if (spell.level.toLowerCase() === 'cantrip') {
-          spellLevel = 0;
-        } else {
-          const match = spell.level.match(/^(\d+)/);
-          if (match) spellLevel = parseInt(match[1], 10);
-        }
+    for (const spell of allSpells) {
+      // v2 provides classes as array of objects [{name: "Wizard", key: "srd_wizard"}]
+      const classesArray = Array.isArray(spell.classes)
+        ? spell.classes.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean)
+        : [];
+
+      // Skip spells with no class assignments
+      if (classesArray.length === 0) {
+        result.skipped++;
+        continue;
       }
 
-      const isConcentration = spell.concentration === 'yes' || spell.concentration === true;
-      const isRitual = spell.ritual === 'yes' || spell.ritual === true;
-      const schoolName = typeof spell.school === 'object' 
+      // v2 provides level as integer directly
+      const spellLevel = typeof spell.level === 'number' ? spell.level
+        : typeof spell.level_int === 'number' ? spell.level_int
+        : 0;
+
+      // v2 provides school as object {name, key} or string
+      const schoolName = typeof spell.school === 'object'
         ? spell.school?.name || 'evocation' : spell.school || 'evocation';
+
+      // v2 provides verbal/somatic/material as booleans
+      const components: string[] = [];
+      if (spell.verbal) components.push('V');
+      if (spell.somatic) components.push('S');
+      if (spell.material) components.push('M');
+
+      const isConcentration = spell.concentration === true || spell.concentration === 'yes';
+      const isRitual = spell.ritual === true || spell.ritual === 'yes';
 
       const { error } = await supabase.from('srd_spells').upsert({
         name: spell.name,
@@ -518,9 +512,7 @@ async function importSpells(supabase: any): Promise<ImportResult> {
         school: schoolName.toLowerCase(),
         casting_time: spell.casting_time || '1 action',
         range: spell.range || '30 feet',
-        components: spell.components 
-          ? spell.components.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
-          : [],
+        components,
         duration: spell.duration || 'Instantaneous',
         concentration: isConcentration,
         ritual: isRitual,
@@ -536,9 +528,7 @@ async function importSpells(supabase: any): Promise<ImportResult> {
       }
     }
     
-    // Also skip any leftover spells without class data
-    result.skipped = allSpells.length - spellsToImport.length;
-    console.log(`Spells: ${result.imported} imported, ${result.skipped} skipped (non-SRD/no classes)`);
+    console.log(`Spells: ${result.imported} imported, ${result.skipped} skipped (no classes)`);
   } catch (error) {
     result.errors.push(`Spells import failed: ${error instanceof Error ? error.message : 'Unknown'}`);
   }

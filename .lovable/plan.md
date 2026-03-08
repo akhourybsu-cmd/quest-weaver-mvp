@@ -1,166 +1,193 @@
 
 
-# Map Editor Optimization: Comprehensive Overhaul
+# Beta Tools -- Implementation Plan
 
-## Current State Assessment
+## Overview
 
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+Build Beta Tools as a standalone top-level section with its own routing, navigation, asset storage, and AI-powered generators. Reuse the existing `generate-asset` edge function by extending it with new asset types. Deliver all 8 hero generators, the Beta Library, and the import-to-campaign flow.
 
----
+## Architecture
 
-## Critical Issues (Tools That Don't Work)
+```text
+/beta-tools                    --> Landing page
+/beta-tools/library            --> Beta Library (all saved assets)
+/beta-tools/generate/:toolId   --> Generator pages (NPC, Monster, Quest, etc.)
+```
 
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
+```text
+src/
+  pages/
+    BetaTools.tsx              -- Landing page
+    BetaToolsLibrary.tsx       -- Library browser
+    BetaToolsGenerator.tsx     -- Universal generator page (renders per toolId)
+  components/
+    beta-tools/
+      BetaToolsLayout.tsx      -- Sidebar + content wrapper
+      BetaToolsSidebar.tsx     -- Category navigation
+      BetaToolsLanding.tsx     -- Hero + featured tools + recent creations
+      BetaAssetCard.tsx        -- Universal asset card for library
+      BetaGeneratorForm.tsx    -- Reusable generator UI (prompt + structured fields + AI)
+      BetaAssetEditor.tsx      -- Edit saved asset
+      BetaImportDialog.tsx     -- Import-to-campaign flow
+      BetaLibraryFilters.tsx   -- Type/status/search/favorites filters
+      toolRegistry.ts          -- Central registry of all tools, categories, schemas
+```
 
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
+## Database
 
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
+**New table: `beta_assets`**
 
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
+```sql
+create table public.beta_assets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  asset_type text not null,          -- 'npc', 'monster', 'quest', 'settlement', 'magic_item', 'world_event', 'battle_map', 'lore_gap'
+  name text not null,
+  data jsonb not null default '{}',  -- all generated/edited fields
+  tags text[] default '{}',
+  status text not null default 'draft',  -- 'draft', 'standalone', 'canon_ready', 'imported', 'imported_adapted'
+  is_favorite boolean default false,
+  imported_to_campaign_id uuid references campaigns(id) on delete set null,
+  imported_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
+alter table public.beta_assets enable row level security;
 
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+-- Users can only access their own assets
+create policy "Users manage own beta assets"
+  on public.beta_assets for all
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
 
----
+-- Updated_at trigger
+create trigger beta_assets_updated_at
+  before update on public.beta_assets
+  for each row execute function update_updated_at();
+```
 
-## Performance Issues
+Single table with JSONB `data` column. Each asset type stores its fields in `data`. No need for separate tables per type -- keeps the schema simple and extensible.
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
+## Edge Function Changes
 
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
+Extend `generate-asset` to accept new asset types. Add schemas for: `monster`, `settlement`, `world_event`, `magic_item` (reuse existing `item`), `battle_map`, `lore_gap`. Add a `standalone: true` flag in the request body that tells the function to skip campaign context when none is provided.
 
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
+New types added to the function:
 
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+- **monster**: CR, type, size, abilities, lair actions, legendary actions, tactics, habitat, lore
+- **settlement**: population, government, economy, defenses, notable_locations, notable_npcs, history, atmosphere, plot_hooks
+- **world_event**: category, severity, affected_regions, affected_factions, description, consequences, timeline, rumors
+- **battle_map**: layout_type (grid/hex), biome, size, indoor/outdoor, terrain_features, cover_positions, hazards, tactical_notes (text description, not actual image generation)
+- **lore_gap**: (special -- scans provided assets and returns gap analysis, not a generator)
 
----
+## Tool Registry
 
-## Functional Gaps
+Central `toolRegistry.ts` defines all tools with metadata:
 
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
+```typescript
+interface BetaTool {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon: LucideIcon;
+  assetType: string;
+  status: 'active' | 'coming_soon';
+  fields: FieldSchema[];     // structured input fields
+  examplePrompts: string[];  // quick-start prompts
+}
+```
 
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
+8 hero tools marked `active`. All other tools from the spec marked `coming_soon` with placeholder cards in the UI.
 
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
+## Generator UX Flow
 
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
+Every generator follows the same reusable component pattern:
 
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
+1. **BetaGeneratorForm** renders:
+   - Freeform prompt textarea
+   - Quick-start prompt chips
+   - Optional structured fields (collapsible, type-specific)
+   - Optional "Use campaign context" toggle (lets user pick a campaign for lore-aware generation)
+   - Generate button -> calls edge function
+2. **AI result preview** (reuse existing `AIGenerationPreview` pattern)
+3. **Save to Beta Library** button -> inserts into `beta_assets`
+4. **Regenerate** or **Edit manually** before saving
 
----
+## Beta Library
 
-## Implementation Plan
+- Grid of `BetaAssetCard` components
+- Filter bar: type dropdown, status dropdown, search input, favorites toggle
+- Each card shows: name, type badge, status badge, favorite star, created date
+- Card actions: Edit, Duplicate, Delete, Import to Campaign
+- Clicking a card opens `BetaAssetEditor` (inline or dialog)
 
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
+## Import Flow
 
-**File: `src/components/maps/MapViewer.tsx`**
+`BetaImportDialog` presents:
+1. Campaign selector (from user's campaigns)
+2. Import mode: "As Draft", "As Canon", "Clone Only"
+3. On confirm: inserts the asset data into the appropriate campaign table (npcs, locations, quests, items, etc.) using existing insert patterns
+4. Updates `beta_assets.status` to `imported`, sets `imported_to_campaign_id` and `imported_at`
 
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
+For MVP, import supports: NPC -> `npcs` table, Quest -> `quests` table, Magic Item -> `items` table, Settlement -> `locations` table. Monster/world_event/battle_map/lore_gap remain standalone-only initially.
 
-### Phase 2: Wire Drawing Tools
+## Missing Lore Detector
 
-**File: `src/components/maps/MapViewer.tsx`**
+Special tool that works differently from generators:
+1. User selects a campaign
+2. Edge function scans campaign assets (NPCs, locations, factions, quests, items) via the campaign context builder
+3. Returns a structured report of gaps (NPCs without goals, locations without descriptions, factions without leadership, etc.)
+4. Results saved as a `lore_gap` type beta asset for reference
+5. Each gap has a "Fix with AI" action that opens the relevant generator pre-filled
 
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
+## Landing Page Layout
 
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
+- Hero: "The Creator's Forge" title, tagline about experimental sandbox, CTA to browse tools
+- 8 featured tool cards in a responsive grid
+- "Your Recent Creations" section (last 5 beta assets)
+- Category browser (accordion or tabs showing all tool categories with coming-soon badges)
+- Info callout: "Nothing here touches your campaigns unless you choose to import it"
 
-### Phase 3: Wire Measurement, Range, and Terrain
+## Visual Identity
 
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
+- Uses existing design system (Tailwind, shadcn)
+- Accent color: amber/brass tones (vs purple for Campaign Manager) to create visual distinction
+- Beaker/flask icon motif for the "experimental lab" feel
+- Beta badge on the section header
+- Cards use a slightly different border treatment (dashed or amber border)
 
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
+## Routing (App.tsx additions)
 
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
+```typescript
+const BetaTools = lazy(() => import("./pages/BetaTools"));
+const BetaToolsLibrary = lazy(() => import("./pages/BetaToolsLibrary"));
+const BetaToolsGenerator = lazy(() => import("./pages/BetaToolsGenerator"));
 
-### Phase 4: Fix Fog of War
+// Protected routes
+<Route path="/beta-tools" element={<BetaTools />} />
+<Route path="/beta-tools/library" element={<BetaToolsLibrary />} />
+<Route path="/beta-tools/generate/:toolId" element={<BetaToolsGenerator />} />
+```
 
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
+Add "Beta Tools" link to the landing page nav and Campaign Hub header.
 
-### Phase 5: Fix Grid Snap and Token Context Menu
+## Implementation Order
 
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
+1. **Database migration** -- create `beta_assets` table with RLS
+2. **Extend edge function** -- add monster, settlement, world_event, battle_map types + standalone mode
+3. **Tool registry + types** -- `toolRegistry.ts` with all tool definitions and field schemas
+4. **Layout components** -- `BetaToolsLayout`, `BetaToolsSidebar`
+5. **Landing page** -- `BetaTools.tsx` with hero, featured tools, recent creations
+6. **Generator page** -- `BetaToolsGenerator.tsx` with `BetaGeneratorForm` (reusable for all types)
+7. **Library page** -- `BetaToolsLibrary.tsx` with `BetaAssetCard`, filters, CRUD
+8. **Import dialog** -- `BetaImportDialog.tsx` with campaign selector and insert logic
+9. **Missing Lore Detector** -- special scanning tool
+10. **App.tsx routing** -- wire everything up, add nav links
 
-### Phase 6: Performance Optimizations
+## File Count Estimate
 
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
-
----
-
-## Files Modified
-
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
-
-### No database changes required
-
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+~15 new files, 2 modified files (App.tsx, generate-asset edge function), 1 migration.
 

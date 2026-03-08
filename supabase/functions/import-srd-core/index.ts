@@ -11,7 +11,8 @@ const corsHeaders = {
 };
 
 const OPEN5E_BASE = "https://api.open5e.com";
-const SRD_SLUG = "5esrd";
+const SRD_V1_SLUG = "wotc-srd";      // v1 endpoints use document__slug=wotc-srd
+const SRD_V2_KEY = "srd-2014";        // v2 endpoints use document__key=srd-2014
 
 // Known SRD document slugs to accept
 const SRD_SLUGS = new Set(["5esrd", "wotc-srd", "srd"]);
@@ -270,7 +271,7 @@ async function importClasses(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Classes', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const classes = await fetchAllPages(`${OPEN5E_BASE}/v1/classes/?document__slug=${SRD_SLUG}&limit=100`);
+    const classes = await fetchAllPages(`${OPEN5E_BASE}/v1/classes/?document__slug=${SRD_V1_SLUG}&limit=100`);
 
     for (const cls of classes) {
       const classData = {
@@ -324,7 +325,7 @@ async function importAncestries(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Ancestries', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const races = await fetchAllPages(`${OPEN5E_BASE}/v1/races/?document__slug=${SRD_SLUG}&limit=100`);
+    const races = await fetchAllPages(`${OPEN5E_BASE}/v1/races/?document__slug=${SRD_V1_SLUG}&limit=100`);
 
     for (const race of races) {
       const ancestryData = {
@@ -374,7 +375,7 @@ async function importBackgrounds(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Backgrounds', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?document__slug=${SRD_SLUG}&limit=100`);
+    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const bg of backgrounds) {
       const { error } = await supabase.from('srd_backgrounds').upsert({
@@ -400,7 +401,7 @@ async function importArmor(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Armor', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const armors = await fetchAllPages(`${OPEN5E_BASE}/v2/armor/?document__slug=${SRD_SLUG}&limit=100`);
+    const armors = await fetchAllPages(`${OPEN5E_BASE}/v2/armor/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const armor of armors) {
       const category = armor.category ? 
@@ -431,7 +432,7 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Weapons', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__slug=${SRD_SLUG}&limit=100`);
+    const weapons = await fetchAllPages(`${OPEN5E_BASE}/v2/weapons/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const weapon of weapons) {
       const properties = Array.isArray(weapon.properties)
@@ -540,15 +541,25 @@ async function importFeats(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Feats', imported: 0, skipped: 0, errors: [] };
   
   try {
-    // Fetch from ALL documents so we get a good range of feats, then filter
+    // v2 feats from all documents (only 1 SRD feat exists — Grappler)
+    // We import broadly to give users a wider selection
     const feats = await fetchAllPages(`${OPEN5E_BASE}/v2/feats/?limit=100`);
     
+    // Track names we've already imported to skip duplicates from different sources
+    const imported = new Set<string>();
+    
     for (const feat of feats) {
-      // Skip feats without descriptions (they're useless)
       if (!feat.desc || feat.desc.trim().length === 0) {
         result.skipped++;
         continue;
       }
+      
+      // Skip duplicate names from different source books
+      if (imported.has(feat.name)) {
+        result.skipped++;
+        continue;
+      }
+      imported.add(feat.name);
 
       const { error } = await supabase.from('srd_feats').upsert({
         name: feat.name,
@@ -570,14 +581,14 @@ async function importConditions(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Conditions', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const conditions = await fetchAllPages(`${OPEN5E_BASE}/v2/conditions/?document__slug=${SRD_SLUG}&format=json`);
+    const conditions = await fetchAllPages(`${OPEN5E_BASE}/v2/conditions/?document__key=${SRD_V2_KEY}&format=json`);
     
     for (const condition of conditions) {
       const { error } = await supabase.from('srd_conditions').upsert({
         slug: condition.slug,
         name: condition.name,
         description: condition.desc || null,
-        document: condition.document || SRD_SLUG,
+        document: condition.document?.key || SRD_V2_KEY,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${condition.slug}: ${error.message}`);
@@ -594,7 +605,7 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Magic Items', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const items = await fetchAllPages(`${OPEN5E_BASE}/v1/magicitems/?document__slug=${SRD_SLUG}&format=json`);
+    const items = await fetchAllPages(`${OPEN5E_BASE}/v1/magicitems/?document__slug=${SRD_V1_SLUG}&format=json`);
     
     for (const item of items) {
       const { error } = await supabase.from('srd_magic_items').upsert({
@@ -604,7 +615,7 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
         rarity: item.rarity || null,
         requires_attunement: item.requires_attunement || false,
         description: item.desc || null,
-        document: item.document || SRD_SLUG,
+        document: item.document__slug || SRD_V1_SLUG,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${item.slug}: ${error.message}`);
@@ -621,7 +632,7 @@ async function importMonsters(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Monsters', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_SLUG}&format=json&limit=100`);
+    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_V1_SLUG}&format=json&limit=100`);
     console.log(`Fetched ${monsters.length} SRD monsters`);
     
     for (const monster of monsters) {

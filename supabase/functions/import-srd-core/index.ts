@@ -578,7 +578,7 @@ async function importConditions(supabase: any): Promise<ImportResult> {
         slug: condition.slug,
         name: condition.name,
         description: condition.desc || null,
-        document: condition.document || SRD_SLUG,
+        document: condition.document?.key || SRD_V2_KEY,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${condition.slug}: ${error.message}`);

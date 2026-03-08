@@ -22,8 +22,8 @@ export function BetaLibraryFilters({
   favoritesOnly, onFavoritesOnlyChange,
 }: BetaLibraryFiltersProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="relative flex-1 min-w-[200px]">
+    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+      <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search assets..."
@@ -32,37 +32,39 @@ export function BetaLibraryFilters({
           className="pl-9"
         />
       </div>
-      <Select value={typeFilter} onValueChange={onTypeFilterChange}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="All Types" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          {Object.entries(ASSET_TYPE_LABELS).map(([key, label]) => (
-            <SelectItem key={key} value={key}>{label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="All Statuses" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          {Object.entries(STATUS_LABELS).map(([key, label]) => (
-            <SelectItem key={key} value={key}>{label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Toggle
-        pressed={favoritesOnly}
-        onPressedChange={onFavoritesOnlyChange}
-        className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
-        aria-label="Show favorites only"
-      >
-        <Star className="h-4 w-4 mr-1" />
-        Favorites
-      </Toggle>
+      <div className="flex flex-wrap gap-3">
+        <Select value={typeFilter} onValueChange={onTypeFilterChange}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {Object.entries(ASSET_TYPE_LABELS).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {Object.entries(STATUS_LABELS).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Toggle
+          pressed={favoritesOnly}
+          onPressedChange={onFavoritesOnlyChange}
+          className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+          aria-label="Show favorites only"
+        >
+          <Star className="h-4 w-4 mr-1" />
+          Favorites
+        </Toggle>
+      </div>
     </div>
   );
 }

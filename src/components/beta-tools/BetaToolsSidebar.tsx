@@ -1,5 +1,7 @@
+import { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, Library, Lock } from "lucide-react";
+import { FlaskConical, Library, Lock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +22,16 @@ export function BetaToolsSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
+  const [search, setSearch] = useState("");
+
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    return TOOL_CATEGORIES.map(cat => ({
+      ...cat,
+      tools: getToolsByCategory(cat.id).filter(t => t.name.toLowerCase().includes(q)),
+    })).filter(cat => cat.tools.length > 0);
+  }, [search]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -54,9 +66,26 @@ export function BetaToolsSidebar() {
 
         {!collapsed && <Separator className="bg-border mx-3" />}
 
+        {/* Search */}
+        {!collapsed && (
+          <div className="px-3 pt-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter tools..."
+                className="h-8 pl-8 text-xs bg-muted/50 border-border/50"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Tool categories */}
         {TOOL_CATEGORIES.map((cat) => {
-          const tools = getToolsByCategory(cat.id);
+          const allTools = getToolsByCategory(cat.id);
+          const tools = filteredCategories ? filteredCategories.find(fc => fc.id === cat.id)?.tools : allTools;
+          if (filteredCategories && !tools) return null;
 
           return (
             <SidebarGroup key={cat.id} className="pt-2">

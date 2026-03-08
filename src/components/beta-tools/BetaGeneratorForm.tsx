@@ -68,6 +68,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
   const [justSaved, setJustSaved] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
 
   // Reset all form state when switching tools
   useEffect(() => {
@@ -82,6 +83,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setSelectedCampaignId("");
     setSaveTags("");
     setJustSaved(false);
+    setRefinePrompt("");
   }, [tool.id]);
 
   useEffect(() => {
@@ -194,6 +196,47 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     }
   };
 
+  const handleRefine = useCallback(async () => {
+    if (!refinePrompt.trim() || !editedResult) return;
+    setIsGenerating(true);
+    try {
+      let campaignContext = null;
+      let standalone = true;
+      if (useCampaignContext && selectedCampaignId) {
+        const CONTEXT_ASSET_TYPES: AssetType[] = ['npc', 'location', 'faction', 'item', 'quest', 'lore'];
+        const contextType = CONTEXT_ASSET_TYPES.includes(tool.assetType as AssetType)
+          ? (tool.assetType as AssetType) : 'npc';
+        campaignContext = await buildCampaignContext(selectedCampaignId, contextType);
+        standalone = false;
+      }
+
+      const { data, error } = await supabase.functions.invoke('generate-asset', {
+        body: {
+          asset_type: tool.assetType,
+          user_prompt: refinePrompt,
+          existing_fields: editedResult,
+          locked_fields: [],
+          campaign_context: campaignContext,
+          standalone,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      const refined = { ...editedResult, ...data.filled_fields };
+      setResult(refined);
+      setEditedResult(refined);
+      setAssumptions(data.assumptions || []);
+      setRefinePrompt("");
+      toast({ title: "Result refined!" });
+    } catch (err) {
+      toast({ title: "Refinement failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [refinePrompt, editedResult, useCampaignContext, selectedCampaignId, tool, toast]);
+
   const handleGenerateAnother = () => {
     setResult(null);
     setEditedResult(null);
@@ -202,6 +245,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setSaveTags("");
     setJustSaved(false);
     setIsEditing(false);
+    setRefinePrompt("");
   };
 
   const displayResult = isEditing ? editedResult : result;
@@ -437,6 +481,34 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                     </ul>
                   </div>
                 )}
+
+                {/* Refine prompt */}
+                <div className="border-t border-border pt-3 space-y-2">
+                  <Label className="text-xs text-muted-foreground">Refine this result</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={refinePrompt}
+                      onChange={(e) => setRefinePrompt(e.target.value)}
+                      placeholder="e.g. Make it darker, change the setting to underdark..."
+                      className="text-sm flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && refinePrompt.trim()) {
+                          e.preventDefault();
+                          handleRefine();
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRefine}
+                      disabled={isGenerating || !refinePrompt.trim()}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Refine
+                    </Button>
+                  </div>
+                </div>
 
                 {/* Tags input */}
                 <div className="border-t border-border pt-3 space-y-1.5">

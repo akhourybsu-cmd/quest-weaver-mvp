@@ -229,12 +229,20 @@ const BetaTools = () => {
             {TOOL_CATEGORIES.map((cat) => {
               const tools = getToolsByCategory(cat.id);
               const activeCount = tools.filter((t) => t.status === "active").length;
+              const firstActiveTool = tools.find((t) => t.status === "active");
               return (
-                <Card key={cat.id} className="border-border/50 bg-card/30">
+                <Card
+                  key={cat.id}
+                  className={`border-border/50 bg-card/30 transition-all duration-200 ${firstActiveTool ? 'cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.02]' : ''}`}
+                  onClick={() => firstActiveTool && navigate(`/beta-tools/generate/${firstActiveTool.id}`)}
+                >
                   <div className="p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <cat.icon className="h-5 w-5 text-brand-brass" />
-                      <h3 className="font-cinzel font-semibold">{cat.label}</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <cat.icon className="h-5 w-5 text-brand-brass" />
+                        <h3 className="font-cinzel font-semibold">{cat.label}</h3>
+                      </div>
+                      {firstActiveTool && <ArrowRight className="h-4 w-4 text-muted-foreground/50" />}
                     </div>
                     <p className="text-xs text-muted-foreground">{cat.description}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

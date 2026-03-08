@@ -1,7 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Copy, Trash2, Upload, Pencil } from "lucide-react";
+import { Star, Copy, Trash2, Upload, Pencil, FileText } from "lucide-react";
+import { assetToMarkdown } from "@/lib/assetToMarkdown";
+import { useToast } from "@/hooks/use-toast";
 import { ASSET_TYPE_LABELS, STATUS_LABELS } from "./toolRegistry";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -39,7 +41,14 @@ const statusColors: Record<string, string> = {
 };
 
 export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFavorite, onImport }: BetaAssetCardProps) {
+  const { toast } = useToast();
   const description = asset.data?.description || asset.data?.personality || asset.data?.content || '';
+
+  const handleCopyMarkdown = async () => {
+    const md = assetToMarkdown(asset);
+    await navigator.clipboard.writeText(md);
+    toast({ title: "Copied as Markdown" });
+  };
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 
   return (
@@ -89,6 +98,9 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate?.(asset)} title="Duplicate">
               <Copy className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyMarkdown} title="Copy as Markdown">
+              <FileText className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onImport?.(asset)} title="Import to Campaign">
               <Upload className="h-3.5 w-3.5" />

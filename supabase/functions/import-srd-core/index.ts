@@ -571,7 +571,7 @@ async function importConditions(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Conditions', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const conditions = await fetchAllPages(`${OPEN5E_BASE}/v2/conditions/?document__slug=${SRD_SLUG}&format=json`);
+    const conditions = await fetchAllPages(`${OPEN5E_BASE}/v2/conditions/?document__key=${SRD_V2_KEY}&format=json`);
     
     for (const condition of conditions) {
       const { error } = await supabase.from('srd_conditions').upsert({

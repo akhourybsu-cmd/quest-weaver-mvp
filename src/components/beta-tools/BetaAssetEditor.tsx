@@ -5,10 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, Save, Eye, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BetaAsset } from "./BetaAssetCard";
+import { BetaResultRenderer } from "./BetaResultRenderer";
 import { STATUS_LABELS } from "./toolRegistry";
 
 interface BetaAssetEditorProps {
@@ -25,6 +28,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
   const [tagsInput, setTagsInput] = useState(asset?.tags?.join(', ') || '');
   const [data, setData] = useState<Record<string, any>>(asset?.data || {});
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('edit');
 
   // Reset when asset changes
   useEffect(() => {
@@ -33,6 +37,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
       setStatus(asset.status);
       setTagsInput(asset.tags?.join(', ') || '');
       setData(asset.data || {});
+      setActiveTab('edit');
     }
   }, [asset]);
 
@@ -63,11 +68,12 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl h-[85vh] max-h-[700px] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="font-cinzel">Edit Asset</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+
+        <div className="px-6 space-y-3 shrink-0">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Name</Label>
@@ -91,28 +97,52 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
             <Label>Tags (comma-separated)</Label>
             <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="e.g. villain, underdark, tier-3" />
           </div>
-
-          {/* Data fields */}
-          <div className="space-y-3 border-t border-border pt-3">
-            <Label className="text-foreground font-cinzel">Asset Data</Label>
-            {Object.entries(data).map(([key, value]) => (
-              <div key={key} className="space-y-1">
-                <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
-                <Textarea
-                  value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || '')}
-                  onChange={(e) => {
-                    const newVal = Array.isArray(value)
-                      ? e.target.value.split('\n').filter(Boolean)
-                      : e.target.value;
-                    setData(prev => ({ ...prev, [key]: newVal }));
-                  }}
-                  className="text-sm min-h-[50px]"
-                />
-              </div>
-            ))}
-          </div>
         </div>
-        <DialogFooter>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col px-6">
+          <TabsList className="w-full justify-start shrink-0">
+            <TabsTrigger value="edit" className="gap-1.5">
+              <Pencil className="h-3.5 w-3.5" />
+              Edit Data
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="gap-1.5">
+              <Eye className="h-3.5 w-3.5" />
+              Preview
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="edit" className="flex-1 min-h-0 mt-3">
+            <ScrollArea className="h-full">
+              <div className="space-y-3 pr-4 pb-2">
+                {Object.entries(data).map(([key, value]) => (
+                  <div key={key} className="space-y-1">
+                    <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                    <Textarea
+                      value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || '')}
+                      onChange={(e) => {
+                        const newVal = Array.isArray(value)
+                          ? e.target.value.split('\n').filter(Boolean)
+                          : e.target.value;
+                        setData(prev => ({ ...prev, [key]: newVal }));
+                      }}
+                      className="text-sm min-h-[50px]"
+                    />
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="preview" className="flex-1 min-h-0 mt-3">
+            <ScrollArea className="h-full">
+              <div className="pr-4 pb-2">
+                <BetaResultRenderer assetType={asset.asset_type} data={{ name, ...data }} />
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter className="px-6 pb-6 pt-3 border-t border-border shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}

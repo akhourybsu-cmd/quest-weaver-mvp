@@ -24,6 +24,7 @@ export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
   const navigate = useNavigate();
   const { player, loading: playerLoading } = usePlayer();
+  const { userId } = useAuth();
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sessionStatus, setSessionStatus] = useState<'live' | 'paused' | 'offline'>('offline');

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ interface HitDiceManagerProps {
     current_hp: number;
     max_hp: number;
     level: number;
-    con_save: number; // We'll derive CON from save bonus
+    con_save: number; // Legacy - we now load actual CON from character_abilities
   };
   onHeal: (amount: number) => void;
 }
@@ -24,15 +24,30 @@ interface HitDiceManagerProps {
 const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps) => {
   const [rolling, setRolling] = useState(false);
   const [lastRoll, setLastRoll] = useState<{ roll: number; con: number; total: number } | null>(null);
+  const [conModifier, setConModifier] = useState<number>(0);
   const { toast } = useToast();
 
-  // Calculate CON modifier from save bonus (save = ability mod + prof if proficient)
-  // For now, use a simplified approach - we'll improve this when we have ability scores table
-  const getConModifier = (): number => {
-    // Rough estimate: assume proficient if save is unusually high
-    // This is a placeholder - ideally we'd have actual ability scores
-    return Math.floor(character.con_save / 2);
-  };
+  // BUG FIX: Load actual CON score from character_abilities instead of deriving from con_save
+  useEffect(() => {
+    const loadConModifier = async () => {
+      const { data } = await supabase
+        .from('character_abilities')
+        .select('con')
+        .eq('character_id', characterId)
+        .single();
+      
+      if (data?.con) {
+        // Standard 5e modifier calculation: (score - 10) / 2, rounded down
+        setConModifier(Math.floor((data.con - 10) / 2));
+      } else {
+        // Fallback to estimated from con_save (less accurate)
+        // This is a rough estimate - con_save might include proficiency
+        setConModifier(Math.floor(character.con_save / 2));
+      }
+    };
+    
+    loadConModifier();
+  }, [characterId, character.con_save]);
 
   const rollHitDie = async () => {
     if (character.hit_dice_current <= 0) {
@@ -55,15 +70,12 @@ const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps)
     setRolling(true);
 
     try {
-      // Get CON modifier
-      const conMod = getConModifier();
-
       // Parse hit die (e.g., "d8" -> 8)
       const dieSize = parseInt(character.hit_die.replace('d', ''));
       
       // Roll the die
       const roll = Math.floor(Math.random() * dieSize) + 1;
-      const healing = Math.max(1, roll + conMod); // Minimum 1 HP
+      const healing = Math.max(1, roll + conModifier); // Minimum 1 HP
 
       // Update character
       const newHp = Math.min(character.current_hp + healing, character.max_hp);
@@ -83,16 +95,16 @@ const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps)
         rest_type: 'short',
         dice_rolled: 1,
         roll_result: roll,
-        con_modifier: conMod,
+        con_modifier: conModifier,
         total_healing: healing,
       });
 
-      setLastRoll({ roll, con: conMod, total: healing });
+      setLastRoll({ roll, con: conModifier, total: healing });
       onHeal(healing);
 
       toast({
         title: "Hit Die Rolled!",
-        description: `Rolled ${roll} + ${conMod} CON = ${healing} HP healed`,
+        description: `Rolled ${roll} + ${conModifier} CON = ${healing} HP healed`,
       });
     } catch (error) {
       console.error('Error rolling hit die:', error);
@@ -140,6 +152,14 @@ const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps)
           <span className="text-sm text-muted-foreground">Current HP</span>
           <span className="font-medium">
             {character.current_hp} / {character.max_hp}
+          </span>
+        </div>
+
+        {/* CON Modifier Display */}
+        <div className="flex items-center justify-between py-2 border-t">
+          <span className="text-sm text-muted-foreground">CON Modifier</span>
+          <span className="font-medium">
+            {conModifier >= 0 ? '+' : ''}{conModifier}
           </span>
         </div>
 

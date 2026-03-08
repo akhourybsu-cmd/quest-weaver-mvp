@@ -63,8 +63,12 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: Ch
 
       toast.success("Character deleted successfully");
       setShowDeleteDialog(false);
-      // Refresh the page to update the character list
-      window.location.reload();
+      // BUG FIX: Use callback instead of full page reload
+      if (onDelete) {
+        onDelete();
+      } else {
+        window.location.reload();
+      }
     } catch (error: any) {
       console.error("Error deleting character:", error);
       toast.error("Failed to delete character: " + error.message);

@@ -123,13 +123,13 @@ export const PlayerWaitingRoom = () => {
       .from('campaign_members')
       .select('id')
       .eq('campaign_id', campaign.id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (!existingMember) {
       await supabase.from('campaign_members').insert({
         campaign_id: campaign.id,
-        user_id: user.id,
+        user_id: userId,
         role: 'PLAYER',
       });
     }

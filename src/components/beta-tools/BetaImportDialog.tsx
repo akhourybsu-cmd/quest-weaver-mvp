@@ -61,7 +61,7 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
           secrets: d.secrets || null,
           alignment: d.alignment || null,
           pronouns: d.pronouns || null,
-          status: importMode === 'canon' ? 'alive' : 'draft',
+          status: importMode === 'canon' ? 'alive' : 'unknown',
         });
         if (error) throw error;
       } else if (asset.asset_type === 'quest') {

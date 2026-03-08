@@ -10,8 +10,7 @@ interface TurnIndicatorProps {
 }
 
 interface TurnInfo {
-  characterName: string | null;
-  monsterName: string | null;
+  combatantName: string | null;
   isPlayer: boolean;
   awaitingSaves: Array<{
     characterName: string;
@@ -21,8 +20,7 @@ interface TurnInfo {
 
 export const TurnIndicator = ({ encounterId, campaignId }: TurnIndicatorProps) => {
   const [turnInfo, setTurnInfo] = useState<TurnInfo>({
-    characterName: null,
-    monsterName: null,
+    combatantName: null,
     isPlayer: false,
     awaitingSaves: [],
   });
@@ -65,18 +63,35 @@ export const TurnIndicator = ({ encounterId, campaignId }: TurnIndicatorProps) =
   }, [encounterId]);
 
   const fetchTurnInfo = async () => {
-    // Get current turn
+    // Get current turn entry
     const { data: currentInit } = await supabase
       .from("initiative")
-      .select(`
-        combatant_id,
-        combatant_type,
-        characters:combatant_id(name),
-        encounter_monsters:combatant_id(display_name)
-      `)
+      .select("combatant_id, combatant_type")
       .eq("encounter_id", encounterId)
       .eq("is_current_turn", true)
       .maybeSingle();
+
+    // Resolve combatant name separately based on type
+    let combatantName: string | null = null;
+    const isPlayer = currentInit?.combatant_type === 'character';
+
+    if (currentInit) {
+      if (isPlayer) {
+        const { data: char } = await supabase
+          .from("characters")
+          .select("name")
+          .eq("id", currentInit.combatant_id)
+          .single();
+        combatantName = char?.name || "Unknown";
+      } else {
+        const { data: monster } = await supabase
+          .from("encounter_monsters")
+          .select("display_name")
+          .eq("id", currentInit.combatant_id)
+          .single();
+        combatantName = monster?.display_name || "Unknown Creature";
+      }
+    }
 
     // Get active save prompts
     const { data: savePrompts } = await supabase
@@ -97,7 +112,7 @@ export const TurnIndicator = ({ encounterId, campaignId }: TurnIndicatorProps) =
 
           chars?.forEach((char) => {
             awaitingSaves.push({
-              characterName: char.name,
+              characterName: char.name || "Unknown",
               saveType: prompt.ability.toUpperCase(),
             });
           });
@@ -106,14 +121,13 @@ export const TurnIndicator = ({ encounterId, campaignId }: TurnIndicatorProps) =
     }
 
     setTurnInfo({
-      characterName: currentInit?.combatant_type === 'character' ? (currentInit as any).characters?.name : null,
-      monsterName: currentInit?.combatant_type === 'monster' ? (currentInit as any).encounter_monsters?.display_name : null,
-      isPlayer: currentInit?.combatant_type === 'character',
+      combatantName,
+      isPlayer,
       awaitingSaves,
     });
   };
 
-  if (!turnInfo.characterName && !turnInfo.monsterName && turnInfo.awaitingSaves.length === 0) {
+  if (!turnInfo.combatantName && turnInfo.awaitingSaves.length === 0) {
     return null;
   }
 
@@ -122,13 +136,13 @@ export const TurnIndicator = ({ encounterId, campaignId }: TurnIndicatorProps) =
       <CardContent className="pt-4">
         <div className="space-y-3">
           {/* Current Turn */}
-          {(turnInfo.characterName || turnInfo.monsterName) && (
+          {turnInfo.combatantName && (
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">Current Turn:</span>
               <Badge variant={turnInfo.isPlayer ? "default" : "secondary"}>
                 {turnInfo.isPlayer && <User className="w-3 h-3 mr-1" />}
-                {turnInfo.characterName || turnInfo.monsterName}
+                {turnInfo.combatantName}
               </Badge>
             </div>
           )}

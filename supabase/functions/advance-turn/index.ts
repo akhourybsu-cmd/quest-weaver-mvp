@@ -219,12 +219,32 @@ serve(async (req) => {
         .eq('id', encounterId);
     }
 
+    // Resolve name of next combatant
+    let currentTurnName = 'Unknown';
+    const nextEntry = initiative[nextIndex];
+    if (nextEntry.combatant_type === 'character') {
+      const { data: char } = await supabase
+        .from('characters')
+        .select('name')
+        .eq('id', nextEntry.combatant_id)
+        .single();
+      currentTurnName = char?.name || 'Unknown';
+    } else {
+      const { data: monster } = await supabase
+        .from('encounter_monsters')
+        .select('display_name')
+        .eq('id', nextEntry.combatant_id)
+        .single();
+      currentTurnName = monster?.display_name || 'Unknown Creature';
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         newRound,
         isNewRound,
-        currentTurn: initiative[nextIndex].character?.name,
+        currentTurn: currentTurnName,
+        currentTurnType: nextEntry.combatant_type,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

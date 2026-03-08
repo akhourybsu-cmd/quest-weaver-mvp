@@ -233,8 +233,8 @@ const SessionSpectator = () => {
             <CardContent className="space-y-2">
               {initiative.map((entry) => {
                 const isCharacter = entry.combatant_type === 'character';
-                const char = (entry as any).characters;
-                const monster = (entry as any).encounter_monsters;
+                const char = (entry as any).character;
+                const monster = (entry as any).monster;
 
                 return (
                   <div

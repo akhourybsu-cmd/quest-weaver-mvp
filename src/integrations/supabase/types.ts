@@ -131,6 +131,59 @@ export type Database = {
           },
         ]
       }
+      beta_assets: {
+        Row: {
+          asset_type: string
+          created_at: string | null
+          data: Json
+          id: string
+          imported_at: string | null
+          imported_to_campaign_id: string | null
+          is_favorite: boolean | null
+          name: string
+          status: string
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          imported_at?: string | null
+          imported_to_campaign_id?: string | null
+          is_favorite?: boolean | null
+          name: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string | null
+          data?: Json
+          id?: string
+          imported_at?: string | null
+          imported_to_campaign_id?: string | null
+          is_favorite?: boolean | null
+          name?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_assets_imported_to_campaign_id_fkey"
+            columns: ["imported_to_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_eras: {
         Row: {
           campaign_id: string

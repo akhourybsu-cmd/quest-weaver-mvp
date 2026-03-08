@@ -198,7 +198,7 @@ function computeDerivedStats(draft: any, classRules: any) {
       maxHp += (Math.floor(hitDie / 2) + 1) + conMod;
     }
   }
-  maxHp = Math.max(maxHp, draft.level); // minimum 1 HP per level
+  maxHp = Math.max(maxHp, 1); // minimum 1 HP total per 5e rules
   
   // Check skill proficiencies for passive calculations
   const allSkills = new Set([

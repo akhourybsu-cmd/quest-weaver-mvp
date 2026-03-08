@@ -215,7 +215,15 @@ export default function PlayerCampaignView() {
             {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
           </TabsContent>
           <TabsContent value="journal" className="mt-4">
-            <PlayerJournal campaignId={campaign.id} characterId={character?.id || ''} />
+            {character?.id ? (
+              <PlayerJournal campaignId={campaign.id} characterId={character.id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-cinzel text-lg mb-1">No Character Assigned</p>
+                <p className="text-sm">Assign a character to this campaign to start journaling.</p>
+              </div>
+            )}
+          </TabsContent>
           </TabsContent>
         </Tabs>
       </div>

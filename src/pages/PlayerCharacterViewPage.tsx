@@ -33,7 +33,7 @@ const PlayerCharacterViewPage = () => {
         .from('characters')
         .select('*, srd_subclasses(name)')
         .eq('id', characterId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (error) throw error;

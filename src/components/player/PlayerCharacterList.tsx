@@ -80,7 +80,7 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
           campaign:campaigns(id, name),
           srd_subclasses(name)
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -641,6 +641,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A magical anomaly causes wild magic surges across the region',
       'A massive dragon migrates into settled territory seeking a new lair',
     ],
+    outputHints: ['consequences', 'factions', 'timeline', 'rumors'],
   },
   {
     id: 'missing-lore-detector',

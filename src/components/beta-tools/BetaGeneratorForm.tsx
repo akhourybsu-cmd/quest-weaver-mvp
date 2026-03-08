@@ -305,15 +305,13 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
             </div>
 
             {/* Fields display/edit */}
-            <div className="grid gap-3">
-              {Object.entries(displayResult).map(([key, value]) => {
-                if (key === 'name' || key === 'title' || key === 'event_name') return null;
-                const displayValue = Array.isArray(value) ? value.join('\n• ') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-
-                return (
-                  <div key={key} className="space-y-1">
-                    <Label className="text-xs text-amber-400/70 capitalize">{key.replace(/_/g, ' ')}</Label>
-                    {isEditing ? (
+            {isEditing ? (
+              <div className="grid gap-3">
+                {Object.entries(displayResult).map(([key, value]) => {
+                  if (key === 'name' || key === 'title' || key === 'event_name') return null;
+                  return (
+                    <div key={key} className="space-y-1">
+                      <Label className="text-xs text-amber-400/70 capitalize">{key.replace(/_/g, ' ')}</Label>
                       <Textarea
                         value={typeof value === 'string' ? value : Array.isArray(value) ? value.join('\n') : JSON.stringify(value, null, 2)}
                         onChange={(e) => {
@@ -324,15 +322,13 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                         }}
                         className="border-amber-500/20 text-sm min-h-[60px]"
                       />
-                    ) : (
-                      <p className="text-sm text-foreground whitespace-pre-wrap">
-                        {Array.isArray(value) ? '• ' + value.join('\n• ') : displayValue}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <BetaResultRenderer assetType={tool.assetType} data={displayResult} />
+            )}
 
             {/* Assumptions */}
             {assumptions.length > 0 && (

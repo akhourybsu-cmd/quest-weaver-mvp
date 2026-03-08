@@ -55,9 +55,14 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
       // Load main character data
       const { data: charData, error: charError } = await supabase
         .from("characters")
-        .select("*")
+        .select("*, srd_subclasses(name)")
         .eq("id", characterId)
         .single();
+      
+      // Attach subclass name for display
+      if (charData) {
+        (charData as any).subclass_name = (charData as any).srd_subclasses?.name || null;
+      }
 
       if (charError) throw charError;
       setCharacter(charData);

@@ -100,7 +100,7 @@ const HitDiceManager = ({ characterId, character, onHeal }: HitDiceManagerProps)
       });
 
       setLastRoll({ roll, con: conModifier, total: healing });
-      onHeal(healing);
+      onHeal(healing, newHp, character.hit_dice_current - 1);
 
       toast({
         title: "Hit Die Rolled!",

@@ -193,7 +193,7 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete, onRe
         onOpenChange={setShowLevelUp}
         characterId={character.id}
         currentLevel={character.level}
-        onComplete={() => onDelete ? onDelete() : window.location.reload()}
+        onComplete={() => onRefresh ? onRefresh() : (onDelete ? onDelete() : window.location.reload())}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

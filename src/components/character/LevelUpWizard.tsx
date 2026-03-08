@@ -550,27 +550,27 @@ export const LevelUpWizard = ({
 
   const loadFeatures = async () => {
     try {
-      const { data: charData } = await supabase
-        .from("characters")
-        .select("class, subclass_id")
-        .eq("id", characterId)
-        .single();
-
-      if (!charData) return;
+      // BUG FIX: Use the class being leveled, not the primary class
+      const effectiveClassName = selectedClassToLevel?.className || character?.class;
+      if (!effectiveClassName) return;
 
       const { data: classData } = await supabase
         .from("srd_classes")
         .select("id")
-        .eq("name", charData.class)
+        .eq("name", effectiveClassName)
         .single();
 
       if (!classData) return;
+
+      // BUG FIX: Use the class-specific level, not the total character level
+      const classEntry = characterClasses.find(c => c.classId === selectedClassToLevel?.classId);
+      const effectiveLevel = classEntry ? classEntry.level + 1 : newLevel;
 
       const { data: classFeatures } = await supabase
         .from("srd_class_features")
         .select("id, name, description, level")
         .eq("class_id", classData.id)
-        .eq("level", newLevel);
+        .eq("level", effectiveLevel);
 
       const features: FeatureToGrant[] = (classFeatures || []).map(f => ({
         id: f.id,
@@ -580,12 +580,14 @@ export const LevelUpWizard = ({
         source: "Class"
       }));
 
-      if (charData.subclass_id) {
+      // BUG FIX: Use the class-specific subclass ID, not the top-level one
+      const effectiveSubclassId = classEntry?.subclassId || character?.subclass_id;
+      if (effectiveSubclassId) {
         const { data: subclassFeatures } = await supabase
           .from("srd_subclass_features")
           .select("id, name, description, level")
-          .eq("subclass_id", charData.subclass_id)
-          .eq("level", newLevel);
+          .eq("subclass_id", effectiveSubclassId)
+          .eq("level", effectiveLevel);
 
         (subclassFeatures || []).forEach(f => {
           features.push({

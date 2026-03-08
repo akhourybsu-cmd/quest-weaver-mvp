@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,30 +13,34 @@ const StepProficiencies = () => {
   const toggleSkill = useSetAtom(toggleSkillAtom);
   const toggleTool = useSetAtom(toggleToolAtom);
   const toggleLanguage = useSetAtom(toggleLanguageAtom);
+  const isCleaningUp = useRef(false);
 
   // Compute legal options and remaining counts
   const classSkillNeeds = draft.needs.skill;
   const grantedSkills = Array.from(draft.grants.skillProficiencies);
   const selectedSkills = draft.choices.skills;
   
-  // BUG FIX: Filter legal choices - can't select skills already granted OR already selected
+  // Filter legal choices - can't select skills already granted OR already selected
   const legalSkillChoices = classSkillNeeds 
     ? classSkillNeeds.from.filter(skill => !grantedSkills.includes(skill) && !selectedSkills.includes(skill))
     : [];
   
-  // BUG FIX: Filter out any selected skills that are no longer legal (e.g., user changed class)
+  // Filter out any selected skills that are no longer legal (e.g., user changed class)
   const validSelectedSkills = selectedSkills.filter(skill => 
     classSkillNeeds?.from.includes(skill) && !grantedSkills.includes(skill)
   );
 
-  // BUG FIX: Auto-remove orphaned skills from draft when detected
+  // BUG FIX: Auto-remove orphaned skills using ref to prevent infinite loop
   useEffect(() => {
+    if (isCleaningUp.current) return;
     const orphanedSkills = selectedSkills.filter(skill => !validSelectedSkills.includes(skill));
     if (orphanedSkills.length > 0) {
-      // Remove each orphaned skill by toggling it off
+      isCleaningUp.current = true;
       orphanedSkills.forEach(skill => toggleSkill(skill));
+      // Reset flag after a tick so future legitimate changes can trigger cleanup
+      requestAnimationFrame(() => { isCleaningUp.current = false; });
     }
-  }, [validSelectedSkills.length, selectedSkills.length]);
+  }, [selectedSkills.join(','), validSelectedSkills.join(',')]);
   
   const remainingSkills = classSkillNeeds 
     ? remaining(classSkillNeeds.required, validSelectedSkills)

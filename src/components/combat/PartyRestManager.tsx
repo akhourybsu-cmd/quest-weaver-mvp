@@ -19,9 +19,10 @@ import {
 interface PartyRestManagerProps {
   campaignId: string;
   characters: Array<{ id: string; name: string }>;
+  onUpdate?: () => void;
 }
 
-export function PartyRestManager({ campaignId, characters }: PartyRestManagerProps) {
+export function PartyRestManager({ campaignId, characters, onUpdate }: PartyRestManagerProps) {
   const { toast } = useToast();
   const [isResting, setIsResting] = useState(false);
 
@@ -29,28 +30,24 @@ export function PartyRestManager({ campaignId, characters }: PartyRestManagerPro
     setIsResting(true);
 
     try {
-      // For each character, restore them fully
       for (const char of characters) {
-        // Get character data including resources
+        // Get character data
         const { data: charData } = await supabase
           .from("characters")
-          .select("max_hp, resources")
+          .select("max_hp, hit_dice_total, hit_dice_current")
           .eq("id", char.id)
           .single();
 
         if (!charData) continue;
 
-        // Restore all resources to max
-        const currentResources = (charData.resources as any) || {};
-        const restoredResources = { ...currentResources };
+        // Restore hit dice (half total, minimum 1)
+        const hdRestored = Math.max(1, Math.floor((charData.hit_dice_total || 1) / 2));
+        const newHitDice = Math.min(
+          (charData.hit_dice_current || 0) + hdRestored,
+          charData.hit_dice_total || 1
+        );
 
-        Object.keys(restoredResources).forEach(key => {
-          if (restoredResources[key]?.max !== undefined) {
-            restoredResources[key].current = restoredResources[key].max;
-          }
-        });
-
-        // Update character
+        // Update character core stats
         await supabase
           .from("characters")
           .update({
@@ -58,12 +55,45 @@ export function PartyRestManager({ campaignId, characters }: PartyRestManagerPro
             temp_hp: 0,
             death_save_success: 0,
             death_save_fail: 0,
-            resources: restoredResources as any,
+            hit_dice_current: newHitDice,
             action_used: false,
             bonus_action_used: false,
             reaction_used: false,
+            pact_slots_used: 0,
+            mystic_arcanum_6_used: false,
+            mystic_arcanum_7_used: false,
+            mystic_arcanum_8_used: false,
+            mystic_arcanum_9_used: false,
           })
           .eq("id", char.id);
+
+        // Restore all character_resources (short + long recharge)
+        await supabase
+          .from("character_resources")
+          .update({ current_value: supabase.rpc ? 0 : 0 }) // placeholder
+          .eq("character_id", char.id);
+
+        // Actually restore resources to max by fetching then updating
+        const { data: resources } = await supabase
+          .from("character_resources")
+          .select("id, max_value")
+          .eq("character_id", char.id)
+          .in("recharge", ["short", "long"]);
+
+        if (resources) {
+          for (const r of resources) {
+            await supabase
+              .from("character_resources")
+              .update({ current_value: r.max_value })
+              .eq("id", r.id);
+          }
+        }
+
+        // Reset spell slots
+        await supabase
+          .from("character_spell_slots")
+          .update({ used_slots: 0 })
+          .eq("character_id", char.id);
       }
 
       // Clear any active effects and conditions for the campaign
@@ -92,6 +122,8 @@ export function PartyRestManager({ campaignId, characters }: PartyRestManagerPro
         description: `${characters.length} character${characters.length !== 1 ? 's' : ''} fully restored. All effects and conditions cleared.`,
         duration: 5000,
       });
+
+      onUpdate?.();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -126,7 +158,9 @@ export function PartyRestManager({ campaignId, characters }: PartyRestManagerPro
                 This will fully restore all {characters.length} party member{characters.length !== 1 ? 's' : ''}:
                 <ul className="mt-2 space-y-1 text-sm">
                   <li>• Full HP restoration</li>
+                  <li>• Hit dice recovery (half total)</li>
                   <li>• All resources recharged</li>
+                  <li>• All spell slots restored</li>
                   <li>• Death saves cleared</li>
                   <li>• Action economy reset</li>
                   <li>• All effects & conditions removed</li>

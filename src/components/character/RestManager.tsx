@@ -130,6 +130,7 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
         title: "Long Rest Complete",
         description: `HP fully restored. Regained ${hdRestored} hit dice, ${restoredCount} resource(s), and all spell slots.`,
       });
+      onUpdate?.();
     } catch (error) {
       console.error('Error during long rest:', error);
       toast({

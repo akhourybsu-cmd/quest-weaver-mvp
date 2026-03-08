@@ -19,7 +19,7 @@ interface BetaImportDialogProps {
 
 type ImportMode = 'draft' | 'canon' | 'clone';
 
-const IMPORTABLE_TYPES = ['npc', 'quest', 'magic_item', 'settlement', 'faction', 'monster'];
+const IMPORTABLE_TYPES = ['npc', 'quest', 'magic_item', 'settlement', 'faction', 'monster', 'lore', 'battle_map', 'world_event'];
 
 export function BetaImportDialog({ open, onOpenChange, asset, onImported }: BetaImportDialogProps) {
   const { userId } = useAuth();
@@ -114,6 +114,36 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
           description: [d.lore, d.habitat].filter(Boolean).join('\n\n') || null,
           gm_notes: [d.tactics, `HP: ${d.hit_points || '?'}`, `AC: ${d.armor_class || '?'}`].filter(Boolean).join('\n'),
           status: importMode === 'canon' ? 'alive' : 'unknown',
+        });
+        if (error) throw error;
+      } else if (asset.asset_type === 'lore') {
+        // Lore assets (random tables, handouts, puzzles, rumors, names) import as locations with type 'lore'
+        const { error } = await supabase.from('locations').insert({
+          campaign_id: selectedCampaign,
+          name: asset.name,
+          description: d.content || d.description || JSON.stringify(d, null, 2),
+          location_type: 'lore',
+          details: d,
+        });
+        if (error) throw error;
+      } else if (asset.asset_type === 'battle_map') {
+        // Battle maps import as locations
+        const { error } = await supabase.from('locations').insert({
+          campaign_id: selectedCampaign,
+          name: asset.name,
+          description: d.description || d.sensory_details || null,
+          location_type: d.environment || 'dungeon',
+          details: d,
+        });
+        if (error) throw error;
+      } else if (asset.asset_type === 'world_event') {
+        // World events import as locations with type 'event'
+        const { error } = await supabase.from('locations').insert({
+          campaign_id: selectedCampaign,
+          name: asset.name,
+          description: d.description || null,
+          location_type: 'event',
+          details: d,
         });
         if (error) throw error;
       }

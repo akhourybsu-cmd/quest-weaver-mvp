@@ -23,25 +23,37 @@ interface TelemetryEvent {
   errorMessage?: string;
 }
 
+// Cache the user id to avoid repeated auth calls
+let cachedUserId: string | null = null;
+
+// Listen for auth changes to keep cache fresh
+supabase.auth.onAuthStateChange((_event, session) => {
+  cachedUserId = session?.user?.id ?? null;
+});
+
+// Initialize from current session
+supabase.auth.getSession().then(({ data: { session } }) => {
+  cachedUserId = session?.user?.id ?? null;
+});
+
 /**
  * Track a telemetry event
  */
 export async function trackEvent(event: TelemetryEvent): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!cachedUserId) return; // Skip tracking for unauthenticated users
     
     await supabase.from("analytics_events").insert({
       campaign_id: event.campaignId,
       encounter_id: event.encounterId,
-      user_id: user?.id,
+      user_id: cachedUserId,
       event_type: event.eventType,
       event_data: event.eventData || {},
       latency_ms: event.latencyMs,
       error_message: event.errorMessage,
     });
-  } catch (error) {
+  } catch {
     // Silently fail telemetry - don't disrupt user experience
-    console.warn("Telemetry tracking failed:", error);
   }
 }
 

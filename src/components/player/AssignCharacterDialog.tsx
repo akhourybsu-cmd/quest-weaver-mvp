@@ -50,14 +50,13 @@ export const AssignCharacterDialog = ({
   const loadCampaigns = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       // Get player profile
       const { data: player } = await supabase
         .from('players')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (!player) return;

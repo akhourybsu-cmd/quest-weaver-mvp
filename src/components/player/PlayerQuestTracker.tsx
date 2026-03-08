@@ -107,6 +107,38 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
       <CardContent>
         <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
           <div className="space-y-3">
+            {availableQuests.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <ScrollText className="w-4 h-4" />
+                  Available Quests
+                </h4>
+                {availableQuests.map((quest, index) => (
+                  <div key={quest.id} className="p-3 border border-dashed border-brass/30 rounded-lg space-y-2 card-glow opacity-0 animate-fade-in" style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h5 className="font-semibold">{quest.title}</h5>
+                          {quest.difficulty && (
+                            <Badge variant="outline" className="text-xs">{quest.difficulty}</Badge>
+                          )}
+                          <Badge variant="secondary" className="text-xs">Available</Badge>
+                        </div>
+                        {(quest.npc?.name || quest.legacy_quest_giver) && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <User className="w-3 h-3" />{quest.npc?.name || quest.legacy_quest_giver}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {quest.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{quest.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {activeQuests.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">

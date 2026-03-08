@@ -183,7 +183,11 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredLocations.length === 0 && locations.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredLocations.length === 0 && locations.length === 0 ? (
             <PlayerEmptyState
               icon={MapPin}
               title="No Discovered Locations"

@@ -230,7 +230,11 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredFactions.length === 0 && factions.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredFactions.length === 0 && factions.length === 0 ? (
             <PlayerEmptyState
               icon={Shield}
               title="No Known Factions"

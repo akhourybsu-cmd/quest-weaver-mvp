@@ -119,7 +119,7 @@ const SessionPlayer = () => {
         <SessionKiosk
           campaignId={campaignId}
           campaignCode={campaignCode || ''}
-          currentUserId={currentUserId}
+          currentUserId={userId}
           character={character}
           onSessionEnded={() => navigate(`/player/campaign/${campaignCode}`)}
           onCharacterUpdate={fetchCharacter}

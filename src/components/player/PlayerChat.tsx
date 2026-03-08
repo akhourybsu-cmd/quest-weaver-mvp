@@ -129,14 +129,13 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
 
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { error } = await supabase
         .from('campaign_messages')
         .insert({
           campaign_id: campaignId,
-          sender_id: user.id,
+          sender_id: userId,
           sender_name: senderName,
           message: newMessage.trim(),
           is_dm_message: isDM,

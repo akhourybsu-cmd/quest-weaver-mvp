@@ -19,10 +19,12 @@ import {
 import { Loader2, Mail, KeyRound, LogOut, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AccountSection = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,12 +33,8 @@ const AccountSection = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
-    const loadEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) setEmail(user.email);
-    };
-    loadEmail();
-  }, []);
+    if (authUser?.email) setEmail(authUser.email);
+  }, [authUser]);
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {

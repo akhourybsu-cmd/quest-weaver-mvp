@@ -220,7 +220,11 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredLore.length === 0 && lorePages.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredLore.length === 0 && lorePages.length === 0 ? (
             <PlayerEmptyState
               icon={BookOpen}
               title="No Shared Lore"

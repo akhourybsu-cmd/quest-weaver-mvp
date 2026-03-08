@@ -35,8 +35,8 @@ export default function PlayerCampaignView() {
   useEffect(() => {
     if (!campaignCode) return;
     loadCampaign();
-    loadCharacter();
-  }, [campaignCode]);
+    if (userId) loadCharacter();
+  }, [campaignCode, userId]);
 
   const loadCampaign = async () => {
     const { data } = await supabase

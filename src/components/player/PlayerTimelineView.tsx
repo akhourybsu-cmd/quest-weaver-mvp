@@ -152,7 +152,11 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
       </CardHeader>
 
       <CardContent>
-        {filteredEvents.length === 0 && events.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-brass" />
+          </div>
+        ) : filteredEvents.length === 0 && events.length === 0 ? (
           <PlayerEmptyState
             icon={Clock}
             title="No Timeline Events"

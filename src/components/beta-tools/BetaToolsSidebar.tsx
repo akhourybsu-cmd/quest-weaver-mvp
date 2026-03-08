@@ -22,6 +22,16 @@ export function BetaToolsSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
+  const [search, setSearch] = useState("");
+
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    return TOOL_CATEGORIES.map(cat => ({
+      ...cat,
+      tools: getToolsByCategory(cat.id).filter(t => t.name.toLowerCase().includes(q)),
+    })).filter(cat => cat.tools.length > 0);
+  }, [search]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">

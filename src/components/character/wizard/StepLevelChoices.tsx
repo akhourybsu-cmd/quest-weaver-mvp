@@ -355,7 +355,10 @@ const StepLevelChoices = () => {
             </Badge>
           </div>
           <CardDescription>
-            Making choices for leveling from {currentLevel - 1} → {currentLevel}
+            {currentLevel === 1 
+              ? "Making starting choices for level 1"
+              : `Making choices for leveling from ${currentLevel - 1} → ${currentLevel}`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>

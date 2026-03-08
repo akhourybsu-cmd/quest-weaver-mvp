@@ -161,6 +161,17 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     }
   }, [prompt, structuredFields, useCampaignContext, selectedCampaignId, tool, toast]);
 
+  // Warn before navigating away with unsaved results
+  useEffect(() => {
+    if (!result || justSaved) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [result, justSaved]);
+
   // Ctrl+Enter keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

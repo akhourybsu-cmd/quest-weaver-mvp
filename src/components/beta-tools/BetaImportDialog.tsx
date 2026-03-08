@@ -76,13 +76,15 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
         });
         if (error) throw error;
       } else if (asset.asset_type === 'magic_item') {
+        const VALID_RARITIES = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
+        const rarity = VALID_RARITIES.includes(d.rarity) ? d.rarity : null;
         const { error } = await supabase.from('items').insert({
           campaign_id: selectedCampaign,
           name: asset.name,
           description: d.description || null,
-          rarity: d.rarity || null,
-          type: d.item_type || null,
-          properties: d.properties ? { text: d.properties } : null,
+          rarity,
+          type: 'MAGIC',
+          properties: d.properties ? { text: d.properties, item_type: d.item_type } : (d.item_type ? { item_type: d.item_type } : null),
         });
         if (error) throw error;
       } else if (asset.asset_type === 'settlement') {

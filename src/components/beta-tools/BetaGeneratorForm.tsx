@@ -129,11 +129,13 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setIsSaving(true);
     try {
       const name = editedResult.name || editedResult.title || editedResult.event_name || `Untitled ${tool.name}`;
+      const tags = saveTags.split(',').map(t => t.trim()).filter(Boolean);
       const { data, error } = await supabase.from('beta_assets').insert({
         user_id: userId,
         asset_type: tool.assetType,
         name,
         data: editedResult,
+        tags: tags.length > 0 ? tags : null,
         status: 'draft',
       }).select('id').single();
 

@@ -27,6 +27,9 @@ const Lore = lazy(() => import("./pages/Lore"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AuditHarness = lazy(() => import("./pages/dev/AuditHarness"));
 const AdminTools = lazy(() => import("./pages/dev/AdminTools"));
+const BetaTools = lazy(() => import("./pages/BetaTools"));
+const BetaToolsLibrary = lazy(() => import("./pages/BetaToolsLibrary"));
+const BetaToolsGenerator = lazy(() => import("./pages/BetaToolsGenerator"));
 const PlayerHub = lazy(() => import("@/pages/PlayerHub"));
 const PlayerDashboardNew = lazy(() => import("@/pages/PlayerDashboardNew"));
 const PlayerWaitingRoom = lazy(() => import("@/components/player/PlayerWaitingRoom").then(m => ({ default: m.PlayerWaitingRoom })));
@@ -98,6 +101,9 @@ function AppRoutes() {
               <Route path="/player/campaign/:campaignCode" element={<PlayerCampaignView />} />
               <Route path="/audit" element={<AuditHarness />} />
               <Route path="/admin" element={<AdminTools />} />
+              <Route path="/beta-tools" element={<BetaTools />} />
+              <Route path="/beta-tools/library" element={<BetaToolsLibrary />} />
+              <Route path="/beta-tools/generate/:toolId" element={<BetaToolsGenerator />} />
               <Route path="/player-hub" element={<PlayerHub />} />
               <Route path="*" element={<NotFound />} />
             </>

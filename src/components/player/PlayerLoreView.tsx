@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Search, Map, History, Users, Shield, Crown, Landmark, Globe, Sparkles } from "lucide-react";
+import { BookOpen, Search, Map, History, Users, Shield, Crown, Landmark, Globe, Sparkles, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,

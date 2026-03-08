@@ -32,6 +32,7 @@ interface CampaignTileProps {
 export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userId } = useAuth();
   const { getCampaignStatus, togglePin, updateLastJoined, unlinkCampaign } = usePlayerLinks(playerId);
   const [status, setStatus] = useState<CampaignStatus | null>(null);
   const [loading, setLoading] = useState(true);

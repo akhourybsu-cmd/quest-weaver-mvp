@@ -140,7 +140,7 @@ const BetaToolsLibrary = () => {
                 asset={asset}
                 onEdit={(a) => setEditingAsset(a)}
                 onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
+                onDelete={(a) => setDeletingAsset(a)}
                 onToggleFavorite={handleToggleFavorite}
                 onImport={(a) => setImportingAsset(a)}
               />

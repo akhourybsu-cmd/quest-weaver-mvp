@@ -438,6 +438,34 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                   </div>
                 )}
 
+                {/* Refine prompt */}
+                <div className="border-t border-border pt-3 space-y-2">
+                  <Label className="text-xs text-muted-foreground">Refine this result</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={refinePrompt}
+                      onChange={(e) => setRefinePrompt(e.target.value)}
+                      placeholder="e.g. Make it darker, change the setting to underdark..."
+                      className="text-sm flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && refinePrompt.trim()) {
+                          e.preventDefault();
+                          handleRefine();
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRefine}
+                      disabled={isGenerating || !refinePrompt.trim()}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Refine
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Tags input */}
                 <div className="border-t border-border pt-3 space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Tags (optional, comma-separated)</Label>

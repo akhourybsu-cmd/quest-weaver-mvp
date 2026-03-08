@@ -493,6 +493,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A dense forest clearing with ancient standing stones',
       'A multi-level tavern with breakable furniture and a secret basement',
     ],
+    outputHints: ['terrain', 'cover', 'hazards', 'tactical notes'],
   },
   {
     id: 'dungeon-generator',

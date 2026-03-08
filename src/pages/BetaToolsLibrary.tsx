@@ -99,9 +99,9 @@ const BetaToolsLibrary = () => {
     <BetaToolsLayout title="My Library">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Beta Library</h1>
+          <h1 className="font-cinzel text-2xl font-bold text-foreground">Beta Library</h1>
           <Button
-            className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => navigate('/beta-tools')}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -122,11 +122,11 @@ const BetaToolsLibrary = () => {
           </div>
         ) : filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 space-y-3">
-            <FlaskConical className="h-12 w-12 text-amber-400/30" />
+            <FlaskConical className="h-12 w-12 text-muted-foreground/30" />
             <p className="text-muted-foreground">No assets yet. Start creating!</p>
             <Button
               variant="outline"
-              className="border-amber-500/30 text-amber-300"
+              className="border-border text-muted-foreground hover:text-foreground"
               onClick={() => navigate('/beta-tools')}
             >
               Go to Workshop
@@ -166,7 +166,7 @@ const BetaToolsLibrary = () => {
       <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{deletingAsset?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle className="font-cinzel">Delete "{deletingAsset?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently remove this asset from your Beta Library. This action cannot be undone.
             </AlertDialogDescription>

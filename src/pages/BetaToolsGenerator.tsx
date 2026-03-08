@@ -26,21 +26,19 @@ const BetaToolsGenerator = () => {
   return (
     <BetaToolsLayout title={tool.name} showBackButton>
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-        {/* Tool header */}
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-amber-500/10">
-              <tool.icon className="h-7 w-7 text-amber-400" />
+            <div className="p-3 rounded-lg bg-primary/10">
+              <tool.icon className="h-7 w-7 text-brand-brass" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{tool.name}</h1>
+              <h1 className="font-cinzel text-2xl font-bold text-foreground">{tool.name}</h1>
               <p className="text-sm text-muted-foreground">{tool.description}</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-amber-500/30 text-amber-400">{tool.categoryLabel}</Badge>
+          <Badge variant="outline" className="border-primary/30 text-primary">{tool.categoryLabel}</Badge>
         </div>
 
-        {/* Generator form or specialized UI */}
         {tool.assetType === 'lore_gap' ? (
           <MissingLoreDetector />
         ) : (

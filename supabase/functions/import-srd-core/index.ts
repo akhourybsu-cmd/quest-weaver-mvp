@@ -650,7 +650,9 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
         name: item.name,
         type: item.type || null,
         rarity: item.rarity || null,
-        requires_attunement: item.requires_attunement || false,
+        requires_attunement: typeof item.requires_attunement === 'string' 
+          ? item.requires_attunement.length > 0 
+          : !!item.requires_attunement,
         description: item.desc || null,
         document: item.document__slug || SRD_V1_SLUG,
       }, { onConflict: 'slug' });

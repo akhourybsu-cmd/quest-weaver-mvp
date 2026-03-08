@@ -226,9 +226,14 @@ export const CampaignTile = ({ link, playerId, onUnlink }: CampaignTileProps) =>
               <Eye className="w-4 h-4 mr-2" />View Campaign
             </Button>
             {status?.hasLiveSession ? (
-              <Button className="flex-1" onClick={handleJoinSession} disabled={loading || !character}>
-                <Swords className="w-4 h-4 mr-2" />Join Session
-              </Button>
+              <div className="flex-1 flex flex-col gap-1">
+                <Button className="w-full" onClick={handleJoinSession} disabled={loading || !character}>
+                  <Swords className="w-4 h-4 mr-2" />Join Session
+                </Button>
+                {!character && (
+                  <p className="text-xs text-muted-foreground text-center">Assign a character to join</p>
+                )}
+              </div>
             ) : (
               <Button className="flex-1" variant="outline" disabled>
                 <Swords className="w-4 h-4 mr-2" />No Session

@@ -605,7 +605,7 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
         rarity: item.rarity || null,
         requires_attunement: item.requires_attunement || false,
         description: item.desc || null,
-        document: item.document || SRD_SLUG,
+        document: item.document__slug || SRD_V1_SLUG,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${item.slug}: ${error.message}`);

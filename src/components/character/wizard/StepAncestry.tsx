@@ -60,6 +60,15 @@ const StepAncestry = () => {
   };
 
   const handleSubAncestryChange = (subancestryId: string) => {
+    // BUG FIX: Allow deselecting sub-ancestry by selecting empty value
+    if (!subancestryId) {
+      setSubAncestry("");
+      setSelectedSubancestry(null);
+      // Clear sub-ancestry grants
+      setSourceGrants({ source: 'subAncestry', grants: grantsFromSubAncestry({} as SrdSubAncestry) });
+      return;
+    }
+    
     const subAncestry = subAncestries.find(sa => sa.id === subancestryId);
     if (!subAncestry) return;
 

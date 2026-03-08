@@ -548,21 +548,32 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     
     switch (stepName) {
       case "Basics":
-        return !!(draft.name && draft.classId && draft.className);
+        // BUG FIX: Validate name is not just whitespace
+        return !!(draft.name?.trim() && draft.classId && draft.className);
       case "Ancestry":
         return !!draft.ancestryId;
       case "Abilities":
-        return true;
+        // BUG FIX: Validate ability scores are within valid range
+        const scores = Object.values(draft.abilityScores);
+        const allValid = scores.every(s => s >= 1 && s <= 20);
+        return allValid;
       case "Background":
         return !!draft.backgroundId;
       case "Proficiencies":
         const skillsNeeded = draft.needs.skill?.required ?? 0;
         const toolsNeeded = draft.needs.tool?.required ?? 0;
         const langsNeeded = draft.needs.language?.required ?? 0;
+        // BUG FIX: Also check we haven't selected MORE than allowed
+        const skillsMax = draft.needs.skill?.required ?? Infinity;
+        const toolsMax = draft.needs.tool?.required ?? Infinity;
+        const langsMax = draft.needs.language?.required ?? Infinity;
         return (
           draft.choices.skills.length >= skillsNeeded &&
+          draft.choices.skills.length <= skillsMax &&
           draft.choices.tools.length >= toolsNeeded &&
-          draft.choices.languages.length >= langsNeeded
+          draft.choices.tools.length <= toolsMax &&
+          draft.choices.languages.length >= langsNeeded &&
+          draft.choices.languages.length <= langsMax
         );
       case "Equipment":
         return !!draft.choices.equipmentBundleId;

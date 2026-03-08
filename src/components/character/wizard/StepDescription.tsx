@@ -33,8 +33,13 @@ const StepDescription = () => {
   };
 
   const getInitials = () => {
-    return draft.name
+    // BUG FIX: Guard against undefined/null name and empty strings
+    if (!draft.name || typeof draft.name !== 'string') return "?";
+    const trimmed = draft.name.trim();
+    if (!trimmed) return "?";
+    return trimmed
       .split(" ")
+      .filter(n => n.length > 0)
       .map(n => n[0])
       .join("")
       .toUpperCase()

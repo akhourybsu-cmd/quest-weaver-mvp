@@ -60,14 +60,20 @@ const StepEquipment = () => {
   }, [draft.classId]);
 
   // Auto-select first bundle if none selected or current bundle doesn't exist in new bundles
+  // BUG FIX: Only auto-select when bundles change, not on every render
   useEffect(() => {
     if (bundles.length > 0) {
       const currentExists = bundles.some(b => b.id === draft.choices.equipmentBundleId);
-      if (!draft.choices.equipmentBundleId || !currentExists) {
+      if (!currentExists) {
+        // Current bundle invalid for this class, select first
+        setEquipmentBundle(bundles[0].id);
+      }
+      // If no bundle selected at all, select first
+      if (!draft.choices.equipmentBundleId) {
         setEquipmentBundle(bundles[0].id);
       }
     }
-  }, [bundles, draft.choices.equipmentBundleId, setEquipmentBundle]);
+  }, [bundles]); // BUG FIX: Remove draft.choices.equipmentBundleId from deps to prevent loops
 
   const handleBundleSelect = (bundleId: string) => {
     setEquipmentBundle(bundleId);

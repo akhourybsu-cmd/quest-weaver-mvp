@@ -116,28 +116,53 @@ export function AddClassDialog({
     // Get multiclass proficiencies
     const proficiencies = getMulticlassProficiencies(selectedClass);
 
-    // Add proficiencies to character
+    // BUG FIX: Check existing proficiencies to avoid duplicates
+    const { data: existingProfs } = await supabase
+      .from("character_proficiencies")
+      .select("type, name")
+      .eq("character_id", characterId);
+    
+    const existingSet = new Set(
+      (existingProfs || []).map(p => `${p.type}:${p.name.toLowerCase()}`)
+    );
+
+    // Add proficiencies to character (avoiding duplicates)
     const proficiencyInserts: Array<{ character_id: string; type: string; name: string }> = [];
     
     if (proficiencies.armor) {
       proficiencies.armor.forEach(armor => {
-        proficiencyInserts.push({ character_id: characterId, type: "armor", name: armor });
+        if (!existingSet.has(`armor:${armor.toLowerCase()}`)) {
+          proficiencyInserts.push({ character_id: characterId, type: "armor", name: armor });
+        }
       });
     }
     if (proficiencies.weapons) {
       proficiencies.weapons.forEach(weapon => {
-        proficiencyInserts.push({ character_id: characterId, type: "weapon", name: weapon });
+        if (!existingSet.has(`weapon:${weapon.toLowerCase()}`)) {
+          proficiencyInserts.push({ character_id: characterId, type: "weapon", name: weapon });
+        }
       });
     }
     if (proficiencies.tools) {
       proficiencies.tools.forEach(tool => {
-        proficiencyInserts.push({ character_id: characterId, type: "tool", name: tool });
+        if (!existingSet.has(`tool:${tool.toLowerCase()}`)) {
+          proficiencyInserts.push({ character_id: characterId, type: "tool", name: tool });
+        }
       });
     }
 
     if (proficiencyInserts.length > 0) {
       await supabase.from("character_proficiencies").insert(proficiencyInserts);
     }
+
+    // BUG FIX: Also create the first character_class_levels entry for the new class
+    await supabase.from("character_class_levels").insert({
+      character_id: characterId,
+      class_id: classData.id,
+      level: 1,
+      hp_gained: 0, // Will be calculated during level-up wizard
+      hit_dice_remaining: 1,
+    });
 
     // Add the class entry
     await supabase.from("character_classes").insert({

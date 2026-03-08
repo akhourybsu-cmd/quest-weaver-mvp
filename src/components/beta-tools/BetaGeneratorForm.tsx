@@ -50,6 +50,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setIsEditing(false);
     setUseCampaignContext(false);
     setSelectedCampaignId("");
+    setSaveTags("");
   }, [tool.id]);
 
   useEffect(() => {

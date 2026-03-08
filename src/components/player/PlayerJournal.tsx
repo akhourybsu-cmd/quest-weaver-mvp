@@ -66,7 +66,7 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
       .from('session_notes')
       .select('*')
       .eq('campaign_id', campaignId)
-      .eq('author_id', user.id)
+      .eq('author_id', userId)
       .eq('visibility', 'PRIVATE')
       .order('updated_at', { ascending: false });
 

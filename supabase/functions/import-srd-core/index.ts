@@ -375,7 +375,7 @@ async function importBackgrounds(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Backgrounds', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?document__slug=${SRD_SLUG}&limit=100`);
+    const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?document__key=${SRD_V2_KEY}&limit=100`);
 
     for (const bg of backgrounds) {
       const { error } = await supabase.from('srd_backgrounds').upsert({

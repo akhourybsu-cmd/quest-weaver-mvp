@@ -19,6 +19,7 @@ import CharacterSelectionDialog from "@/components/character/CharacterSelectionD
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
 import { PlayerJournal } from "@/components/player/PlayerJournal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();

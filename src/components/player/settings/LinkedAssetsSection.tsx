@@ -21,6 +21,7 @@ interface AssetItem {
 
 const LinkedAssetsSection = () => {
   const navigate = useNavigate();
+  const { userId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<AssetCounts>({ characters: 0, campaignsAsDM: 0, campaignsAsPlayer: 0, forumTopics: 0, forumReplies: 0 });
   const [characters, setCharacters] = useState<AssetItem[]>([]);

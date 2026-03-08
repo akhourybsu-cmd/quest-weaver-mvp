@@ -139,7 +139,7 @@ const NPCDetailDrawer = ({ open, onOpenChange, npc, campaignId, isDM, onEdit }: 
 
     const { data: notes, error: notesError } = await query.order("updated_at", { ascending: false });
 
-    console.log(`[NPCDetailDrawer] Loaded ${notes?.length || 0} notes for display`, notes);
+    
     
     if (notesError) {
       console.error("[NPCDetailDrawer] Error loading notes:", notesError);

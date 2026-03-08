@@ -38,7 +38,7 @@ export function resilientChannel(
       .on("system", { event: "timed_out" }, rejoin)
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          console.log(`[resilientChannel] Successfully subscribed to "${topic}"`);
+          if (import.meta.env.DEV) console.log(`[resilientChannel] Successfully subscribed to "${topic}"`);
           retries = 0;
         }
       });

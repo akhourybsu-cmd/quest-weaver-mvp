@@ -99,7 +99,7 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
         // Ensure AC is a number - handle string or object cases
         const targetAC = typeof target.ac === 'number' ? target.ac : parseInt(String(target.ac)) || 10;
         
-        console.log('Attack comparison:', { attack, targetAC, rawAC: target.ac, hit: attack >= targetAC });
+        
         
         const hit = attack >= targetAC;
 

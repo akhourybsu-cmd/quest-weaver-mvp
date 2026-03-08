@@ -52,9 +52,7 @@ const StepSpells = () => {
         }
 
         if (cls) {
-          console.log("Loading spells for class:", cls.name);
           const spells = await SRD.spellsByClass(cls.name);
-          console.log("Loaded spells:", spells.length, spells.slice(0, 3));
           setAllSpells(spells);
           
           if (spells.length === 0) {

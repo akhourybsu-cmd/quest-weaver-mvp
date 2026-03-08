@@ -164,7 +164,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             <h1 className="text-2xl font-bold">{character.name}</h1>
             <p className="text-sm text-muted-foreground">
               Level {character.level} {character.class}
-              {character.subclass_id && " • Subclass"}
+              {character.subclass_name && ` • ${character.subclass_name}`}
             </p>
           </div>
           <div className="flex gap-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SessionKiosk } from "@/components/session/SessionKiosk";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
@@ -13,10 +14,10 @@ const SessionPlayer = () => {
   const campaignCode = searchParams.get("campaign");
   const { toast } = useToast();
 
+  const { userId } = useAuth();
   const [character, setCharacter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [campaignId, setCampaignId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
 
   useEffect(() => {
@@ -24,13 +25,11 @@ const SessionPlayer = () => {
       navigate(`/player-hub`);
       return;
     }
-    fetchCharacter();
-  }, [campaignCode, navigate]);
+    if (userId) fetchCharacter();
+  }, [campaignCode, navigate, userId]);
 
   const fetchCharacter = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setCurrentUserId(user.id);
+    if (!userId) return;
 
     const { data: campaign } = await supabase
       .from("campaigns")
@@ -64,7 +63,7 @@ const SessionPlayer = () => {
     const { data } = await supabase
       .from("characters").select("*")
       .eq("campaign_id", campaign.id)
-      .eq("user_id", user.id).maybeSingle();
+      .eq("user_id", userId).maybeSingle();
 
     if (!data) {
       setShowCharacterSelection(true);
@@ -84,7 +83,7 @@ const SessionPlayer = () => {
     );
   }
 
-  if (!character || !campaignId || !currentUserId) {
+  if (!character || !campaignId || !userId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -120,7 +119,7 @@ const SessionPlayer = () => {
         <SessionKiosk
           campaignId={campaignId}
           campaignCode={campaignCode || ''}
-          currentUserId={currentUserId}
+          currentUserId={userId}
           character={character}
           onSessionEnded={() => navigate(`/player/campaign/${campaignCode}`)}
           onCharacterUpdate={fetchCharacter}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Search, Map, History, Users, Shield, Crown, Landmark, Globe, Sparkles } from "lucide-react";
+import { BookOpen, Search, Map, History, Users, Shield, Crown, Landmark, Globe, Sparkles, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,
@@ -57,6 +57,7 @@ const CATEGORIES = [
 
 export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
   const [lorePages, setLorePages] = useState<LorePage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLore, setSelectedLore] = useState<LorePage | null>(null);
@@ -95,6 +96,7 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
     if (!error && data) {
       setLorePages(data as LorePage[]);
     }
+    setLoading(false);
   };
 
   const filteredLore = lorePages.filter((page) => {
@@ -218,7 +220,11 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredLore.length === 0 && lorePages.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredLore.length === 0 && lorePages.length === 0 ? (
             <PlayerEmptyState
               icon={BookOpen}
               title="No Shared Lore"
@@ -231,10 +237,11 @@ export function PlayerLoreView({ campaignId }: PlayerLoreViewProps) {
           ) : (
             <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
               <div className="space-y-3">
-                {filteredLore.map((page) => (
+                {filteredLore.map((page, index) => (
                   <Card
                     key={page.id}
-                    className="cursor-pointer hover:shadow-md hover:border-brass/40 transition-all border-brass/20"
+                    className="cursor-pointer hover:shadow-md hover:border-brass/40 transition-all border-brass/20 card-glow opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'forwards' }}
                     onClick={() => handleViewLore(page)}
                   >
                     <CardContent className="p-4">

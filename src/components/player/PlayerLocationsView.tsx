@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Search, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,
@@ -40,6 +40,7 @@ const terrainColors: Record<string, string> = {
 
 export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -77,6 +78,7 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
     if (!error && data) {
       setLocations(data as Location[]);
     }
+    setLoading(false);
   };
 
   const filteredLocations = locations.filter((location) => {
@@ -181,7 +183,11 @@ export function PlayerLocationsView({ campaignId }: PlayerLocationsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredLocations.length === 0 && locations.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredLocations.length === 0 && locations.length === 0 ? (
             <PlayerEmptyState
               icon={MapPin}
               title="No Discovered Locations"

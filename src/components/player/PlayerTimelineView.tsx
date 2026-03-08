@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Clock,
   Search,
+  Loader2,
   Swords,
   MapPin,
   Users,
@@ -64,6 +65,7 @@ const KIND_LABELS: Record<string, string> = {
 
 export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -99,6 +101,7 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
     if (!error && data) {
       setEvents(data as TimelineEvent[]);
     }
+    setLoading(false);
   };
 
   const filteredEvents = events.filter((event) => {
@@ -149,7 +152,11 @@ export function PlayerTimelineView({ campaignId }: PlayerTimelineViewProps) {
       </CardHeader>
 
       <CardContent>
-        {filteredEvents.length === 0 && events.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-brass" />
+          </div>
+        ) : filteredEvents.length === 0 && events.length === 0 ? (
           <PlayerEmptyState
             icon={Clock}
             title="No Timeline Events"

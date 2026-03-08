@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export const AssignCharacterDialog = ({
   currentCampaignId,
 }: AssignCharacterDialogProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
@@ -48,14 +50,13 @@ export const AssignCharacterDialog = ({
   const loadCampaigns = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       // Get player profile
       const { data: player } = await supabase
         .from('players')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (!player) return;

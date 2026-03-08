@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, Loader2 } from 'lucide-react';
@@ -10,6 +11,7 @@ export const PlayerWaitingRoom = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { userId, user } = useAuth();
   const campaignCode = searchParams.get('campaign');
 
   const [checking, setChecking] = useState(true);
@@ -18,17 +20,16 @@ export const PlayerWaitingRoom = () => {
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
-    initializeWaitingRoom();
+    if (userId) initializeWaitingRoom();
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, []);
+  }, [userId]);
 
   const initializeWaitingRoom = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!userId) {
       navigate('/');
       return;
     }
@@ -37,7 +38,7 @@ export const PlayerWaitingRoom = () => {
     const { data: existingPlayers, error: playerFetchError } = await supabase
       .from('players')
       .select('id, name')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     const existingPlayer = existingPlayers && existingPlayers.length > 0 ? existingPlayers[0] : null;
 
@@ -53,7 +54,7 @@ export const PlayerWaitingRoom = () => {
     if (!playerRecord) {
       const { data: newPlayer, error: createError } = await supabase
         .from('players')
-        .insert({ user_id: user.id, name: user.email || 'Player' })
+        .insert({ user_id: userId, name: user?.email || 'Player' })
         .select('id, name')
         .single();
 
@@ -122,13 +123,13 @@ export const PlayerWaitingRoom = () => {
       .from('campaign_members')
       .select('id')
       .eq('campaign_id', campaign.id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (!existingMember) {
       await supabase.from('campaign_members').insert({
         campaign_id: campaign.id,
-        user_id: user.id,
+        user_id: userId,
         role: 'PLAYER',
       });
     }
@@ -204,7 +205,7 @@ export const PlayerWaitingRoom = () => {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate(playerId ? `/player/dashboard` : '/')}
+                  onClick={() => navigate(playerId ? `/player-hub` : '/')}
                 >
                   Back to Dashboard
                 </Button>

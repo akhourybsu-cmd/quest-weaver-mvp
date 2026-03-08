@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Search } from "lucide-react";
+import { Users, Search, Loader2 } from "lucide-react";
 import NPCDetailDrawer from "@/components/npcs/NPCDetailDrawer";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 
@@ -27,6 +27,7 @@ interface PlayerNPCDirectoryProps {
 
 export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
   const [npcs, setNpcs] = useState<NPC[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -64,6 +65,7 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
     if (!error && data) {
       setNpcs(data as NPC[]);
     }
+    setLoading(false);
   };
 
   const filteredNPCs = npcs.filter((npc) => {
@@ -93,6 +95,14 @@ export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
         return "bg-muted";
     }
   };
+
+  if (loading) {
+    return (
+      <Card className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-brass" />
+      </Card>
+    );
+  }
 
   if (npcs.length === 0) {
     return (

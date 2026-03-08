@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface PlayerChatProps {
 
 export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerChatProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -65,8 +67,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
 
   const fetchSenderName = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       // Check if user is DM
       const { data: campaign } = await supabase
@@ -75,7 +76,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
         .eq('id', campaignId)
         .single();
 
-      if (campaign?.dm_user_id === user.id) {
+      if (campaign?.dm_user_id === userId) {
         setSenderName('Dungeon Master');
       } else {
         // Get player name from characters table
@@ -83,7 +84,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
           .from('characters')
           .select('name')
           .eq('campaign_id', campaignId)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .maybeSingle();
 
         setSenderName(character?.name || 'Player');
@@ -128,14 +129,13 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
 
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const { error } = await supabase
         .from('campaign_messages')
         .insert({
           campaign_id: campaignId,
-          sender_id: user.id,
+          sender_id: userId,
           sender_name: senderName,
           message: newMessage.trim(),
           is_dm_message: isDM,

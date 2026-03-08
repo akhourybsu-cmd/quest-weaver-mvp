@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Swords, Shield, MessageSquare, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AssetCounts {
   characters: number;
@@ -20,30 +21,30 @@ interface AssetItem {
 
 const LinkedAssetsSection = () => {
   const navigate = useNavigate();
+  const { userId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<AssetCounts>({ characters: 0, campaignsAsDM: 0, campaignsAsPlayer: 0, forumTopics: 0, forumReplies: 0 });
   const [characters, setCharacters] = useState<AssetItem[]>([]);
   const [dmCampaigns, setDmCampaigns] = useState<AssetItem[]>([]);
 
   useEffect(() => {
-    loadAssets();
-  }, []);
+    if (userId) loadAssets();
+  }, [userId]);
 
   const loadAssets = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) return;
 
     const [charRes, dmRes, playerRes, topicRes, replyRes] = await Promise.all([
-      supabase.from('characters').select('id, name').eq('user_id', user.id),
-      supabase.from('campaigns').select('id, name').eq('dm_user_id', user.id),
-      supabase.from('player_campaign_links').select('*', { count: 'exact', head: true }).eq('player_id', user.id),
-      supabase.from('forum_topics').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
-      supabase.from('forum_replies').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
+      supabase.from('characters').select('id, name').eq('user_id', userId),
+      supabase.from('campaigns').select('id, name').eq('dm_user_id', userId),
+      supabase.from('player_campaign_links').select('*', { count: 'exact', head: true }).eq('player_id', userId),
+      supabase.from('forum_topics').select('*', { count: 'exact', head: true }).eq('author_id', userId),
+      supabase.from('forum_replies').select('*', { count: 'exact', head: true }).eq('author_id', userId),
     ]);
 
     // player_campaign_links uses player_id which is the players table id, not user_id
     // We need to get the player id first
-    const { data: playerData } = await supabase.from('players').select('id').eq('user_id', user.id).single();
+    const { data: playerData } = await supabase.from('players').select('id').eq('user_id', userId).single();
     let playerCampaignCount = 0;
     if (playerData) {
       const { count } = await supabase.from('player_campaign_links').select('*', { count: 'exact', head: true }).eq('player_id', playerData.id);

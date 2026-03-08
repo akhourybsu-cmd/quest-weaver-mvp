@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, Search, Target } from "lucide-react";
+import { Shield, Search, Target, Loader2 } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import {
   Dialog,
@@ -39,6 +39,7 @@ interface PlayerFactionsViewProps {
 export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
   const [factions, setFactions] = useState<Faction[]>([]);
   const [reputations, setReputations] = useState<Reputation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFaction, setSelectedFaction] = useState<Faction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -82,6 +83,7 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
     if (!error && data) {
       setFactions(data as Faction[]);
     }
+    setLoading(false);
   };
 
   const loadReputations = async () => {
@@ -228,7 +230,11 @@ export function PlayerFactionsView({ campaignId }: PlayerFactionsViewProps) {
         </CardHeader>
 
         <CardContent>
-          {filteredFactions.length === 0 && factions.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-brass" />
+            </div>
+          ) : filteredFactions.length === 0 && factions.length === 0 ? (
             <PlayerEmptyState
               icon={Shield}
               title="No Known Factions"

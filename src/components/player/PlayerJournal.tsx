@@ -43,7 +43,7 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
     fetchNotes();
 
     const channel = supabase
-      .channel('player-journal')
+      .channel(`player-journal:${campaignId}:${characterId}`)
       .on(
         'postgres_changes',
         {

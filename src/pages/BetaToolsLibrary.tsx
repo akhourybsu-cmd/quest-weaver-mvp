@@ -13,7 +13,18 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
+
+type SortOption = 'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc' | 'created_desc';
+
+const SORT_LABELS: Record<SortOption, string> = {
+  updated_desc: 'Recently Updated',
+  updated_asc: 'Oldest Updated',
+  name_asc: 'Name A–Z',
+  name_desc: 'Name Z–A',
+  created_desc: 'Recently Created',
+};
 
 const BetaToolsLibrary = () => {
   const { userId } = useAuth();
@@ -26,6 +37,7 @@ const BetaToolsLibrary = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('updated_desc');
 
   const [editingAsset, setEditingAsset] = useState<BetaAsset | null>(null);
   const [importingAsset, setImportingAsset] = useState<BetaAsset | null>(null);
@@ -34,11 +46,21 @@ const BetaToolsLibrary = () => {
   const fetchAssets = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
+
+    const sortConfig: Record<SortOption, { column: string; ascending: boolean }> = {
+      updated_desc: { column: 'updated_at', ascending: false },
+      updated_asc: { column: 'updated_at', ascending: true },
+      name_asc: { column: 'name', ascending: true },
+      name_desc: { column: 'name', ascending: false },
+      created_desc: { column: 'created_at', ascending: false },
+    };
+    const sort = sortConfig[sortBy];
+
     let query = supabase
       .from('beta_assets')
       .select('*')
       .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
+      .order(sort.column, { ascending: sort.ascending });
 
     if (typeFilter !== 'all') query = query.eq('asset_type', typeFilter);
     if (statusFilter !== 'all') query = query.eq('status', statusFilter);
@@ -51,7 +73,7 @@ const BetaToolsLibrary = () => {
       setAssets(data as BetaAsset[]);
     }
     setLoading(false);
-  }, [userId, typeFilter, statusFilter, favoritesOnly, toast]);
+  }, [userId, typeFilter, statusFilter, favoritesOnly, sortBy, toast]);
 
   useEffect(() => { fetchAssets(); }, [fetchAssets]);
 
@@ -109,12 +131,34 @@ const BetaToolsLibrary = () => {
           </Button>
         </div>
 
-        <BetaLibraryFilters
-          search={search} onSearchChange={setSearch}
-          typeFilter={typeFilter} onTypeFilterChange={setTypeFilter}
-          statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
-          favoritesOnly={favoritesOnly} onFavoritesOnlyChange={setFavoritesOnly}
-        />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <BetaLibraryFilters
+              search={search} onSearchChange={setSearch}
+              typeFilter={typeFilter} onTypeFilterChange={setTypeFilter}
+              statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
+              favoritesOnly={favoritesOnly} onFavoritesOnlyChange={setFavoritesOnly}
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-[180px] shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(SORT_LABELS).map(([key, label]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Asset count */}
+        {!loading && (
+          <p className="text-xs text-muted-foreground">
+            {filteredAssets.length} asset{filteredAssets.length !== 1 ? 's' : ''}
+            {search && ` matching "${search}"`}
+          </p>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-48">
@@ -123,27 +167,34 @@ const BetaToolsLibrary = () => {
         ) : filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 space-y-3">
             <FlaskConical className="h-12 w-12 text-muted-foreground/30" />
-            <p className="text-muted-foreground">No assets yet. Start creating!</p>
-            <Button
-              variant="outline"
-              className="border-border text-muted-foreground hover:text-foreground"
-              onClick={() => navigate('/beta-tools')}
-            >
-              Go to Workshop
-            </Button>
+            <p className="text-muted-foreground">
+              {search || typeFilter !== 'all' || statusFilter !== 'all' || favoritesOnly
+                ? 'No assets match your filters.'
+                : 'No assets yet. Start creating!'}
+            </p>
+            {!search && typeFilter === 'all' && statusFilter === 'all' && !favoritesOnly && (
+              <Button
+                variant="outline"
+                className="border-border text-muted-foreground hover:text-foreground"
+                onClick={() => navigate('/beta-tools')}
+              >
+                Go to Workshop
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredAssets.map((asset) => (
-              <BetaAssetCard
-                key={asset.id}
-                asset={asset}
-                onEdit={(a) => setEditingAsset(a)}
-                onDuplicate={handleDuplicate}
-                onDelete={(a) => setDeletingAsset(a)}
-                onToggleFavorite={handleToggleFavorite}
-                onImport={(a) => setImportingAsset(a)}
-              />
+            {filteredAssets.map((asset, i) => (
+              <div key={asset.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
+                <BetaAssetCard
+                  asset={asset}
+                  onEdit={(a) => setEditingAsset(a)}
+                  onDuplicate={handleDuplicate}
+                  onDelete={(a) => setDeletingAsset(a)}
+                  onToggleFavorite={handleToggleFavorite}
+                  onImport={(a) => setImportingAsset(a)}
+                />
+              </div>
             ))}
           </div>
         )}

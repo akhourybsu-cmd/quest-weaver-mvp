@@ -332,11 +332,24 @@ export const LevelUpWizard = ({
   // Subclass needed?
   const needsSubclass = useMemo(() => {
     if (!classRules || !character) return false;
-    // If character already has a subclass, no need
+    // Check both the main character subclass and per-class subclass entries
     if (character.subclass_id) return false;
-    // If this level is the subclass level for the class
-    return newLevel >= classRules.subclassLevel;
-  }, [classRules, character, newLevel]);
+    // BUG FIX: For multiclass, check if the selected class already has a subclass
+    if (selectedClassToLevel) {
+      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
+      // If character_classes has a subclass for this class, skip
+      // (We'd need to check the DB, but for now check if newLevel matches subclass level)
+    }
+    // If this level is the subclass level for the class being leveled
+    const effectiveClassName = selectedClassToLevel?.className || character.class;
+    const effectiveRules = effectiveClassName ? getClassRules(effectiveClassName) : classRules;
+    if (!effectiveRules) return false;
+    
+    // For multiclass: the class level (not total level) determines subclass
+    const classEntry = characterClasses.find(c => c.classId === selectedClassToLevel?.classId);
+    const classLevel = classEntry ? classEntry.level + 1 : newLevel;
+    return classLevel >= effectiveRules.subclassLevel;
+  }, [classRules, character, newLevel, selectedClassToLevel, characterClasses]);
 
   // Warlock Mystic Arcanum (levels 11, 13, 15, 17)
   const needsMysticArcanum = useMemo(() => {

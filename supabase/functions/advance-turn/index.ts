@@ -74,7 +74,7 @@ serve(async (req) => {
     // Get initiative order
     const { data: initiative } = await supabase
       .from('initiative')
-      .select('*, character:characters(name)')
+      .select('*')
       .eq('encounter_id', encounterId)
       .order('initiative_roll', { ascending: false })
       .order('dex_modifier', { ascending: false })

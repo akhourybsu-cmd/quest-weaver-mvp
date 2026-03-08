@@ -541,15 +541,25 @@ async function importFeats(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Feats', imported: 0, skipped: 0, errors: [] };
   
   try {
-    // Fetch from ALL documents so we get a good range of feats, then filter
+    // v2 feats from all documents (only 1 SRD feat exists — Grappler)
+    // We import broadly to give users a wider selection
     const feats = await fetchAllPages(`${OPEN5E_BASE}/v2/feats/?limit=100`);
     
+    // Track names we've already imported to skip duplicates from different sources
+    const imported = new Set<string>();
+    
     for (const feat of feats) {
-      // Skip feats without descriptions (they're useless)
       if (!feat.desc || feat.desc.trim().length === 0) {
         result.skipped++;
         continue;
       }
+      
+      // Skip duplicate names from different source books
+      if (imported.has(feat.name)) {
+        result.skipped++;
+        continue;
+      }
+      imported.add(feat.name);
 
       const { error } = await supabase.from('srd_feats').upsert({
         name: feat.name,

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, Library } from "lucide-react";
+import { FlaskConical, Library, Lock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { TOOL_CATEGORIES, getToolsByCategory } from "./toolRegistry";
 
 export function BetaToolsSidebar() {
@@ -32,7 +32,7 @@ export function BetaToolsSidebar() {
                 <SidebarMenuButton
                   onClick={() => navigate("/beta-tools")}
                   isActive={currentPath === "/beta-tools"}
-                  className="data-[active=true]:bg-amber-500/15 data-[active=true]:text-amber-300"
+                  className="data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400"
                 >
                   <FlaskConical className="h-4 w-4 text-amber-400" />
                   {!collapsed && <span>Workshop</span>}
@@ -42,7 +42,7 @@ export function BetaToolsSidebar() {
                 <SidebarMenuButton
                   onClick={() => navigate("/beta-tools/library")}
                   isActive={currentPath === "/beta-tools/library"}
-                  className="data-[active=true]:bg-amber-500/15 data-[active=true]:text-amber-300"
+                  className="data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400"
                 >
                   <Library className="h-4 w-4 text-amber-400" />
                   {!collapsed && <span>My Library</span>}
@@ -52,41 +52,48 @@ export function BetaToolsSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {!collapsed && <Separator className="bg-amber-500/15 mx-3" />}
+
         {/* Tool categories */}
         {TOOL_CATEGORIES.map((cat) => {
           const tools = getToolsByCategory(cat.id);
-          const activeTools = tools.filter(t => t.status === 'active');
-          const hasActiveTool = tools.some(t => currentPath.includes(`/generate/${t.id}`));
 
           return (
-            <SidebarGroup key={cat.id}>
-              <SidebarGroupLabel className="text-amber-400/70 uppercase text-[10px] tracking-wider">
+            <SidebarGroup key={cat.id} className="pt-2">
+              <SidebarGroupLabel className="text-amber-400/70 uppercase text-[10px] tracking-wider border-b border-amber-500/10 pb-1 mb-1">
                 {!collapsed && cat.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {tools.map((tool) => (
-                    <SidebarMenuItem key={tool.id}>
-                      <SidebarMenuButton
-                        onClick={() => tool.status === 'active' && navigate(`/beta-tools/generate/${tool.id}`)}
-                        isActive={currentPath === `/beta-tools/generate/${tool.id}`}
-                        disabled={tool.status === 'coming_soon'}
-                        className="data-[active=true]:bg-amber-500/15 data-[active=true]:text-amber-300 disabled:opacity-40"
-                      >
-                        <tool.icon className="h-4 w-4" />
-                        {!collapsed && (
-                          <span className="flex items-center gap-2 truncate">
-                            {tool.name}
-                            {tool.status === 'coming_soon' && (
-                              <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/30 text-muted-foreground">
-                                Soon
-                              </Badge>
-                            )}
-                          </span>
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {tools.map((tool) => {
+                    const isActive = currentPath === `/beta-tools/generate/${tool.id}`;
+                    const isComingSoon = tool.status === "coming_soon";
+
+                    return (
+                      <SidebarMenuItem key={tool.id}>
+                        <SidebarMenuButton
+                          onClick={() => !isComingSoon && navigate(`/beta-tools/generate/${tool.id}`)}
+                          isActive={isActive}
+                          disabled={isComingSoon}
+                          className={`
+                            transition-all duration-150
+                            data-[active=true]:bg-amber-500/20 data-[active=true]:text-amber-200 data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-l-amber-400
+                            ${isComingSoon ? "opacity-30 hover:opacity-50" : ""}
+                          `}
+                        >
+                          <tool.icon className="h-4 w-4" />
+                          {!collapsed && (
+                            <span className="flex items-center gap-2 truncate">
+                              {tool.name}
+                              {isComingSoon && (
+                                <Lock className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                              )}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

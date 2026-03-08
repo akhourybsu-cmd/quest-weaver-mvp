@@ -659,6 +659,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'Check quests for missing rewards or unclear objectives',
       'Find locations with minimal descriptions',
     ],
+    outputHints: ['gap analysis', 'fix suggestions', 'priority ranking'],
   },
   {
     id: 'lore-expansion',

@@ -210,7 +210,8 @@ export const useEncounter = (encounterId: string | null) => {
       .from("initiative")
       .insert({
         encounter_id: encounterId,
-        character_id: characterId,
+        combatant_id: characterId,
+        combatant_type: 'character',
         initiative_roll: roll,
       });
 

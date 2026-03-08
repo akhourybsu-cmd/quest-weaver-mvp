@@ -121,26 +121,43 @@ const SessionSpectator = () => {
     setLoading(false);
   };
 
-  const fetchInitiative = async (encounterId?: string) => {
-    const targetEncounterId = encounterId || encounter?.id;
+  const fetchInitiative = async (encId?: string) => {
+    const targetEncounterId = encId || encounter?.id;
     if (!targetEncounterId) return;
 
     const { data } = await supabase
       .from("initiative")
-      .select(`
-        id,
-        combatant_id,
-        combatant_type,
-        initiative_roll,
-        is_current_turn,
-        characters:combatant_id(name, class, level),
-        encounter_monsters:combatant_id(display_name, ac, hp_current, hp_max)
-      `)
+      .select("id, combatant_id, combatant_type, initiative_roll, is_current_turn")
       .eq("encounter_id", targetEncounterId)
       .order("initiative_roll", { ascending: false })
       .order("dex_modifier", { ascending: false });
 
-    setInitiative((data as any) || []);
+    if (!data) {
+      setInitiative([]);
+      return;
+    }
+
+    const entries = await Promise.all(
+      data.map(async (init) => {
+        if (init.combatant_type === 'character') {
+          const { data: char } = await supabase
+            .from('characters')
+            .select('name, class, level')
+            .eq('id', init.combatant_id)
+            .single();
+          return { ...init, character: char || { name: "Unknown", class: "Unknown", level: 0 }, monster: null };
+        } else {
+          const { data: monster } = await supabase
+            .from('encounter_monsters')
+            .select('display_name, ac, hp_current, hp_max')
+            .eq('id', init.combatant_id)
+            .single();
+          return { ...init, character: null, monster: monster || { display_name: "Unknown Creature", ac: 0, hp_current: 0, hp_max: 0 } };
+        }
+      })
+    );
+
+    setInitiative(entries);
   };
 
   const getHPPercentage = (current: number, max: number) => {
@@ -216,8 +233,8 @@ const SessionSpectator = () => {
             <CardContent className="space-y-2">
               {initiative.map((entry) => {
                 const isCharacter = entry.combatant_type === 'character';
-                const char = (entry as any).characters;
-                const monster = (entry as any).encounter_monsters;
+                const char = (entry as any).character;
+                const monster = (entry as any).monster;
 
                 return (
                   <div

@@ -117,7 +117,7 @@ export function PlayerCombatView({
           return {
             id: init.id,
             combatant_id: init.combatant_id,
-            combatant_name: char?.name || "",
+            combatant_name: char?.name || "Unknown",
             combatant_type: 'character',
             initiative_roll: init.initiative_roll,
             is_current_turn: init.is_current_turn,

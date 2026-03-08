@@ -595,7 +595,7 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Magic Items', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const items = await fetchAllPages(`${OPEN5E_BASE}/v1/magicitems/?document__slug=${SRD_SLUG}&format=json`);
+    const items = await fetchAllPages(`${OPEN5E_BASE}/v1/magicitems/?document__slug=${SRD_V1_SLUG}&format=json`);
     
     for (const item of items) {
       const { error } = await supabase.from('srd_magic_items').upsert({

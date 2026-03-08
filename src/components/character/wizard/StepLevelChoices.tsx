@@ -355,7 +355,10 @@ const StepLevelChoices = () => {
             </Badge>
           </div>
           <CardDescription>
-            Making choices for leveling from {currentLevel - 1} → {currentLevel}
+            {currentLevel === 1 
+              ? "Making starting choices for level 1"
+              : `Making choices for leveling from ${currentLevel - 1} → ${currentLevel}`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -677,13 +680,20 @@ const StepLevelChoices = () => {
           )}
         </div>
 
-        <Button
-          onClick={goNextStep}
-          disabled={!canProceedStep()}
-        >
-          {isComplete ? "Done" : "Next"}
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        {!isComplete ? (
+          <Button
+            onClick={goNextStep}
+            disabled={!canProceedStep()}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        ) : (
+          <Badge variant="default" className="bg-green-600 py-2 px-4">
+            <Check className="h-3 w-3 mr-1" />
+            All choices made — click Next above to continue
+          </Badge>
+        )}
       </div>
     </div>
   );

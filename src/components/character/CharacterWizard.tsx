@@ -995,15 +995,16 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         for (let lvl = 1; lvl <= draft.level; lvl++) {
           const lc = levelChoices?.[lvl] as any;
           const conMod = Math.floor((finalAbilityScores.CON - 10) / 2);
+          const hitDie = classRules?.hitDie || 8;
           const hpGained = lvl === 1 
-            ? (classRules?.hitDie || 8) + conMod // Level 1: max hit die + CON mod
-            : (lc?.hpRoll ?? (Math.floor((classRules?.hitDie || 8) / 2) + 1)) + conMod;
+            ? hitDie + conMod
+            : (lc?.hpRoll ?? (Math.floor(hitDie / 2) + 1)) + conMod;
           classLevelsData.push({
             character_id: characterId,
             class_id: draft.classId,
             subclass_id: draft.subclassId || null,
             level: lvl,
-            hp_gained: lvl === 1 ? (classRules?.hitDie || 8) + Math.floor((finalAbilityScores.CON - 10) / 2) : hpGained,
+            hp_gained: hpGained,
             hit_dice_remaining: 1,
           });
         }

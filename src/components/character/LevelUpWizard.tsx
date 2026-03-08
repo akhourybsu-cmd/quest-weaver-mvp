@@ -1056,6 +1056,19 @@ export const LevelUpWizard = ({
         await supabase.from("character_feature_choices").insert(featureChoicesToSave);
       }
 
+      // Write character_class_levels entry for this level-up
+      const classIdForLevel = selectedClassToLevel?.classId || classData?.id;
+      if (classIdForLevel) {
+        await supabase.from("character_class_levels").upsert({
+          character_id: characterId,
+          class_id: classIdForLevel,
+          subclass_id: character?.subclass_id || selectedSubclassId || null,
+          level: newLevel,
+          hp_gained: hpGain,
+          hit_dice_remaining: 1,
+        });
+      }
+
       // Update class resources
       await updateClassResources();
 

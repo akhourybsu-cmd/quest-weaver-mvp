@@ -121,8 +121,8 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-amber-400" />
+          <DialogTitle className="flex items-center gap-2 font-cinzel">
+            <Upload className="h-5 w-5 text-brand-brass" />
             Import to Campaign
           </DialogTitle>
         </DialogHeader>
@@ -138,7 +138,7 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
               <Label>Asset</Label>
               <div className="flex items-center gap-2">
                 <span className="font-medium">{asset?.name}</span>
-                <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">{asset?.asset_type}</Badge>
+                <Badge variant="outline" className="text-xs">{asset?.asset_type}</Badge>
               </div>
             </div>
 
@@ -183,7 +183,6 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
             <Button
               onClick={handleImport}
               disabled={!selectedCampaign || isImporting}
-              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black"
             >
               {isImporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               Import

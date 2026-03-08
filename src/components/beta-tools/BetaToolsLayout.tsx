@@ -20,17 +20,17 @@ export function BetaToolsLayout({ children, title, showBackButton }: BetaToolsLa
       <div className="min-h-screen flex w-full bg-background">
         <BetaToolsSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-3 border-b border-amber-500/20 bg-gradient-to-r from-amber-950/30 to-background px-4 shrink-0">
-            <SidebarTrigger className="text-amber-400" />
+          <header className="h-14 flex items-center gap-3 border-b border-border bg-brand-obsidian px-4 shrink-0">
+            <SidebarTrigger className="text-brand-brass" />
             {showBackButton && (
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
             <div className="flex items-center gap-2">
-              <FlaskConical className="h-5 w-5 text-amber-400" />
-              <span className="font-bold text-amber-100">Beta Tools</span>
-              <Badge variant="outline" className="border-amber-500/40 text-amber-400 text-[10px]">SANDBOX</Badge>
+              <FlaskConical className="h-5 w-5 text-brand-brass" />
+              <span className="font-cinzel font-bold text-foreground">Beta Tools</span>
+              <Badge variant="outline" className="border-primary/40 text-primary text-[10px]">SANDBOX</Badge>
             </div>
             {title && (
               <>

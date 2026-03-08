@@ -156,12 +156,12 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     <div className="space-y-6">
       {/* Prompt area */}
       <div className="space-y-3">
-        <Label className="text-amber-200">Describe what you want to create</Label>
+        <Label className="text-foreground font-cinzel">Describe what you want to create</Label>
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={`Describe your ${tool.name.toLowerCase()} in detail, or just give a few keywords...`}
-          className="min-h-[100px] border-amber-500/20 focus-visible:ring-amber-500/30 bg-background/50"
+          className="min-h-[100px]"
         />
         {/* Quick prompts */}
         {tool.examplePrompts.length > 0 && (
@@ -170,7 +170,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
               <Badge
                 key={i}
                 variant="outline"
-                className="cursor-pointer border-amber-500/30 text-amber-300 hover:bg-amber-500/10 transition-colors text-xs"
+                className="cursor-pointer border-secondary/30 text-secondary hover:bg-secondary/10 transition-colors text-xs"
                 onClick={() => setPrompt(ep)}
               >
                 {ep.length > 60 ? ep.slice(0, 57) + '...' : ep}
@@ -184,7 +184,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       {tool.fields.length > 0 && (
         <Collapsible open={showFields} onOpenChange={setShowFields}>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="text-amber-400 hover:text-amber-300 p-0 h-auto">
+            <Button variant="ghost" className="text-primary hover:text-primary-hover p-0 h-auto">
               <ChevronDown className={`h-4 w-4 mr-1 transition-transform ${showFields ? 'rotate-180' : ''}`} />
               {showFields ? 'Hide' : 'Show'} structured fields
             </Button>
@@ -199,7 +199,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                       value={structuredFields[field.key] || ''}
                       onValueChange={(v) => setStructuredFields(prev => ({ ...prev, [field.key]: v }))}
                     >
-                      <SelectTrigger className="border-amber-500/20">
+                      <SelectTrigger>
                         <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                       </SelectTrigger>
                       <SelectContent>
@@ -218,7 +218,6 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                       value={structuredFields[field.key] || ''}
                       onChange={(e) => setStructuredFields(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder || ''}
-                      className="border-amber-500/20"
                     />
                   )}
                 </div>
@@ -229,11 +228,11 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       )}
 
       {/* Campaign context toggle */}
-      <Card className="border-amber-500/10 bg-card/50 p-4 space-y-3">
+      <Card className="border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-amber-400" />
-            <Label className="text-sm text-amber-200">Use Campaign Context</Label>
+            <Globe className="h-4 w-4 text-brand-brass" />
+            <Label className="text-sm text-foreground">Use Campaign Context</Label>
           </div>
           <Switch
             checked={useCampaignContext}
@@ -247,7 +246,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
               <p className="text-xs text-muted-foreground">No campaigns found.</p>
             ) : (
               <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-                <SelectTrigger className="border-amber-500/20">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose a campaign..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -268,7 +267,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       <Button
         onClick={handleGenerate}
         disabled={isGenerating}
-        className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-semibold"
+        className="w-full"
         size="lg"
       >
         {isGenerating ? (
@@ -286,18 +285,18 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
 
       {/* Result preview */}
       {displayResult && (
-        <Card className="border-amber-500/20 bg-gradient-to-b from-amber-950/10 to-background">
+        <Card className="border-border bg-card">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-lg text-amber-100">
+              <h3 className="font-cinzel font-bold text-lg text-foreground">
                 {displayResult.name || displayResult.title || displayResult.event_name || 'Generated Result'}
               </h3>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)} className="border-amber-500/30 text-amber-300">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                   <Pencil className="h-3.5 w-3.5 mr-1" />
                   {isEditing ? 'Preview' : 'Edit'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className="border-amber-500/30 text-amber-300">
+                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating}>
                   <RefreshCw className="h-3.5 w-3.5 mr-1" />
                   Regenerate
                 </Button>
@@ -311,7 +310,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                   if (key === 'name' || key === 'title' || key === 'event_name') return null;
                   return (
                     <div key={key} className="space-y-1">
-                      <Label className="text-xs text-amber-400/70 capitalize">{key.replace(/_/g, ' ')}</Label>
+                      <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
                       <Textarea
                         value={typeof value === 'string' ? value : Array.isArray(value) ? value.join('\n') : JSON.stringify(value, null, 2)}
                         onChange={(e) => {
@@ -320,7 +319,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                             : e.target.value;
                           setEditedResult(prev => prev ? { ...prev, [key]: newVal } : null);
                         }}
-                        className="border-amber-500/20 text-sm min-h-[60px]"
+                        className="text-sm min-h-[60px]"
                       />
                     </div>
                   );
@@ -332,7 +331,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
 
             {/* Assumptions */}
             {assumptions.length > 0 && (
-              <div className="border-t border-amber-500/10 pt-3">
+              <div className="border-t border-border pt-3">
                 <Label className="text-xs text-muted-foreground">AI Assumptions</Label>
                 <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
                   {assumptions.map((a, i) => <li key={i}>• {a}</li>)}
@@ -344,7 +343,8 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-semibold"
+              variant="secondary"
+              className="w-full font-semibold"
             >
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save to Beta Library

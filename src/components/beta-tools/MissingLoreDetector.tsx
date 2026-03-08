@@ -28,7 +28,7 @@ interface LoreGapReport {
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: typeof AlertTriangle }> = {
   critical: { color: 'text-destructive border-destructive/40', icon: AlertTriangle },
-  moderate: { color: 'text-amber-400 border-amber-500/40', icon: Info },
+  moderate: { color: 'text-status-warning border-status-warning/40', icon: Info },
   minor: { color: 'text-muted-foreground border-muted-foreground/40', icon: CheckCircle },
 };
 
@@ -147,12 +147,12 @@ export function MissingLoreDetector() {
     <div className="space-y-6">
       {/* Campaign selector */}
       <div className="space-y-3">
-        <Label className="text-amber-200">Select a Campaign to Scan</Label>
+        <Label className="text-foreground font-cinzel">Select a Campaign to Scan</Label>
         {campaigns.length === 0 ? (
           <p className="text-sm text-muted-foreground">No campaigns found. Create a campaign first.</p>
         ) : (
           <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-            <SelectTrigger className="border-amber-500/20 focus-visible:ring-amber-500/30 bg-background/50">
+            <SelectTrigger>
               <SelectValue placeholder="Choose a campaign..." />
             </SelectTrigger>
             <SelectContent>
@@ -168,7 +168,7 @@ export function MissingLoreDetector() {
       <Button
         onClick={handleScan}
         disabled={isScanning || !selectedCampaignId}
-        className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-semibold"
+        className="w-full"
         size="lg"
       >
         {isScanning ? (
@@ -188,13 +188,13 @@ export function MissingLoreDetector() {
       {report && (
         <div className="space-y-5">
           {/* Summary */}
-          <Card className="border-amber-500/20 bg-gradient-to-b from-amber-950/10 to-background p-5">
-            <h3 className="font-bold text-lg text-amber-100 mb-2">Campaign Analysis</h3>
+          <Card className="border-border bg-card p-5">
+            <h3 className="font-cinzel font-bold text-lg text-foreground mb-2">Campaign Analysis</h3>
             <p className="text-sm text-foreground">{report.summary}</p>
 
             {report.priority_fixes.length > 0 && (
               <div className="mt-4">
-                <Label className="text-xs text-amber-400/70">Priority Fixes</Label>
+                <Label className="text-xs text-muted-foreground">Priority Fixes</Label>
                 <ol className="text-sm text-foreground mt-1 space-y-1 list-decimal list-inside">
                   {report.priority_fixes.map((fix, i) => (
                     <li key={i}>{fix}</li>
@@ -207,7 +207,7 @@ export function MissingLoreDetector() {
           {/* Gaps grouped by entity type */}
           {groupedGaps && Object.entries(groupedGaps).map(([entityType, gaps]) => (
             <div key={entityType} className="space-y-2">
-              <h4 className="text-sm font-semibold text-amber-300 capitalize">
+              <h4 className="text-sm font-cinzel font-semibold text-foreground capitalize">
                 {entityType.replace(/_/g, ' ')} ({gaps.length})
               </h4>
               <div className="space-y-2">
@@ -215,7 +215,7 @@ export function MissingLoreDetector() {
                   const sev = SEVERITY_CONFIG[gap.severity] || SEVERITY_CONFIG.minor;
                   const SevIcon = sev.icon;
                   return (
-                    <Card key={i} className="border-amber-500/10 bg-card/50 p-3">
+                    <Card key={i} className="border-border bg-card p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
@@ -229,13 +229,13 @@ export function MissingLoreDetector() {
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">{gap.description}</p>
-                          <p className="text-xs text-amber-300/70 italic">💡 {gap.suggestion}</p>
+                          <p className="text-xs text-secondary italic">💡 {gap.suggestion}</p>
                         </div>
                         {ENTITY_TYPE_TO_TOOL[gap.entity_type] && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="shrink-0 border-amber-500/30 text-amber-300 text-xs"
+                            className="shrink-0 text-xs"
                             onClick={() => handleFixWithAI(gap)}
                           >
                             <Wand2 className="h-3 w-3 mr-1" />
@@ -254,7 +254,8 @@ export function MissingLoreDetector() {
           <Button
             onClick={handleSaveReport}
             disabled={isSaving}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-semibold"
+            variant="secondary"
+            className="w-full font-semibold"
           >
             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Save Report to Beta Library

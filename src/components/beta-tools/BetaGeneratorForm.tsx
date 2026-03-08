@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil, Globe } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil, Globe, Keyboard } from "lucide-react";
 import { BetaTool } from "./toolRegistry";
 import { BetaResultRenderer } from "./BetaResultRenderer";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,34 @@ import type { AssetType } from "@/lib/campaignContextBuilder";
 interface BetaGeneratorFormProps {
   tool: BetaTool;
   onSaved?: (assetId: string) => void;
+}
+
+function GeneratingSkeleton() {
+  return (
+    <Card className="border-border bg-card animate-pulse">
+      <div className="p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-5 w-5 text-primary animate-spin" />
+          <span className="text-sm font-medium text-muted-foreground">Creating your asset...</span>
+        </div>
+        <Skeleton className="h-6 w-3/4" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Skeleton className="h-16 rounded-md" />
+          <Skeleton className="h-16 rounded-md" />
+          <Skeleton className="h-16 rounded-md" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-20 w-full rounded-md" />
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
@@ -38,6 +67,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [useCampaignContext, setUseCampaignContext] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Reset all form state when switching tools
   useEffect(() => {
@@ -51,6 +81,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setUseCampaignContext(false);
     setSelectedCampaignId("");
     setSaveTags("");
+    setJustSaved(false);
   }, [tool.id]);
 
   useEffect(() => {
@@ -65,7 +96,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       });
   }, [useCampaignContext, userId]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim() && Object.values(structuredFields).every(v => !v)) {
       toast({ title: "Enter a prompt or fill in some fields", variant: "destructive" });
       return;
@@ -73,6 +104,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     setIsGenerating(true);
     setResult(null);
     setIsEditing(false);
+    setJustSaved(false);
 
     try {
       const existingFields: Record<string, any> = {};
@@ -122,7 +154,19 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [prompt, structuredFields, useCampaignContext, selectedCampaignId, tool, toast]);
+
+  // Ctrl+Enter keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isGenerating) {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleGenerate, isGenerating]);
 
   const handleSave = async () => {
     if (!userId || !editedResult) return;
@@ -142,17 +186,22 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       if (error) throw error;
       toast({ title: "Saved to Beta Library!", description: `${name} has been saved.` });
       onSaved?.(data.id);
-      // Reset for next generation
-      setResult(null);
-      setEditedResult(null);
-      setPrompt("");
-      setStructuredFields({});
-      setSaveTags("");
+      setJustSaved(true);
     } catch (err) {
       toast({ title: "Save failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleGenerateAnother = () => {
+    setResult(null);
+    setEditedResult(null);
+    setPrompt("");
+    setStructuredFields({});
+    setSaveTags("");
+    setJustSaved(false);
+    setIsEditing(false);
   };
 
   const displayResult = isEditing ? editedResult : result;
@@ -269,114 +318,149 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
       </Card>
 
       {/* Generate button */}
-      <Button
-        onClick={handleGenerate}
-        disabled={isGenerating}
-        className="w-full"
-        size="lg"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Generating...
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-5 w-5 mr-2" />
-            Generate {tool.name.replace(' Generator', '')}
-          </>
-        )}
-      </Button>
+      <div className="space-y-1.5">
+        <Button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="w-full"
+          size="lg"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              Generate {tool.name.replace(' Generator', '')}
+            </>
+          )}
+        </Button>
+        <p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
+          <Keyboard className="h-3 w-3" />
+          <span>Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Ctrl</kbd>+<kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> to generate</span>
+        </p>
+      </div>
+
+      {/* Loading skeleton */}
+      {isGenerating && <GeneratingSkeleton />}
 
       {/* Result preview */}
-      {displayResult && (
-        <Card className="border-border bg-card">
+      {displayResult && !isGenerating && (
+        <Card className="border-border bg-card animate-fade-in">
           <div className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              {isEditing ? (
-                <Input
-                  value={displayResult.name || displayResult.title || displayResult.event_name || ''}
-                  onChange={(e) => {
-                    const nameKey = displayResult.title ? 'title' : displayResult.event_name ? 'event_name' : 'name';
-                    setEditedResult(prev => prev ? { ...prev, [nameKey]: e.target.value } : null);
-                  }}
-                  className="font-cinzel font-bold text-lg text-foreground max-w-[60%]"
-                  placeholder="Asset name..."
-                />
-              ) : (
-                <h3 className="font-cinzel font-bold text-lg text-foreground">
-                  {displayResult.name || displayResult.title || displayResult.event_name || 'Generated Result'}
-                </h3>
-              )}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" />
-                  {isEditing ? 'Preview' : 'Edit'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                  Regenerate
-                </Button>
-              </div>
-            </div>
-
-            {/* Fields display/edit */}
-            {isEditing ? (
-              <div className="grid gap-3">
-                {Object.entries(displayResult).map(([key, value]) => {
-                  if (key === 'name' || key === 'title' || key === 'event_name') return null;
-                  return (
-                    <div key={key} className="space-y-1">
-                      <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
-                      <Textarea
-                        value={typeof value === 'string' ? value : Array.isArray(value) ? value.join('\n') : JSON.stringify(value, null, 2)}
-                        onChange={(e) => {
-                          const newVal = Array.isArray(result?.[key])
-                            ? e.target.value.split('\n').filter(Boolean)
-                            : e.target.value;
-                          setEditedResult(prev => prev ? { ...prev, [key]: newVal } : null);
-                        }}
-                        className="text-sm min-h-[60px]"
-                      />
-                    </div>
-                  );
-                })}
+            {justSaved ? (
+              /* Post-save state */
+              <div className="text-center space-y-4 py-4">
+                <div className="flex items-center justify-center gap-2 text-secondary">
+                  <Save className="h-5 w-5" />
+                  <span className="font-cinzel font-bold text-lg">Saved!</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {displayResult.name || displayResult.title || 'Your asset'} is in your Beta Library.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button onClick={handleGenerateAnother} className="font-semibold">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Another
+                  </Button>
+                  <Button variant="outline" onClick={() => setJustSaved(false)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Keep Editing
+                  </Button>
+                </div>
               </div>
             ) : (
-              <BetaResultRenderer assetType={tool.assetType} data={displayResult} />
+              /* Normal result view */
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  {isEditing ? (
+                    <Input
+                      value={displayResult.name || displayResult.title || displayResult.event_name || ''}
+                      onChange={(e) => {
+                        const nameKey = displayResult.title ? 'title' : displayResult.event_name ? 'event_name' : 'name';
+                        setEditedResult(prev => prev ? { ...prev, [nameKey]: e.target.value } : null);
+                      }}
+                      className="font-cinzel font-bold text-lg text-foreground max-w-[60%]"
+                      placeholder="Asset name..."
+                    />
+                  ) : (
+                    <h3 className="font-cinzel font-bold text-lg text-foreground">
+                      {displayResult.name || displayResult.title || displayResult.event_name || 'Generated Result'}
+                    </h3>
+                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />
+                      {isEditing ? 'Preview' : 'Edit'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Regenerate
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Fields display/edit */}
+                {isEditing ? (
+                  <div className="grid gap-3">
+                    {Object.entries(displayResult).map(([key, value]) => {
+                      if (key === 'name' || key === 'title' || key === 'event_name') return null;
+                      return (
+                        <div key={key} className="space-y-1">
+                          <Label className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</Label>
+                          <Textarea
+                            value={typeof value === 'string' ? value : Array.isArray(value) ? value.join('\n') : JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              const newVal = Array.isArray(result?.[key])
+                                ? e.target.value.split('\n').filter(Boolean)
+                                : e.target.value;
+                              setEditedResult(prev => prev ? { ...prev, [key]: newVal } : null);
+                            }}
+                            className="text-sm min-h-[60px]"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <BetaResultRenderer assetType={tool.assetType} data={displayResult} />
+                )}
+
+                {/* Assumptions */}
+                {assumptions.length > 0 && (
+                  <div className="border-t border-border pt-3">
+                    <Label className="text-xs text-muted-foreground">AI Assumptions</Label>
+                    <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                      {assumptions.map((a, i) => <li key={i}>• {a}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tags input */}
+                <div className="border-t border-border pt-3 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Tags (optional, comma-separated)</Label>
+                  <Input
+                    value={saveTags}
+                    onChange={(e) => setSaveTags(e.target.value)}
+                    placeholder="e.g. villain, underdark, tier-3"
+                    className="text-sm"
+                  />
+                </div>
+
+                {/* Save button */}
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  variant="secondary"
+                  className="w-full font-semibold"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save to Beta Library
+                </Button>
+              </>
             )}
-
-            {/* Assumptions */}
-            {assumptions.length > 0 && (
-              <div className="border-t border-border pt-3">
-                <Label className="text-xs text-muted-foreground">AI Assumptions</Label>
-                <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                  {assumptions.map((a, i) => <li key={i}>• {a}</li>)}
-                </ul>
-              </div>
-            )}
-
-            {/* Tags input */}
-            <div className="border-t border-border pt-3 space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Tags (optional, comma-separated)</Label>
-              <Input
-                value={saveTags}
-                onChange={(e) => setSaveTags(e.target.value)}
-                placeholder="e.g. villain, underdark, tier-3"
-                className="text-sm"
-              />
-            </div>
-
-            {/* Save button */}
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              variant="secondary"
-              className="w-full font-semibold"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save to Beta Library
-            </Button>
           </div>
         </Card>
       )}

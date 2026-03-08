@@ -407,6 +407,7 @@ export const BETA_TOOLS: BetaTool[] = [
       'A humble-looking compass that points toward the nearest source of danger',
       'An ancient ring that grants invisibility but attracts undead attention',
     ],
+    outputHints: ['properties', 'lore', 'quirks', 'attunement'],
   },
   {
     id: 'artifact-generator',

@@ -27,6 +27,7 @@ interface PlayerNPCDirectoryProps {
 
 export function PlayerNPCDirectory({ campaignId }: PlayerNPCDirectoryProps) {
   const [npcs, setNpcs] = useState<NPC[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNPC, setSelectedNPC] = useState<NPC | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);

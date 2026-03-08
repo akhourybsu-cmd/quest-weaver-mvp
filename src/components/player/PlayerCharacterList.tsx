@@ -53,6 +53,7 @@ interface PlayerCharacterListProps {
 
 export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
   const { toast } = useToast();
+  const { userId } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);

@@ -108,6 +108,16 @@ export function useSRDAutoSeed() {
         await fixSpellData();
       }
 
+      if (needsSeeding.equipment) {
+        setSeedingStatus("Seeding equipment...");
+        await seedEquipment();
+      }
+
+      if (needsSeeding.subclassFeatureGaps) {
+        setSeedingStatus("Seeding missing subclass features...");
+        await seedMissingSubclassFeatures();
+      }
+
       setSeedComplete(true);
     } catch (error) {
       console.error("Error auto-seeding SRD data:", error);

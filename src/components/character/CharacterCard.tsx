@@ -36,10 +36,11 @@ interface CharacterCardProps {
   };
   campaignId: string;
   onResumeCreation?: (characterId: string) => void;
-  onDelete?: () => void; // BUG FIX: Add callback for deletion instead of page reload
+  onDelete?: () => void;
+  onRefresh?: () => void; // BUG FIX: Separate callback for data refresh after level-up
 }
 
-const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: CharacterCardProps) => {
+const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete, onRefresh }: CharacterCardProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -192,7 +193,7 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: Ch
         onOpenChange={setShowLevelUp}
         characterId={character.id}
         currentLevel={character.level}
-        onComplete={() => onDelete ? onDelete() : window.location.reload()}
+        onComplete={() => onRefresh ? onRefresh() : (onDelete ? onDelete() : window.location.reload())}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

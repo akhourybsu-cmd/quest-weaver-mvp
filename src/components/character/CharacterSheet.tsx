@@ -55,9 +55,14 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
       // Load main character data
       const { data: charData, error: charError } = await supabase
         .from("characters")
-        .select("*")
+        .select("*, srd_subclasses(name)")
         .eq("id", characterId)
         .single();
+      
+      // Attach subclass name for display
+      if (charData) {
+        (charData as any).subclass_name = (charData as any).srd_subclasses?.name || null;
+      }
 
       if (charError) throw charError;
       setCharacter(charData);
@@ -164,7 +169,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             <h1 className="text-2xl font-bold">{character.name}</h1>
             <p className="text-sm text-muted-foreground">
               Level {character.level} {character.class}
-              {character.subclass_id && " • Subclass"}
+              {character.subclass_name && ` • ${character.subclass_name}`}
             </p>
           </div>
           <div className="flex gap-2">
@@ -296,6 +301,9 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                   spells={spells}
                   character={character}
                   abilities={abilities}
+                  onOpenSpellPreparation={() => setShowSpellPreparation(true)}
+                  onOpenCustomSpell={() => setShowCustomSpell(true)}
+                  onOpenSpellbook={() => setShowSpellbook(true)}
                 />
               </TabsContent>
             )}

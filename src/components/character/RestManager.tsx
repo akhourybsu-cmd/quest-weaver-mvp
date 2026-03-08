@@ -18,9 +18,10 @@ interface RestManagerProps {
     level: number;
     con_save: number;
   };
+  onUpdate?: () => void;
 }
 
-const RestManager = ({ characterId, character }: RestManagerProps) => {
+const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -53,6 +54,7 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
         title: "Short Rest Complete",
         description: `${restoredCount} resource(s) restored. Use hit dice to regain HP.`,
       });
+      onUpdate?.();
     } catch (error) {
       console.error('Error during short rest:', error);
       toast({
@@ -128,6 +130,7 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
         title: "Long Rest Complete",
         description: `HP fully restored. Regained ${hdRestored} hit dice, ${restoredCount} resource(s), and all spell slots.`,
       });
+      onUpdate?.();
     } catch (error) {
       console.error('Error during long rest:', error);
       toast({
@@ -140,12 +143,13 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
     }
   };
 
-  const handleHeal = (amount: number) => {
+  const handleHeal = (amount: number, _newHp: number, _newHitDice: number) => {
     // Callback for when hit dice heal the character
     toast({
       title: "HP Restored",
       description: `Gained ${amount} HP`,
     });
+    onUpdate?.();
   };
 
   return (

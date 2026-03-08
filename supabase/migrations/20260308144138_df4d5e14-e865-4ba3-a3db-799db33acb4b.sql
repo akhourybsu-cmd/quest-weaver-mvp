@@ -1,0 +1,1 @@
+ALTER TABLE public.character_spell_slots ADD CONSTRAINT character_spell_slots_character_level_unique UNIQUE (character_id, spell_level);

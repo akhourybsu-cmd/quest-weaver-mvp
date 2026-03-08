@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Loader2, Sparkles, ChevronDown, Save, RefreshCw, Pencil, Globe } from "lucide-react";
 import { BetaTool } from "./toolRegistry";
+import { BetaResultRenderer } from "./BetaResultRenderer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";

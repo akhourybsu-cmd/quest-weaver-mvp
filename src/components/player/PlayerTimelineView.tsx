@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Clock,
   Search,
+  Loader2,
   Swords,
   MapPin,
   Users,

@@ -493,6 +493,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   };
 
   // Auto-save draft on data change (debounced to prevent race conditions)
+  // BUG FIX: Include currentStep in dependencies so step navigation is persisted
   useEffect(() => {
     if (draft.name && (draftId || (draft.classId && draft.className))) {
       const timer = setTimeout(() => {
@@ -500,7 +501,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [draft, draftId]);
+  }, [draft, draftId, currentStep]);
 
   const saveDraft = async () => {
     try {

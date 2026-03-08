@@ -32,6 +32,7 @@ export default function PlayerCampaignView() {
   const [character, setCharacter] = useState<any>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [kioskOpen, setKioskOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!campaignCode) return;

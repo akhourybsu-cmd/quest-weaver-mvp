@@ -101,6 +101,9 @@ function AppRoutes() {
               <Route path="/player/campaign/:campaignCode" element={<PlayerCampaignView />} />
               <Route path="/audit" element={<AuditHarness />} />
               <Route path="/admin" element={<AdminTools />} />
+              <Route path="/beta-tools" element={<BetaTools />} />
+              <Route path="/beta-tools/library" element={<BetaToolsLibrary />} />
+              <Route path="/beta-tools/generate/:toolId" element={<BetaToolsGenerator />} />
               <Route path="/player-hub" element={<PlayerHub />} />
               <Route path="*" element={<NotFound />} />
             </>

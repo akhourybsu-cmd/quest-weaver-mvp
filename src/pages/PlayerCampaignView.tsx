@@ -224,7 +224,6 @@ export default function PlayerCampaignView() {
               </div>
             )}
           </TabsContent>
-          </TabsContent>
         </Tabs>
       </div>
 

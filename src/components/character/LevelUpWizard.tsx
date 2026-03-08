@@ -1265,7 +1265,7 @@ export const LevelUpWizard = ({
     }
 
     if (slotInfo.pact) {
-      // Handle warlock pact slots separately if needed
+      // Handle warlock pact slots - update or insert
       const { data: existing } = await supabase
         .from("character_spell_slots")
         .select("id")
@@ -1278,6 +1278,23 @@ export const LevelUpWizard = ({
           .from("character_spell_slots")
           .update({ max_slots: slotInfo.pact.pactSlots })
           .eq("id", existing.id);
+      } else {
+        // New pact slot level - insert a new row
+        await supabase.from("character_spell_slots").insert({
+          character_id: characterId,
+          spell_level: slotInfo.pact.pactSlotLevel,
+          max_slots: slotInfo.pact.pactSlots,
+          used_slots: 0,
+        });
+        // Clean up old pact slot level if it changed
+        const oldPactLevel = slotInfo.pact.pactSlotLevel - 1;
+        if (oldPactLevel >= 1) {
+          await supabase
+            .from("character_spell_slots")
+            .delete()
+            .eq("character_id", characterId)
+            .eq("spell_level", oldPactLevel);
+        }
       }
     }
   };

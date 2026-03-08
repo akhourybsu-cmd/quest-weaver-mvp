@@ -143,12 +143,13 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
     }
   };
 
-  const handleHeal = (amount: number) => {
+  const handleHeal = (amount: number, _newHp: number, _newHitDice: number) => {
     // Callback for when hit dice heal the character
     toast({
       title: "HP Restored",
       description: `Gained ${amount} HP`,
     });
+    onUpdate?.();
   };
 
   return (

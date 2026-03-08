@@ -19,7 +19,7 @@ interface BetaImportDialogProps {
 
 type ImportMode = 'draft' | 'canon' | 'clone';
 
-const IMPORTABLE_TYPES = ['npc', 'quest', 'magic_item', 'settlement', 'faction', 'monster'];
+const IMPORTABLE_TYPES = ['npc', 'quest', 'magic_item', 'settlement', 'faction', 'monster', 'lore', 'battle_map', 'world_event'];
 
 export function BetaImportDialog({ open, onOpenChange, asset, onImported }: BetaImportDialogProps) {
   const { userId } = useAuth();

@@ -39,6 +39,28 @@ const FIELD_GROUPS: Record<string, { label: string; icon?: React.ReactNode; fiel
     { label: "Notable NPCs", icon: <User className="h-3.5 w-3.5" />, fields: ["notable_npcs", "leaders", "key_figures"] },
     { label: "Plot Hooks & Lore", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["plot_hooks", "rumors", "history", "conflicts", "economy", "culture", "defenses"] },
   ],
+  faction: [
+    { label: "Identity", icon: <Shield className="h-3.5 w-3.5" />, fields: ["faction_type", "alignment", "motto", "symbol", "scale", "description"] },
+    { label: "Leadership & Structure", icon: <User className="h-3.5 w-3.5" />, fields: ["leader", "leadership_style", "hierarchy", "ranks", "members", "notable_members"] },
+    { label: "Goals & Methods", icon: <Swords className="h-3.5 w-3.5" />, fields: ["public_goal", "true_goal", "methods", "resources", "territory", "headquarters"] },
+    { label: "Relationships & Secrets", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["allies", "enemies", "rivals", "relationships", "secrets", "weakness", "hooks", "rumors"] },
+  ],
+  magic_item: [
+    { label: "Overview", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["item_type", "rarity", "attunement", "description", "appearance"] },
+    { label: "Properties", icon: <Zap className="h-3.5 w-3.5" />, fields: ["properties", "effects", "charges", "recharge", "activation"] },
+    { label: "Lore & History", icon: <ScrollText className="h-3.5 w-3.5" />, fields: ["history", "creator", "origin", "curse", "sentience", "quirks", "side_effects"] },
+  ],
+  battle_map: [
+    { label: "Layout", icon: <MapPin className="h-3.5 w-3.5" />, fields: ["environment", "theme", "dimensions", "rooms", "room_count", "corridors", "entry_points", "exits"] },
+    { label: "Features & Hazards", icon: <Shield className="h-3.5 w-3.5" />, fields: ["terrain_features", "hazards", "traps", "obstacles", "cover", "lighting", "elevation"] },
+    { label: "Encounters & Treasure", icon: <Swords className="h-3.5 w-3.5" />, fields: ["encounters", "monsters", "boss", "treasure", "loot", "secrets", "hidden_areas"] },
+    { label: "Atmosphere", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["description", "sensory_details", "sounds", "smells", "atmosphere", "notes"] },
+  ],
+  world_event: [
+    { label: "Event Overview", icon: <Zap className="h-3.5 w-3.5" />, fields: ["event_type", "scale", "severity", "timeline", "duration", "trigger", "description"] },
+    { label: "Impact & Consequences", icon: <Swords className="h-3.5 w-3.5" />, fields: ["affected_regions", "affected_factions", "casualties", "consequences", "economic_impact", "political_impact"] },
+    { label: "Opportunities & Hooks", icon: <Sparkles className="h-3.5 w-3.5" />, fields: ["opportunities", "hooks", "plot_seeds", "rumors", "aftermath", "resolution"] },
+  ],
 };
 
 const TITLE_KEYS = ['name', 'title', 'event_name'];

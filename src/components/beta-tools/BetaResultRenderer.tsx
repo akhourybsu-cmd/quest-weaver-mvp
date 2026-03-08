@@ -104,15 +104,20 @@ function StatBox({ label, value }: { label: string; value: any }) {
 function CopyFieldButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API not available (e.g. insecure context)
+    }
   };
   return (
     <button
       onClick={handleCopy}
-      className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+      className="opacity-0 group-hover/field:opacity-100 focus:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       title="Copy field"
+      aria-label={copied ? "Copied" : "Copy field value"}
     >
       {copied ? <Check className="h-3 w-3 text-secondary" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
     </button>

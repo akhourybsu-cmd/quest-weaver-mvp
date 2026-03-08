@@ -323,7 +323,8 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 
 // Tab Components
 const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
-  const initiative = calculateModifier(abilities.dex);
+  // BUG FIX: Use stored initiative_bonus which includes feats like Alert
+  const initiative = character.initiative_bonus ?? calculateModifier(abilities.dex);
   
   return (
     <div className="space-y-6">
@@ -472,7 +473,10 @@ const SkillsTab = ({ skills, abilities, profBonus, proficiencies, languages }: a
               const hasExpertise = skillData?.expertise || false;
               const abilityScore = abilities[skill.ability];
               const modifier = calculateModifier(abilityScore);
-              const bonus = modifier + (isProficient ? profBonus : 0) + (hasExpertise ? profBonus : 0);
+              // BUG FIX: Expertise means 2x proficiency, not proficiency + proficiency
+              // If expertise, just add 2*profBonus. If only proficient, add profBonus. Otherwise 0.
+              const proficiencyBonus = hasExpertise ? profBonus * 2 : (isProficient ? profBonus : 0);
+              const bonus = modifier + proficiencyBonus;
 
               return (
                 <div key={skill.name} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
@@ -717,22 +721,25 @@ const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpe
               <div className="flex items-center justify-between">
                 <CardTitle>Spellcasting</CardTitle>
                 <div className="flex gap-2">
-                  {canPrepareSpells && (
+                  {/* BUG FIX: Guard callback invocations - only show buttons if callbacks are provided */}
+                  {canPrepareSpells && onOpenSpellPreparation && (
                     <Button size="sm" variant="outline" onClick={onOpenSpellPreparation}>
                       <BookOpen className="h-4 w-4 mr-2" />
                       Prepare Spells
                     </Button>
                   )}
-                  {isWizard && (
+                  {isWizard && onOpenSpellbook && (
                     <Button size="sm" variant="outline" onClick={onOpenSpellbook}>
                       <BookMarked className="h-4 w-4 mr-2" />
                       Spellbook
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={onOpenCustomSpell}>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Custom Spell
-                  </Button>
+                  {onOpenCustomSpell && (
+                    <Button size="sm" variant="outline" onClick={onOpenCustomSpell}>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Custom Spell
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>

@@ -198,7 +198,7 @@ function computeDerivedStats(draft: any, classRules: any) {
       maxHp += (Math.floor(hitDie / 2) + 1) + conMod;
     }
   }
-  maxHp = Math.max(maxHp, draft.level); // minimum 1 HP per level
+  maxHp = Math.max(maxHp, 1); // minimum 1 HP total per 5e rules
   
   // Check skill proficiencies for passive calculations
   const allSkills = new Set([
@@ -262,6 +262,25 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   // Auto-seed SRD data if missing
   const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
 
+  // State for subclass name (loaded async for third-caster check)
+  const [loadedSubclassName, setLoadedSubclassName] = useState<string | null>(null);
+  
+  // Load subclass name when subclassId changes
+  useEffect(() => {
+    if (draft.subclassId) {
+      supabase
+        .from('srd_subclasses')
+        .select('name')
+        .eq('id', draft.subclassId)
+        .single()
+        .then(({ data }) => {
+          setLoadedSubclassName(data?.name || null);
+        });
+    } else {
+      setLoadedSubclassName(null);
+    }
+  }, [draft.subclassId]);
+
   // Helper to check if class is a spellcaster at the current level
   const checkIsSpellcaster = (): boolean => {
     const className = draft.className || "";
@@ -270,21 +289,23 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     if (halfCasters.some(c => className.toLowerCase() === c.toLowerCase()) && draft.level < 2) {
       return false;
     }
-    // Third-casters (Eldritch Knight, Arcane Trickster) don't get spellcasting until level 3
-    // These are subclasses, typically handled differently, but we check for completeness
-    const thirdCasters = ["Eldritch Knight", "Arcane Trickster"];
-    if (thirdCasters.some(c => className.toLowerCase().includes(c.toLowerCase())) && draft.level < 3) {
-      return false;
+    // Third-casters (Eldritch Knight, Arcane Trickster) are subclasses of Fighter/Rogue
+    // BUG FIX: Check subclass name, not class name
+    if ((className === "Fighter" || className === "Rogue") && draft.subclassId && loadedSubclassName) {
+      const thirdCasters = ["Eldritch Knight", "Arcane Trickster"];
+      if (thirdCasters.some(c => loadedSubclassName.toLowerCase().includes(c.toLowerCase()))) {
+        return draft.level >= 3;
+      }
     }
-    const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard", 
-                         "Eldritch Knight", "Arcane Trickster"];
-    return casterNames.some(caster => className.toLowerCase().includes(caster.toLowerCase()));
+    const casterNames = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
+    return casterNames.some(caster => className.toLowerCase() === caster.toLowerCase());
   };
 
   // Compute steps dynamically based on level and class
+  // BUG FIX: Include subclassId in dependencies for third-caster detection
   const STEPS = useMemo(() => {
     return getSteps(draft.level, checkIsSpellcaster(), draft.className);
-  }, [draft.level, draft.className]);
+  }, [draft.level, draft.className, draft.subclassId, loadedSubclassName]);
 
   // Reset draft when dialog opens
   useEffect(() => {
@@ -472,6 +493,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   };
 
   // Auto-save draft on data change (debounced to prevent race conditions)
+  // BUG FIX: Include currentStep in dependencies so step navigation is persisted
   useEffect(() => {
     if (draft.name && (draftId || (draft.classId && draft.className))) {
       const timer = setTimeout(() => {
@@ -479,7 +501,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [draft, draftId]);
+  }, [draft, draftId, currentStep]);
 
   const saveDraft = async () => {
     try {
@@ -955,10 +977,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
+      // BUG FIX: Use delete-then-insert pattern to avoid upsert requiring unique constraint
       if (proficiencies.length > 0) {
+        await supabase
+          .from("character_proficiencies")
+          .delete()
+          .eq("character_id", characterId);
         const { error: profError } = await supabase
           .from("character_proficiencies")
-          .upsert(proficiencies);
+          .insert(proficiencies);
         if (profError) throw profError;
       }
 

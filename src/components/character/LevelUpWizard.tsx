@@ -78,6 +78,7 @@ interface CharacterClass {
   classId: string;
   level: number;
   isPrimary: boolean;
+  subclassId?: string | null;
 }
 
 interface SpellOption {
@@ -332,18 +333,21 @@ export const LevelUpWizard = ({
   // Subclass needed?
   const needsSubclass = useMemo(() => {
     if (!classRules || !character) return false;
-    // Check both the main character subclass and per-class subclass entries
-    if (character.subclass_id) return false;
-    // BUG FIX: For multiclass, check if the selected class already has a subclass
-    if (selectedClassToLevel) {
-      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
-      // If character_classes has a subclass for this class, skip
-      // (We'd need to check the DB, but for now check if newLevel matches subclass level)
-    }
-    // If this level is the subclass level for the class being leveled
+    
+    // BUG FIX: For multiclass, check if the *specific class being leveled* already has a subclass
     const effectiveClassName = selectedClassToLevel?.className || character.class;
     const effectiveRules = effectiveClassName ? getClassRules(effectiveClassName) : classRules;
     if (!effectiveRules) return false;
+    
+    // Check per-class subclass in character_classes table
+    if (selectedClassToLevel) {
+      const selectedClassEntry = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
+      // If this class already has a subclass assigned, no need to pick one
+      if (selectedClassEntry?.subclassId) return false;
+    } else {
+      // Single class - check top-level subclass_id
+      if (character.subclass_id) return false;
+    }
     
     // For multiclass: the class level (not total level) determines subclass
     const classEntry = characterClasses.find(c => c.classId === selectedClassToLevel?.classId);
@@ -418,6 +422,7 @@ export const LevelUpWizard = ({
           class_level,
           is_primary,
           class_id,
+          subclass_id,
           srd_classes!inner(id, name)
         `)
         .eq("character_id", characterId);
@@ -428,6 +433,7 @@ export const LevelUpWizard = ({
           classId: c.class_id,
           level: c.class_level,
           isPrimary: c.is_primary || false,
+          subclassId: c.subclass_id || null,
         }));
         setCharacterClasses(classes);
         
@@ -980,11 +986,13 @@ export const LevelUpWizard = ({
           .eq("character_id", characterId)
           .eq("spell_id", spellToSwap);
 
+        // BUG FIX: Known casters should have swapped spells marked as prepared
+        const isKnownCaster = ['Bard', 'Sorcerer', 'Warlock', 'Ranger'].includes(character?.class || '');
         await supabase.from("character_spells").insert({
           character_id: characterId,
           spell_id: swapReplacement,
           known: true,
-          prepared: false,
+          prepared: isKnownCaster, // Known casters always have their spells prepared
           source: 'class'
         });
       }
@@ -1073,13 +1081,14 @@ export const LevelUpWizard = ({
       }
 
       // Save Magical Secrets spells (Bard)
+      // BUG FIX: Bard is a known caster, so Magical Secrets spells should be prepared
       if (magicalSecretsSpells.length > 0) {
         // Add spells to character_spells
         const secretsInserts = magicalSecretsSpells.map(spellId => ({
           character_id: characterId,
           spell_id: spellId,
           known: true,
-          prepared: false,
+          prepared: true, // Bards always have their known spells prepared
           source: 'magical_secrets'
         }));
         await supabase.from("character_spells").insert(secretsInserts);

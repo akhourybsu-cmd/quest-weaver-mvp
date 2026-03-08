@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,6 +28,15 @@ const StepProficiencies = () => {
   const validSelectedSkills = selectedSkills.filter(skill => 
     classSkillNeeds?.from.includes(skill) && !grantedSkills.includes(skill)
   );
+
+  // BUG FIX: Auto-remove orphaned skills from draft when detected
+  useEffect(() => {
+    const orphanedSkills = selectedSkills.filter(skill => !validSelectedSkills.includes(skill));
+    if (orphanedSkills.length > 0) {
+      // Remove each orphaned skill by toggling it off
+      orphanedSkills.forEach(skill => toggleSkill(skill));
+    }
+  }, [validSelectedSkills.length, selectedSkills.length]);
   
   const remainingSkills = classSkillNeeds 
     ? remaining(classSkillNeeds.required, validSelectedSkills)

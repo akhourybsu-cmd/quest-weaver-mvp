@@ -27,39 +27,27 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
   const handleShortRest = async () => {
     setLoading(true);
     try {
-      // Fetch current character data including resources
-      const { data: charData, error: fetchError } = await supabase
-        .from('characters')
-        .select('resources')
-        .eq('id', characterId)
-        .single();
+      // BUG FIX: Restore resources from character_resources table, not JSON column
+      // Restore all resources with recharge: 'short'
+      const { data: resources, error: fetchError } = await supabase
+        .from('character_resources')
+        .select('*')
+        .eq('character_id', characterId)
+        .eq('recharge', 'short');
 
       if (fetchError) throw fetchError;
 
-      // Restore all resources with recharge: 'short'
-      const resources = (charData?.resources as Record<string, any>) || {};
-      const updatedResources = { ...resources };
-      
-      Object.entries(updatedResources).forEach(([key, value]: [string, any]) => {
-        if (value && typeof value === 'object' && value.recharge === 'short') {
-          updatedResources[key] = {
-            ...value,
-            current: value.max || 0,
-          };
+      // Update each short-rest resource to max
+      let restoredCount = 0;
+      if (resources && resources.length > 0) {
+        for (const resource of resources) {
+          await supabase
+            .from('character_resources')
+            .update({ current_value: resource.max_value })
+            .eq('id', resource.id);
+          restoredCount++;
         }
-      });
-
-      // Update character with restored resources
-      const { error: updateError } = await supabase
-        .from('characters')
-        .update({ resources: updatedResources })
-        .eq('id', characterId);
-
-      if (updateError) throw updateError;
-
-      const restoredCount = Object.values(updatedResources).filter(
-        (r: any) => r?.recharge === 'short'
-      ).length;
+      }
       
       toast({
         title: "Short Rest Complete",
@@ -80,15 +68,6 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
   const handleLongRest = async () => {
     setLoading(true);
     try {
-      // Fetch current character data including resources
-      const { data: charData, error: fetchError } = await supabase
-        .from('characters')
-        .select('resources')
-        .eq('id', characterId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
       // Calculate hit dice restoration (half, minimum 1)
       const hdRestored = Math.max(1, Math.floor(character.hit_dice_total / 2));
       const newHitDice = Math.min(
@@ -96,23 +75,38 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
         character.hit_dice_total
       );
 
+      // BUG FIX: Restore resources from character_resources table
       // Restore all resources with recharge: 'short' or 'long'
-      // This includes spell slots, class features, etc.
-      const resources = (charData?.resources as Record<string, any>) || {};
-      const updatedResources = { ...resources };
-      
-      Object.entries(updatedResources).forEach(([key, value]: [string, any]) => {
-        if (value && typeof value === 'object') {
-          if (value.recharge === 'short' || value.recharge === 'long') {
-            updatedResources[key] = {
-              ...value,
-              current: value.max || 0,
-            };
-          }
-        }
-      });
+      const { data: resources, error: fetchResourcesError } = await supabase
+        .from('character_resources')
+        .select('*')
+        .eq('character_id', characterId)
+        .in('recharge', ['short', 'long']);
 
-      const { error } = await supabase
+      if (fetchResourcesError) throw fetchResourcesError;
+
+      // Update each resource to max
+      let restoredCount = 0;
+      if (resources && resources.length > 0) {
+        for (const resource of resources) {
+          await supabase
+            .from('character_resources')
+            .update({ current_value: resource.max_value })
+            .eq('id', resource.id);
+          restoredCount++;
+        }
+      }
+
+      // BUG FIX: Reset spell slots on long rest
+      const { error: spellSlotError } = await supabase
+        .from('character_spell_slots')
+        .update({ used_slots: 0 })
+        .eq('character_id', characterId);
+
+      if (spellSlotError) throw spellSlotError;
+
+      // Reset Warlock pact slots and Mystic Arcanum
+      const { error: characterError } = await supabase
         .from('characters')
         .update({
           current_hp: character.max_hp,
@@ -120,19 +114,19 @@ const RestManager = ({ characterId, character }: RestManagerProps) => {
           death_save_success: 0,
           death_save_fail: 0,
           hit_dice_current: newHitDice,
-          resources: updatedResources,
+          pact_slots_used: 0,
+          mystic_arcanum_6_used: false,
+          mystic_arcanum_7_used: false,
+          mystic_arcanum_8_used: false,
+          mystic_arcanum_9_used: false,
         })
         .eq('id', characterId);
 
-      if (error) throw error;
-
-      const restoredCount = Object.values(updatedResources).filter(
-        (r: any) => r?.recharge === 'short' || r?.recharge === 'long'
-      ).length;
+      if (characterError) throw characterError;
 
       toast({
         title: "Long Rest Complete",
-        description: `HP fully restored. Regained ${hdRestored} hit dice and ${restoredCount} resource(s).`,
+        description: `HP fully restored. Regained ${hdRestored} hit dice, ${restoredCount} resource(s), and all spell slots.`,
       });
     } catch (error) {
       console.error('Error during long rest:', error);

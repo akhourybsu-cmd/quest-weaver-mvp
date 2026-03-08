@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { LevelUpWizard } from "./LevelUpWizard";
 import { CharacterExporter } from "./CharacterExporter";
+import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 
 interface CharacterCardProps {
   character: {
@@ -35,15 +36,20 @@ interface CharacterCardProps {
   };
   campaignId: string;
   onResumeCreation?: (characterId: string) => void;
+  onDelete?: () => void; // BUG FIX: Add callback for deletion instead of page reload
 }
 
-const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCardProps) => {
+const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete }: CharacterCardProps) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const isIncomplete = character.creation_status === 'draft';
   const hpPercent = (character.current_hp / character.max_hp) * 100;
+  
+  // BUG FIX: Use class-specific subclass level from rules
+  const classRules = CLASS_LEVEL_UP_RULES[character.class];
+  const subclassLevel = classRules?.subclassLevel ?? 3;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -57,8 +63,12 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
 
       toast.success("Character deleted successfully");
       setShowDeleteDialog(false);
-      // Refresh the page to update the character list
-      window.location.reload();
+      // BUG FIX: Use callback instead of full page reload
+      if (onDelete) {
+        onDelete();
+      } else {
+        window.location.reload();
+      }
     } catch (error: any) {
       console.error("Error deleting character:", error);
       toast.error("Failed to delete character: " + error.message);
@@ -86,7 +96,8 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
                 <span className="text-primary"> • {character.subclass_name}</span>
               )}
             </p>
-            {character.level >= 3 && !character.subclass_name && (
+            {/* BUG FIX: Use class-specific subclass level instead of hardcoded 3 */}
+            {character.level >= subclassLevel && !character.subclass_name && (
               <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500 mt-1">
                 Subclass Available
               </Badge>
@@ -174,12 +185,14 @@ const CharacterCard = ({ character, campaignId, onResumeCreation }: CharacterCar
         </div>
       </CardContent>
 
+      {/* BUG FIX: Add key prop to force re-initialization between level-ups */}
       <LevelUpWizard
+        key={character.level}
         open={showLevelUp}
         onOpenChange={setShowLevelUp}
         characterId={character.id}
         currentLevel={character.level}
-        onComplete={() => window.location.reload()}
+        onComplete={() => onDelete ? onDelete() : window.location.reload()}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

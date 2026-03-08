@@ -622,7 +622,7 @@ async function importMonsters(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Monsters', imported: 0, skipped: 0, errors: [] };
   
   try {
-    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_SLUG}&format=json&limit=100`);
+    const monsters = await fetchAllPages(`${OPEN5E_BASE}/v1/monsters/?document__slug=${SRD_V1_SLUG}&format=json&limit=100`);
     console.log(`Fetched ${monsters.length} SRD monsters`);
     
     for (const monster of monsters) {

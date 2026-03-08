@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTenant } from "@/contexts/TenantContext";
 
 /**
  * SessionDM - Legacy route that redirects to CampaignHub
@@ -11,11 +10,11 @@ import { useTenant } from "@/contexts/TenantContext";
 const SessionDM = () => {
   const params = useParams<{ campaignId?: string; sessionId?: string; demoId?: string }>();
   const navigate = useNavigate();
-  const { campaignId: tenantCampaignId, isDemo, demoId } = useTenant();
-  const campaignId = params.campaignId || tenantCampaignId;
+  const campaignId = params.campaignId || null;
+  const isDemo = !!params.demoId;
+  const demoId = params.demoId || null;
 
   useEffect(() => {
-    // Redirect to CampaignHub - all session functionality is now there
     if (campaignId) {
       navigate(isDemo ? `/demo/${demoId}/campaign` : `/campaign-hub?campaign=${campaignId}`, { replace: true });
     } else {

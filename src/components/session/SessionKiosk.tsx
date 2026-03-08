@@ -129,14 +129,17 @@ export const SessionKiosk = ({
       }, () => fetchEncounterStatus())
       .subscribe();
 
-    const initiativeChannel = supabase
-      .channel(`kiosk-init:${campaignId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'initiative',
-      }, () => {
-        if (activeEncounter) checkMyTurn(activeEncounter, character.id);
-      })
-      .subscribe();
+    const initiativeChannel = activeEncounter
+      ? supabase
+          .channel(`kiosk-init:${campaignId}:${activeEncounter}`)
+          .on('postgres_changes', {
+            event: '*', schema: 'public', table: 'initiative',
+            filter: `encounter_id=eq.${activeEncounter}`,
+          }, () => {
+            checkMyTurn(activeEncounter, character.id);
+          })
+          .subscribe()
+      : null;
 
     const sessionEndChannel = supabase
       .channel(`kiosk-session-end:${campaignId}`)
@@ -154,30 +157,62 @@ export const SessionKiosk = ({
     return () => {
       supabase.removeChannel(characterChannel);
       supabase.removeChannel(encounterChannel);
-      supabase.removeChannel(initiativeChannel);
+      if (initiativeChannel) supabase.removeChannel(initiativeChannel);
       supabase.removeChannel(sessionEndChannel);
     };
   }, [character.id, campaignId, activeEncounter]);
 
-  // Initial encounter check
+  // Initial encounter check + presence management
   useEffect(() => {
     fetchEncounterStatus();
-    (async () => {
+
+    // Set online
+    const setPresence = async (online: boolean) => {
       const { data: existing } = await supabase
         .from("player_presence").select("id")
         .eq("campaign_id", campaignId).eq("user_id", currentUserId).maybeSingle();
       if (existing) {
         await supabase.from("player_presence")
-          .update({ is_online: true, last_seen: new Date().toISOString() })
+          .update({ is_online: online, last_seen: new Date().toISOString() })
           .eq("id", existing.id);
-      } else {
+      } else if (online) {
         await supabase.from("player_presence").insert({
           campaign_id: campaignId, user_id: currentUserId,
           character_id: character.id, is_online: true,
         });
       }
-    })();
-  }, [campaignId]);
+    };
+
+    setPresence(true);
+
+    // Heartbeat every 30s
+    const heartbeat = setInterval(() => {
+      supabase.from("player_presence")
+        .update({ last_seen: new Date().toISOString() })
+        .eq("campaign_id", campaignId).eq("user_id", currentUserId)
+        .then();
+    }, 30_000);
+
+    // Tab close handler
+    const handleUnload = () => {
+      // Use sendBeacon for reliability on tab close
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/player_presence?campaign_id=eq.${campaignId}&user_id=eq.${currentUserId}`;
+      const body = JSON.stringify({ is_online: false, last_seen: new Date().toISOString() });
+      navigator.sendBeacon?.(url); // best-effort; RLS may block but cleanup is secondary
+      // Fallback sync call
+      supabase.from("player_presence")
+        .update({ is_online: false, last_seen: new Date().toISOString() })
+        .eq("campaign_id", campaignId).eq("user_id", currentUserId)
+        .then();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(heartbeat);
+      window.removeEventListener('beforeunload', handleUnload);
+      setPresence(false);
+    };
+  }, [campaignId, currentUserId, character.id]);
 
   const fetchEncounterStatus = async () => {
     const { data: encounter } = await supabase

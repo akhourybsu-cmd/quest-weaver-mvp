@@ -19,6 +19,7 @@ import CharacterSelectionDialog from "@/components/character/CharacterSelectionD
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
 import { PlayerJournal } from "@/components/player/PlayerJournal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
@@ -31,12 +32,43 @@ export default function PlayerCampaignView() {
   const [character, setCharacter] = useState<any>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [kioskOpen, setKioskOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!campaignCode) return;
     loadCampaign();
     if (userId) loadCharacter();
   }, [campaignCode, userId]);
+
+  // Real-time session status listener
+  useEffect(() => {
+    if (!campaign?.id) return;
+
+    const channel = supabase
+      .channel(`pcv-session:${campaign.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'campaigns',
+        filter: `id=eq.${campaign.id}`,
+      }, async (payload: any) => {
+        const newLiveId = payload.new.live_session_id;
+        if (newLiveId) {
+          const { data: sess } = await supabase
+            .from('campaign_sessions').select('status')
+            .eq('id', newLiveId).maybeSingle();
+          const s = sess?.status;
+          if (s === 'live' || s === 'paused') {
+            setSessionStatus(s);
+            toast({ title: "🔴 Session is Live!", description: "The DM has started a session." });
+          }
+        } else {
+          setSessionStatus('offline');
+          toast({ title: "Session Ended", description: "The session has concluded." });
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [campaign?.id]);
 
   const loadCampaign = async () => {
     const { data } = await supabase

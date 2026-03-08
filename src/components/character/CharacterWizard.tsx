@@ -465,10 +465,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
     }
   };
 
-  // Auto-save draft on data change
+  // Auto-save draft on data change (debounced to prevent race conditions)
   useEffect(() => {
     if (draft.name && (draftId || (draft.classId && draft.className))) {
-      saveDraft();
+      const timer = setTimeout(() => {
+        saveDraft();
+      }, 800);
+      return () => clearTimeout(timer);
     }
   }, [draft, draftId]);
 

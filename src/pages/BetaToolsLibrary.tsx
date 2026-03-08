@@ -85,12 +85,14 @@ const BetaToolsLibrary = () => {
     }
   };
 
-  const handleDelete = async (asset: BetaAsset) => {
-    const { error } = await supabase.from('beta_assets').delete().eq('id', asset.id);
+  const handleDeleteConfirm = async () => {
+    if (!deletingAsset) return;
+    const { error } = await supabase.from('beta_assets').delete().eq('id', deletingAsset.id);
     if (!error) {
-      setAssets(prev => prev.filter(a => a.id !== asset.id));
+      setAssets(prev => prev.filter(a => a.id !== deletingAsset.id));
       toast({ title: "Asset deleted" });
     }
+    setDeletingAsset(null);
   };
 
   return (

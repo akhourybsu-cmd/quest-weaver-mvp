@@ -34,6 +34,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedResult, setEditedResult] = useState<Record<string, any> | null>(null);
+  const [saveTags, setSaveTags] = useState("");
   const [useCampaignContext, setUseCampaignContext] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);

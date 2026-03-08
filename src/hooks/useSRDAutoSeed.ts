@@ -5,6 +5,7 @@ import { SUBCLASSES_SRD, SUBCLASS_FEATURES_SRD } from "@/data/srd/subclassesSeed
 import { SUBANCESTRIES_SRD } from "@/data/srd/subancestriesSeed";
 import { TOOLS_SRD } from "@/data/srd/toolsSeed";
 import { SPELLS_SRD } from "@/data/srd/spellsSeed";
+import { EQUIPMENT_SRD } from "@/data/srd/equipmentSeed";
 
 interface SeedStatus {
   classFeatures: boolean;
@@ -12,6 +13,8 @@ interface SeedStatus {
   subancestries: boolean;
   tools: boolean;
   spells: boolean;
+  equipment: boolean;
+  subclassFeatureGaps: boolean;
 }
 
 export function useSRDAutoSeed() {

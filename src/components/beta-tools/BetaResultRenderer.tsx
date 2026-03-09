@@ -82,7 +82,7 @@ function formatValue(value: any): string {
         return Object.entries(v).map(([k, val]) => `${k}: ${val}`).join(', ');
       }
       return String(v);
-    }).join('\n• ');
+    }).map(item => `• ${item}`).join('\n');
   }
   if (typeof value === 'object' && value !== null) {
     const entries = Object.entries(value).filter(([, v]) => v !== null && v !== undefined && v !== '');

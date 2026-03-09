@@ -102,7 +102,7 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
           name: asset.name,
           description: d.public_goal || d.description || null,
           gm_notes: [d.true_goal, d.weakness, d.methods].filter(Boolean).join('\n\n') || null,
-          secrets: d.weakness || null,
+          secrets: d.secrets || null,
         });
         if (error) throw error;
       } else if (asset.asset_type === 'monster') {

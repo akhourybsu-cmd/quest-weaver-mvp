@@ -52,6 +52,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
         status,
         tags,
         data,
+        updated_at: new Date().toISOString(),
       }).eq('id', asset.id);
 
       if (error) throw error;
@@ -202,9 +203,12 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
                       <Textarea
                         value={Array.isArray(value) ? value.join('\n') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value ?? '')}
                         onChange={(e) => {
-                          const newVal = Array.isArray(value)
-                            ? e.target.value.split('\n').filter(Boolean)
-                            : e.target.value;
+                          let newVal: any = e.target.value;
+                          if (Array.isArray(value)) {
+                            newVal = e.target.value.split('\n').filter(Boolean);
+                          } else if (typeof value === 'object' && value !== null) {
+                            try { newVal = JSON.parse(e.target.value); } catch { /* keep as string */ }
+                          }
                           setData(prev => ({ ...prev, [key]: newVal }));
                         }}
                         className="text-sm min-h-[50px]"

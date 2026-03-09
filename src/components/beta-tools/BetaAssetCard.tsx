@@ -45,9 +45,13 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
   const description = asset.data?.description || asset.data?.personality || asset.data?.content || '';
 
   const handleCopyMarkdown = async () => {
-    const md = assetToMarkdown(asset);
-    await navigator.clipboard.writeText(md);
-    toast({ title: "Copied as Markdown" });
+    try {
+      const md = assetToMarkdown(asset);
+      await navigator.clipboard.writeText(md);
+      toast({ title: "Copied as Markdown" });
+    } catch {
+      toast({ title: "Copy failed", description: "Clipboard access not available", variant: "destructive" });
+    }
   };
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 

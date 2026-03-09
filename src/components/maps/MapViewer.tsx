@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Canvas as FabricCanvas, Circle, Rect, Line as FabricLine, IText, Image as FabricImage, Text, PencilBrush } from "fabric";
+import { Canvas as FabricCanvas, Circle, Rect, Line as FabricLine, IText, Image as FabricImage, Text, PencilBrush, Polygon } from "fabric";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,10 @@ const MapViewer = ({
   // Shape drawing state
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const activeShapeRef = useRef<any>(null);
+
+  // Fog drawing state
+  const fogPointsRef = useRef<{ x: number; y: number }[]>([]);
+  const fogPreviewRef = useRef<any>(null);
 
   // Pan state as refs to avoid re-render churn
   const isPanningRef = useRef(false);
@@ -404,7 +408,69 @@ const MapViewer = ({
         }
 
         default:
+          // Handle fog tool clicks
+          if (fogTool && isDM) {
+            const points = fogPointsRef.current;
+            points.push({ x: pointer.x, y: pointer.y });
+
+            // Update preview polygon on canvas
+            if (fogPreviewRef.current) {
+              fabricCanvas.remove(fogPreviewRef.current);
+            }
+            if (points.length >= 2) {
+              const preview = new Polygon(
+                points.map(p => ({ x: p.x, y: p.y })),
+                {
+                  fill: fogTool === "hide" ? "rgba(0,0,0,0.5)" : "rgba(255,255,0,0.3)",
+                  stroke: "#ffdd44",
+                  strokeWidth: 2,
+                  strokeDashArray: [6, 4],
+                  selectable: false,
+                  evented: false,
+                }
+              );
+              (preview as any).isFogPreview = true;
+              fogPreviewRef.current = preview;
+              fabricCanvas.add(preview);
+              fabricCanvas.renderAll();
+            }
+          }
           break;
+      }
+    };
+
+    // Double-click to finish fog polygon
+    const handleDblClick = async (opt: any) => {
+      if (!fogTool || !isDM) return;
+      const points = fogPointsRef.current;
+      if (points.length < 3) {
+        fogPointsRef.current = [];
+        if (fogPreviewRef.current) {
+          fabricCanvas.remove(fogPreviewRef.current);
+          fogPreviewRef.current = null;
+          fabricCanvas.renderAll();
+        }
+        return;
+      }
+
+      // Save to DB
+      const { error } = await supabase.from("fog_regions").insert({
+        map_id: mapId,
+        path: points as any,
+        shape: "polygon",
+        is_hidden: fogTool === "hide",
+      });
+
+      if (!error) {
+        toast({ title: fogTool === "hide" ? "Fog region created" : "Revealed region created" });
+      }
+
+      // Clean up
+      fogPointsRef.current = [];
+      if (fogPreviewRef.current) {
+        fabricCanvas.remove(fogPreviewRef.current);
+        fogPreviewRef.current = null;
+        fabricCanvas.renderAll();
       }
     };
 
@@ -489,6 +555,7 @@ const MapViewer = ({
     fabricCanvas.on("mouse:down", handleMouseDown);
     fabricCanvas.on("mouse:move", handleMouseMove);
     fabricCanvas.on("mouse:up", handleMouseUp);
+    fabricCanvas.on("mouse:dblclick", handleDblClick);
     fabricCanvas.on("mouse:down:before", handleContextMenu);
 
     // Prevent browser right-click on canvas
@@ -502,10 +569,11 @@ const MapViewer = ({
       fabricCanvas.off("mouse:down", handleMouseDown);
       fabricCanvas.off("mouse:move", handleMouseMove);
       fabricCanvas.off("mouse:up", handleMouseUp);
+      fabricCanvas.off("mouse:dblclick", handleDblClick);
       fabricCanvas.off("mouse:down:before", handleContextMenu);
       canvasEl?.removeEventListener("contextmenu", preventContextMenu);
     };
-  }, [fabricCanvas, activeTool, isDM, measureStart, gridSize, rangeFeet, selectedTerrainType, drawColor, drawStrokeWidth, mapId, addMarker, toast]);
+  }, [fabricCanvas, activeTool, isDM, measureStart, gridSize, rangeFeet, selectedTerrainType, drawColor, drawStrokeWidth, mapId, addMarker, toast, fogTool]);
 
   // Enable/disable Fabric drawing mode for freehand
   useEffect(() => {
@@ -805,7 +873,18 @@ const MapViewer = ({
     }
   }, [activeTool, fabricCanvas]);
 
-  // Zoom controls
+  // Clear fog preview when fog tool deactivates
+  useEffect(() => {
+    if (!fogTool && fabricCanvas) {
+      fogPointsRef.current = [];
+      if (fogPreviewRef.current) {
+        fabricCanvas.remove(fogPreviewRef.current);
+        fogPreviewRef.current = null;
+        fabricCanvas.renderAll();
+      }
+    }
+  }, [fogTool, fabricCanvas]);
+
   const handleZoomIn = useCallback(() => {
     if (!fabricCanvas) return;
     const newZoom = Math.min(zoom * 1.2, 4);

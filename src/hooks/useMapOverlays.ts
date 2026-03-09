@@ -106,11 +106,13 @@ export function useMapOverlays({ mapId, isDM, encounterId }: UseMapOverlaysOptio
     if (fogRes.data) {
       const filteredFog = isDM 
         ? fogRes.data 
-        : fogRes.data.filter((f: any) => f.is_revealed);
+        : fogRes.data.filter((f: any) => !f.is_hidden);
       setFogRegions(
         filteredFog.map((f: any) => ({
-          ...f,
-          polygon_points: f.polygon_points || [],
+          id: f.id,
+          map_id: f.map_id,
+          is_revealed: !f.is_hidden,
+          polygon_points: Array.isArray(f.path) ? f.path : [],
         }))
       );
     }

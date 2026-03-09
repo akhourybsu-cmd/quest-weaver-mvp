@@ -234,11 +234,11 @@ function renderGroupedFields(
 
     elements.push(
       <div key={group.label} className="space-y-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 pl-2 border-l-2 border-l-brand-brass/50">
           {group.icon && <span className="text-brand-brass">{group.icon}</span>}
-          <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</span>
+          <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-foreground/80">{group.label}</span>
         </div>
-        <Separator className="bg-border" />
+        <Separator className="bg-brand-brass/20" />
         <div className="grid gap-2.5">
           {fields.map(f => <FieldDisplay key={f} label={f} value={data[f]} />)}
         </div>

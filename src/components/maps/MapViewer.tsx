@@ -555,6 +555,7 @@ const MapViewer = ({
     fabricCanvas.on("mouse:down", handleMouseDown);
     fabricCanvas.on("mouse:move", handleMouseMove);
     fabricCanvas.on("mouse:up", handleMouseUp);
+    fabricCanvas.on("mouse:dblclick", handleDblClick);
     fabricCanvas.on("mouse:down:before", handleContextMenu);
 
     // Prevent browser right-click on canvas
@@ -568,10 +569,11 @@ const MapViewer = ({
       fabricCanvas.off("mouse:down", handleMouseDown);
       fabricCanvas.off("mouse:move", handleMouseMove);
       fabricCanvas.off("mouse:up", handleMouseUp);
+      fabricCanvas.off("mouse:dblclick", handleDblClick);
       fabricCanvas.off("mouse:down:before", handleContextMenu);
       canvasEl?.removeEventListener("contextmenu", preventContextMenu);
     };
-  }, [fabricCanvas, activeTool, isDM, measureStart, gridSize, rangeFeet, selectedTerrainType, drawColor, drawStrokeWidth, mapId, addMarker, toast]);
+  }, [fabricCanvas, activeTool, isDM, measureStart, gridSize, rangeFeet, selectedTerrainType, drawColor, drawStrokeWidth, mapId, addMarker, toast, fogTool]);
 
   // Enable/disable Fabric drawing mode for freehand
   useEffect(() => {

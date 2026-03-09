@@ -187,7 +187,7 @@ const BetaTools = () => {
             {HERO_TOOLS.map((tool) => (
               <Card
                 key={tool.id}
-                className="group cursor-pointer border-border hover:border-primary/30 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02]"
+                className="group cursor-pointer border-brand-brass/20 hover:border-brand-brass/40 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-brand-brass/10 hover:scale-[1.02] card-glow"
                 onClick={() => navigate(`/beta-tools/generate/${tool.id}`)}
               >
                 <div className="p-5 space-y-3">

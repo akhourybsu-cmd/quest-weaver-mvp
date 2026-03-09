@@ -48,7 +48,7 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
           filter: `campaign_id=eq.${campaignId}`,
         },
         () => {
-          fetchEncounters();
+          fetchEncounters(true); // silent refresh — no skeleton flash
         }
       )
       .subscribe();

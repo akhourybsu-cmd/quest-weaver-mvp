@@ -33,6 +33,7 @@ interface PlayerQuestTrackerProps {
 
 export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchQuests();

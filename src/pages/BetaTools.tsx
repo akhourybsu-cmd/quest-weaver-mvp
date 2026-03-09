@@ -87,7 +87,7 @@ const BetaTools = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+                className="border-brand-brass/30 text-foreground/70 hover:text-foreground hover:bg-muted transition-all duration-200"
                 onClick={() => navigate("/beta-tools/library")}
               >
                 <Library className="h-5 w-5 mr-2" />

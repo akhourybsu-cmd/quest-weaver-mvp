@@ -329,11 +329,23 @@ export function PlayerCombatView({
           <TabsContent value="log" className="mt-4">
             <ScrollArea className="h-[300px] sm:h-[400px]">
               <div className="space-y-2 pr-2 sm:pr-4">
-                {combatLog.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-8">
-                    No combat actions yet
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
                   </div>
+                ) : combatLog.length === 0 ? (
+                  <PlayerEmptyState
+                    icon={Swords}
+                    title="No Actions Yet"
+                    description="Combat actions will appear here as the battle unfolds."
+                  />
                 ) : (
+                  <>
+                    <Badge variant="outline" className="text-xs mb-2">
+                      Showing last 20 actions
+                    </Badge>
                   combatLog.map((entry, index) => (
                     <div
                       key={entry.id}

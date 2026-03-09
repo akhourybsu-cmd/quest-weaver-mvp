@@ -218,14 +218,26 @@ const Index = ({ session }: IndexProps) => {
               Try Demo
             </Button>
             {isAuthenticated ? (
-              <Button
-                onClick={() => navigate("/campaign-hub")}
-                size="default"
-                className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-              >
-                Go to Dashboard
-                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/player-hub")}
+                  size="default"
+                  className="group h-10 px-5 transition-all duration-200"
+                >
+                  <Shield className="w-4 h-4 mr-1.5" />
+                  Player Hub
+                </Button>
+                <Button
+                  onClick={() => navigate("/campaign-hub")}
+                  size="default"
+                  className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <Crown className="w-4 h-4 mr-1.5" />
+                  Campaign Hub
+                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </>
             ) : (
               <Button
                 onClick={handleStartSession}

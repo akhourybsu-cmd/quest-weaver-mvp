@@ -544,7 +544,7 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                 )}
 
                 {/* Refine prompt */}
-                <div className="border-t border-border pt-3 space-y-2">
+                <div className="border-t border-border pt-3 space-y-2" data-refine-section>
                   <Label className="text-xs text-muted-foreground">Refine this result</Label>
                   <div className="flex gap-2">
                     <Input

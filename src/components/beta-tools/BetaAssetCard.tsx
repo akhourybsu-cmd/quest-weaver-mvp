@@ -52,7 +52,7 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 
   return (
-    <Card className="group border-border hover:border-secondary/30 transition-colors card-glow bg-card">
+    <Card className="group border-brand-brass/20 hover:border-brand-brass/40 transition-all card-glow bg-card relative fantasy-section overflow-hidden">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">

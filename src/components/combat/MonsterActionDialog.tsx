@@ -130,7 +130,7 @@ const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets
                   amount: damage,
                   damageType: parsedAction.damageType,
                   encounterId,
-                  currentRound: 1,
+                  currentRound,
                 }
               });
 

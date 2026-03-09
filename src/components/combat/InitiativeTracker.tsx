@@ -382,6 +382,7 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
         monster={selectedMonsterForAction}
         encounterId={encounterId}
         targets={actionTargets}
+        currentRound={currentRound}
       />
       <Card>
       <CardHeader className="pb-3">

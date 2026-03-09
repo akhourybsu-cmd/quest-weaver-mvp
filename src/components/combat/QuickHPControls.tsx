@@ -38,6 +38,11 @@ export function QuickHPControls({
   const [damageOpen, setDamageOpen] = useState(false);
   const [healOpen, setHealOpen] = useState(false);
 
+  // Reset optimistic state when real HP changes (e.g., from realtime update)
+  useEffect(() => {
+    setOptimisticHP(null);
+  }, [currentHP]);
+
   const displayHP = optimisticHP !== null ? optimisticHP : currentHP;
 
   const handleQuickDamage = async (amount: number) => {

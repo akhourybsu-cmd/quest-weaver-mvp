@@ -168,8 +168,15 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {unrespondedPrompts.map((prompt) => (
-          <div key={prompt.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
+        {visiblePrompts.map((prompt) => {
+          const isExiting = exitingPrompts.has(prompt.id);
+          return (
+          <div 
+            key={prompt.id} 
+            className={`p-3 bg-muted/50 rounded-lg space-y-2 transition-all duration-500 ${
+              isExiting ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100'
+            }`}
+          >
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-semibold">
                 {prompt.ability} Save

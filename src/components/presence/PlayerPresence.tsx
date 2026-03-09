@@ -72,27 +72,32 @@ const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: Player
   }, [campaignId, currentUserId]);
 
   const toggleRaiseHand = async () => {
+    const newRulingState = !needsRuling;
+    // Optimistic update — revert on error
+    setNeedsRuling(newRulingState);
     try {
-      const newRulingState = !needsRuling;
-      
-      await supabase
+      const { error } = await supabase
         .from("player_presence")
         .upsert({
           campaign_id: campaignId,
           user_id: currentUserId,
           character_id: characterId || null,
           needs_ruling: newRulingState,
-          is_online: false, // Not necessarily online, just raising hand
+          is_online: true,
         }, { 
           onConflict: 'campaign_id,user_id',
           ignoreDuplicates: false
         });
+
+      if (error) throw error;
 
       toast({
         title: newRulingState ? "Hand Raised" : "Hand Lowered",
         description: newRulingState ? "DM will be notified" : "Request cancelled"
       });
     } catch (error) {
+      // Revert optimistic update
+      setNeedsRuling(!newRulingState);
       toast({
         title: "Error",
         description: "Failed to update ruling request",

@@ -129,11 +129,17 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
         srd_spells(*)
       `)
       .eq("character_id", characterId)
-      .eq("known", true)
-      .order("srd_spells(level)");
+      .eq("known", true);
 
     if (data) {
-      setCharacterSpells(data as any);
+      // Sort client-side to avoid unreliable foreign table ordering
+      const sorted = (data as any[]).sort((a, b) => {
+        const levelA = a.srd_spells?.level ?? 0;
+        const levelB = b.srd_spells?.level ?? 0;
+        if (levelA !== levelB) return levelA - levelB;
+        return (a.srd_spells?.name ?? '').localeCompare(b.srd_spells?.name ?? '');
+      });
+      setCharacterSpells(sorted);
     }
   };
 

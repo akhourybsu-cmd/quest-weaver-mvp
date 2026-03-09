@@ -193,13 +193,8 @@ export const SessionKiosk = ({
         .then();
     }, 30_000);
 
-    // Tab close handler
+    // Tab close handler — best-effort offline mark
     const handleUnload = () => {
-      // Use sendBeacon for reliability on tab close
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/player_presence?campaign_id=eq.${campaignId}&user_id=eq.${currentUserId}`;
-      const body = JSON.stringify({ is_online: false, last_seen: new Date().toISOString() });
-      navigator.sendBeacon?.(url); // best-effort; RLS may block but cleanup is secondary
-      // Fallback sync call
       supabase.from("player_presence")
         .update({ is_online: false, last_seen: new Date().toISOString() })
         .eq("campaign_id", campaignId).eq("user_id", currentUserId)

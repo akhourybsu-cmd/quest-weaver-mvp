@@ -365,9 +365,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const getHPPercentage = () => (character.current_hp / character.max_hp) * 100;
   const getHPColor = () => {
     const pct = getHPPercentage();
-    if (pct > 50) return 'bg-buff-green';
-    if (pct > 25) return 'bg-warning-amber';
-    return 'bg-hp-red';
+    if (pct > 50) return 'bg-status-buff';
+    if (pct > 25) return 'bg-status-warning';
+    return 'bg-status-hp';
   };
 
   const groupedProfs = groupProficiencies();

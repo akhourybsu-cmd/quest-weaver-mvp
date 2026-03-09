@@ -393,9 +393,11 @@ export function PlayerCombatView({
               <TooltipProvider>
                 <div className="space-y-2 pr-2 sm:pr-4">
                   {conditions.length === 0 ? (
-                    <div className="text-sm text-muted-foreground text-center py-8">
-                      No active conditions
-                    </div>
+                    <PlayerEmptyState
+                      icon={Shield}
+                      title="No Conditions"
+                      description="You have no active conditions affecting you."
+                    />
                   ) : (
                     conditions.map((condition, index) => {
                       const tooltipInfo = CONDITION_TOOLTIPS[condition.condition];

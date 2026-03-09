@@ -159,9 +159,9 @@ export const PlayerWaitingRoom = () => {
 
     setChecking(false);
 
-    // Subscribe to campaign updates
+    // Subscribe to campaign updates (unique channel per campaign to avoid collisions)
     const channel = supabase
-      .channel('waiting-for-session')
+      .channel(`waiting-for-session:${campaignToCheck}`)
       .on(
         'postgres_changes',
         {

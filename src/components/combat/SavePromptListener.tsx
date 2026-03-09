@@ -184,12 +184,18 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
               <Badge variant="secondary">DC {prompt.dc}</Badge>
             </div>
             <p className="text-sm">{prompt.description}</p>
-            <Button onClick={() => rollSave(prompt)} size="sm" className="w-full">
+            <Button 
+              onClick={() => rollSave(prompt)} 
+              size="sm" 
+              className="w-full"
+              disabled={isExiting}
+            >
               <Dices className="w-4 h-4 mr-2" />
-              Roll {prompt.ability} Save (+{getSaveModifier(prompt.ability)})
+              {isExiting ? "Submitted..." : `Roll ${prompt.ability} Save (+${getSaveModifier(prompt.ability)})`}
             </Button>
           </div>
-        ))}
+        );
+        })}
       </CardContent>
     </Card>
   );

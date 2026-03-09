@@ -341,9 +341,11 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
               <TabsContent value="prepared" className="mt-4">
                 <ScrollArea className="h-[500px] pr-4">
                   {preparedSpells.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">No spells prepared</p>
-                    </div>
+                    <PlayerEmptyState
+                      icon={BookOpen}
+                      title="No Prepared Spells"
+                      description="You haven't prepared any spells yet. Prepared spells are ready to cast during adventures."
+                    />
                   ) : (
                     <SpellList spellsByLevel={preparedByLevel} />
                   )}

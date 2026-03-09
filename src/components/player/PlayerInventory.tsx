@@ -167,6 +167,42 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
     </ScrollArea>
   );
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Backpack className="w-5 h-5" />
+              Inventory
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (holdings.length === 0 && !isLoading) {
+    return (
+      <>
+        <PlayerEmptyState
+          icon={Backpack}
+          title="No Items Yet"
+          description="Your inventory is empty. Items will appear here when your DM awards them or you acquire them during your adventures."
+        />
+        <AttunementManager characterId={characterId} />
+      </>
+    );
+  }
+
   return (
     <>
     <Card>

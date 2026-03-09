@@ -93,6 +93,26 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
     return Math.round((quest.steps.filter((s: any) => s.is_completed).length / quest.steps.length) * 100);
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ScrollText className="w-5 h-5" />
+            Quest Log
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (quests.length === 0) {
     return (
       <PlayerEmptyState

@@ -369,6 +369,7 @@ export function PlayerCombatView({
                       </div>
                     </div>
                   ))
+                  </>
                 )}
               </div>
             </ScrollArea>

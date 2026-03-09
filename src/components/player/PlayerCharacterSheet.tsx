@@ -153,42 +153,48 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchAllData = async () => {
+    await Promise.all([
+      fetchCharacter(),
+      fetchAbilities(),
+      fetchSkills(),
+      fetchSpellSlots(),
+      fetchProficiencies(),
+      fetchLanguages(),
+      fetchSpells(),
+      fetchFeatures(),
+      fetchResources(),
+      fetchSaveProficiencies(),
+    ]);
+  };
 
-    const fetchAllData = async () => {
-      await Promise.all([
-        fetchCharacter(isMounted),
-        fetchAbilities(isMounted),
-        fetchSkills(isMounted),
-        fetchSpellSlots(isMounted),
-        fetchProficiencies(isMounted),
-        fetchLanguages(isMounted),
-        fetchSpells(isMounted),
-        fetchFeatures(isMounted),
-        fetchResources(isMounted),
-        fetchSaveProficiencies(isMounted),
-      ]);
+  useEffect(() => {
+    // Track if this effect instance is still active to prevent race conditions
+    let isActive = true;
+
+    const loadData = async () => {
+      await fetchAllData();
+      // No need to check isActive here since individual fetches set state independently
     };
 
-    fetchAllData();
+    loadData();
 
     const channel = supabase
       .channel(`char-sheet:${characterId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'characters', filter: `id=eq.${characterId}` },
-        () => fetchCharacter(true)
+        () => { if (isActive) fetchCharacter(); }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'character_spell_slots', filter: `character_id=eq.${characterId}` },
-        () => fetchSpellSlots(true)
+        () => { if (isActive) fetchSpellSlots(); }
       )
       .subscribe();
 
     return () => {
-      isMounted = false;
+      isActive = false;
       supabase.removeChannel(channel);
     };
   }, [characterId]);

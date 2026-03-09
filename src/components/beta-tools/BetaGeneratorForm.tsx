@@ -514,9 +514,13 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
                           <Textarea
                             value={typeof value === 'string' ? value : Array.isArray(value) ? value.join('\n') : JSON.stringify(value, null, 2)}
                             onChange={(e) => {
-                              const newVal = Array.isArray(result?.[key])
-                                ? e.target.value.split('\n').filter(Boolean)
-                                : e.target.value;
+                              const original = result?.[key];
+                              let newVal: any = e.target.value;
+                              if (Array.isArray(original)) {
+                                newVal = e.target.value.split('\n').filter(Boolean);
+                              } else if (typeof original === 'object' && original !== null) {
+                                try { newVal = JSON.parse(e.target.value); } catch { /* keep as string */ }
+                              }
                               setEditedResult(prev => prev ? { ...prev, [key]: newVal } : null);
                             }}
                             className="text-sm min-h-[60px]"

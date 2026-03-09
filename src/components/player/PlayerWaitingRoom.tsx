@@ -89,26 +89,30 @@ export const PlayerWaitingRoom = () => {
 
     setPlayerId(playerRecord.id);
 
-    if (!campaignCode) {
-      toast({ title: 'Invalid link', description: 'No campaign code provided', variant: 'destructive' });
-      navigate(`/player/${playerRecord.id}`);
-      return;
+    if (!campaignToCheck) {
+      if (!campaignCode) {
+        toast({ title: 'Invalid link', description: 'No campaign code provided', variant: 'destructive' });
+        navigate(`/player/${playerRecord.id}`);
+        return;
+      }
+
+      // Get campaign ID (shouldn't hit this since we already checked above)
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id')
+        .eq('code', campaignCode)
+        .maybeSingle();
+
+      if (!campaign) {
+        toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });
+        navigate(`/player/${playerRecord.id}`);
+        return;
+      }
+
+      campaignToCheck = campaign.id;
     }
 
-    // Get campaign ID
-    const { data: campaign } = await supabase
-      .from('campaigns')
-      .select('id')
-      .eq('code', campaignCode)
-      .maybeSingle();
-
-    if (!campaign) {
-      toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });
-      navigate(`/player/${playerRecord.id}`);
-      return;
-    }
-
-    setCampaignId(campaign.id);
+    setCampaignId(campaignToCheck);
 
     // Auto-link player to campaign if not already linked
     const { data: existingLink } = await supabase

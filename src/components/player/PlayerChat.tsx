@@ -118,9 +118,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {

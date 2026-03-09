@@ -430,7 +430,7 @@ export const LiveSessionTab = ({ campaignId, sessionId, currentUserId }: LiveSes
       )}
 
       {/* Player Presence */}
-      <PlayerPresence campaignId={campaignId} currentUserId={currentUserId} isDM={true} />
+      <PlayerPresence campaignId={campaignId} currentUserId={currentUserId} isDM={true} characterId={undefined} />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="party" className="space-y-4">

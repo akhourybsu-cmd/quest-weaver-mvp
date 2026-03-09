@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import { Users, Hand } from "lucide-react";
 
 interface Player {
@@ -16,9 +18,11 @@ interface PlayerPresenceProps {
   campaignId: string;
   currentUserId: string;
   isDM: boolean;
+  characterId?: string;
 }
 
-const PlayerPresence = ({ campaignId, currentUserId, isDM }: PlayerPresenceProps) => {
+const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: PlayerPresenceProps) => {
+  const { toast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [needsRuling, setNeedsRuling] = useState(false);
 
@@ -68,18 +72,32 @@ const PlayerPresence = ({ campaignId, currentUserId, isDM }: PlayerPresenceProps
   }, [campaignId, currentUserId]);
 
   const toggleRaiseHand = async () => {
-    const { data: myPresence } = await supabase
-      .from("player_presence")
-      .select("id")
-      .eq("campaign_id", campaignId)
-      .eq("user_id", currentUserId)
-      .single();
-
-    if (myPresence) {
+    try {
+      const newRulingState = !needsRuling;
+      
       await supabase
         .from("player_presence")
-        .update({ needs_ruling: !needsRuling })
-        .eq("id", myPresence.id);
+        .upsert({
+          campaign_id: campaignId,
+          user_id: currentUserId,
+          character_id: characterId || null,
+          needs_ruling: newRulingState,
+          is_online: false, // Not necessarily online, just raising hand
+        }, { 
+          onConflict: 'campaign_id,user_id',
+          ignoreDuplicates: false
+        });
+
+      toast({
+        title: newRulingState ? "Hand Raised" : "Hand Lowered",
+        description: newRulingState ? "DM will be notified" : "Request cancelled"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update ruling request",
+        variant: "destructive"
+      });
     }
   };
 
@@ -107,15 +125,29 @@ const PlayerPresence = ({ campaignId, currentUserId, isDM }: PlayerPresenceProps
         </div>
 
         {!isDM && (
-          <Button
-            variant={needsRuling ? "destructive" : "outline"}
-            size="sm"
-            onClick={toggleRaiseHand}
-            className="w-full"
-          >
-            <Hand className="w-4 h-4 mr-2" />
-            {needsRuling ? "Lower Hand" : "Raise Hand (Need Ruling)"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="w-full">
+                  <Button
+                    variant={needsRuling ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={toggleRaiseHand}
+                    disabled={!characterId}
+                    className="w-full"
+                  >
+                    <Hand className="w-4 h-4 mr-2" />
+                    {needsRuling ? "Lower Hand" : "Raise Hand (Need Ruling)"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!characterId && (
+                <TooltipContent>
+                  <p>Assign a character to this campaign first</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         )}
       </CardContent>
     </Card>

@@ -58,9 +58,9 @@ const BetaTools = () => {
     <BetaToolsLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Hero */}
-        <div className="relative rounded-xl border border-border bg-gradient-to-b from-brand-obsidian to-card overflow-hidden">
+        <div className="relative rounded-xl border-2 border-brand-brass/30 overflow-hidden fantasy-parchment">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-brand-brass/5 rounded-full blur-3xl" />
           </div>
 
           <div className="relative text-center space-y-5 py-10 px-6">

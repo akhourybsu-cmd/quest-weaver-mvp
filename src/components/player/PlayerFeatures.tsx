@@ -61,6 +61,7 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   const [selectedFeat, setSelectedFeat] = useState<Feat | null>(null);
   const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
   const [traitSource, setTraitSource] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchAllData();

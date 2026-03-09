@@ -135,13 +135,24 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
       return;
     }
 
-    setRespondedPrompts(prev => new Set([...prev, prompt.id]));
+    // Mark as exiting first for animation
+    setExitingPrompts(prev => new Set([...prev, prompt.id]));
 
     toast({
       title: success ? "Save Successful!" : "Save Failed",
       description: `Rolled ${roll} + ${modifier} = ${total} vs DC ${prompt.dc}`,
       variant: success ? "default" : "destructive",
     });
+
+    // Remove from view after animation completes
+    setTimeout(() => {
+      setRespondedPrompts(prev => new Set([...prev, prompt.id]));
+      setExitingPrompts(prev => {
+        const next = new Set(prev);
+        next.delete(prompt.id);
+        return next;
+      });
+    }, 1000);
   };
 
   const unrespondedPrompts = savePrompts.filter(p => !respondedPrompts.has(p.id));

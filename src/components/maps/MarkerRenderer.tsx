@@ -74,7 +74,6 @@ export function MarkerRenderer({
       
       (polygon as any).fogId = fog.id;
       canvas.add(polygon);
-      canvas.sendObjectToBack(polygon);
     });
 
     // Render AoE templates (middle layer)

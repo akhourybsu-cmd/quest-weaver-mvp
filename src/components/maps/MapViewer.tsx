@@ -89,6 +89,10 @@ const MapViewer = ({
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
   const activeShapeRef = useRef<any>(null);
 
+  // Fog drawing state
+  const fogPointsRef = useRef<{ x: number; y: number }[]>([]);
+  const fogPreviewRef = useRef<any>(null);
+
   // Pan state as refs to avoid re-render churn
   const isPanningRef = useRef(false);
   const lastPanPosRef = useRef({ x: 0, y: 0 });

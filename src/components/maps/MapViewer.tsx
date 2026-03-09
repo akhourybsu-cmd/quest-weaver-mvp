@@ -873,7 +873,18 @@ const MapViewer = ({
     }
   }, [activeTool, fabricCanvas]);
 
-  // Zoom controls
+  // Clear fog preview when fog tool deactivates
+  useEffect(() => {
+    if (!fogTool && fabricCanvas) {
+      fogPointsRef.current = [];
+      if (fogPreviewRef.current) {
+        fabricCanvas.remove(fogPreviewRef.current);
+        fogPreviewRef.current = null;
+        fabricCanvas.renderAll();
+      }
+    }
+  }, [fogTool, fabricCanvas]);
+
   const handleZoomIn = useCallback(() => {
     if (!fabricCanvas) return;
     const newZoom = Math.min(zoom * 1.2, 4);

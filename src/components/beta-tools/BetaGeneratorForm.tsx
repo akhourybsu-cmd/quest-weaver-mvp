@@ -195,6 +195,9 @@ export function BetaGeneratorForm({ tool, onSaved }: BetaGeneratorFormProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isGenerating) {
+        // Don't trigger full regeneration if user is in the refine input
+        const active = document.activeElement;
+        if (active && active.closest('[data-refine-section]')) return;
         e.preventDefault();
         handleGenerate();
       }

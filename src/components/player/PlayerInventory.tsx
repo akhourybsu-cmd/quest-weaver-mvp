@@ -115,9 +115,11 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   const ItemList = ({ items }: { items: Holding[] }) => (
     <ScrollArea className="h-[300px] pr-4">
       {items.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <p className="text-sm">No items</p>
-        </div>
+        <PlayerEmptyState
+          icon={Backpack}
+          title="No Items"
+          description="Your inventory is empty. Items will appear here when your DM awards them."
+        />
       ) : (
         <div className="space-y-2">
           {items.map((holding) => (

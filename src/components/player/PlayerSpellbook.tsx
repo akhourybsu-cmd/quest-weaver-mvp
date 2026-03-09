@@ -67,15 +67,19 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
   // Load character data if not provided via props
   useEffect(() => {
     const loadCharacterData = async () => {
-      if (characterName && characterClass && characterLevel) {
-        setCharacterData({ name: characterName, class: characterClass, level: characterLevel, can_cast_rituals: false, mystic_arcanum_6_used: false, mystic_arcanum_7_used: false, mystic_arcanum_8_used: false, mystic_arcanum_9_used: false });
-      } else {
-        const { data } = await supabase
-          .from('characters')
-          .select('name, class, level, can_cast_rituals, mystic_arcanum_6_used, mystic_arcanum_7_used, mystic_arcanum_8_used, mystic_arcanum_9_used')
-          .eq('id', characterId)
-          .single();
-        if (data) setCharacterData(data);
+      // Always fetch from DB to get accurate ritual/arcanum flags
+      const { data } = await supabase
+        .from('characters')
+        .select('name, class, level, can_cast_rituals, mystic_arcanum_6_used, mystic_arcanum_7_used, mystic_arcanum_8_used, mystic_arcanum_9_used')
+        .eq('id', characterId)
+        .single();
+      if (data) {
+        setCharacterData({
+          ...data,
+          name: characterName || data.name,
+          class: characterClass || data.class,
+          level: characterLevel || data.level,
+        });
       }
     };
     loadCharacterData();

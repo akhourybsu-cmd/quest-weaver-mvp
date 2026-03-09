@@ -400,13 +400,13 @@ export function PlayerCombatActions({
     <div className="flex items-center gap-2">
       <Badge
         variant={used ? "outline" : "default"}
-        className={`h-8 px-3 transition-all active:scale-95 ${
+        className={`h-8 px-3 transition-all ${
           used 
-            ? 'bg-muted/50 text-muted-foreground line-through border-muted' 
-            : 'bg-brand-brass/15 text-brand-brass border-brand-brass/50 hover:bg-brand-brass/25'
+            ? 'bg-muted/50 text-muted-foreground line-through border-muted opacity-60 scale-95' 
+            : 'bg-brand-brass/15 text-brand-brass border-brand-brass/50 hover:bg-brand-brass/25 active:scale-95 animate-fade-in'
         }`}
       >
-        {used ? <X className="h-4 w-4 mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+        {used ? <X className="h-4 w-4 mr-1 animate-fade-in" /> : <Check className="h-4 w-4 mr-1" />}
         <span className="hidden sm:inline">{fullLabel}</span>
         <span className="sm:hidden">{label}</span>
       </Badge>

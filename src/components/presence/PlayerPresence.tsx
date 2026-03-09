@@ -16,6 +16,7 @@ interface PlayerPresenceProps {
   campaignId: string;
   currentUserId: string;
   isDM: boolean;
+  characterId?: string;
 }
 
 const PlayerPresence = ({ campaignId, currentUserId, isDM }: PlayerPresenceProps) => {

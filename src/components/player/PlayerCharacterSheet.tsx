@@ -983,7 +983,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         <DialogContent variant="ornaments" className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Star className="w-5 h-5 text-emerald-400" />
+              <Star className="w-5 h-5 text-accent" />
               {selectedTrait?.name}
             </DialogTitle>
           </DialogHeader>

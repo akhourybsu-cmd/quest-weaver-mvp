@@ -178,6 +178,21 @@ export function adaptDemoEncounters(demoCampaign: DemoCampaign) {
   }));
 }
 
+export function adaptDemoParty(demoCampaign: DemoCampaign) {
+  return demoCampaign.party.map(pc => ({
+    id: pc.id,
+    name: pc.name,
+    race: pc.race,
+    class: pc.class,
+    level: pc.level,
+    hp: pc.hp,
+    maxHp: pc.maxHp,
+    ac: pc.ac,
+    playerName: pc.playerName,
+    portraitInitials: pc.portraitInitials,
+  }));
+}
+
 export function getDemoCampaignStats(demoCampaign: DemoCampaign) {
   const activeQuests = demoCampaign.quests.filter(q => q.status === "active").length;
   const completedQuests = demoCampaign.quests.filter(q => q.status === "complete").length;
@@ -186,7 +201,7 @@ export function getDemoCampaignStats(demoCampaign: DemoCampaign) {
   return {
     activeQuests,
     completedQuests,
-    partyMembers: 4, // Mock party count for demo
+    partyMembers: demoCampaign.party.length,
     nextSession,
   };
 }

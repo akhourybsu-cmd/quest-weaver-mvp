@@ -98,13 +98,11 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, sessionT
       scheduledDateTime.setHours(hours, minutes, 0, 0);
 
       const sessionData = {
-        campaign_id: campaignId,
-        status: "scheduled",
         started_at: scheduledDateTime.toISOString(),
         session_notes: description || null,
         name: sessionName.trim() || null,
         goals: goals.trim() || null,
-        prep_checklist: prepChecklist.length > 0 ? JSON.stringify(prepChecklist) : '[]',
+        prep_checklist: prepChecklist as unknown as any,
       };
 
       if (isEditing && sessionToEdit) {
@@ -118,7 +116,7 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, sessionT
       } else {
         const { error } = await supabase
           .from("campaign_sessions")
-          .insert([sessionData]);
+          .insert([{ ...sessionData, campaign_id: campaignId, status: "scheduled" }]);
 
         if (error) throw error;
         toast.success("Session scheduled successfully");

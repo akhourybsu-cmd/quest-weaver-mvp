@@ -456,7 +456,8 @@ const MapViewer = ({
       // Save to DB
       const { error } = await supabase.from("fog_regions").insert({
         map_id: mapId,
-        path: points,
+        path: points as any,
+        shape: "polygon",
         is_hidden: fogTool === "hide",
       });
 

@@ -470,7 +470,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.resistances && character.resistances.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.resistances.map((r: string) => (
-                  <Badge key={r} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                  <Badge key={r} variant="outline" className="bg-secondary/10 text-secondary border-secondary/30 text-xs">
                     Resist: {r}
                   </Badge>
                 ))}
@@ -479,7 +479,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.immunities && character.immunities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.immunities.map((i: string) => (
-                  <Badge key={i} variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
+                  <Badge key={i} variant="outline" className="bg-status-buff/10 text-status-buff border-status-buff/30 text-xs">
                     Immune: {i}
                   </Badge>
                 ))}
@@ -488,7 +488,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.vulnerabilities && character.vulnerabilities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.vulnerabilities.map((v: string) => (
-                  <Badge key={v} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
+                  <Badge key={v} variant="outline" className="bg-status-hp/10 text-status-hp border-status-hp/30 text-xs">
                     Vuln: {v}
                   </Badge>
                 ))}

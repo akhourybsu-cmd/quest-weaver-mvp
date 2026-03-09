@@ -1,166 +1,82 @@
 
 
-# Map Editor Optimization: Comprehensive Overhaul
+## Home Page Overhaul — Enterprise-Ready Pass
 
-## Current State Assessment
+### Problems Found
 
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+1. **Copyright year is 2025** — should be 2026.
 
----
+2. **Hero right column is a placeholder** — just three pulsing Lucide icons (dice, sparkles, flame) in a box. No screenshot, no meaningful visual. Looks unfinished.
 
-## Critical Issues (Tools That Don't Work)
+3. **Feature list is stale** — only covers 6 DM and 6 player features from early builds. Missing major features that now exist:
+   - World Map
+   - Lore & Worldbuilding (with graph view, cross-links, multiple lore types)
+   - Campaign Timeline
+   - AI-powered Beta Tools (NPC/encounter/faction generators)
+   - Community Forum
+   - Character Sheets (full 5e stat blocks)
+   - Factions & Bestiary
+   - NPC Management
+   - Session Packs (pre-session prep bundles)
+   - Missing Lore Detector
 
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
+4. **"What it replaces" section is weak** — just 6 text badges. Doesn't communicate value. Should be reframed as a more compelling "Why Quest Weaver" or feature-count highlight section.
 
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
+5. **Testimonials are clearly fake** — attributed to "Dungeon Master", "Wizard Player", "Rogue Player" with generic quotes. Either remove entirely or replace with a "Built for" social proof section that feels authentic without fabricated quotes.
 
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
+6. **Navbar is cluttered** — "Campaign Hub" appears as both a nav link AND the primary CTA button. "Beta Tools" and "Player Hub" are internal app links that don't belong on a public landing page for unauthenticated visitors. Should be simplified: Features, Demo, Community, Changelog + CTA.
 
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
+7. **Footer dead links** — Privacy and Terms link to `#`. "Docs" and "Roadmap" say "Coming Soon" — stale placeholders.
 
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
+8. **Demo badges are vague** — "Live Initiative", "Loot Handouts", "Spell Panel", "Player Sync" don't capture the breadth of the demo anymore.
 
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+9. **No stats/numbers section** — enterprise-ready landing pages typically have a "by the numbers" or key metrics strip. Can add feature counts or capability highlights.
 
----
+10. **DM/Player toggle is underutilized** — good concept but the player features don't mention character sheets, the Player Hub, or campaign joining.
 
-## Performance Issues
+### Plan
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
+**A. Clean up the navbar** (lines 146-241)
+- Remove "Beta Tools", "Player Hub", and "Campaign Hub" from the nav links — these are internal app navigation, not landing page sections.
+- Keep: Features, Demo, Community, Changelog.
+- Desktop CTA: "Try Demo" + "Get Started" (or "Campaign Hub" if authenticated).
+- Authenticated users get a single "Go to Dashboard" CTA.
 
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
+**B. Upgrade hero section** (lines 324-394)
+- Replace the placeholder icon box with a more polished visual — a styled feature highlight card showing 3-4 key stats (e.g., "12+ tools", "Real-time sync", "AI-powered") in a grid layout with brass accents, rather than the pulsing icons.
+- Update copy to mention AI generation and worldbuilding alongside combat/initiative.
 
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
+**C. Expand and restructure features section** (lines 427-458)
+- Increase from 6 to 9 DM features and 8 player features to reflect new capabilities:
+  - DM: add World Map, Lore & Worldbuilding, AI Generators (Beta Tools), Session Packs, NPC & Faction Management, Bestiary, Campaign Timeline
+  - Player: add Character Sheets, Player Hub/Dashboard, Campaign Joining, Shared Notes
+- Show only 6 at a time with a "See all features" expand, or restructure into two rows.
 
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+**D. Replace "What it replaces" with "Why Quest Weaver"** (lines 461-477)
+- Instead of vague badges, show 3-4 compelling value props in a mini-card grid:
+  - "Everything in one place" — no more juggling 5 apps
+  - "Real-time sync" — DM and players always in sync
+  - "AI-assisted prep" — generate NPCs, encounters, factions
+  - "Zero setup" — demo in 30 seconds, no account required
 
----
+**E. Replace fake testimonials with "Built for" section** (lines 507-545)
+- Remove fabricated quotes. Replace with a "Built for every table" section showing use-case cards:
+  - "First-time DMs" — guided campaign setup, session packs
+  - "Veteran DMs" — deep worldbuilding, lore graphs, encounter tuning
+  - "Players" — character sheets, inventory, quest tracking
 
-## Functional Gaps
+**F. Update demo strip** (lines 479-505)
+- Update badges to reflect current demo scope (now includes NPCs, Locations, Lore, Factions, Bestiary, Encounters, Quests).
 
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
+**G. Update footer** (lines 565-667)
+- Copyright to 2026.
+- Add Changelog link to Product column.
+- Remove "Coming Soon" items or link them to real pages if they exist.
+- Remove dead Privacy/Terms `#` links — either link to real pages or remove.
 
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
+**H. Update mobile menu** (lines 242-321)
+- Mirror navbar cleanup — remove internal app links, keep landing page links.
 
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
-
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
-
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
-
----
-
-## Implementation Plan
-
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
-
-### Phase 2: Wire Drawing Tools
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
-
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
-
-### Phase 3: Wire Measurement, Range, and Terrain
-
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
-
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
-
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
-
-### Phase 4: Fix Fog of War
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
-
-### Phase 5: Fix Grid Snap and Token Context Menu
-
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
-
-### Phase 6: Performance Optimizations
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
-
----
-
-## Files Modified
-
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
-
-### No database changes required
-
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+### Files to modify
+- `src/pages/Index.tsx` — all changes are in this single file
 

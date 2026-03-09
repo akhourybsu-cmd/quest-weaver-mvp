@@ -49,10 +49,17 @@ export function PlayerCombatView({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchInitiative();
-    fetchCombatLog();
-    fetchConditions();
-    fetchCurrentRound();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchInitiative(),
+        fetchCombatLog(),
+        fetchConditions(),
+        fetchCurrentRound()
+      ]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const initiativeChannel = supabase
       .channel(`player-initiative:${encounterId}`)

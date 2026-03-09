@@ -314,11 +314,19 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
           </div>
         </CardHeader>
         <CardContent>
-          {characterSpells.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No spells learned yet</p>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
+          ) : characterSpells.length === 0 ? (
+            <PlayerEmptyState
+              icon={Sparkles}
+              title="No Spells Yet"
+              description="Your spellbook is empty. Spells will appear here as you learn them during character progression."
+            />
           ) : (
             <Tabs defaultValue="prepared" className="w-full">
               <TabsList className="grid w-full grid-cols-2">

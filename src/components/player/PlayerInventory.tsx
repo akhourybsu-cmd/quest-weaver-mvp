@@ -31,6 +31,7 @@ interface PlayerInventoryProps {
 export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProps) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [currency, setCurrency] = useState({ cp: 0, sp: 0, gp: 0, pp: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchHoldings();

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollText, CheckCircle2, Target, MapPin, Award, Coins, User, Tag, Circle } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Quest {
   id: string;
@@ -32,9 +33,15 @@ interface PlayerQuestTrackerProps {
 
 export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchQuests();
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchQuests();
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-quests:${campaignId}`)
@@ -85,6 +92,26 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
     if (!quest.steps?.length) return 0;
     return Math.round((quest.steps.filter((s: any) => s.is_completed).length / quest.steps.length) * 100);
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ScrollText className="w-5 h-5" />
+            Quest Log
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (quests.length === 0) {
     return (

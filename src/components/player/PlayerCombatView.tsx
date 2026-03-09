@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CONDITION_TOOLTIPS } from "@/lib/conditionTooltips";
 import { PlayerCombatActions } from "./PlayerCombatActions";
 import { PlayerEffects } from "./PlayerEffects";
+import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerCombatViewProps {
   characterId: string;
@@ -44,12 +46,20 @@ export function PlayerCombatView({
   const [combatLog, setCombatLog] = useState<any[]>([]);
   const [conditions, setConditions] = useState<any[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchInitiative();
-    fetchCombatLog();
-    fetchConditions();
-    fetchCurrentRound();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchInitiative(),
+        fetchCombatLog(),
+        fetchConditions(),
+        fetchCurrentRound()
+      ]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const initiativeChannel = supabase
       .channel(`player-initiative:${encounterId}`)
@@ -319,34 +329,47 @@ export function PlayerCombatView({
           <TabsContent value="log" className="mt-4">
             <ScrollArea className="h-[300px] sm:h-[400px]">
               <div className="space-y-2 pr-2 sm:pr-4">
-                {combatLog.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-8">
-                    No combat actions yet
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
                   </div>
+                ) : combatLog.length === 0 ? (
+                  <PlayerEmptyState
+                    icon={Swords}
+                    title="No Actions Yet"
+                    description="Combat actions will appear here as the battle unfolds."
+                  />
                 ) : (
-                  combatLog.map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="text-sm border-b border-brand-brass/10 pb-2 animate-fade-in flex items-start gap-2"
-                      style={{ animationDelay: `${index * 40}ms` }}
-                    >
-                      {getActionIcon(entry.action_type)}
-                      <div className="min-w-0">
-                        {entry.action_type === 'round_start' ? (
-                          <Badge variant="outline" className="text-[10px] border-brand-brass/30 text-brand-brass font-cinzel">
-                            Round {entry.round}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px] mr-1">R{entry.round}</span>
-                        )}
-                        {entry.action_type !== 'round_start' && (
-                          <span className={getActionColor(entry.action_type)}>
-                            {entry.message}
-                          </span>
-                        )}
+                  <>
+                    <Badge variant="outline" className="text-xs mb-2">
+                      Showing last 20 actions
+                    </Badge>
+                    {combatLog.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="text-sm border-b border-brand-brass/10 pb-2 animate-fade-in flex items-start gap-2"
+                        style={{ animationDelay: `${index * 40}ms` }}
+                      >
+                        {getActionIcon(entry.action_type)}
+                        <div className="min-w-0">
+                          {entry.action_type === 'round_start' ? (
+                            <Badge variant="outline" className="text-[10px] border-brand-brass/30 text-brand-brass font-cinzel">
+                              Round {entry.round}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px] mr-1">R{entry.round}</span>
+                          )}
+                          {entry.action_type !== 'round_start' && (
+                            <span className={getActionColor(entry.action_type)}>
+                              {entry.message}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </>
                 )}
               </div>
             </ScrollArea>

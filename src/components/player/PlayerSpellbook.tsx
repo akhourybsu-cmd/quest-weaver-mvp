@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { RitualCastDialog } from "@/components/spells/RitualCastDialog";
 import { MysticArcanumTracker } from "@/components/spells/MysticArcanumTracker";
+import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Spell {
   id: string;
@@ -59,6 +62,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
   const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [characterData, setCharacterData] = useState<{ name: string; class: string; level: number; can_cast_rituals: boolean; mystic_arcanum_6_used: boolean; mystic_arcanum_7_used: boolean; mystic_arcanum_8_used: boolean; mystic_arcanum_9_used: boolean } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Load character data if not provided via props
   useEffect(() => {
@@ -81,8 +85,12 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
   const warlockLevel = isWarlock ? (characterData?.level || 0) : 0;
 
   useEffect(() => {
-    fetchSpells();
-    fetchSpellSlots();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchSpells(), fetchSpellSlots()]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-spells:${characterId}`)
@@ -186,23 +194,43 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
                 {spells.length}
               </Badge>
               {level !== '0' && spellSlots.find(s => s.spell_level === Number(level)) && (
-                <div className="flex gap-1 ml-auto">
-                  {Array.from({ 
-                    length: spellSlots.find(s => s.spell_level === Number(level))!.max_slots 
-                  }).map((_, i) => {
-                    const slot = spellSlots.find(s => s.spell_level === Number(level))!;
-                    return (
-                      <div
-                        key={i}
-                        className={`w-2 h-2 rounded-full ${
-                          i < slot.max_slots - slot.used_slots
-                            ? 'bg-primary'
-                            : 'bg-muted-foreground/30'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <div className="flex gap-1">
+                          {Array.from({ 
+                            length: spellSlots.find(s => s.spell_level === Number(level))!.max_slots 
+                          }).map((_, i) => {
+                            const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                            return (
+                              <div
+                                key={i}
+                                className={`w-2.5 h-2.5 rounded-full border transition-colors ${
+                                  i < slot.max_slots - slot.used_slots
+                                    ? 'bg-primary border-primary'
+                                    : 'bg-muted border-muted-foreground/30'
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0">
+                          {(() => {
+                            const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                            return `${slot.max_slots - slot.used_slots}/${slot.max_slots}`;
+                          })()}
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {(() => {
+                        const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                        return `${slot.max_slots - slot.used_slots} of ${slot.max_slots} spell slots available`;
+                      })()}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             <div className="grid gap-2">
@@ -286,11 +314,19 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
           </div>
         </CardHeader>
         <CardContent>
-          {characterSpells.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No spells learned yet</p>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
+          ) : characterSpells.length === 0 ? (
+            <PlayerEmptyState
+              icon={Sparkles}
+              title="No Spells Yet"
+              description="Your spellbook is empty. Spells will appear here as you learn them during character progression."
+            />
           ) : (
             <Tabs defaultValue="prepared" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -305,9 +341,11 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
               <TabsContent value="prepared" className="mt-4">
                 <ScrollArea className="h-[500px] pr-4">
                   {preparedSpells.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">No spells prepared</p>
-                    </div>
+                    <PlayerEmptyState
+                      icon={BookOpen}
+                      title="No Prepared Spells"
+                      description="You haven't prepared any spells yet. Prepared spells are ready to cast during adventures."
+                    />
                   ) : (
                     <SpellList spellsByLevel={preparedByLevel} />
                   )}

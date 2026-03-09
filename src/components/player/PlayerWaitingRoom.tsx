@@ -34,6 +34,25 @@ export const PlayerWaitingRoom = () => {
       return;
     }
 
+    // Get campaign ID first to check for live session in parallel
+    let campaignToCheck: string | null = null;
+    if (campaignCode) {
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id, live_session_id')
+        .eq('code', campaignCode)
+        .maybeSingle();
+
+      if (campaign) {
+        campaignToCheck = campaign.id;
+        // If session is already live, redirect immediately
+        if (campaign.live_session_id) {
+          navigate(`/session/player?campaign=${campaignCode}`);
+          return;
+        }
+      }
+    }
+
     // Ensure there is a player profile linked to this auth user
     const { data: existingPlayers, error: playerFetchError } = await supabase
       .from('players')
@@ -70,33 +89,37 @@ export const PlayerWaitingRoom = () => {
 
     setPlayerId(playerRecord.id);
 
-    if (!campaignCode) {
-      toast({ title: 'Invalid link', description: 'No campaign code provided', variant: 'destructive' });
-      navigate(`/player/${playerRecord.id}`);
-      return;
+    if (!campaignToCheck) {
+      if (!campaignCode) {
+        toast({ title: 'Invalid link', description: 'No campaign code provided', variant: 'destructive' });
+        navigate(`/player/${playerRecord.id}`);
+        return;
+      }
+
+      // Get campaign ID (shouldn't hit this since we already checked above)
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id')
+        .eq('code', campaignCode)
+        .maybeSingle();
+
+      if (!campaign) {
+        toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });
+        navigate(`/player/${playerRecord.id}`);
+        return;
+      }
+
+      campaignToCheck = campaign.id;
     }
 
-    // Get campaign ID
-    const { data: campaign } = await supabase
-      .from('campaigns')
-      .select('id')
-      .eq('code', campaignCode)
-      .maybeSingle();
-
-    if (!campaign) {
-      toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });
-      navigate(`/player/${playerRecord.id}`);
-      return;
-    }
-
-    setCampaignId(campaign.id);
+    setCampaignId(campaignToCheck);
 
     // Auto-link player to campaign if not already linked
     const { data: existingLink } = await supabase
       .from('player_campaign_links')
       .select('id')
       .eq('player_id', playerRecord.id)
-      .eq('campaign_id', campaign.id)
+      .eq('campaign_id', campaignToCheck)
       .maybeSingle();
 
     if (!existingLink) {
@@ -104,7 +127,7 @@ export const PlayerWaitingRoom = () => {
         .from('player_campaign_links')
         .insert({
           player_id: playerRecord.id,
-          campaign_id: campaign.id,
+          campaign_id: campaignToCheck,
           join_code: campaignCode,
           role: 'player',
         });
@@ -122,19 +145,19 @@ export const PlayerWaitingRoom = () => {
     const { data: existingMember } = await supabase
       .from('campaign_members')
       .select('id')
-      .eq('campaign_id', campaign.id)
+      .eq('campaign_id', campaignToCheck)
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!existingMember) {
       await supabase.from('campaign_members').insert({
-        campaign_id: campaign.id,
+        campaign_id: campaignToCheck,
         user_id: userId,
         role: 'PLAYER',
       });
     }
 
-    checkForLiveSession(campaign.id);
+    setChecking(false);
 
     // Subscribe to campaign updates
     const channel = supabase
@@ -145,7 +168,7 @@ export const PlayerWaitingRoom = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'campaigns',
-          filter: `id=eq.${campaign.id}`,
+          filter: `id=eq.${campaignToCheck}`,
         },
         (payload) => {
           if (payload.new.live_session_id) {
@@ -157,26 +180,6 @@ export const PlayerWaitingRoom = () => {
       .subscribe();
 
     channelRef.current = channel;
-  };
-
-  const checkForLiveSession = async (campId: string) => {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('live_session_id')
-      .eq('id', campId)
-      .single();
-
-    if (error) {
-      console.error('Failed to check for live session:', error);
-      setChecking(false);
-      return;
-    }
-
-    if (data?.live_session_id) {
-      navigate(`/session/player?campaign=${campaignCode}`);
-    } else {
-      setChecking(false);
-    }
   };
 
   return (
@@ -210,7 +213,25 @@ export const PlayerWaitingRoom = () => {
                   Back to Dashboard
                 </Button>
                 <Button
-                  onClick={() => campaignId && checkForLiveSession(campaignId)}
+                  onClick={async () => {
+                    if (campaignId && campaignCode) {
+                      setChecking(true);
+                      try {
+                        const { data } = await supabase
+                          .from('campaigns')
+                          .select('live_session_id')
+                          .eq('id', campaignId)
+                          .single();
+                        if (data?.live_session_id) {
+                          navigate(`/session/player?campaign=${campaignCode}`);
+                        } else {
+                          setChecking(false);
+                        }
+                      } catch {
+                        setChecking(false);
+                      }
+                    }
+                  }}
                   disabled={checking}
                 >
                   Check Again

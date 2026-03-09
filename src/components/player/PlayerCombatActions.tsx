@@ -70,6 +70,7 @@ export function PlayerCombatActions({
   const [showMountDialog, setShowMountDialog] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [availableMounts, setAvailableMounts] = useState<any[]>([]);
+  const [isEndingTurn, setIsEndingTurn] = useState(false);
   const { toast } = useToast();
   
   const mountedStatus = useMountedStatus(encounterId, characterId, 'character');
@@ -350,6 +351,7 @@ export function PlayerCombatActions({
   };
 
   const handleEndTurn = async () => {
+    setIsEndingTurn(true);
     try {
       const { error } = await supabase
         .from("player_turn_signals")
@@ -374,8 +376,17 @@ export function PlayerCombatActions({
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      // Don't reset here - let it stay disabled until turn changes
     }
   };
+
+  // Reset isEndingTurn when it's no longer the player's turn
+  useEffect(() => {
+    if (!isMyTurn) {
+      setIsEndingTurn(false);
+    }
+  }, [isMyTurn]);
 
   const ActionChip = ({ 
     used, 
@@ -389,13 +400,13 @@ export function PlayerCombatActions({
     <div className="flex items-center gap-2">
       <Badge
         variant={used ? "outline" : "default"}
-        className={`h-8 px-3 transition-all active:scale-95 ${
+        className={`h-8 px-3 transition-all ${
           used 
-            ? 'bg-muted/50 text-muted-foreground line-through border-muted' 
-            : 'bg-brand-brass/15 text-brand-brass border-brand-brass/50 hover:bg-brand-brass/25'
+            ? 'bg-muted/50 text-muted-foreground line-through border-muted opacity-60 scale-95' 
+            : 'bg-brand-brass/15 text-brand-brass border-brand-brass/50 hover:bg-brand-brass/25 active:scale-95 animate-fade-in'
         }`}
       >
-        {used ? <X className="h-4 w-4 mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+        {used ? <X className="h-4 w-4 mr-1 animate-fade-in" /> : <Check className="h-4 w-4 mr-1" />}
         <span className="hidden sm:inline">{fullLabel}</span>
         <span className="sm:hidden">{label}</span>
       </Badge>
@@ -498,10 +509,11 @@ export function PlayerCombatActions({
           <Button
             onClick={() => setShowEndTurnDialog(true)}
             className="w-full min-h-[44px]"
-            size="lg"
+            variant="default"
+            disabled={isEndingTurn}
           >
             <SkipForward className="w-4 h-4 mr-2" />
-            End My Turn
+            {isEndingTurn ? "Turn Ended..." : "End Turn"}
           </Button>
         </CardContent>
       </Card>

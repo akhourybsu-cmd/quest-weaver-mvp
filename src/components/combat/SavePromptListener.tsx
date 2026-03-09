@@ -34,6 +34,7 @@ interface SavePromptListenerProps {
 const SavePromptListener = ({ characterId, character, campaignId }: SavePromptListenerProps) => {
   const [savePrompts, setSavePrompts] = useState<SavePrompt[]>([]);
   const [respondedPrompts, setRespondedPrompts] = useState<Set<string>>(new Set());
+  const [exitingPrompts, setExitingPrompts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,18 +135,29 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
       return;
     }
 
-    setRespondedPrompts(prev => new Set([...prev, prompt.id]));
+    // Mark as exiting first for animation
+    setExitingPrompts(prev => new Set([...prev, prompt.id]));
 
     toast({
       title: success ? "Save Successful!" : "Save Failed",
       description: `Rolled ${roll} + ${modifier} = ${total} vs DC ${prompt.dc}`,
       variant: success ? "default" : "destructive",
     });
+
+    // Remove from view after animation completes
+    setTimeout(() => {
+      setRespondedPrompts(prev => new Set([...prev, prompt.id]));
+      setExitingPrompts(prev => {
+        const next = new Set(prev);
+        next.delete(prompt.id);
+        return next;
+      });
+    }, 1000);
   };
 
-  const unrespondedPrompts = savePrompts.filter(p => !respondedPrompts.has(p.id));
+  const visiblePrompts = savePrompts.filter(p => !respondedPrompts.has(p.id));
 
-  if (unrespondedPrompts.length === 0) return null;
+  if (visiblePrompts.length === 0) return null;
 
   return (
     <Card className="shadow-md border-status-warning">
@@ -156,8 +168,15 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {unrespondedPrompts.map((prompt) => (
-          <div key={prompt.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
+        {visiblePrompts.map((prompt) => {
+          const isExiting = exitingPrompts.has(prompt.id);
+          return (
+          <div 
+            key={prompt.id} 
+            className={`p-3 bg-muted/50 rounded-lg space-y-2 transition-all duration-500 ${
+              isExiting ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100'
+            }`}
+          >
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-semibold">
                 {prompt.ability} Save
@@ -165,12 +184,18 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
               <Badge variant="secondary">DC {prompt.dc}</Badge>
             </div>
             <p className="text-sm">{prompt.description}</p>
-            <Button onClick={() => rollSave(prompt)} size="sm" className="w-full">
+            <Button 
+              onClick={() => rollSave(prompt)} 
+              size="sm" 
+              className="w-full"
+              disabled={isExiting}
+            >
               <Dices className="w-4 h-4 mr-2" />
-              Roll {prompt.ability} Save (+{getSaveModifier(prompt.ability)})
+              {isExiting ? "Submitted..." : `Roll ${prompt.ability} Save (+${getSaveModifier(prompt.ability)})`}
             </Button>
           </div>
-        ))}
+        );
+        })}
       </CardContent>
     </Card>
   );

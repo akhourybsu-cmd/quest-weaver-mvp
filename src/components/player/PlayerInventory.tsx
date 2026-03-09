@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Backpack, Coins } from "lucide-react";
 import { AttunementManager } from "@/components/inventory/AttunementManager";
+import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Holding {
   id: string;
@@ -31,10 +33,15 @@ interface PlayerInventoryProps {
 export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProps) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [currency, setCurrency] = useState({ cp: 0, sp: 0, gp: 0, pp: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchHoldings();
-    fetchCurrency();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchHoldings(), fetchCurrency()]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-inventory:${campaignId}`)
@@ -108,9 +115,11 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   const ItemList = ({ items }: { items: Holding[] }) => (
     <ScrollArea className="h-[300px] pr-4">
       {items.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <p className="text-sm">No items</p>
-        </div>
+        <PlayerEmptyState
+          icon={Backpack}
+          title="No Items"
+          description="Your inventory is empty. Items will appear here when your DM awards them."
+        />
       ) : (
         <div className="space-y-2">
           {items.map((holding) => (
@@ -157,6 +166,42 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
       )}
     </ScrollArea>
   );
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Backpack className="w-5 h-5" />
+              Inventory
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (holdings.length === 0 && !isLoading) {
+    return (
+      <>
+        <PlayerEmptyState
+          icon={Backpack}
+          title="No Items Yet"
+          description="Your inventory is empty. Items will appear here when your DM awards them or you acquire them during your adventures."
+        />
+        <AttunementManager characterId={characterId} />
+      </>
+    );
+  }
 
   return (
     <>

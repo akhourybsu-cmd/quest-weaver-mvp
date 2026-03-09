@@ -229,6 +229,36 @@ const MapViewer = ({
 
       const pointer = fabricCanvas.getScenePoint(e);
 
+      // ── Fog tool takes highest priority ──
+      if (fogTool && isDM) {
+        const points = fogPointsRef.current;
+        points.push({ x: pointer.x, y: pointer.y });
+
+        // Rebuild preview polygon
+        if (fogPreviewRef.current) {
+          fabricCanvas.remove(fogPreviewRef.current);
+          fogPreviewRef.current = null;
+        }
+        if (points.length >= 2) {
+          const preview = new Polygon(
+            points.map((p) => ({ x: p.x, y: p.y })),
+            {
+              fill: fogTool === "hide" ? "rgba(0,0,0,0.55)" : "rgba(100,220,100,0.25)",
+              stroke: fogTool === "hide" ? "#ff4444" : "#44ff44",
+              strokeWidth: 2,
+              strokeDashArray: [8, 5],
+              selectable: false,
+              evented: false,
+            }
+          );
+          (preview as any).isFogPreview = true;
+          fogPreviewRef.current = preview;
+          fabricCanvas.add(preview);
+          fabricCanvas.renderAll();
+        }
+        return;
+      }
+
       // Tool-specific mouse down
       switch (tool) {
         case "pin":
@@ -408,33 +438,6 @@ const MapViewer = ({
         }
 
         default:
-          // Handle fog tool clicks
-          if (fogTool && isDM) {
-            const points = fogPointsRef.current;
-            points.push({ x: pointer.x, y: pointer.y });
-
-            // Update preview polygon on canvas
-            if (fogPreviewRef.current) {
-              fabricCanvas.remove(fogPreviewRef.current);
-            }
-            if (points.length >= 2) {
-              const preview = new Polygon(
-                points.map(p => ({ x: p.x, y: p.y })),
-                {
-                  fill: fogTool === "hide" ? "rgba(0,0,0,0.5)" : "rgba(255,255,0,0.3)",
-                  stroke: "#ffdd44",
-                  strokeWidth: 2,
-                  strokeDashArray: [6, 4],
-                  selectable: false,
-                  evented: false,
-                }
-              );
-              (preview as any).isFogPreview = true;
-              fogPreviewRef.current = preview;
-              fabricCanvas.add(preview);
-              fabricCanvas.renderAll();
-            }
-          }
           break;
       }
     };
@@ -442,14 +445,20 @@ const MapViewer = ({
     // Double-click to finish fog polygon
     const handleDblClick = async (opt: any) => {
       if (!fogTool || !isDM) return;
-      const points = fogPointsRef.current;
+      const points = [...fogPointsRef.current];
+      // Remove last point (double-click fires two mousedowns)
+      if (points.length > 0) points.pop();
+
+      // Clear preview immediately
+      fogPointsRef.current = [];
+      if (fogPreviewRef.current) {
+        fabricCanvas.remove(fogPreviewRef.current);
+        fogPreviewRef.current = null;
+        fabricCanvas.renderAll();
+      }
+
       if (points.length < 3) {
-        fogPointsRef.current = [];
-        if (fogPreviewRef.current) {
-          fabricCanvas.remove(fogPreviewRef.current);
-          fogPreviewRef.current = null;
-          fabricCanvas.renderAll();
-        }
+        toast({ title: "Need at least 3 points", description: "Click to add more points before double-clicking to finish." });
         return;
       }
 
@@ -461,16 +470,10 @@ const MapViewer = ({
         is_hidden: fogTool === "hide",
       });
 
-      if (!error) {
-        toast({ title: fogTool === "hide" ? "Fog region created" : "Revealed region created" });
-      }
-
-      // Clean up
-      fogPointsRef.current = [];
-      if (fogPreviewRef.current) {
-        fabricCanvas.remove(fogPreviewRef.current);
-        fogPreviewRef.current = null;
-        fabricCanvas.renderAll();
+      if (error) {
+        toast({ title: "Error saving fog region", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: fogTool === "hide" ? "🌫️ Fog region hidden" : "✅ Area revealed" });
       }
     };
 
@@ -600,9 +603,16 @@ const MapViewer = ({
     }
   }, [fabricCanvas, activeTool, drawColor, drawStrokeWidth]);
 
-  // Update cursor based on tool
+  // Update cursor based on active tool and fog tool
   useEffect(() => {
     if (!fabricCanvas || !fabricCanvas.upperCanvasEl) return;
+
+    // Fog tool overrides activeTool cursor
+    if (fogTool && isDM) {
+      fabricCanvas.setCursor(fogTool === "hide" ? "cell" : "copy");
+      fabricCanvas.selection = false;
+      return;
+    }
 
     switch (activeTool) {
       case "pan":
@@ -625,7 +635,7 @@ const MapViewer = ({
         fabricCanvas.setCursor("crosshair");
         fabricCanvas.selection = false;
     }
-  }, [fabricCanvas, activeTool, isDM]);
+  }, [fabricCanvas, activeTool, isDM, fogTool]);
 
   // Load map image (with caching)
   useEffect(() => {

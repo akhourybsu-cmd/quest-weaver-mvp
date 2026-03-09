@@ -91,9 +91,19 @@ const FogOfWarTools = ({ mapId, onToolChange, activeTool }: FogOfWarToolsProps) 
             Hide All
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Click and drag on the map to create fog regions. Revealed areas are visible to all players.
-        </div>
+        {activeTool && (
+          <div className="rounded-md bg-muted/60 px-2 py-1.5 text-xs text-muted-foreground space-y-0.5">
+            <p className="font-medium text-foreground">
+              {activeTool === "hide" ? "🌫️ Drawing fog" : "✅ Drawing reveal"}
+            </p>
+            <p>Click to add polygon points. Double-click to finish and save.</p>
+          </div>
+        )}
+        {!activeTool && (
+          <div className="text-xs text-muted-foreground">
+            Select Reveal or Hide, then click on the map to draw polygon regions.
+          </div>
+        )}
       </CardContent>
     </Card>
   );

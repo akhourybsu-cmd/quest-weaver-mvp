@@ -257,7 +257,20 @@ export function PlayerCombatView({
 
             <ScrollArea className="h-[300px] sm:h-[400px]">
               <div className="space-y-2 pr-2 sm:pr-4">
-                {initiative.map((entry, index) => {
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : initiative.length === 0 ? (
+                  <PlayerEmptyState
+                    icon={Swords}
+                    title="Waiting for Initiative"
+                    description="The DM hasn't set up initiative order yet."
+                  />
+                ) : null}
+                {!isLoading && initiative.map((entry, index) => {
                   const hpCurrent = entry.combatant_stats?.hp_current;
                   const hpMax = entry.combatant_stats?.hp_max;
                   const hasHP = hpCurrent !== undefined && hpMax !== undefined && hpMax > 0;

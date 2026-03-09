@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus } from "lucide-react";
@@ -37,6 +37,11 @@ export function QuickHPControls({
   const { toast } = useToast();
   const [damageOpen, setDamageOpen] = useState(false);
   const [healOpen, setHealOpen] = useState(false);
+
+  // Reset optimistic state when real HP changes (e.g., from realtime update)
+  useEffect(() => {
+    setOptimisticHP(null);
+  }, [currentHP]);
 
   const displayHP = optimisticHP !== null ? optimisticHP : currentHP;
 

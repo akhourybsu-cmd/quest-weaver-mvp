@@ -52,26 +52,38 @@ export function EncounterControls({
   };
 
   const handleEndEncounter = async () => {
-    // Clear all initiative
-    await supabase
-      .from('initiative')
-      .delete()
-      .eq('encounter_id', encounterId);
+    try {
+      // Clear all initiative
+      const { error: initError } = await supabase
+        .from('initiative')
+        .delete()
+        .eq('encounter_id', encounterId);
 
-    // Reset encounter
-    await supabase
-      .from('encounters')
-      .update({ 
-        status: 'ended',
-        is_active: false,
-        current_round: 0
-      })
-      .eq('id', encounterId);
+      if (initError) throw initError;
 
-    toast({
-      title: "Encounter Ended",
-      description: "Initiative cleared and encounter reset",
-    });
+      // Reset encounter
+      const { error: encError } = await supabase
+        .from('encounters')
+        .update({ 
+          status: 'ended',
+          is_active: false,
+          current_round: 0
+        })
+        .eq('id', encounterId);
+
+      if (encError) throw encError;
+
+      toast({
+        title: "Encounter Ended",
+        description: "Initiative cleared and encounter reset",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error ending encounter",
+        description: error.message || "Failed to end encounter properly",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleResetEncounter = async () => {

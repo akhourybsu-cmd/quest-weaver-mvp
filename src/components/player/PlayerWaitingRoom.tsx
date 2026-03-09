@@ -119,7 +119,7 @@ export const PlayerWaitingRoom = () => {
       .from('player_campaign_links')
       .select('id')
       .eq('player_id', playerRecord.id)
-      .eq('campaign_id', campaign.id)
+      .eq('campaign_id', campaignToCheck)
       .maybeSingle();
 
     if (!existingLink) {
@@ -127,7 +127,7 @@ export const PlayerWaitingRoom = () => {
         .from('player_campaign_links')
         .insert({
           player_id: playerRecord.id,
-          campaign_id: campaign.id,
+          campaign_id: campaignToCheck,
           join_code: campaignCode,
           role: 'player',
         });
@@ -145,19 +145,19 @@ export const PlayerWaitingRoom = () => {
     const { data: existingMember } = await supabase
       .from('campaign_members')
       .select('id')
-      .eq('campaign_id', campaign.id)
+      .eq('campaign_id', campaignToCheck)
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!existingMember) {
       await supabase.from('campaign_members').insert({
-        campaign_id: campaign.id,
+        campaign_id: campaignToCheck,
         user_id: userId,
         role: 'PLAYER',
       });
     }
 
-    checkForLiveSession(campaign.id);
+    setChecking(false);
 
     // Subscribe to campaign updates
     const channel = supabase

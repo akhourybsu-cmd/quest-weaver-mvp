@@ -19,7 +19,7 @@ interface PlayerPresenceProps {
   characterId?: string;
 }
 
-const PlayerPresence = ({ campaignId, currentUserId, isDM }: PlayerPresenceProps) => {
+const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: PlayerPresenceProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [needsRuling, setNeedsRuling] = useState(false);
 

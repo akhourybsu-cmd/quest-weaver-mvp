@@ -122,15 +122,29 @@ const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: Player
         </div>
 
         {!isDM && (
-          <Button
-            variant={needsRuling ? "destructive" : "outline"}
-            size="sm"
-            onClick={toggleRaiseHand}
-            className="w-full"
-          >
-            <Hand className="w-4 h-4 mr-2" />
-            {needsRuling ? "Lower Hand" : "Raise Hand (Need Ruling)"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="w-full">
+                  <Button
+                    variant={needsRuling ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={toggleRaiseHand}
+                    disabled={!characterId}
+                    className="w-full"
+                  >
+                    <Hand className="w-4 h-4 mr-2" />
+                    {needsRuling ? "Lower Hand" : "Raise Hand (Need Ruling)"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!characterId && (
+                <TooltipContent>
+                  <p>Assign a character to this campaign first</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         )}
       </CardContent>
     </Card>

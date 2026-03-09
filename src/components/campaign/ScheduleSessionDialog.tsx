@@ -102,7 +102,7 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, sessionT
         session_notes: description || null,
         name: sessionName.trim() || null,
         goals: goals.trim() || null,
-        prep_checklist: prepChecklist as unknown as Record<string, unknown>[],
+        prep_checklist: prepChecklist as unknown as any,
       };
 
       if (isEditing && sessionToEdit) {

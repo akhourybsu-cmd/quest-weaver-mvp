@@ -85,8 +85,12 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
   const warlockLevel = isWarlock ? (characterData?.level || 0) : 0;
 
   useEffect(() => {
-    fetchSpells();
-    fetchSpellSlots();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchSpells(), fetchSpellSlots()]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-spells:${characterId}`)

@@ -46,37 +46,42 @@ export function MarkerRenderer({
   useEffect(() => {
     if (!canvas) return;
 
-    // Clear previously rendered overlay objects
+    // Clear previously rendered overlay objects (fog, aoe, markers — NOT tokens, background, grid)
     const existingOverlays = canvas.getObjects().filter(
       (obj: any) => obj.overlayId || obj.aoeId || obj.fogId || obj.markerId
     );
     existingOverlays.forEach((obj) => canvas.remove(obj));
     renderedIdsRef.current.clear();
 
-    // Render fog regions (bottom layer)
+    // ── Layer 1: Fog regions (just above background image) ──
     fogRegions.forEach((fog) => {
       if (!fog.polygon_points || fog.polygon_points.length < 3) return;
-      
-      // For DM: show hidden fog as semi-transparent black
-      // For players: only show revealed areas (we filter in hook)
       if (!isDM && !fog.is_revealed) return;
 
       const points = fog.polygon_points.map((p) => ({ x: p.x, y: p.y }));
-      
+
       const polygon = new Polygon(points, {
-        fill: fog.is_revealed ? "transparent" : "rgba(0, 0, 0, 0.8)",
-        stroke: isDM ? "#666" : "transparent",
+        fill: fog.is_revealed
+          ? (isDM ? "rgba(100, 255, 100, 0.15)" : "transparent")
+          : "rgba(0, 0, 0, 0.82)",
+        stroke: isDM ? (fog.is_revealed ? "#44ff44" : "#888") : "transparent",
         strokeWidth: isDM ? 1 : 0,
         selectable: false,
         evented: false,
-        opacity: isDM && fog.is_revealed ? 0.3 : 1,
+        objectCaching: false,
       });
-      
+
       (polygon as any).fogId = fog.id;
       canvas.add(polygon);
     });
 
-    // Render AoE templates (middle layer)
+    // Find the background image and ensure it stays at the very back
+    const bgImage = canvas.getObjects().find((obj: any) => obj.isBackgroundImage);
+    if (bgImage) {
+      canvas.sendObjectToBack(bgImage);
+    }
+
+    // ── Layer 2: AoE templates ──
     aoeTemplates.forEach((aoe) => {
       const color = aoe.color || AOE_COLORS[aoe.shape] || "#ef4444";
       let fabricObject: any;
@@ -96,16 +101,16 @@ export function MarkerRenderer({
           });
           break;
 
-        case "cone":
+        case "cone": {
           // Approximate cone as triangle
           const coneLength = aoe.length || 60;
           const coneWidth = coneLength * 0.6;
-          const points = [
+          const conePoints = [
             { x: aoe.x, y: aoe.y },
             { x: aoe.x - coneWidth / 2, y: aoe.y + coneLength },
             { x: aoe.x + coneWidth / 2, y: aoe.y + coneLength },
           ];
-          fabricObject = new Polygon(points, {
+          fabricObject = new Polygon(conePoints, {
             fill: color,
             opacity: aoe.opacity ?? 0.4,
             stroke: color,
@@ -115,8 +120,9 @@ export function MarkerRenderer({
             angle: aoe.rotation || 0,
           });
           break;
+        }
 
-        case "line":
+        case "line": {
           const lineLength = aoe.length || 60;
           const lineWidth = aoe.width || 10;
           fabricObject = new Rect({
@@ -133,8 +139,9 @@ export function MarkerRenderer({
             angle: aoe.rotation || 0,
           });
           break;
+        }
 
-        case "cube":
+        case "cube": {
           const cubeSize = aoe.radius || 40;
           fabricObject = new Rect({
             left: aoe.x - cubeSize,
@@ -149,21 +156,20 @@ export function MarkerRenderer({
             evented: isDM,
           });
           break;
+        }
 
         default:
           return;
       }
 
       (fabricObject as any).aoeId = aoe.id;
-      
-      // Add click handler for DM
+
       if (isDM && onAoEClick) {
         fabricObject.on("mousedown", () => onAoEClick(aoe));
       }
 
       canvas.add(fabricObject);
 
-      // Add label if present
       if (aoe.label) {
         const label = new Text(aoe.label, {
           left: aoe.x,
@@ -181,13 +187,12 @@ export function MarkerRenderer({
       }
     });
 
-    // Render markers (top layer)
+    // ── Layer 3: Map markers (pins, terrain, notes) ──
     markers.forEach((marker) => {
       const color = marker.color || TERRAIN_COLORS[marker.marker_type] || "#ffffff";
-      
-      // Create marker shape
+
       let fabricObject: any;
-      
+
       if (marker.shape === "circle" || marker.marker_type === "terrain") {
         fabricObject = new Circle({
           left: marker.x - 15,
@@ -201,7 +206,6 @@ export function MarkerRenderer({
           evented: isDM,
         });
       } else if (marker.marker_type === "note" || marker.marker_type === "pin") {
-        // Pin style marker
         fabricObject = new Circle({
           left: marker.x - 12,
           top: marker.y - 12,
@@ -230,15 +234,13 @@ export function MarkerRenderer({
       }
 
       (fabricObject as any).markerId = marker.id;
-      
-      // Add click handler for DM
+
       if (isDM && onMarkerClick) {
         fabricObject.on("mousedown", () => onMarkerClick(marker));
       }
 
       canvas.add(fabricObject);
 
-      // Add label if present
       if (marker.label) {
         const label = new Text(marker.label, {
           left: marker.x,
@@ -257,6 +259,11 @@ export function MarkerRenderer({
 
       renderedIdsRef.current.add(marker.id);
     });
+
+    // Bring tokens to front of overlays (tokens are managed separately)
+    canvas.getObjects()
+      .filter((obj: any) => obj.tokenId)
+      .forEach((obj) => canvas.bringObjectToFront(obj));
 
     canvas.renderAll();
   }, [canvas, markers, aoeTemplates, fogRegions, isDM, onMarkerClick, onAoEClick]);

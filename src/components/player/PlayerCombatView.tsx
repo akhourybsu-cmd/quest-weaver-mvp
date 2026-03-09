@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CONDITION_TOOLTIPS } from "@/lib/conditionTooltips";
 import { PlayerCombatActions } from "./PlayerCombatActions";
 import { PlayerEffects } from "./PlayerEffects";
+import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerCombatViewProps {
   characterId: string;

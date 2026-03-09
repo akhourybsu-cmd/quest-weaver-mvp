@@ -34,8 +34,12 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchHoldings();
-    fetchCurrency();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchHoldings(), fetchCurrency()]);
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-inventory:${campaignId}`)

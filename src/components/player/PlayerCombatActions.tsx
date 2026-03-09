@@ -351,6 +351,7 @@ export function PlayerCombatActions({
   };
 
   const handleEndTurn = async () => {
+    setIsEndingTurn(true);
     try {
       const { error } = await supabase
         .from("player_turn_signals")
@@ -375,8 +376,17 @@ export function PlayerCombatActions({
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      // Don't reset here - let it stay disabled until turn changes
     }
   };
+
+  // Reset isEndingTurn when it's no longer the player's turn
+  useEffect(() => {
+    if (!isMyTurn) {
+      setIsEndingTurn(false);
+    }
+  }, [isMyTurn]);
 
   const ActionChip = ({ 
     used, 

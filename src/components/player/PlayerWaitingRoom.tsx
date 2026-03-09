@@ -168,7 +168,7 @@ export const PlayerWaitingRoom = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'campaigns',
-          filter: `id=eq.${campaign.id}`,
+          filter: `id=eq.${campaignToCheck}`,
         },
         (payload) => {
           if (payload.new.live_session_id) {
@@ -180,26 +180,6 @@ export const PlayerWaitingRoom = () => {
       .subscribe();
 
     channelRef.current = channel;
-  };
-
-  const checkForLiveSession = async (campId: string) => {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('live_session_id')
-      .eq('id', campId)
-      .single();
-
-    if (error) {
-      console.error('Failed to check for live session:', error);
-      setChecking(false);
-      return;
-    }
-
-    if (data?.live_session_id) {
-      navigate(`/session/player?campaign=${campaignCode}`);
-    } else {
-      setChecking(false);
-    }
   };
 
   return (

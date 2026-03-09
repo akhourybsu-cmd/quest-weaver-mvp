@@ -411,10 +411,11 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
           </CardHeader>
           <CardContent>
             {features.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Zap className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No class features yet</p>
-              </div>
+              <PlayerEmptyState
+                icon={Zap}
+                title="No Class Features"
+                description="Class features will appear here as you level up."
+              />
             ) : (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">

@@ -121,6 +121,10 @@ export function SessionsTab({ campaignId, onStartSession }: SessionsTabProps) {
   };
 
   const handleStartSession = async (session: Session) => {
+    if (currentSession) {
+      toast.error("A session is already running. End it before starting a new one.");
+      return;
+    }
     setStartingSessionId(session.id);
     try {
       // Update session status to live

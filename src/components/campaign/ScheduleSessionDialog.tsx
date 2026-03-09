@@ -116,7 +116,7 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, sessionT
       } else {
         const { error } = await supabase
           .from("campaign_sessions")
-          .insert([sessionData]);
+          .insert([{ ...sessionData, campaign_id: campaignId, status: "scheduled" }]);
 
         if (error) throw error;
         toast.success("Session scheduled successfully");

@@ -130,15 +130,13 @@ export function SessionControl({ campaignId }: SessionControlProps) {
       // Check if session already exists
       const { data: campaign } = await supabase
         .from('campaigns')
-        .select('live_session_id, campaign_sessions(*)')
+        .select('live_session_id, campaign_sessions!campaigns_live_session_id_fkey(*)')
         .eq('id', campaignId)
         .single();
 
       // If live session exists, attach to it
       if (campaign?.live_session_id && campaign.campaign_sessions) {
-        const existingSession = Array.isArray(campaign.campaign_sessions)
-          ? campaign.campaign_sessions[0]
-          : campaign.campaign_sessions;
+        const existingSession = campaign.campaign_sessions;
 
         if (existingSession?.status !== 'ended') {
           setSession(existingSession as SessionData);

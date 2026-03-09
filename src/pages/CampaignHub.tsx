@@ -265,26 +265,20 @@ const CampaignHub = () => {
   const fetchLiveSession = async () => {
     if (!activeCampaign) return;
 
-    // First get the campaign to check live_session_id
+    // Single query using the FK join
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('live_session_id')
+      .select('live_session_id, campaign_sessions!campaigns_live_session_id_fkey(*)')
       .eq('id', activeCampaign.id)
       .single();
 
-    if (!campaign?.live_session_id) {
+    if (!campaign?.live_session_id || !campaign.campaign_sessions) {
       setLiveSession(null);
       return;
     }
 
-    // Then fetch the specific session by ID
-    const { data: session } = await supabase
-      .from('campaign_sessions')
-      .select('*')
-      .eq('id', campaign.live_session_id)
-      .single();
-
-    if (session && ['live', 'paused'].includes(session.status)) {
+    const session = campaign.campaign_sessions;
+    if (session && ['live', 'paused'].includes((session as any).status)) {
       setLiveSession(session);
     } else {
       setLiveSession(null);

@@ -194,23 +194,43 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
                 {spells.length}
               </Badge>
               {level !== '0' && spellSlots.find(s => s.spell_level === Number(level)) && (
-                <div className="flex gap-1 ml-auto">
-                  {Array.from({ 
-                    length: spellSlots.find(s => s.spell_level === Number(level))!.max_slots 
-                  }).map((_, i) => {
-                    const slot = spellSlots.find(s => s.spell_level === Number(level))!;
-                    return (
-                      <div
-                        key={i}
-                        className={`w-2 h-2 rounded-full ${
-                          i < slot.max_slots - slot.used_slots
-                            ? 'bg-primary'
-                            : 'bg-muted-foreground/30'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <div className="flex gap-1">
+                          {Array.from({ 
+                            length: spellSlots.find(s => s.spell_level === Number(level))!.max_slots 
+                          }).map((_, i) => {
+                            const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                            return (
+                              <div
+                                key={i}
+                                className={`w-2.5 h-2.5 rounded-full border transition-colors ${
+                                  i < slot.max_slots - slot.used_slots
+                                    ? 'bg-primary border-primary'
+                                    : 'bg-muted border-muted-foreground/30'
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <Badge variant="outline" className="text-xs px-1.5 py-0">
+                          {(() => {
+                            const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                            return `${slot.max_slots - slot.used_slots}/${slot.max_slots}`;
+                          })()}
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {(() => {
+                        const slot = spellSlots.find(s => s.spell_level === Number(level))!;
+                        return `${slot.max_slots - slot.used_slots} of ${slot.max_slots} spell slots available`;
+                      })()}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             <div className="grid gap-2">

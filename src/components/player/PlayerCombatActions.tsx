@@ -70,6 +70,7 @@ export function PlayerCombatActions({
   const [showMountDialog, setShowMountDialog] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [availableMounts, setAvailableMounts] = useState<any[]>([]);
+  const [isEndingTurn, setIsEndingTurn] = useState(false);
   const { toast } = useToast();
   
   const mountedStatus = useMountedStatus(encounterId, characterId, 'character');

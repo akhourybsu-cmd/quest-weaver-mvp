@@ -835,7 +835,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {features.filter(f => f.source === 'Subclass').map((feature) => (
                     <div 
                       key={feature.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-purple-500/5 border border-purple-500/20 cursor-pointer hover:bg-purple-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-secondary/5 border border-secondary/20 cursor-pointer hover:bg-secondary/10 transition-colors"
                       onClick={() => setSelectedFeature(feature)}
                     >
                       <span className="text-sm font-medium">{feature.name}</span>

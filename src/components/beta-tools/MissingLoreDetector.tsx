@@ -188,7 +188,7 @@ export function MissingLoreDetector() {
       {report && (
         <div className="space-y-5">
           {/* Summary */}
-          <Card className="border-border bg-card p-5">
+          <Card className="border-brand-brass/30 bg-card p-5 fantasy-section overflow-hidden relative">
             <h3 className="font-cinzel font-bold text-lg text-foreground mb-2">Campaign Analysis</h3>
             <p className="text-sm text-foreground">{report.summary}</p>
 

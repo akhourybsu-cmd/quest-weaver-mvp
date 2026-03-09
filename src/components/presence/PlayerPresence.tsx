@@ -69,18 +69,32 @@ const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: Player
   }, [campaignId, currentUserId]);
 
   const toggleRaiseHand = async () => {
-    const { data: myPresence } = await supabase
-      .from("player_presence")
-      .select("id")
-      .eq("campaign_id", campaignId)
-      .eq("user_id", currentUserId)
-      .single();
-
-    if (myPresence) {
+    try {
+      const newRulingState = !needsRuling;
+      
       await supabase
         .from("player_presence")
-        .update({ needs_ruling: !needsRuling })
-        .eq("id", myPresence.id);
+        .upsert({
+          campaign_id: campaignId,
+          user_id: currentUserId,
+          character_id: characterId || null,
+          needs_ruling: newRulingState,
+          is_online: false, // Not necessarily online, just raising hand
+        }, { 
+          onConflict: 'campaign_id,user_id',
+          ignoreDuplicates: false
+        });
+
+      toast({
+        title: newRulingState ? "Hand Raised" : "Hand Lowered",
+        description: newRulingState ? "DM will be notified" : "Request cancelled"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update ruling request",
+        variant: "destructive"
+      });
     }
   };
 

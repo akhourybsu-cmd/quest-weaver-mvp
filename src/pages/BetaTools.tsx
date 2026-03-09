@@ -233,7 +233,7 @@ const BetaTools = () => {
               return (
                 <Card
                   key={cat.id}
-                  className={`border-border/50 bg-card/30 transition-all duration-200 ${firstActiveTool ? 'cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.02]' : ''}`}
+                  className={`border-brand-brass/20 bg-card/30 transition-all duration-200 ${firstActiveTool ? 'cursor-pointer hover:border-brand-brass/40 hover:shadow-lg hover:shadow-brand-brass/5 hover:scale-[1.02] card-glow' : ''}`}
                   onClick={() => firstActiveTool && navigate(`/beta-tools/generate/${firstActiveTool.id}`)}
                 >
                   <div className="p-4 space-y-2">

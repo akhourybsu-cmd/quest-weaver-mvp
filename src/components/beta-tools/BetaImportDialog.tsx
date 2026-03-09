@@ -169,7 +169,7 @@ export function BetaImportDialog({ open, onOpenChange, asset, onImported }: Beta
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md fantasy-border-ornaments">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-cinzel">
             <Upload className="h-5 w-5 text-brand-brass" />

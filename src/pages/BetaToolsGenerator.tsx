@@ -55,14 +55,14 @@ const BetaToolsGenerator = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="space-y-2">
+        <div className="space-y-2 pb-4 border-b-2 border-brand-brass/30">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-primary/10">
+            <div className="p-3 rounded-lg bg-brand-brass/10 border border-brand-brass/20">
               <tool.icon className="h-7 w-7 text-brand-brass" />
             </div>
             <div>
               <h1 className="font-cinzel text-2xl font-bold text-foreground">{tool.name}</h1>
-              <p className="text-sm text-muted-foreground">{tool.description}</p>
+              <p className="text-sm text-foreground/60">{tool.description}</p>
             </div>
           </div>
         </div>

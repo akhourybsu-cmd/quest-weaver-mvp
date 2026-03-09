@@ -133,7 +133,7 @@ function FieldDisplay({ label, value }: { label: string; value: any }) {
   return (
     <div className="space-y-1 group/field relative">
       <div className="flex items-center gap-1.5">
-        <Label className="text-xs text-muted-foreground capitalize">{label.replace(/_/g, ' ')}</Label>
+        <Label className="text-xs text-foreground/60 capitalize font-medium">{label.replace(/_/g, ' ')}</Label>
         <CopyFieldButton text={plainText} />
       </div>
       {isMultiline ? (

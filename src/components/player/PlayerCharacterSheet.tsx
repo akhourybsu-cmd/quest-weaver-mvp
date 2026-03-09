@@ -951,7 +951,17 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             <div className="grid grid-cols-2 gap-2 text-muted-foreground">
               <div><strong>Casting Time:</strong> {selectedSpell?.casting_time}</div>
               <div><strong>Range:</strong> {selectedSpell?.range}</div>
-              <div><strong>Components:</strong> {selectedSpell?.components?.join(', ')}</div>
+              <div><strong>Components:</strong> {
+                Array.isArray(selectedSpell?.components)
+                  ? selectedSpell.components.join(', ')
+                  : typeof selectedSpell?.components === 'object' && selectedSpell?.components
+                    ? [
+                        (selectedSpell.components as any).verbal && 'V',
+                        (selectedSpell.components as any).somatic && 'S',
+                        (selectedSpell.components as any).material && 'M',
+                      ].filter(Boolean).join(', ')
+                    : ''
+              }</div>
               <div><strong>Duration:</strong> {selectedSpell?.duration}</div>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border border-border/50">

@@ -603,9 +603,16 @@ const MapViewer = ({
     }
   }, [fabricCanvas, activeTool, drawColor, drawStrokeWidth]);
 
-  // Update cursor based on tool
+  // Update cursor based on active tool and fog tool
   useEffect(() => {
     if (!fabricCanvas || !fabricCanvas.upperCanvasEl) return;
+
+    // Fog tool overrides activeTool cursor
+    if (fogTool && isDM) {
+      fabricCanvas.setCursor(fogTool === "hide" ? "cell" : "copy");
+      fabricCanvas.selection = false;
+      return;
+    }
 
     switch (activeTool) {
       case "pan":
@@ -628,7 +635,7 @@ const MapViewer = ({
         fabricCanvas.setCursor("crosshair");
         fabricCanvas.selection = false;
     }
-  }, [fabricCanvas, activeTool, isDM]);
+  }, [fabricCanvas, activeTool, isDM, fogTool]);
 
   // Load map image (with caching)
   useEffect(() => {

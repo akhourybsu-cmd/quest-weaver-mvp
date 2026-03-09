@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Canvas as FabricCanvas, Circle, Rect, Line as FabricLine, IText, Image as FabricImage, Text, PencilBrush } from "fabric";
+import { Canvas as FabricCanvas, Circle, Rect, Line as FabricLine, IText, Image as FabricImage, Text, PencilBrush, Polygon } from "fabric";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

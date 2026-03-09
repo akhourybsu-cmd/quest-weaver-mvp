@@ -94,9 +94,9 @@ function formatValue(value: any): string {
 
 function StatBox({ label, value }: { label: string; value: any }) {
   return (
-    <div className="text-center p-2 rounded-md bg-muted border border-border">
-      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
-      <div className="text-sm font-bold text-foreground mt-0.5">{String(value)}</div>
+    <div className="text-center p-2.5 rounded-md bg-card border border-brand-brass/30 shadow-sm">
+      <div className="text-[10px] text-foreground/60 uppercase tracking-widest font-cinzel">{label}</div>
+      <div className="text-base font-bold text-foreground mt-0.5">{String(value)}</div>
     </div>
   );
 }

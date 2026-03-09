@@ -408,7 +408,68 @@ const MapViewer = ({
         }
 
         default:
+          // Handle fog tool clicks
+          if (fogTool && isDM) {
+            const points = fogPointsRef.current;
+            points.push({ x: pointer.x, y: pointer.y });
+
+            // Update preview polygon on canvas
+            if (fogPreviewRef.current) {
+              fabricCanvas.remove(fogPreviewRef.current);
+            }
+            if (points.length >= 2) {
+              const preview = new Polygon(
+                points.map(p => ({ x: p.x, y: p.y })),
+                {
+                  fill: fogTool === "hide" ? "rgba(0,0,0,0.5)" : "rgba(255,255,0,0.3)",
+                  stroke: "#ffdd44",
+                  strokeWidth: 2,
+                  strokeDashArray: [6, 4],
+                  selectable: false,
+                  evented: false,
+                }
+              );
+              (preview as any).isFogPreview = true;
+              fogPreviewRef.current = preview;
+              fabricCanvas.add(preview);
+              fabricCanvas.renderAll();
+            }
+          }
           break;
+      }
+    };
+
+    // Double-click to finish fog polygon
+    const handleDblClick = async (opt: any) => {
+      if (!fogTool || !isDM) return;
+      const points = fogPointsRef.current;
+      if (points.length < 3) {
+        fogPointsRef.current = [];
+        if (fogPreviewRef.current) {
+          fabricCanvas.remove(fogPreviewRef.current);
+          fogPreviewRef.current = null;
+          fabricCanvas.renderAll();
+        }
+        return;
+      }
+
+      // Save to DB
+      const { error } = await supabase.from("fog_regions").insert({
+        map_id: mapId,
+        path: points,
+        is_hidden: fogTool === "hide",
+      });
+
+      if (!error) {
+        toast({ title: fogTool === "hide" ? "Fog region created" : "Revealed region created" });
+      }
+
+      // Clean up
+      fogPointsRef.current = [];
+      if (fogPreviewRef.current) {
+        fabricCanvas.remove(fogPreviewRef.current);
+        fogPreviewRef.current = null;
+        fabricCanvas.renderAll();
       }
     };
 

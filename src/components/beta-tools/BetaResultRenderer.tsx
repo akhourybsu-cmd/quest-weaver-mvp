@@ -251,7 +251,7 @@ function renderGroupedFields(
   if (remaining.length > 0) {
     elements.push(
       <div key="__remaining" className="space-y-2">
-        <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-muted-foreground">Other Details</span>
+        <span className="text-xs font-cinzel font-semibold uppercase tracking-wider text-foreground/80 pl-2 border-l-2 border-l-brand-brass/50">Other Details</span>
         <Separator className="bg-border" />
         <div className="grid gap-2.5">
           {remaining.map(([k, v]) => <FieldDisplay key={k} label={k} value={v} />)}

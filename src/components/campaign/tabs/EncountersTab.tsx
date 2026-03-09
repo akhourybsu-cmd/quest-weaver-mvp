@@ -58,41 +58,65 @@ export function EncountersTab({ campaignId, liveSessionId, onLaunchEncounter }: 
     };
   }, [campaignId]);
 
-  const fetchEncounters = async () => {
+  const fetchEncounters = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isRefresh) setLoading(true);
       
-      // Fetch encounters with monster count
-      const { data: encounterData, error: encounterError } = await supabase
-        .from("encounters")
-        .select("*")
-        .eq("campaign_id", campaignId)
-        .order("created_at", { ascending: false });
+      // Fetch encounters with monster counts and session assignments in parallel
+      const [encounterResult, monsterCountsResult, sessionAssignmentsResult] = await Promise.all([
+        supabase
+          .from("encounters")
+          .select("*")
+          .eq("campaign_id", campaignId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("encounter_monsters")
+          .select("encounter_id")
+          .in("encounter_id", []), // placeholder, filled below
+        supabase
+          .from("session_encounters")
+          .select("encounter_id, session_id"),
+      ]);
 
-      if (encounterError) throw encounterError;
+      if (encounterResult.error) throw encounterResult.error;
+      const encounterData = encounterResult.data || [];
 
-      // Fetch monster counts for each encounter
-      const encountersWithCounts = await Promise.all(
-        (encounterData || []).map(async (encounter) => {
-          const { count } = await supabase
-            .from("encounter_monsters")
-            .select("*", { count: "exact", head: true })
-            .eq("encounter_id", encounter.id);
+      if (encounterData.length === 0) {
+        setEncounters([]);
+        return;
+      }
 
-          // Check if assigned to any session
-          const { data: sessionData } = await supabase
-            .from("session_encounters")
-            .select("session_id")
-            .eq("encounter_id", encounter.id)
-            .maybeSingle();
+      const encounterIds = encounterData.map(e => e.id);
 
-          return {
-            ...encounter,
-            monster_count: count || 0,
-            assigned_session: sessionData ? `Session ${sessionData.session_id.substring(0, 8)}` : null,
-          };
-        })
-      );
+      // Batch fetch monster counts and session assignments
+      const [monsterRes, sessionRes] = await Promise.all([
+        supabase
+          .from("encounter_monsters")
+          .select("encounter_id")
+          .in("encounter_id", encounterIds),
+        supabase
+          .from("session_encounters")
+          .select("encounter_id, session_id")
+          .in("encounter_id", encounterIds),
+      ]);
+
+      // Aggregate monster counts
+      const monsterCounts: Record<string, number> = {};
+      (monsterRes.data || []).forEach((m: any) => {
+        monsterCounts[m.encounter_id] = (monsterCounts[m.encounter_id] || 0) + 1;
+      });
+
+      // Build session assignment map
+      const sessionMap: Record<string, string> = {};
+      (sessionRes.data || []).forEach((s: any) => {
+        sessionMap[s.encounter_id] = `Session ${s.session_id.substring(0, 8)}`;
+      });
+
+      const encountersWithCounts = encounterData.map(encounter => ({
+        ...encounter,
+        monster_count: monsterCounts[encounter.id] || 0,
+        assigned_session: sessionMap[encounter.id] || null,
+      }));
 
       setEncounters(encountersWithCounts);
     } catch (error: any) {

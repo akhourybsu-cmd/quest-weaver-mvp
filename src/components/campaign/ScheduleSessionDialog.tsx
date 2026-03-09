@@ -98,13 +98,11 @@ export function ScheduleSessionDialog({ open, onOpenChange, campaignId, sessionT
       scheduledDateTime.setHours(hours, minutes, 0, 0);
 
       const sessionData = {
-        campaign_id: campaignId,
-        status: "scheduled",
         started_at: scheduledDateTime.toISOString(),
         session_notes: description || null,
         name: sessionName.trim() || null,
         goals: goals.trim() || null,
-        prep_checklist: prepChecklist.length > 0 ? JSON.stringify(prepChecklist) : '[]',
+        prep_checklist: prepChecklist as unknown as Record<string, unknown>[],
       };
 
       if (isEditing && sessionToEdit) {

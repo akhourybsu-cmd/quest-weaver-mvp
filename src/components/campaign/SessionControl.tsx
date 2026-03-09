@@ -35,14 +35,12 @@ export function SessionControl({ campaignId }: SessionControlProps) {
     const fetchActiveSession = async () => {
       const { data: campaign } = await supabase
         .from('campaigns')
-        .select('live_session_id, campaign_sessions(*)')
+        .select('live_session_id, campaign_sessions!campaigns_live_session_id_fkey(*)')
         .eq('id', campaignId)
         .single();
 
       if (campaign?.live_session_id && campaign.campaign_sessions) {
-        const sessionData = Array.isArray(campaign.campaign_sessions) 
-          ? campaign.campaign_sessions[0] 
-          : campaign.campaign_sessions;
+        const sessionData = campaign.campaign_sessions;
         
         if (sessionData?.status !== 'ended') {
           setSession(sessionData as SessionData);

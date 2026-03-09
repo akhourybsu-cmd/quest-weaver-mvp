@@ -36,7 +36,12 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchQuests();
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchQuests();
+      setIsLoading(false);
+    };
+    loadData();
 
     const channel = supabase
       .channel(`player-quests:${campaignId}`)

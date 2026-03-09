@@ -155,9 +155,9 @@ const SavePromptListener = ({ characterId, character, campaignId }: SavePromptLi
     }, 1000);
   };
 
-  const unrespondedPrompts = savePrompts.filter(p => !respondedPrompts.has(p.id));
+  const visiblePrompts = savePrompts.filter(p => !respondedPrompts.has(p.id));
 
-  if (unrespondedPrompts.length === 0) return null;
+  if (visiblePrompts.length === 0) return null;
 
   return (
     <Card className="shadow-md border-status-warning">

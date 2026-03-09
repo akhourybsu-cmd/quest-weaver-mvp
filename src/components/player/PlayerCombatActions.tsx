@@ -509,10 +509,11 @@ export function PlayerCombatActions({
           <Button
             onClick={() => setShowEndTurnDialog(true)}
             className="w-full min-h-[44px]"
-            size="lg"
+            variant="default"
+            disabled={isEndingTurn}
           >
             <SkipForward className="w-4 h-4 mr-2" />
-            End My Turn
+            {isEndingTurn ? "Turn Ended..." : "End Turn"}
           </Button>
         </CardContent>
       </Card>

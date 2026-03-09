@@ -346,29 +346,29 @@ export function PlayerCombatView({
                     <Badge variant="outline" className="text-xs mb-2">
                       Showing last 20 actions
                     </Badge>
-                  combatLog.map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="text-sm border-b border-brand-brass/10 pb-2 animate-fade-in flex items-start gap-2"
-                      style={{ animationDelay: `${index * 40}ms` }}
-                    >
-                      {getActionIcon(entry.action_type)}
-                      <div className="min-w-0">
-                        {entry.action_type === 'round_start' ? (
-                          <Badge variant="outline" className="text-[10px] border-brand-brass/30 text-brand-brass font-cinzel">
-                            Round {entry.round}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px] mr-1">R{entry.round}</span>
-                        )}
-                        {entry.action_type !== 'round_start' && (
-                          <span className={getActionColor(entry.action_type)}>
-                            {entry.message}
-                          </span>
-                        )}
+                    {combatLog.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="text-sm border-b border-brand-brass/10 pb-2 animate-fade-in flex items-start gap-2"
+                        style={{ animationDelay: `${index * 40}ms` }}
+                      >
+                        {getActionIcon(entry.action_type)}
+                        <div className="min-w-0">
+                          {entry.action_type === 'round_start' ? (
+                            <Badge variant="outline" className="text-[10px] border-brand-brass/30 text-brand-brass font-cinzel">
+                              Round {entry.round}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px] mr-1">R{entry.round}</span>
+                          )}
+                          {entry.action_type !== 'round_start' && (
+                            <span className={getActionColor(entry.action_type)}>
+                              {entry.message}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
                   </>
                 )}
               </div>

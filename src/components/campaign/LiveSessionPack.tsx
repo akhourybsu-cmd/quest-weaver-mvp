@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,11 +63,18 @@ export function LiveSessionPack({ sessionId, campaignId }: LiveSessionPackProps)
   const [loading, setLoading] = useState(true);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
+  // Debounced reload to coalesce rapid realtime events
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => loadCards(), 300);
+  }, []);
+
   useEffect(() => {
     loadCards();
 
-    // Real-time subscriptions
-    const channels = [
+    // Single realtime channel with multiple table listeners
+    const tables = [
       "session_quests",
       "session_encounters",
       "session_npcs",
@@ -75,24 +82,28 @@ export function LiveSessionPack({ sessionId, campaignId }: LiveSessionPackProps)
       "session_locations",
       "session_items",
       "session_pack_notes",
-    ].map((table) =>
-      supabase
-        .channel(`${table}:${sessionId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: table,
-            filter: `session_id=eq.${sessionId}`,
-          },
-          () => loadCards()
-        )
-        .subscribe()
-    );
+    ];
+
+    const channel = supabase.channel(`session-pack:${sessionId}`);
+    
+    tables.forEach((table) => {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: table,
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => debouncedReload()
+      );
+    });
+
+    channel.subscribe();
 
     return () => {
-      channels.forEach((channel) => supabase.removeChannel(channel));
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+      supabase.removeChannel(channel);
     };
   }, [sessionId]);
 

@@ -34,6 +34,7 @@ interface SavePromptListenerProps {
 const SavePromptListener = ({ characterId, character, campaignId }: SavePromptListenerProps) => {
   const [savePrompts, setSavePrompts] = useState<SavePrompt[]>([]);
   const [respondedPrompts, setRespondedPrompts] = useState<Set<string>>(new Set());
+  const [exitingPrompts, setExitingPrompts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {

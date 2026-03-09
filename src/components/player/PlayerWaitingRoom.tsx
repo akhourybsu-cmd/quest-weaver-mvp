@@ -213,22 +213,23 @@ export const PlayerWaitingRoom = () => {
                   Back to Dashboard
                 </Button>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     if (campaignId && campaignCode) {
                       setChecking(true);
-                      supabase
-                        .from('campaigns')
-                        .select('live_session_id')
-                        .eq('id', campaignId)
-                        .single()
-                        .then(({ data }) => {
-                          if (data?.live_session_id) {
-                            navigate(`/session/player?campaign=${campaignCode}`);
-                          } else {
-                            setChecking(false);
-                          }
-                        })
-                        .catch(() => setChecking(false));
+                      try {
+                        const { data } = await supabase
+                          .from('campaigns')
+                          .select('live_session_id')
+                          .eq('id', campaignId)
+                          .single();
+                        if (data?.live_session_id) {
+                          navigate(`/session/player?campaign=${campaignCode}`);
+                        } else {
+                          setChecking(false);
+                        }
+                      } catch {
+                        setChecking(false);
+                      }
                     }
                   }}
                   disabled={checking}

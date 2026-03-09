@@ -62,6 +62,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
   const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [characterData, setCharacterData] = useState<{ name: string; class: string; level: number; can_cast_rituals: boolean; mystic_arcanum_6_used: boolean; mystic_arcanum_7_used: boolean; mystic_arcanum_8_used: boolean; mystic_arcanum_9_used: boolean } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Load character data if not provided via props
   useEffect(() => {

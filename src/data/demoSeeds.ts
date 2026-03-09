@@ -18,6 +18,19 @@ import factionShadowCult from "@/assets/demo/faction-shadow-cult.png";
 import factionThieves from "@/assets/demo/faction-thieves.png";
 import factionSilverShield from "@/assets/demo/faction-silver-shield.png";
 
+export interface DemoPartyMember {
+  id: string;
+  name: string;
+  race: string;
+  class: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  ac: number;
+  playerName: string;
+  portraitInitials: string;
+}
+
 export interface DemoCampaign {
   id: string;
   name: string;
@@ -34,6 +47,7 @@ export interface DemoCampaign {
   notes: DemoNote[];
   lore: DemoLorePage[];
   encounters: DemoEncounter[];
+  party: DemoPartyMember[];
 }
 
 export interface DemoLorePage {

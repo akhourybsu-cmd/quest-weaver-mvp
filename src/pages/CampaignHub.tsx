@@ -180,17 +180,12 @@ const CampaignHub = () => {
     fetchCampaigns();
   }, []);
 
-  // Live session check when campaign changes
-  useEffect(() => {
-    if (activeCampaign) {
-      fetchLiveSession();
-    }
-  }, [activeCampaign]);
-
+  // Fetch campaign-specific data and subscribe to realtime when campaign changes
   useEffect(() => {
     if (!activeCampaign) return;
 
-    // Fetch initial player data and session count
+    // Fetch all campaign-specific data in parallel
+    fetchLiveSession();
     fetchPlayerData();
     fetchSessionCount();
 
@@ -230,7 +225,7 @@ const CampaignHub = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeCampaign]);
+  }, [activeCampaign?.id]);
 
   const fetchPlayerData = async () => {
     if (!activeCampaign) return;

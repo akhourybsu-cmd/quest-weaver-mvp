@@ -36,7 +36,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
   const [sending, setSending] = useState(false);
   const [senderName, setSenderName] = useState('');
   const [isAnnouncement, setIsAnnouncement] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchSenderName();

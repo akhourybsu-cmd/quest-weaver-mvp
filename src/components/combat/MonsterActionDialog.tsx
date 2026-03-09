@@ -16,9 +16,10 @@ interface MonsterActionDialogProps {
   monster: any;
   encounterId: string;
   targets: Array<{ id: string; name: string; ac: number }>;
+  currentRound?: number;
 }
 
-const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets }: MonsterActionDialogProps) => {
+const MonsterActionDialog = ({ open, onOpenChange, monster, encounterId, targets, currentRound = 1 }: MonsterActionDialogProps) => {
   const [selectedAction, setSelectedAction] = useState<any>(null);
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
   const [attackRoll, setAttackRoll] = useState<string>("");

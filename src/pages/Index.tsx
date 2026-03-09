@@ -313,16 +313,43 @@ const Index = ({ session }: IndexProps) => {
                 <Play className="w-4 h-4 mr-2" />
                 Try Demo
               </Button>
-              <Button
-                onClick={() => {
-                  handleStartSession();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full mt-2"
-              >
-                {isAuthenticated ? "Go to Dashboard" : "Get Started"}
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigate("/player-hub");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Player Hub
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      navigate("/campaign-hub");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2"
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Campaign Hub
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => {
+                    handleStartSession();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full mt-2"
+                >
+                  Get Started
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
             </div>
           </div>
         )}

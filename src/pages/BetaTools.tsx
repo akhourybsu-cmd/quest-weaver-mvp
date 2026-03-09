@@ -101,7 +101,7 @@ const BetaTools = () => {
                   key={q.toolId}
                   variant="outline"
                   size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground text-xs transition-all duration-200"
+                  className="border-brand-brass/20 text-foreground/60 hover:bg-muted hover:text-foreground text-xs transition-all duration-200"
                   onClick={() => navigate(`/beta-tools/generate/${q.toolId}`)}
                 >
                   <q.icon className="h-3.5 w-3.5 mr-1.5" />

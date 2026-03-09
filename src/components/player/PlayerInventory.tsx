@@ -192,14 +192,11 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
 
   if (holdings.length === 0 && !isLoading) {
     return (
-      <>
-        <PlayerEmptyState
-          icon={Backpack}
-          title="No Items Yet"
-          description="Your inventory is empty. Items will appear here when your DM awards them or you acquire them during your adventures."
-        />
-        <AttunementManager characterId={characterId} />
-      </>
+      <PlayerEmptyState
+        icon={Backpack}
+        title="No Items Yet"
+        description="Your inventory is empty. Items will appear here when your DM awards them or you acquire them during your adventures."
+      />
     );
   }
 

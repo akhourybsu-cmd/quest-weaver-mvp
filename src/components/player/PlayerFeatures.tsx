@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PlayerEmptyState } from "./PlayerEmptyState";
 import { Zap, Award, Dna, Sparkles, Target, MapPin, Swords } from "lucide-react";
 import {
   Dialog,
@@ -59,6 +61,7 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   const [selectedFeat, setSelectedFeat] = useState<Feat | null>(null);
   const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
   const [traitSource, setTraitSource] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchAllData();
@@ -93,12 +96,14 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   }, [characterId]);
 
   const fetchAllData = async () => {
+    setIsLoading(true);
     await Promise.all([
       fetchFeatures(),
       fetchFeats(),
       fetchAncestryTraits(),
       fetchFeatureChoices(),
     ]);
+    setIsLoading(false);
   };
 
   const fetchFeatureChoices = async () => {
@@ -250,6 +255,47 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
     return <Sparkles className="w-4 h-4" />;
   };
 
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-24" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -365,10 +411,11 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
           </CardHeader>
           <CardContent>
             {features.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Zap className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No class features yet</p>
-              </div>
+              <PlayerEmptyState
+                icon={Zap}
+                title="No Class Features"
+                description="Class features will appear here as you level up."
+              />
             ) : (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-4">
@@ -428,11 +475,11 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
           </CardHeader>
           <CardContent>
             {feats.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No feats chosen yet</p>
-                <p className="text-xs mt-1">Feats are typically gained at levels 4, 8, 12, 16, and 19</p>
-              </div>
+              <PlayerEmptyState
+                icon={Award}
+                title="No Feats Chosen"
+                description="Feats are typically gained at levels 4, 8, 12, 16, and 19."
+              />
             ) : (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-2">

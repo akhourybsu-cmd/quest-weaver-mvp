@@ -36,7 +36,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
   const [sending, setSending] = useState(false);
   const [senderName, setSenderName] = useState('');
   const [isAnnouncement, setIsAnnouncement] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchSenderName();
@@ -118,9 +118,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -181,7 +179,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-3 min-h-0">
-        <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 pr-4">
           <div className="space-y-3">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
@@ -240,6 +238,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
                 </div>
               ))
             )}
+            <div ref={bottomRef} />
           </div>
         </ScrollArea>
 

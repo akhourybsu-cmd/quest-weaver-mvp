@@ -153,28 +153,6 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [selectedTrait, setSelectedTrait] = useState<AncestryTrait | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
-  useEffect(() => {
-    fetchAllData();
-
-    const channel = supabase
-      .channel(`char-sheet:${characterId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'characters', filter: `id=eq.${characterId}` },
-        () => fetchCharacter()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'character_spell_slots', filter: `character_id=eq.${characterId}` },
-        () => fetchSpellSlots()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [characterId]);
-
   const fetchAllData = async () => {
     await Promise.all([
       fetchCharacter(),
@@ -189,6 +167,37 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       fetchSaveProficiencies(),
     ]);
   };
+
+  useEffect(() => {
+    // Track if this effect instance is still active to prevent race conditions
+    let isActive = true;
+
+    const loadData = async () => {
+      await fetchAllData();
+      // No need to check isActive here since individual fetches set state independently
+    };
+
+    loadData();
+
+    const channel = supabase
+      .channel(`char-sheet:${characterId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'characters', filter: `id=eq.${characterId}` },
+        () => { if (isActive) fetchCharacter(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'character_spell_slots', filter: `character_id=eq.${characterId}` },
+        () => { if (isActive) fetchSpellSlots(); }
+      )
+      .subscribe();
+
+    return () => {
+      isActive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [characterId]);
 
   const fetchCharacter = async () => {
     const { data } = await supabase

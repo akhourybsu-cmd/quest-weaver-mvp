@@ -154,6 +154,23 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const [showLevelUp, setShowLevelUp] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllData = async () => {
+      await Promise.all([
+        fetchCharacter(isMounted),
+        fetchAbilities(isMounted),
+        fetchSkills(isMounted),
+        fetchSpellSlots(isMounted),
+        fetchProficiencies(isMounted),
+        fetchLanguages(isMounted),
+        fetchSpells(isMounted),
+        fetchFeatures(isMounted),
+        fetchResources(isMounted),
+        fetchSaveProficiencies(isMounted),
+      ]);
+    };
+
     fetchAllData();
 
     const channel = supabase
@@ -161,34 +178,20 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'characters', filter: `id=eq.${characterId}` },
-        () => fetchCharacter()
+        () => fetchCharacter(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'character_spell_slots', filter: `character_id=eq.${characterId}` },
-        () => fetchSpellSlots()
+        () => fetchSpellSlots(true)
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, [characterId]);
-
-  const fetchAllData = async () => {
-    await Promise.all([
-      fetchCharacter(),
-      fetchAbilities(),
-      fetchSkills(),
-      fetchSpellSlots(),
-      fetchProficiencies(),
-      fetchLanguages(),
-      fetchSpells(),
-      fetchFeatures(),
-      fetchResources(),
-      fetchSaveProficiencies(),
-    ]);
-  };
 
   const fetchCharacter = async () => {
     const { data } = await supabase

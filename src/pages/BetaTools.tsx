@@ -137,7 +137,7 @@ const BetaTools = () => {
         </div>
 
         {/* Sandbox Banner */}
-        <div className="flex items-start gap-3 p-4 rounded-lg border border-border border-l-4 border-l-primary bg-muted/30">
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-brand-brass/20 border-l-4 border-l-brand-brass bg-card/50">
           <Info className="h-5 w-5 text-brand-brass shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
             <span className="text-foreground font-semibold">Sandbox Mode</span> — Everything

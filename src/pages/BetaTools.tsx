@@ -58,9 +58,9 @@ const BetaTools = () => {
     <BetaToolsLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Hero */}
-        <div className="relative rounded-xl border border-border bg-gradient-to-b from-brand-obsidian to-card overflow-hidden">
+        <div className="relative rounded-xl border-2 border-brand-brass/30 overflow-hidden fantasy-parchment">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-brand-brass/5 rounded-full blur-3xl" />
           </div>
 
           <div className="relative text-center space-y-5 py-10 px-6">
@@ -87,7 +87,7 @@ const BetaTools = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+                className="border-brand-brass/30 text-foreground/70 hover:text-foreground hover:bg-muted transition-all duration-200"
                 onClick={() => navigate("/beta-tools/library")}
               >
                 <Library className="h-5 w-5 mr-2" />
@@ -101,7 +101,7 @@ const BetaTools = () => {
                   key={q.toolId}
                   variant="outline"
                   size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground text-xs transition-all duration-200"
+                  className="border-brand-brass/20 text-foreground/60 hover:bg-muted hover:text-foreground text-xs transition-all duration-200"
                   onClick={() => navigate(`/beta-tools/generate/${q.toolId}`)}
                 >
                   <q.icon className="h-3.5 w-3.5 mr-1.5" />
@@ -137,7 +137,7 @@ const BetaTools = () => {
         </div>
 
         {/* Sandbox Banner */}
-        <div className="flex items-start gap-3 p-4 rounded-lg border border-border border-l-4 border-l-primary bg-muted/30">
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-brand-brass/20 border-l-4 border-l-brand-brass bg-card/50">
           <Info className="h-5 w-5 text-brand-brass shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
             <span className="text-foreground font-semibold">Sandbox Mode</span> — Everything
@@ -187,7 +187,7 @@ const BetaTools = () => {
             {HERO_TOOLS.map((tool) => (
               <Card
                 key={tool.id}
-                className="group cursor-pointer border-border hover:border-primary/30 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02]"
+                className="group cursor-pointer border-brand-brass/20 hover:border-brand-brass/40 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:shadow-xl hover:shadow-brand-brass/10 hover:scale-[1.02] card-glow"
                 onClick={() => navigate(`/beta-tools/generate/${tool.id}`)}
               >
                 <div className="p-5 space-y-3">
@@ -233,7 +233,7 @@ const BetaTools = () => {
               return (
                 <Card
                   key={cat.id}
-                  className={`border-border/50 bg-card/30 transition-all duration-200 ${firstActiveTool ? 'cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.02]' : ''}`}
+                  className={`border-brand-brass/20 bg-card/30 transition-all duration-200 ${firstActiveTool ? 'cursor-pointer hover:border-brand-brass/40 hover:shadow-lg hover:shadow-brand-brass/5 hover:scale-[1.02] card-glow' : ''}`}
                   onClick={() => firstActiveTool && navigate(`/beta-tools/generate/${firstActiveTool.id}`)}
                 >
                   <div className="p-4 space-y-2">

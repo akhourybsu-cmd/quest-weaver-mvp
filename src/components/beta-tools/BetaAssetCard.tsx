@@ -52,7 +52,7 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
   const truncatedDesc = typeof description === 'string' ? description.slice(0, 120) + (description.length > 120 ? '...' : '') : '';
 
   return (
-    <Card className="group border-border hover:border-secondary/30 transition-colors card-glow bg-card">
+    <Card className="group border-brand-brass/20 hover:border-brand-brass/40 transition-all card-glow bg-card relative fantasy-section overflow-hidden">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -93,7 +93,7 @@ export function BetaAssetCard({ asset, onEdit, onDuplicate, onDelete, onToggleFa
           <span className="text-[10px] text-muted-foreground">
             {formatDistanceToNow(new Date(asset.updated_at), { addSuffix: true })}
           </span>
-          <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon" className="h-7 w-7 focus-visible:ring-1 focus-visible:ring-ring" onClick={() => onEdit?.(asset)} title="Edit" aria-label="Edit asset">
               <Pencil className="h-3.5 w-3.5" />
             </Button>

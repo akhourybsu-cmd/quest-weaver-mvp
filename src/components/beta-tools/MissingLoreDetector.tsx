@@ -188,7 +188,7 @@ export function MissingLoreDetector() {
       {report && (
         <div className="space-y-5">
           {/* Summary */}
-          <Card className="border-border bg-card p-5">
+          <Card className="border-brand-brass/30 bg-card p-5 fantasy-section overflow-hidden relative">
             <h3 className="font-cinzel font-bold text-lg text-foreground mb-2">Campaign Analysis</h3>
             <p className="text-sm text-foreground">{report.summary}</p>
 
@@ -215,7 +215,7 @@ export function MissingLoreDetector() {
                   const sev = SEVERITY_CONFIG[gap.severity] || SEVERITY_CONFIG.minor;
                   const SevIcon = sev.icon;
                   return (
-                    <Card key={i} className="border-border bg-card p-3">
+                    <Card key={i} className="border-brand-brass/20 bg-card p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">

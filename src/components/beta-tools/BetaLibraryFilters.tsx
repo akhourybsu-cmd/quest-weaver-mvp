@@ -58,7 +58,7 @@ export function BetaLibraryFilters({
         <Toggle
           pressed={favoritesOnly}
           onPressedChange={onFavoritesOnlyChange}
-          className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+          className="data-[state=on]:bg-brand-brass/20 data-[state=on]:text-brand-brass data-[state=on]:border-brand-brass/40"
           aria-label="Show favorites only"
         >
           <Star className="h-4 w-4 mr-1" />

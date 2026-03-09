@@ -20,7 +20,7 @@ export function BetaToolsLayout({ children, title, showBackButton }: BetaToolsLa
       <div className="min-h-screen flex w-full bg-background">
         <BetaToolsSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-3 border-b border-border bg-brand-obsidian px-4 shrink-0">
+          <header className="h-14 flex items-center gap-3 border-b-2 border-b-brand-brass/40 bg-card px-4 shrink-0">
             <SidebarTrigger className="text-brand-brass" />
             {showBackButton && (
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">

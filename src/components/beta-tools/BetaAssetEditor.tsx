@@ -69,7 +69,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl h-[85vh] max-h-[700px] flex flex-col p-0">
+      <DialogContent className="sm:max-w-2xl h-[85vh] max-h-[700px] flex flex-col p-0 fantasy-border-ornaments">
         <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="font-cinzel">Edit Asset</DialogTitle>
         </DialogHeader>

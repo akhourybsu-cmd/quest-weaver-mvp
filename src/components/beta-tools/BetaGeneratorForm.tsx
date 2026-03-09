@@ -42,11 +42,11 @@ function GeneratingSkeleton() {
   }, []);
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="border-brand-brass/30 bg-card fantasy-section overflow-hidden relative">
       <div className="p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <Sparkles className="h-5 w-5 text-primary animate-spin" />
-          <span className="text-sm font-medium text-muted-foreground animate-pulse transition-all">
+          <Sparkles className="h-5 w-5 text-brand-brass animate-spin" />
+          <span className="text-sm font-cinzel font-medium text-foreground/70 animate-pulse transition-all">
             {GENERATING_MESSAGES[msgIdx]}
           </span>
         </div>

@@ -35,7 +35,7 @@ export function BetaToolsSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent className="bg-card overflow-y-auto">
+      <SidebarContent className="bg-card overflow-y-auto border-r border-brand-brass/20">
         {/* Top nav */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -89,7 +89,7 @@ export function BetaToolsSidebar() {
 
           return (
             <SidebarGroup key={cat.id} className="pt-2">
-              <SidebarGroupLabel className="text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border/50 pb-1 mb-1">
+              <SidebarGroupLabel className="text-foreground/70 uppercase text-[10px] tracking-wider font-cinzel border-b border-brand-brass/20 pb-1 mb-1">
                 {!collapsed && cat.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>

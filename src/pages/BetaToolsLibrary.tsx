@@ -122,7 +122,7 @@ const BetaToolsLibrary = () => {
   return (
     <BetaToolsLayout title="My Library">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pb-3 border-b-2 border-brand-brass/30">
           <h1 className="font-cinzel text-2xl font-bold text-foreground">Beta Library</h1>
           <Button
             className="bg-primary hover:bg-primary/90 text-primary-foreground"

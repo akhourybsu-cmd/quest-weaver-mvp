@@ -475,11 +475,11 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
           </CardHeader>
           <CardContent>
             {feats.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No feats chosen yet</p>
-                <p className="text-xs mt-1">Feats are typically gained at levels 4, 8, 12, 16, and 19</p>
-              </div>
+              <PlayerEmptyState
+                icon={Award}
+                title="No Feats Chosen"
+                description="Feats are typically gained at levels 4, 8, 12, 16, and 19."
+              />
             ) : (
               <ScrollArea className="h-[400px] pr-4">
                 <div className="space-y-2">

@@ -40,7 +40,7 @@ const CombatLog = ({ encounterId }: CombatLogProps) => {
     fetchLog();
 
     const channel = supabase
-      .channel('combat-log-changes')
+      .channel(`combat-log:${encounterId}`)
       .on(
         'postgres_changes',
         {

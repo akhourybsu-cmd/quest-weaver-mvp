@@ -272,12 +272,55 @@ const InitiativeTracker = ({ encounterId, characters }: InitiativeTrackerProps) 
       return;
     }
 
-    // Auto-select all and roll
-    setSelectedCombatants(new Set(availableCombatants.map(c => c.id)));
-    setManualRolls({});
+    // Roll directly without relying on state sync to avoid stale closure issues
+    try {
+      const isFirstRoll = initiative.length === 0;
 
-    // Wait a tick for state to update
-    setTimeout(handleRollInitiative, 100);
+      const rolls = availableCombatants.map((combatant, index) => {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const total = d20 + combatant.initiativeBonus;
+
+        return {
+          combatantId: combatant.id,
+          combatantType: combatant.type,
+          initiativeRoll: total,
+          dexModifier: combatant.dexModifier,
+          passivePerception: combatant.passivePerception,
+          isFirst: isFirstRoll && index === 0
+        };
+      });
+
+      const sortedRolls = [...rolls].sort((a, b) => b.initiativeRoll - a.initiativeRoll);
+
+      for (let i = 0; i < sortedRolls.length; i++) {
+        const roll = sortedRolls[i];
+        const { error } = await supabase.from('initiative').insert({
+          encounter_id: encounterId,
+          combatant_id: roll.combatantId,
+          combatant_type: roll.combatantType,
+          initiative_roll: roll.initiativeRoll,
+          dex_modifier: roll.dexModifier,
+          passive_perception: roll.passivePerception,
+          is_current_turn: isFirstRoll && i === 0
+        });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Initiative Rolled",
+        description: `Added ${rolls.length} combatant${rolls.length !== 1 ? 's' : ''} to initiative`,
+      });
+
+      setSelectedCombatants(new Set());
+      setManualRolls({});
+    } catch (error: any) {
+      toast({
+        title: "Error rolling initiative",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewMonsterDetail = async (combatantId: string, combatantType: string) => {

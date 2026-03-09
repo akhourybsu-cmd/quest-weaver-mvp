@@ -238,6 +238,7 @@ export const PlayerChat = ({ campaignId, currentUserId, isDM = false }: PlayerCh
                 </div>
               ))
             )}
+            <div ref={bottomRef} />
           </div>
         </ScrollArea>
 

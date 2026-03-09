@@ -72,18 +72,8 @@ export const useEncounter = (encounterId: string | null) => {
           }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'characters',
-        },
-        () => {
-          // Re-fetch initiative to get updated character stats (HP, action economy, resources, etc.)
-          fetchInitiative();
-        }
-      )
+      // NOTE: Character updates are handled by InitiativeTracker's own subscription
+      // to avoid over-broad subscriptions that fire on ANY character change app-wide
       .on(
         'postgres_changes',
         {

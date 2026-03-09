@@ -351,46 +351,54 @@ const CampaignHub = () => {
   const handleStartSession = async () => {
     if (!activeCampaign) return;
     
-    setLoading(true);
-    try {
-      // Create session record
-      const { data: session, error: sessionError } = await supabase
-        .from('campaign_sessions')
-        .insert({
-          campaign_id: activeCampaign.id,
-          status: 'live',
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      
-      if (sessionError) throw sessionError;
-      
-      // Update campaign with live_session_id
-      const { error: campaignError } = await supabase
-        .from('campaigns')
-        .update({ live_session_id: session.id })
-        .eq('id', activeCampaign.id);
-      
-      if (campaignError) throw campaignError;
-      
-      toast({
-        title: 'Session started!',
-        description: 'Players can now join',
-      });
-      
-      // Switch to session tab
+    // Guard: If a session already exists, just navigate to it
+    if (liveSession) {
       handleTabChange('session');
-      await fetchLiveSession();
-    } catch (error: any) {
-      toast({
-        title: 'Failed to start session',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+      return;
     }
+    
+    // Use local loading state to avoid full-page loading flicker
+    const startSession = async () => {
+      try {
+        // Create session record
+        const { data: session, error: sessionError } = await supabase
+          .from('campaign_sessions')
+          .insert({
+            campaign_id: activeCampaign.id,
+            status: 'live',
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (sessionError) throw sessionError;
+        
+        // Update campaign with live_session_id
+        const { error: campaignError } = await supabase
+          .from('campaigns')
+          .update({ live_session_id: session.id })
+          .eq('id', activeCampaign.id);
+        
+        if (campaignError) throw campaignError;
+        
+        toast({
+          title: 'Session started!',
+          description: 'Players can now join',
+        });
+        
+        // Switch to session tab
+        handleTabChange('session');
+        await fetchLiveSession();
+      } catch (error: any) {
+        toast({
+          title: 'Failed to start session',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    };
+    
+    startSession();
   };
 
   const handlePauseSession = async () => {

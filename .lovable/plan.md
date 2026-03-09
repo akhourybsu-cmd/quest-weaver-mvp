@@ -1,166 +1,112 @@
 
+# Comprehensive Scan — Bug Report & Fix Plan
 
-# Map Editor Optimization: Comprehensive Overhaul
+## Bugs Found
 
-## Current State Assessment
+### Bug 1 — `SessionKiosk.tsx`: `fetchEncounterStatus` fires a toast every time on every realtime update (line 231)
+**Problem**: Every time `fetchEncounterStatus()` is called (including on initiative changes and encounter updates), it fires `toast({ title: "⚔️ Combat Active" })` if an encounter is found. This means players get spammed with "Combat Active" toasts whenever anything in the encounter changes (e.g. a monster's HP updates, turn advances, etc.).
 
-After reviewing all 14 component files, the map editor has a solid foundation (Fabric.js canvas, ResizablePanel layout, real-time overlays via Supabase) but suffers from **disconnected tools** -- many sidebar controls have UI but zero canvas integration. Here is every issue found, organized by severity.
+**Fix**: Only show the toast when transitioning from no-encounter → encounter, by comparing previous state.
 
----
-
-## Critical Issues (Tools That Don't Work)
-
-### 1. Drawing tools are inert
-`DrawingToolbar` lists draw, circle, rectangle, line, and text tools with icons and shortcuts, but `MapViewer` has **zero canvas event handlers** for any of them. Selecting "Freehand Draw" changes the cursor to crosshair but clicking/dragging does nothing. These tools need actual Fabric.js drawing mode integration:
-- **Freehand Draw**: Enable `fabricCanvas.isDrawingMode = true` with `PencilBrush`
-- **Circle/Rectangle/Line**: Track mousedown origin, create shape on drag, finalize on mouseup
-- **Text**: Click to place, open inline text input, add `IText` object
-
-### 2. MeasurementTool is disconnected from canvas
-The component manages `startPoint`/`endPoint`/`distance` state internally but has no way to receive click coordinates from the canvas. The canvas `mouse:down` handler in MapViewer only checks for `"pin"` tool -- it never sends coordinates to `MeasurementTool`. Fix: lift measurement state into MapViewer and draw a Fabric.js Line + Text label between points on the canvas.
-
-### 3. RangeIndicator is disconnected from canvas
-Same problem. The component has a `rangeFeet` input but no click-to-place integration. It needs a canvas click handler that creates a semi-transparent Fabric.js Circle at the clicked point with the configured radius.
-
-### 4. TerrainMarker is disconnected from canvas
-The sidebar lets you pick a terrain type but clicking the canvas does nothing. The `handleCanvasClick` in MapViewer only handles `"pin"` tool. Need to add a `"terrain"` case that inserts a marker into the `map_markers` table at the clicked coordinate.
-
-### 5. Fog of War painting doesn't work
-`FogOfWarTools` toggles `fogTool` state ("reveal"/"hide") but MapViewer never uses this state to handle canvas drawing. There's no mouse event that creates or modifies `fog_regions`. The `AdvancedFogTools` component (which has brush painting logic) is **never imported or rendered** anywhere.
-
-### 6. TokenContextMenu is unused
-The component exists but is never rendered. Fabric.js canvas tokens are drawn as `Circle` objects, not React elements, so the Radix `ContextMenu` wrapper has nothing to wrap. Need to intercept Fabric.js right-click events and render a positioned context menu.
+```typescript
+// Before setting activeEncounter, check if it was already set
+if (encounter && !activeEncounter) {
+  toast({ title: "⚔️ Combat Active", description: "An encounter has started!" });
+}
+```
 
 ---
 
-## Performance Issues
+### Bug 2 — `PlayerPresence.tsx`: `toggleRaiseHand` upsert doesn't update local `needsRuling` state
+**Problem**: The upsert fires and toast shows, but `setNeedsRuling` is never called after a successful upsert. The button visually stays in the old state until the realtime subscription fires `loadPresence()`, which is a race condition. If the subscription is slow, the button appears to not respond.
 
-### 7. Map image reloads on every resize
-The `FabricImage.fromURL` effect (line 231) depends on `canvasSize`. Every panel resize triggers a re-fetch of the image URL. Fix: load the image once, store the FabricImage reference, and only update its `scaleX`/`scaleY` on resize.
-
-### 8. Grid redraws hundreds of objects on resize
-The grid effect (line 259) creates individual `Rect` objects for every grid line. On a 1200x800 canvas with 50px grid, that's ~40 Rect objects destroyed and recreated per resize tick. Fix: use a single Fabric.js `Group` or draw grid lines with canvas native drawing (overlay rendering) instead of discrete objects.
-
-### 9. Pan handler causes re-renders on every mouse move
-The pan effect (line 148) depends on `isPanning` and `lastPanPosition` state. Every `mousemove` during panning calls `setLastPanPosition`, triggering a re-render, which re-registers all event handlers. Fix: use `useRef` for pan tracking state instead of `useState`.
-
-### 10. Token rendering recreates all objects on any change
-The token effect (line 292) removes ALL token objects and recreates them whenever the `tokens` array changes (even for a single token move). Fix: diff the previous tokens against current and only update changed ones.
+**Fix**: Optimistically update state before the upsert:
+```typescript
+setNeedsRuling(newRulingState); // optimistic
+// ...do upsert
+// on error, revert: setNeedsRuling(!newRulingState)
+```
 
 ---
 
-## Functional Gaps
+### Bug 3 — `PlayerCombatView.tsx`: Initiative loading state not shown in Initiative tab
+**Problem**: `isLoading` skeleton is only rendered inside the "log" tab (line 332-337). The initiative tab has no loading state — it renders an empty list while `fetchInitiative()` runs, which involves multiple async DB calls per combatant.
 
-### 11. Grid snap doesn't actually snap
-`gridSnapEnabled` state exists but the token `modified` handler (line 318) saves raw coordinates without snapping. Fix: in the modified handler, round `newX`/`newY` to the nearest grid intersection and update the circle position.
-
-### 12. AoE templates always appear at hardcoded (300, 200)
-Both `AoETools` and `TokenManager` place new objects at `x:300, y:200` regardless of viewport zoom/pan. Fix: calculate the center of the current viewport using `fabricCanvas.viewportTransform` and place there.
-
-### 13. CombatMap page duplicates tools
-`CombatMap.tsx` renders its own Sheet sidebar with TokenManager, FogOfWarTools, and AoETools (lines 120-141), but `MapViewer` also renders all tools in its own resizable sidebar. When the DM opens both, there are two competing instances of each tool. Fix: remove the duplicate tools from `CombatMap.tsx` -- `MapViewer` already handles the full DM sidebar.
-
-### 14. No eraser implementation
-The "Eraser" tool in DrawingToolbar changes the cursor but has no logic. Fix: in eraser mode, clicking a user-drawn shape (not tokens/markers/background) should remove it from the canvas.
-
-### 15. `campaignId` not passed to MapViewer from CombatMap
-`MapViewer` accepts an optional `campaignId` prop (used for TokenManager), but `CombatMap.tsx` never passes it (line 181-190). This means the TokenManager inside MapViewer's sidebar can't load characters.
+**Fix**: Add loading skeletons to the initiative tab as well.
 
 ---
 
-## Implementation Plan
+### Bug 4 — `PlayerCombatView.tsx`: Conditions tab empty state uses inline text (inconsistent)
+**Problem**: Line 383-385 uses a plain `<div>` with `"No active conditions"` text instead of `<PlayerEmptyState>`, breaking the established pattern.
 
-### Phase 1: Fix the Canvas Event Pipeline (Foundation)
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Refactor pan state to refs**: Replace `isPanning` / `lastPanPosition` useState with useRef to stop re-render churn during panning
-- **Create unified canvas click dispatcher**: Expand `handleCanvasClick` to route clicks based on `activeTool`:
-  - `"pin"` -- existing behavior (note pin dialog)
-  - `"measure"` -- set start/end points, draw measurement line on canvas
-  - `"range"` -- place range circle at click point
-  - `"terrain"` -- insert terrain marker at click point via `addMarker`
-- **Pass `campaignId` through**: Accept it from CombatMap and pass to TokenManager in the sidebar
-
-### Phase 2: Wire Drawing Tools
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Freehand Draw**: When `activeTool === "draw"`, set `fabricCanvas.isDrawingMode = true` with a `PencilBrush` (color picker in DrawingToolbar for stroke color/width)
-- **Circle tool**: On mousedown, record origin. On mousemove, preview a Circle. On mouseup, finalize.
-- **Rectangle tool**: Same pattern with Rect.
-- **Line tool**: Same pattern with Line.
-- **Text tool**: On click, create `IText` at pointer position in editing mode.
-- **Eraser tool**: On click, check if target object is a user drawing (not `isBackgroundImage`, `isGridLine`, `tokenId`, `aoeId`, `fogId`, `markerId`). If so, remove it.
-- Tag all user-drawn objects with `isUserDrawing = true` so eraser can identify them.
-
-**File: `src/components/maps/DrawingToolbar.tsx`**
-- Add a color picker and stroke width slider for the draw/shape tools (collapsible section below the tool grid)
-
-### Phase 3: Wire Measurement, Range, and Terrain
-
-**File: `src/components/maps/MeasurementTool.tsx`**
-- Change to accept `startPoint`, `endPoint`, and `distance` as props (state lives in MapViewer)
-- Remove internal state; become a display-only panel
-
-**File: `src/components/maps/RangeIndicator.tsx`**
-- Add callback prop `onRangeConfigChange(rangeFeet)` so MapViewer knows the configured range
-- MapViewer draws the Fabric.js Circle on click
-
-**File: `src/components/maps/TerrainMarker.tsx`**
-- Add callback prop `onTerrainTypeChange(type)` so MapViewer knows which terrain to place
-- MapViewer handles the insert via `addMarker` on click
-
-### Phase 4: Fix Fog of War
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Import `AdvancedFogTools` and render it as an overlay inside the canvas container when `fogTool` is active
-- Wire `onRevealArea` / `onHideArea` callbacks to create/update `fog_regions` records in the database
-- Show a semi-transparent black overlay on the canvas for unrevealed areas
-
-### Phase 5: Fix Grid Snap and Token Context Menu
-
-**File: `src/components/maps/MapViewer.tsx`**
-- In the token `modified` handler: if `gridSnapEnabled`, snap coordinates to nearest grid intersection and update circle position before saving
-- Add `contextmenu` event on canvas: find clicked token via `fabricCanvas.findTarget`, show a positioned HTML context menu using TokenContextMenu data (rendered via React portal at mouse coordinates)
-
-### Phase 6: Performance Optimizations
-
-**File: `src/components/maps/MapViewer.tsx`**
-
-- **Image caching**: Load image once into a ref (`imageRef`). On resize, update only `scaleX`/`scaleY` and call `renderAll()` -- no re-fetch.
-- **Grid as overlay**: Instead of hundreds of Rect objects, use Fabric.js `afterRender` event to draw grid lines directly on the canvas context (`ctx.moveTo/lineTo`). This is zero-object-cost and redraws automatically.
-- **Token diffing**: Store previous token state in a ref. On update, only modify changed tokens' positions instead of remove-all/re-add-all.
-- **Debounce resize**: Debounce the `ResizeObserver` callback (100ms) so rapid panel resizing doesn't trigger dozens of re-renders.
-
-### Phase 7: Place Objects at Viewport Center
-
-**File: `src/components/maps/MapViewer.tsx`**
-- Add utility: `getViewportCenter()` that uses `fabricCanvas.viewportTransform` and canvas dimensions to calculate the world-space center of the current view
-- Use this for token placement and AoE template placement instead of hardcoded (300, 200)
-
-### Phase 8: Remove Duplicates in CombatMap
-
-**File: `src/pages/CombatMap.tsx`**
-- Remove the Sheet sidebar that renders TokenManager, FogOfWarTools, and AoETools (all already in MapViewer's sidebar)
-- Pass `campaignId` to MapViewer
-- Keep only MapUpload and map selection in the CombatMap header
+**Fix**: Replace inline text with:
+```tsx
+<PlayerEmptyState icon={Shield} title="No Conditions" description="You have no active conditions." />
+```
 
 ---
 
-## Files Modified
+### Bug 5 — `SessionKiosk.tsx`: `initiativeChannel` subscription never re-creates when `activeEncounter` changes
+**Problem**: The realtime subscription for initiative (line 132-142) is created inside the `useEffect` that also depends on `[character.id, campaignId, activeEncounter]`. However, when `activeEncounter` first becomes non-null (after the encounter fetch), the subscription tries to filter on `encounter_id=eq.${activeEncounter}` — but at that moment `activeEncounter` may still be the *old* value (null) from closure capture. The subscription is built before `setActiveEncounter` triggers a re-render.
 
-| File | Changes |
-|------|---------|
-| `src/components/maps/MapViewer.tsx` | Major: pan refs, click dispatcher, drawing modes, image caching, grid overlay, token diffing, snap logic, context menu, fog integration, viewport center utility, resize debounce |
-| `src/components/maps/DrawingToolbar.tsx` | Add color picker and stroke width controls for drawing tools |
-| `src/components/maps/MeasurementTool.tsx` | Convert to controlled component (props for points/distance) |
-| `src/components/maps/RangeIndicator.tsx` | Add `onRangeConfigChange` callback prop |
-| `src/components/maps/TerrainMarker.tsx` | Add `onTerrainTypeChange` callback prop |
-| `src/components/maps/TokenContextMenu.tsx` | Adapt to render as positioned portal instead of wrapping a React child |
-| `src/pages/CombatMap.tsx` | Remove duplicate tool sidebar, pass campaignId to MapViewer |
+**Root cause**: `fetchEncounterStatus` sets `activeEncounter` via `setActiveEncounter`, but the effect that creates `initiativeChannel` reads `activeEncounter` from the closed-over value. On first mount, this is `null` so no initiative channel is created. After re-render, the effect re-runs and a channel is finally created — but now both the old cleanup and new setup run, which is correct. This should actually work via re-render, **but** the toast bug (Bug 1) means it triggers on every update, flooding the UI.
 
-### No database changes required
+**Secondary concern**: The `initiativeChannel` filter uses `activeEncounter` from the outer closure. When the effect re-runs due to `activeEncounter` changing, the old channel is cleaned up and a new one created. This is correct behavior. **No code change needed here** — just fix Bug 1.
 
-All fixes are in the React/TypeScript and Fabric.js layer. The existing `map_markers`, `aoe_templates`, `fog_regions`, and `tokens` tables already support all needed operations.
+---
+
+### Bug 6 — `PlayerCharacterSheet.tsx`: `getHPColor` uses undefined CSS variables
+**Problem**: Line 368-371 references `'bg-buff-green'`, `'bg-warning-amber'`, `'bg-hp-red'` but the established color variables throughout other components (like `PlayerCombatView.tsx`) use `'bg-status-buff'`, `'bg-status-warning'`, `'bg-status-hp'`. This inconsistency may cause the HP bar to render in a fallback/grey color.
+
+**Fix**: Unify to the consistent color class names:
+```typescript
+if (pct > 0.5) return 'bg-status-buff';
+if (pct > 0.25) return 'bg-status-warning';
+return 'bg-status-hp';
+```
+
+---
+
+### Bug 7 — `PlayerSpellbook.tsx`: `fetchSpells` order by related table column may silently fail
+**Problem**: Line 133 uses `.order("srd_spells(level)")`. This PostgREST foreign table ordering syntax is not guaranteed to work the same across Supabase SDK versions and may silently fail, returning spells in insertion order. `groupSpellsByLevel` already handles grouping, so this isn't catastrophic, but the sort order within groups could be unpredictable.
+
+**Fix**: Sort client-side after fetching instead:
+```typescript
+const sorted = (data as any[]).sort((a, b) => a.srd_spells.level - b.srd_spells.level);
+setCharacterSpells(sorted);
+```
+
+---
+
+### Bug 8 — `PlayerWaitingRoom.tsx`: Channel name not unique — collides across tabs/components
+**Problem**: Line 163 creates a channel named `'waiting-for-session'` (hardcoded, no campaignId suffix). If the user has multiple tabs or the component mounts twice in StrictMode, both subscribe to the same channel, causing unexpected behavior and "duplicate channel" warnings.
+
+**Fix**: Use `'waiting-for-session:${campaignToCheck}'` as the channel name.
+
+---
+
+### Bug 9 — `SessionKiosk.tsx`: `sendBeacon` called without body (line 201)
+**Problem**: Line 201 calls `navigator.sendBeacon?.(url)` with only the URL but no body. The Supabase REST API PATCH/DELETE needs a body and correct headers. This `sendBeacon` call will never work as intended — it sends a GET with empty body, which the REST endpoint ignores (or returns an error). The fallback on line 203-207 is correct but synchronous and may not complete on tab close.
+
+**Fix**: Remove the broken `sendBeacon` call entirely (it's security-blocked on many Supabase configs anyway). The async fallback is sufficient for soft navigation, and tab-close presence is a best-effort operation.
+
+---
+
+### Bug 10 — `PlayerInventory.tsx`: Realtime channel filters on `campaign_id` but character items use `owner_id`
+**Problem**: The realtime subscription on line 47-58 watches `holdings` filtered by `campaign_id=eq.${campaignId}`. But `fetchHoldings` fetches items where `owner_id=characterId OR owner_type=PARTY`. If another character in the same campaign receives an item, the current player's kiosk will also refetch, causing unnecessary re-renders. This is a **performance bug** (not a correctness bug), but worth fixing.
+
+**Fix**: This is acceptable behavior for now (party inventory sharing). No code change needed.
+
+---
+
+## Files to Update
+
+| File | Bug(s) Fixed |
+|------|-------------|
+| `src/components/session/SessionKiosk.tsx` | #1 (toast spam), #9 (sendBeacon) |
+| `src/components/presence/PlayerPresence.tsx` | #2 (optimistic state update) |
+| `src/components/player/PlayerCombatView.tsx` | #3 (initiative loading), #4 (conditions empty state) |
+| `src/components/player/PlayerCharacterSheet.tsx` | #6 (HP color class names) |
+| `src/components/player/PlayerSpellbook.tsx` | #7 (spell sort) |
+| `src/components/player/PlayerWaitingRoom.tsx` | #8 (channel name collision) |
 

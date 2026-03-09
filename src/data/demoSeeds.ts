@@ -18,6 +18,19 @@ import factionShadowCult from "@/assets/demo/faction-shadow-cult.png";
 import factionThieves from "@/assets/demo/faction-thieves.png";
 import factionSilverShield from "@/assets/demo/faction-silver-shield.png";
 
+export interface DemoPartyMember {
+  id: string;
+  name: string;
+  race: string;
+  class: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  ac: number;
+  playerName: string;
+  portraitInitials: string;
+}
+
 export interface DemoCampaign {
   id: string;
   name: string;
@@ -34,6 +47,7 @@ export interface DemoCampaign {
   notes: DemoNote[];
   lore: DemoLorePage[];
   encounters: DemoEncounter[];
+  party: DemoPartyMember[];
 }
 
 export interface DemoLorePage {
@@ -618,6 +632,57 @@ export const RECKONING_SEED: DemoCampaign = {
         { name: "Shadow", count: 6, cr: 0.5 },
       ],
       location_id: "loc-2",
+    },
+  ],
+
+  party: [
+    {
+      id: "pc-1",
+      name: "Kael Ironfist",
+      race: "Human",
+      class: "Fighter",
+      level: 7,
+      hp: 68,
+      maxHp: 72,
+      ac: 18,
+      playerName: "Alex",
+      portraitInitials: "KI",
+    },
+    {
+      id: "pc-2",
+      name: "Lyra Starweave",
+      race: "High Elf",
+      class: "Wizard",
+      level: 7,
+      hp: 38,
+      maxHp: 42,
+      ac: 13,
+      playerName: "Jordan",
+      portraitInitials: "LS",
+    },
+    {
+      id: "pc-3",
+      name: "Vex Shadowmere",
+      race: "Half-Elf",
+      class: "Rogue",
+      level: 7,
+      hp: 52,
+      maxHp: 55,
+      ac: 16,
+      playerName: "Sam",
+      portraitInitials: "VS",
+    },
+    {
+      id: "pc-4",
+      name: "Brother Aldric",
+      race: "Dwarf",
+      class: "Cleric",
+      level: 7,
+      hp: 61,
+      maxHp: 65,
+      ac: 19,
+      playerName: "Morgan",
+      portraitInitials: "BA",
     },
   ],
 };

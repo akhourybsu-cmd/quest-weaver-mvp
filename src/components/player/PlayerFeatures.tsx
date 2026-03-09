@@ -96,12 +96,14 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
   }, [characterId]);
 
   const fetchAllData = async () => {
+    setIsLoading(true);
     await Promise.all([
       fetchFeatures(),
       fetchFeats(),
       fetchAncestryTraits(),
       fetchFeatureChoices(),
     ]);
+    setIsLoading(false);
   };
 
   const fetchFeatureChoices = async () => {

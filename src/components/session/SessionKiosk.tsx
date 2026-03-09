@@ -309,7 +309,7 @@ export const SessionKiosk = ({
       </div>
 
       {/* Player Presence */}
-      <PlayerPresence campaignId={campaignId} currentUserId={currentUserId} isDM={false} />
+      <PlayerPresence campaignId={campaignId} currentUserId={currentUserId} isDM={false} characterId={character.id} />
 
       {/* Ornate Tabs */}
       <div className="flex-1 overflow-y-auto px-3 pb-4">

@@ -22,6 +22,7 @@ interface PlayerPresenceProps {
 }
 
 const PlayerPresence = ({ campaignId, currentUserId, isDM, characterId }: PlayerPresenceProps) => {
+  const { toast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [needsRuling, setNeedsRuling] = useState(false);
 

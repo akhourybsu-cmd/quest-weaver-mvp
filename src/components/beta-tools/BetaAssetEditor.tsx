@@ -52,6 +52,7 @@ export function BetaAssetEditor({ open, onOpenChange, asset, onSaved }: BetaAsse
         status,
         tags,
         data,
+        updated_at: new Date().toISOString(),
       }).eq('id', asset.id);
 
       if (error) throw error;

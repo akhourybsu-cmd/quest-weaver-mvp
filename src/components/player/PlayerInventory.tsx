@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Backpack, Coins } from "lucide-react";
 import { AttunementManager } from "@/components/inventory/AttunementManager";
+import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Holding {
   id: string;

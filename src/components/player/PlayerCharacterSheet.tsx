@@ -854,7 +854,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {ancestryTraits.map((trait, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-accent/5 border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors"
                       onClick={() => setSelectedTrait(trait)}
                     >
                       <span className="text-sm font-medium">{trait.name}</span>

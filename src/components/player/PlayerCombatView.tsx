@@ -46,6 +46,7 @@ export function PlayerCombatView({
   const [combatLog, setCombatLog] = useState<any[]>([]);
   const [conditions, setConditions] = useState<any[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchInitiative();

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollText, CheckCircle2, Target, MapPin, Award, Coins, User, Tag, Circle } from "lucide-react";
 import { PlayerEmptyState } from "./PlayerEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Quest {
   id: string;

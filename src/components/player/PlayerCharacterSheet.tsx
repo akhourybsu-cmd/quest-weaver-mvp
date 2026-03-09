@@ -365,9 +365,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const getHPPercentage = () => (character.current_hp / character.max_hp) * 100;
   const getHPColor = () => {
     const pct = getHPPercentage();
-    if (pct > 50) return 'bg-buff-green';
-    if (pct > 25) return 'bg-warning-amber';
-    return 'bg-hp-red';
+    if (pct > 50) return 'bg-status-buff';
+    if (pct > 25) return 'bg-status-warning';
+    return 'bg-status-hp';
   };
 
   const groupedProfs = groupProficiencies();
@@ -470,7 +470,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.resistances && character.resistances.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.resistances.map((r: string) => (
-                  <Badge key={r} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                  <Badge key={r} variant="outline" className="bg-secondary/10 text-secondary border-secondary/30 text-xs">
                     Resist: {r}
                   </Badge>
                 ))}
@@ -479,7 +479,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.immunities && character.immunities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.immunities.map((i: string) => (
-                  <Badge key={i} variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
+                  <Badge key={i} variant="outline" className="bg-status-buff/10 text-status-buff border-status-buff/30 text-xs">
                     Immune: {i}
                   </Badge>
                 ))}
@@ -488,7 +488,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             {character.vulnerabilities && character.vulnerabilities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.vulnerabilities.map((v: string) => (
-                  <Badge key={v} variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
+                  <Badge key={v} variant="outline" className="bg-status-hp/10 text-status-hp border-status-hp/30 text-xs">
                     Vuln: {v}
                   </Badge>
                 ))}
@@ -816,7 +816,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {features.filter(f => f.source === 'Class').map((feature) => (
                     <div 
                       key={feature.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-blue-500/5 border border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
                       onClick={() => setSelectedFeature(feature)}
                     >
                       <span className="text-sm font-medium">{feature.name}</span>
@@ -835,7 +835,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {features.filter(f => f.source === 'Subclass').map((feature) => (
                     <div 
                       key={feature.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-purple-500/5 border border-purple-500/20 cursor-pointer hover:bg-purple-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-secondary/5 border border-secondary/20 cursor-pointer hover:bg-secondary/10 transition-colors"
                       onClick={() => setSelectedFeature(feature)}
                     >
                       <span className="text-sm font-medium">{feature.name}</span>
@@ -854,7 +854,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {ancestryTraits.map((trait, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-accent/5 border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors"
                       onClick={() => setSelectedTrait(trait)}
                     >
                       <span className="text-sm font-medium">{trait.name}</span>
@@ -873,7 +873,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                   {subancestryTraits.map((trait, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-teal-500/5 border border-teal-500/20 cursor-pointer hover:bg-teal-500/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted transition-colors"
                       onClick={() => setSelectedTrait(trait)}
                     >
                       <span className="text-sm font-medium">{trait.name}</span>
@@ -983,7 +983,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         <DialogContent variant="ornaments" className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Star className="w-5 h-5 text-emerald-400" />
+              <Star className="w-5 h-5 text-accent" />
               {selectedTrait?.name}
             </DialogTitle>
           </DialogHeader>

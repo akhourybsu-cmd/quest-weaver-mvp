@@ -193,13 +193,8 @@ export const SessionKiosk = ({
         .then();
     }, 30_000);
 
-    // Tab close handler
+    // Tab close handler — best-effort offline mark
     const handleUnload = () => {
-      // Use sendBeacon for reliability on tab close
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/player_presence?campaign_id=eq.${campaignId}&user_id=eq.${currentUserId}`;
-      const body = JSON.stringify({ is_online: false, last_seen: new Date().toISOString() });
-      navigator.sendBeacon?.(url); // best-effort; RLS may block but cleanup is secondary
-      // Fallback sync call
       supabase.from("player_presence")
         .update({ is_online: false, last_seen: new Date().toISOString() })
         .eq("campaign_id", campaignId).eq("user_id", currentUserId)
@@ -222,18 +217,25 @@ export const SessionKiosk = ({
       .eq("is_active", true).maybeSingle();
 
     if (encounter) {
-      setActiveEncounter(encounter.id);
+      // Only toast when transitioning from no-encounter → encounter
+      setActiveEncounter(prev => {
+        if (!prev) {
+          toast({ title: "⚔️ Combat Active", description: "An encounter has started!" });
+        }
+        return encounter.id;
+      });
       checkMyTurn(encounter.id, character.id);
       const { data: mapData } = await supabase
         .from("maps").select("id")
         .eq("encounter_id", encounter.id).maybeSingle();
       setMapId(mapData?.id || null);
-      toast({ title: "⚔️ Combat Active", description: "An encounter has started!" });
     } else {
-      if (activeEncounter) {
-        toast({ title: "Combat Ended", description: "The encounter has concluded." });
-      }
-      setActiveEncounter(null);
+      setActiveEncounter(prev => {
+        if (prev) {
+          toast({ title: "Combat Ended", description: "The encounter has concluded." });
+        }
+        return null;
+      });
       setMapId(null);
       setIsMyTurn(false);
     }

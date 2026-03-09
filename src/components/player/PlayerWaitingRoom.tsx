@@ -34,6 +34,25 @@ export const PlayerWaitingRoom = () => {
       return;
     }
 
+    // Get campaign ID first to check for live session in parallel
+    let campaignToCheck: string | null = null;
+    if (campaignCode) {
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('id, live_session_id')
+        .eq('code', campaignCode)
+        .maybeSingle();
+
+      if (campaign) {
+        campaignToCheck = campaign.id;
+        // If session is already live, redirect immediately
+        if (campaign.live_session_id) {
+          navigate(`/session/player?campaign=${campaignCode}`);
+          return;
+        }
+      }
+    }
+
     // Ensure there is a player profile linked to this auth user
     const { data: existingPlayers, error: playerFetchError } = await supabase
       .from('players')

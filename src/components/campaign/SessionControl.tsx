@@ -107,10 +107,7 @@ export function SessionControl({ campaignId }: SessionControlProps) {
 
       const key = e.key.toLowerCase();
       
-      if (key === 's' && !session && !loading) {
-        e.preventDefault();
-        handleStart();
-      } else if (key === 'p' && session?.status === 'live') {
+      if (key === 'p' && session?.status === 'live') {
         e.preventDefault();
         handlePause();
       } else if (key === 'p' && session?.status === 'paused') {

@@ -21,6 +21,7 @@ const PlayerCharacterViewPage = () => {
   const { toast } = useToast();
   const [character, setCharacter] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     if (!characterId || !player) return;

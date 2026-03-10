@@ -131,20 +131,22 @@ export const CharacterPortraitEditor = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <div className="relative group cursor-pointer">
-          <Avatar className="w-24 h-24 border-4 border-brass/30 shadow-xl">
-            {currentPortraitUrl ? (
-              <AvatarImage src={currentPortraitUrl} alt={characterName} />
-            ) : (
-              <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground">
-                {getInitials()}
-              </AvatarFallback>
-            )}
-          </Avatar>
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-6 h-6 text-white" />
+        {trigger || (
+          <div className="relative group cursor-pointer">
+            <Avatar className="w-24 h-24 border-4 border-brass/30 shadow-xl">
+              {currentPortraitUrl ? (
+                <AvatarImage src={currentPortraitUrl} alt={characterName} />
+              ) : (
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                  {getInitials()}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
           </div>
-        </div>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">

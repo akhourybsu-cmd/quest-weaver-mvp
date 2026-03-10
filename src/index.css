@@ -60,8 +60,8 @@ All colors MUST be HSL.
     --destructive-foreground: 40 40% 95%;
     
     /* UI Elements */
-    --border: 35 30% 75%;
-    --input: 35 30% 85%;
+    --border: 35 30% 68%;
+    --input: 35 30% 82%;
     --ring: 270 42% 43%;
     
     --radius: 0.75rem;

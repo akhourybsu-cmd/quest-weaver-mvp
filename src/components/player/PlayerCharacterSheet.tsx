@@ -390,9 +390,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const renderLeftColumn = () => (
     <div className="space-y-4">
       {/* HP Section */}
-      <div className="relative p-4 rounded-lg bg-gradient-to-br from-hp-red/10 to-transparent border border-hp-red/20">
+      <div className="relative p-4 rounded-lg parchment-card border border-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-full bg-hp-red/20 border border-hp-red/30">
+          <div className="p-2 rounded-full bg-hp-red/15 border border-hp-red/25">
             <Heart className="w-5 h-5 text-hp-red" />
           </div>
           <span className="font-cinzel font-semibold tracking-wide">Hit Points</span>
@@ -403,14 +403,14 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           </span>
           <span className="text-xl text-muted-foreground">/ {character.max_hp}</span>
           {character.temp_hp > 0 && (
-            <Badge className="ml-2 bg-secondary/20 text-secondary border-secondary/30">
+            <span className="ml-2 fantasy-badge">
               +{character.temp_hp} temp
-            </Badge>
+            </span>
           )}
         </div>
-        <div className="h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
+        <div className="h-3 fantasy-hp-track rounded-full overflow-hidden">
           <div 
-            className={`h-full ${getHPColor()} transition-all duration-500`}
+            className={`h-full ${getHPColor()} transition-all duration-500 rounded-full`}
             style={{ width: `${Math.min(100, getHPPercentage())}%` }}
           />
         </div>

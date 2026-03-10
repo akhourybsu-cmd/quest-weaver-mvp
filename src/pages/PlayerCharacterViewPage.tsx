@@ -4,6 +4,7 @@ import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
 import { CharacterPortraitEditor } from '@/components/character/CharacterPortraitEditor';
+import { Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -106,15 +107,18 @@ const PlayerCharacterViewPage = () => {
               </div>
               {/* Outer decorative frame */}
               <div className="absolute -inset-1 rounded-lg border border-brass/30 pointer-events-none" />
-              {/* Edit overlay */}
-              <div className="absolute -bottom-1 -right-1">
-                <CharacterPortraitEditor
-                  characterId={character.id}
-                  characterName={character.name}
-                  currentPortraitUrl={character.portrait_url}
-                  onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
-                />
-              </div>
+              {/* Edit button overlay */}
+              <CharacterPortraitEditor
+                characterId={character.id}
+                characterName={character.name}
+                currentPortraitUrl={character.portrait_url}
+                onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
+                trigger={
+                  <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-card border-2 border-brass/40 flex items-center justify-center hover:bg-brass/20 transition-colors cursor-pointer">
+                    <Camera className="w-3.5 h-3.5 text-brass" />
+                  </button>
+                }
+              />
             </div>
 
             {/* Name & Identity */}

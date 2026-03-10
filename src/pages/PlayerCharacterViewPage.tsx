@@ -147,11 +147,49 @@ const PlayerCharacterViewPage = () => {
                 )}
               </div>
             </div>
+
+            {/* Flip button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFlipped(!isFlipped)}
+              className="shrink-0 gap-1.5 border-brass/40 text-brass hover:bg-brass/10 font-cinzel text-xs"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
+              {isFlipped ? 'Stats' : 'Story'}
+            </Button>
           </div>
         </div>
 
-        {/* Character Sheet - fills remaining space */}
-        <PlayerCharacterSheet characterId={character.id} />
+        {/* 3D Flip Container */}
+        <div style={{ perspective: '2000px' }}>
+          <div
+            className="relative transition-transform duration-700 ease-in-out"
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            }}
+          >
+            {/* Front — Mechanical Sheet */}
+            <div
+              style={{ backfaceVisibility: 'hidden' }}
+              className={isFlipped ? 'invisible' : ''}
+            >
+              <PlayerCharacterSheet characterId={character.id} />
+            </div>
+
+            {/* Back — Narrative Sheet */}
+            <div
+              style={{
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+              }}
+              className={`absolute inset-0 ${!isFlipped ? 'invisible' : ''}`}
+            >
+              <CharacterNarrativeSheet characterId={character.id} />
+            </div>
+          </div>
+        </div>
       </div>
     </PlayerPageLayout>
   );

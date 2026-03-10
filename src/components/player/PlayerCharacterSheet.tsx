@@ -600,7 +600,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           ].map((save) => {
             const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
             return (
-              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
+              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-card/80 border border-border/50 parchment-inset">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
                   <span className="text-muted-foreground font-medium">{save.label}</span>

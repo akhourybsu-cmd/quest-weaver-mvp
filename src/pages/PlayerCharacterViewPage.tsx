@@ -4,6 +4,7 @@ import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
 import { CharacterPortraitEditor } from '@/components/character/CharacterPortraitEditor';
+import { Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

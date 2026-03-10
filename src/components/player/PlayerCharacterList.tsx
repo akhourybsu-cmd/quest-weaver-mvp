@@ -10,6 +10,7 @@ import { Plus, Loader2, Shield, Heart, Zap, Link2, MoreVertical, Unlink, Link as
 import CharacterWizard from '@/components/character/CharacterWizard';
 import { JoinCampaignDialog } from './JoinCampaignDialog';
 import { AssignCharacterDialog } from './AssignCharacterDialog';
+import LoreOrnamentDivider from '@/components/lore/ui/LoreOrnamentDivider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,7 +86,6 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
       if (error) throw error;
       
-      // Transform data to include subclass_name
       const transformedData = (data || []).map((char: any) => ({
         ...char,
         subclass_name: char.srd_subclasses?.name || null
@@ -186,83 +186,94 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Folio Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-cinzel font-bold text-foreground">My Characters</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage your heroes and adventurers
+          <h2 className="text-3xl font-cinzel font-bold text-foreground tracking-wide">My Characters</h2>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            Your heroes and adventurers
           </p>
         </div>
-        <Button onClick={() => setWizardOpen(true)} className="gap-2">
+        <Button 
+          onClick={() => setWizardOpen(true)} 
+          className="gap-2 fantasy-create-btn"
+        >
           <Plus className="w-4 h-4" />
           Create Character
         </Button>
       </div>
 
+      {/* Ornamental divider below header */}
+      <LoreOrnamentDivider className="!my-2" />
+
       {characters.length === 0 ? (
-        <Card className="rounded-2xl shadow-xl border-brass/30">
-          <CardHeader>
+        <Card className="rounded-xl parchment-card border-brass/30">
+          <CardHeader className="text-center pb-3">
+            <div className="fantasy-divider !my-4">
+              <div className="fantasy-divider-ornament" />
+            </div>
             <CardTitle className="font-cinzel text-2xl">No Characters Yet</CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-1">
               Create your first character to begin your adventure
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => setWizardOpen(true)} size="lg" className="gap-2">
+          <CardContent className="flex justify-center pb-6">
+            <Button onClick={() => setWizardOpen(true)} size="lg" className="gap-2 fantasy-create-btn">
               <Plus className="w-5 h-5" />
               Create Your First Character
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {characters.map((character) => (
             <Card
               key={character.id}
-              className="rounded-2xl shadow-xl border-brass/30 hover:border-brass/50 transition-all cursor-pointer"
+              className="rounded-xl bg-card fantasy-character-card cursor-pointer overflow-hidden"
               onClick={() => handleCharacterClick(character.id)}
             >
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3 pt-5 px-5">
                 <div className="flex items-start gap-3">
-                  <Avatar className="w-16 h-16 border-2 border-brass/30">
-                    <AvatarImage src={character.portrait_url} />
-                    <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl">
-                      {character.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Portrait with double-border frame */}
+                  <div className="relative shrink-0">
+                    <Avatar className="w-16 h-16 fantasy-portrait-frame rounded-lg">
+                      <AvatarImage src={character.portrait_url} className="object-cover" />
+                      <AvatarFallback className="bg-brass/10 text-brass font-cinzel text-xl rounded-lg">
+                        {character.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="font-cinzel text-xl truncate">
+                    <CardTitle className="font-cinzel text-lg truncate tracking-wide">
                       {character.name}
                     </CardTitle>
                     <CardDescription className="flex flex-col gap-1 mt-1">
-                      <span>Level {character.level} {character.class}</span>
+                      <span className="text-sm">Level {character.level} {character.class}</span>
                       {character.subclass_name && (
-                        <Badge variant="secondary" className="w-fit bg-primary/20 text-primary border-primary/30 text-xs">
+                        <span className="fantasy-badge w-fit text-[10px]">
                           {character.subclass_name}
-                        </Badge>
+                        </span>
                       )}
                       {character.level >= 3 && !character.subclass_name && (
-                        <Badge variant="outline" className="w-fit border-amber-500/50 text-amber-500 text-xs animate-pulse">
+                        <Badge variant="outline" className="w-fit border-warning-amber/50 text-warning-amber text-xs animate-pulse">
                           Subclass Available!
                         </Badge>
                       )}
                     </CardDescription>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {character.creation_status === 'draft' && (
-                        <Badge variant="outline">
-                          Draft
-                        </Badge>
+                        <span className="fantasy-badge">Draft</span>
                       )}
                       {character.campaign && (
-                        <Badge variant="secondary" className="bg-brass/20 text-brass border-brass/30">
+                        <span className="fantasy-badge">
                           {character.campaign.name}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -302,19 +313,20 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                   </DropdownMenu>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-3 gap-3">
+              {/* Stat shelf */}
+              <CardContent className="pt-0 px-5 pb-4">
+                <div className="grid grid-cols-3 gap-3 p-2.5 rounded-lg fantasy-folio-shelf mt-1">
                   <div className="flex items-center gap-2 text-sm">
-                    <Heart className="w-4 h-4 text-red-500" />
-                    <span>{character.current_hp}/{character.max_hp}</span>
+                    <Heart className="w-4 h-4 text-hp-red" />
+                    <span className="font-medium tabular-nums">{character.current_hp}/{character.max_hp}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Shield className="w-4 h-4 text-blue-500" />
-                    <span>{character.ac}</span>
+                    <Shield className="w-4 h-4 text-brass" />
+                    <span className="font-medium tabular-nums">{character.ac}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Zap className="w-4 h-4 text-yellow-500" />
-                    <span>{character.speed ?? 30} ft</span>
+                    <Zap className="w-4 h-4 text-primary" />
+                    <span className="font-medium tabular-nums">{character.speed ?? 30} ft</span>
                   </div>
                 </div>
               </CardContent>

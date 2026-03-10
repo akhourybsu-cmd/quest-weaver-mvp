@@ -5,13 +5,14 @@ import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
 import { CharacterNarrativeSheet } from '@/components/player/CharacterNarrativeSheet';
 import { CharacterPortraitEditor } from '@/components/character/CharacterPortraitEditor';
-import { Camera, RotateCcw } from 'lucide-react';
+import { Camera, RotateCcw, Heart, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import LoreOrnamentDivider from '@/components/lore/ui/LoreOrnamentDivider';
 
 const PlayerCharacterViewPage = () => {
   const { characterId } = useParams();
@@ -70,6 +71,8 @@ const PlayerCharacterViewPage = () => {
   if (!player) return <Navigate to="/" replace />;
   if (!character) return <Navigate to={`/player/${player.id}/characters`} replace />;
 
+  const hpPct = character.max_hp > 0 ? Math.round((character.current_hp / character.max_hp) * 100) : 0;
+
   return (
     <PlayerPageLayout playerId={player.id} mobileTitle={character.name}>
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4 md:py-6">
@@ -85,7 +88,7 @@ const PlayerCharacterViewPage = () => {
         </Button>
 
         {/* Regal Hero Banner */}
-        <div className="relative mb-6 p-4 md:p-5 rounded-xl border-2 border-brass/40 parchment-card bg-gradient-to-r from-brass/8 via-card to-brass/8 overflow-hidden">
+        <div className="relative mb-4 p-4 rounded-xl border-2 border-brass/40 parchment-card bg-gradient-to-r from-brass/8 via-card to-brass/8 overflow-hidden">
           {/* Decorative corner accents */}
           <div className="absolute top-0 left-0 w-10 h-10 border-t-[3px] border-l-[3px] border-brass/70 rounded-tl-xl" />
           <div className="absolute top-0 right-0 w-10 h-10 border-t-[3px] border-r-[3px] border-brass/70 rounded-tr-xl" />
@@ -96,9 +99,9 @@ const PlayerCharacterViewPage = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-parchment/8 via-transparent to-brass/5 pointer-events-none" />
 
           <div className="relative flex items-center gap-5 md:gap-6">
-            {/* Large Portrait with brass double-frame & glow */}
+            {/* Large Portrait with fantasy frame */}
             <div className="relative shrink-0">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg border-[3px] border-brass shadow-[0_0_20px_hsl(var(--brass)/0.3)] overflow-hidden bg-muted/50">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg fantasy-portrait-frame overflow-hidden bg-muted/50">
                 {character.portrait_url ? (
                   <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
                 ) : (
@@ -148,18 +151,53 @@ const PlayerCharacterViewPage = () => {
               </div>
             </div>
 
-            {/* Flip button */}
+            {/* Right side: Quick stats + flip button */}
+            <div className="hidden md:flex items-center gap-4 shrink-0">
+              {/* Quick HP */}
+              <div className="text-center px-3 py-1.5 rounded-lg border border-brass/30 bg-card/80 parchment-inset">
+                <div className="flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-hp-red" />
+                  <span className="text-xs text-muted-foreground font-cinzel uppercase tracking-wider">HP</span>
+                </div>
+                <div className="text-lg font-bold tabular-nums mt-0.5">
+                  {character.current_hp}<span className="text-muted-foreground text-sm">/{character.max_hp}</span>
+                </div>
+              </div>
+              {/* Quick AC */}
+              <div className="text-center px-3 py-1.5 rounded-lg border border-brass/30 bg-card/80 parchment-inset">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-brass" />
+                  <span className="text-xs text-muted-foreground font-cinzel uppercase tracking-wider">AC</span>
+                </div>
+                <div className="text-lg font-bold tabular-nums mt-0.5">{character.ac}</div>
+              </div>
+              {/* Flip button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="gap-1.5 fantasy-flip-btn text-xs"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
+                {isFlipped ? 'Stats' : 'Story'}
+              </Button>
+            </div>
+
+            {/* Mobile flip button */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsFlipped(!isFlipped)}
-              className="shrink-0 gap-1.5 border-brass/40 text-brass hover:bg-brass/10 font-cinzel text-xs"
+              className="md:hidden shrink-0 gap-1.5 fantasy-flip-btn text-xs"
             >
               <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
               {isFlipped ? 'Stats' : 'Story'}
             </Button>
           </div>
         </div>
+
+        {/* Ornamental divider between header and sheet */}
+        <LoreOrnamentDivider className="!my-3" />
 
         {/* 3D Flip Container */}
         <div style={{ perspective: '2000px' }}>

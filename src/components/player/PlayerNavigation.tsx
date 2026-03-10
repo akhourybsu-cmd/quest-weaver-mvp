@@ -78,9 +78,9 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
       <div className="p-4 border-b border-brass/20 flex items-center justify-between">
         {!collapsed && player && (
           <div className="flex items-center gap-3 flex-1">
-            <Avatar className="w-10 h-10 border-2 border-brass/30">
+            <Avatar className="w-10 h-10 border-2 border-brass/40 shadow-[0_0_8px_hsl(var(--brass)/0.15)]">
               <AvatarImage src={player.avatar_url} />
-              <AvatarFallback style={{ backgroundColor: player.color }}>
+              <AvatarFallback style={{ backgroundColor: player.color }} className="font-cinzel font-semibold">
                 {player.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -116,8 +116,8 @@ export const PlayerNavigation = ({ playerId }: PlayerNavigationProps) => {
                   'w-full justify-start gap-3 transition-colors',
                   collapsed && 'justify-center px-2',
                   isActive 
-                    ? 'bg-brass/20 text-brass hover:bg-brass/30 border border-brass/40' 
-                    : 'hover:bg-brass/10 hover:text-brass'
+                    ? 'bg-brass/20 text-brass hover:bg-brass/30 border border-brass/40 border-l-[3px] border-l-brass' 
+                    : 'hover:bg-brass/10 hover:text-brass opacity-80 hover:opacity-100'
                 )}
               >
                 <Icon className="w-5 h-5 shrink-0" />

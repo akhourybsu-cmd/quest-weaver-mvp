@@ -617,7 +617,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Skills */}
       {skills.length > 0 && abilities && (
         <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors parchment-inset">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-brass" />
               <span className="font-cinzel text-sm tracking-wide">Skills</span>

@@ -85,15 +85,15 @@ const PlayerCharacterViewPage = () => {
         </Button>
 
         {/* Regal Hero Banner */}
-        <div className="relative mb-6 p-5 md:p-6 rounded-xl border-2 border-brass/40 bg-gradient-to-r from-brass/10 via-card to-brass/10 overflow-hidden">
+        <div className="relative mb-6 p-4 md:p-5 rounded-xl border-2 border-brass/40 parchment-card bg-gradient-to-r from-brass/8 via-card to-brass/8 overflow-hidden">
           {/* Decorative corner accents */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-brass rounded-tl-xl" />
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-brass rounded-tr-xl" />
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-brass rounded-bl-xl" />
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-brass rounded-br-xl" />
+          <div className="absolute top-0 left-0 w-10 h-10 border-t-[3px] border-l-[3px] border-brass/70 rounded-tl-xl" />
+          <div className="absolute top-0 right-0 w-10 h-10 border-t-[3px] border-r-[3px] border-brass/70 rounded-tr-xl" />
+          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-[3px] border-l-[3px] border-brass/70 rounded-bl-xl" />
+          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-[3px] border-r-[3px] border-brass/70 rounded-br-xl" />
           
           {/* Subtle parchment overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-parchment/5 via-transparent to-brass/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-parchment/8 via-transparent to-brass/5 pointer-events-none" />
 
           <div className="relative flex items-center gap-5 md:gap-6">
             {/* Large Portrait with brass double-frame & glow */}

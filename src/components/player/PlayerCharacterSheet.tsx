@@ -529,8 +529,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                       key={i}
                       className={`w-6 h-6 rounded-full border-2 transition-colors ${
                         i < res.current_value
-                          ? 'bg-warning-amber border-warning-amber shadow-[0_0_6px_hsl(var(--warning-amber)/0.5)]'
-                          : 'bg-muted/30 border-muted-foreground/30'
+                          ? 'bg-warning-amber border-warning-amber shadow-[0_0_4px_hsl(var(--warning-amber)/0.3)]'
+                          : 'bg-card border-border'
                       }`}
                     />
                   ))}

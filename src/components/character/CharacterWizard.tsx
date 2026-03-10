@@ -311,6 +311,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   useEffect(() => {
     if (open && !editCharacterId) {
       resetDraft();
+      setDraftId(null);
+      setCurrentStep(0);
     }
   }, [open, editCharacterId]);
 
@@ -1183,6 +1185,17 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             .upsert(resourceRows);
           if (resError) console.error("Error writing resources:", resError);
         }
+      }
+
+      // Clean up any orphaned draft characters by this user (drafts that were never finalized)
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        await supabase
+          .from("characters")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("creation_status", "draft")
+          .neq("id", characterId!);
       }
 
       toast({

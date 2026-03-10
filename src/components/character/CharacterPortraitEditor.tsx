@@ -21,6 +21,7 @@ export const CharacterPortraitEditor = ({
   characterName,
   currentPortraitUrl,
   onPortraitUpdated,
+  trigger,
 }: CharacterPortraitEditorProps) => {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);

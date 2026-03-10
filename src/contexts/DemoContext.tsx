@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { RECKONING_SEED, DemoCampaign } from "@/data/demoSeeds";
+import { nanoid } from "nanoid";
+
+type EntityType = "quests" | "npcs" | "locations" | "factions" | "monsters" | "items" | "sessions" | "timeline" | "notes" | "lore" | "encounters" | "party";
 
 interface DemoContextType {
   isDemo: boolean;
@@ -9,6 +12,9 @@ interface DemoContextType {
   expiresAt: number | null;
   timeRemaining: number | null;
   updateCampaign: (updates: Partial<DemoCampaign>) => Promise<void>;
+  addEntity: (type: EntityType, entity: any) => void;
+  updateEntity: (type: EntityType, id: string, updates: any) => void;
+  deleteEntity: (type: EntityType, id: string) => void;
   endDemo: () => Promise<void>;
   resetDemo: () => Promise<void>;
 }
@@ -27,6 +33,15 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const { toast } = useToast();
 
+  // Persist helper
+  const persist = useCallback((updatedCampaign: DemoCampaign, exp: number) => {
+    if (!demoId) return;
+    localStorage.setItem(
+      `demo_${demoId}`,
+      JSON.stringify({ campaign: updatedCampaign, expiresAt: exp })
+    );
+  }, [demoId]);
+
   // Load demo data from localStorage
   useEffect(() => {
     if (!demoId) return;
@@ -39,7 +54,6 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
         setCampaign(parsed.campaign);
         setExpiresAt(parsed.expiresAt);
 
-        // Check if expired
         if (parsed.expiresAt < Date.now()) {
           localStorage.removeItem(`demo_${demoId}`);
           toast({
@@ -47,9 +61,7 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
             description: "This demo session has ended. Redirecting...",
             variant: "destructive",
           });
-          setTimeout(() => {
-            window.location.href = "/";
-          }, 2000);
+          setTimeout(() => { window.location.href = "/"; }, 2000);
         }
       } catch (error) {
         console.error("[DEMO] Error loading demo:", error);
@@ -60,13 +72,11 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
         description: "This demo session doesn't exist. Redirecting...",
         variant: "destructive",
       });
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 2000);
+      setTimeout(() => { window.location.href = "/"; }, 2000);
     }
   }, [demoId, toast]);
 
-  // Update countdown timer
+  // Countdown timer
   useEffect(() => {
     if (!expiresAt) return;
 
@@ -80,66 +90,89 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
           description: "Your demo session has ended. Redirecting...",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
+        setTimeout(() => { window.location.href = "/"; }, 2000);
       }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
-
     return () => clearInterval(interval);
   }, [expiresAt, toast]);
 
-  const updateCampaign = async (updates: Partial<DemoCampaign>) => {
+  // Cleanup on tab close (best-effort)
+  useEffect(() => {
+    if (!demoId) return;
+    const cleanup = () => {
+      localStorage.removeItem(`demo_${demoId}`);
+    };
+    window.addEventListener("beforeunload", cleanup);
+    return () => window.removeEventListener("beforeunload", cleanup);
+  }, [demoId]);
+
+  const updateCampaign = useCallback(async (updates: Partial<DemoCampaign>) => {
     if (!demoId || !campaign || !expiresAt) return;
+    const updatedCampaign = { ...campaign, ...updates };
+    setCampaign(updatedCampaign);
+    persist(updatedCampaign, expiresAt);
+  }, [demoId, campaign, expiresAt, persist]);
 
-    try {
-      const updatedCampaign = { ...campaign, ...updates };
-      setCampaign(updatedCampaign);
+  const addEntity = useCallback((type: EntityType, entity: any) => {
+    if (!campaign || !expiresAt) return;
+    const entityWithId = { ...entity, id: entity.id || nanoid() };
+    const updatedCampaign = {
+      ...campaign,
+      [type]: [...(campaign[type] as any[]), entityWithId],
+    };
+    setCampaign(updatedCampaign);
+    persist(updatedCampaign, expiresAt);
+    toast({ title: "Created", description: `New ${type.slice(0, -1)} added.` });
+  }, [campaign, expiresAt, persist, toast]);
 
-      // Save to localStorage
-      localStorage.setItem(
-        `demo_${demoId}`,
-        JSON.stringify({ campaign: updatedCampaign, expiresAt })
-      );
-    } catch (error) {
-      console.error("[DEMO] Error updating campaign:", error);
-    }
-  };
+  const updateEntity = useCallback((type: EntityType, id: string, updates: any) => {
+    if (!campaign || !expiresAt) return;
+    const updatedCampaign = {
+      ...campaign,
+      [type]: (campaign[type] as any[]).map((item: any) =>
+        item.id === id ? { ...item, ...updates } : item
+      ),
+    };
+    setCampaign(updatedCampaign);
+    persist(updatedCampaign, expiresAt);
+  }, [campaign, expiresAt, persist]);
 
-  const endDemo = async () => {
+  const deleteEntity = useCallback((type: EntityType, id: string) => {
+    if (!campaign || !expiresAt) return;
+    const updatedCampaign = {
+      ...campaign,
+      [type]: (campaign[type] as any[]).filter((item: any) => item.id !== id),
+    };
+    setCampaign(updatedCampaign);
+    persist(updatedCampaign, expiresAt);
+    toast({ title: "Deleted", description: `${type.slice(0, -1)} removed.` });
+  }, [campaign, expiresAt, persist, toast]);
+
+  const endDemo = useCallback(async () => {
     if (!demoId) return;
-
     localStorage.removeItem(`demo_${demoId}`);
-    toast({
-      title: "Demo Ended",
-      description: "Thank you for trying Quest Weaver!",
-    });
+    toast({ title: "Demo Ended", description: "Thank you for trying Quest Weaver!" });
     window.location.href = "/";
-  };
+  }, [demoId, toast]);
 
-  const resetDemo = async () => {
+  const resetDemo = useCallback(async () => {
     if (!demoId) return;
-
     const newExpiresAt = Date.now() + 30 * 60 * 1000;
     const freshCampaign = JSON.parse(JSON.stringify(RECKONING_SEED));
     freshCampaign.id = demoId;
 
     setCampaign(freshCampaign);
     setExpiresAt(newExpiresAt);
-
-    localStorage.setItem(
-      `demo_${demoId}`,
-      JSON.stringify({ campaign: freshCampaign, expiresAt: newExpiresAt })
-    );
+    persist(freshCampaign, newExpiresAt);
 
     toast({
       title: "Demo Reset",
       description: "Campaign data restored to original state with fresh 30 minutes.",
     });
-  };
+  }, [demoId, persist, toast]);
 
   return (
     <DemoContext.Provider
@@ -150,6 +183,9 @@ export function DemoProvider({ children, demoId: initialDemoId }: DemoProviderPr
         expiresAt,
         timeRemaining,
         updateCampaign,
+        addEntity,
+        updateEntity,
+        deleteEntity,
         endDemo,
         resetDemo,
       }}

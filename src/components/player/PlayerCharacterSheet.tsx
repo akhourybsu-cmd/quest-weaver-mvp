@@ -350,13 +350,13 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
 
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
-      case 'Class': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-      case 'Subclass': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'Ancestry': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      case 'Subancestry': return 'bg-teal-500/20 text-teal-300 border-teal-500/40';
-      case 'Background': return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'Feat': return 'bg-red-500/20 text-red-300 border-red-500/40';
-      default: return 'bg-muted text-muted-foreground';
+      case 'Class': return 'fantasy-badge';
+      case 'Subclass': return 'fantasy-badge';
+      case 'Ancestry': return 'fantasy-badge';
+      case 'Subancestry': return 'fantasy-badge';
+      case 'Background': return 'fantasy-badge';
+      case 'Feat': return 'fantasy-badge';
+      default: return 'fantasy-badge';
     }
   };
 
@@ -374,9 +374,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const getHPPercentage = () => (character.current_hp / character.max_hp) * 100;
   const getHPColor = () => {
     const pct = getHPPercentage();
-    if (pct > 50) return 'bg-status-buff';
-    if (pct > 25) return 'bg-status-warning';
-    return 'bg-status-hp';
+    if (pct > 50) return 'fantasy-hp-fill';
+    if (pct > 25) return 'fantasy-hp-fill-warn';
+    return 'fantasy-hp-fill-crit';
   };
 
   const groupedProfs = groupProficiencies();
@@ -390,9 +390,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   const renderLeftColumn = () => (
     <div className="space-y-4">
       {/* HP Section */}
-      <div className="relative p-4 rounded-lg bg-gradient-to-br from-hp-red/10 to-transparent border border-hp-red/20">
+      <div className="relative p-4 rounded-lg parchment-card border border-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-full bg-hp-red/20 border border-hp-red/30">
+          <div className="p-2 rounded-full bg-hp-red/15 border border-hp-red/25">
             <Heart className="w-5 h-5 text-hp-red" />
           </div>
           <span className="font-cinzel font-semibold tracking-wide">Hit Points</span>
@@ -403,14 +403,14 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           </span>
           <span className="text-xl text-muted-foreground">/ {character.max_hp}</span>
           {character.temp_hp > 0 && (
-            <Badge className="ml-2 bg-secondary/20 text-secondary border-secondary/30">
+            <span className="ml-2 fantasy-badge">
               +{character.temp_hp} temp
-            </Badge>
+            </span>
           )}
         </div>
-        <div className="h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
+        <div className="h-3 fantasy-hp-track rounded-full overflow-hidden">
           <div 
-            className={`h-full ${getHPColor()} transition-all duration-500`}
+            className={`h-full ${getHPColor()} transition-all duration-500 rounded-full`}
             style={{ width: `${Math.min(100, getHPPercentage())}%` }}
           />
         </div>
@@ -436,11 +436,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         ].map((stat) => (
           <div 
             key={stat.label}
-            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors"
+            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors parchment-inset"
           >
             <stat.icon className={`w-4 h-4 mx-auto mb-1 ${stat.color}`} />
             <div className="text-xl font-bold">{stat.value}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{stat.label}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-cinzel">{stat.label}</div>
           </div>
         ))}
       </div>
@@ -529,8 +529,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                       key={i}
                       className={`w-6 h-6 rounded-full border-2 transition-colors ${
                         i < res.current_value
-                          ? 'bg-warning-amber border-warning-amber shadow-[0_0_6px_hsl(var(--warning-amber)/0.5)]'
-                          : 'bg-muted/30 border-muted-foreground/30'
+                          ? 'bg-warning-amber border-warning-amber shadow-[0_0_4px_hsl(var(--warning-amber)/0.3)]'
+                          : 'bg-card border-border'
                       }`}
                     />
                   ))}
@@ -569,9 +569,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               return (
                 <div 
                   key={key} 
-                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/10 to-transparent border-2 border-brass/40 hover:border-brass transition-colors"
+                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1">{key}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1 font-cinzel">{key}</div>
                   <div className="text-2xl font-bold">{value}</div>
                   <div className={`text-sm font-semibold ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
                     {formatModifier(mod)}
@@ -600,7 +600,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           ].map((save) => {
             const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
             return (
-              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-muted/30 border border-border/50">
+              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-card/80 border border-border/50 parchment-inset">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
                   <span className="text-muted-foreground font-medium">{save.label}</span>
@@ -617,7 +617,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Skills */}
       {skills.length > 0 && abilities && (
         <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors parchment-inset">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-brass" />
               <span className="font-cinzel text-sm tracking-wide">Skills</span>
@@ -652,7 +652,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Proficiencies */}
       {Object.keys(groupedProfs).length > 0 && (
         <Collapsible open={profOpen} onOpenChange={setProfOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/20 border border-border/50 hover:bg-muted/30 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors parchment-inset">
             <div className="flex items-center gap-2">
               <Sword className="w-4 h-4 text-brass" />
               <span className="font-cinzel text-sm tracking-wide">Proficiencies</span>
@@ -736,8 +736,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                       key={i}
                       className={`w-4 h-4 rounded-full border-2 ${
                         i < slot.max_slots - slot.used_slots
-                          ? 'bg-primary border-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]'
-                          : 'bg-muted/30 border-muted-foreground/30'
+                          ? 'bg-primary border-primary shadow-[0_0_3px_hsl(var(--primary)/0.3)]'
+                          : 'bg-card border-border'
                       }`}
                     />
                   ))}

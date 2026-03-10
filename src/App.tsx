@@ -67,6 +67,7 @@ function AppRoutes() {
           <Route path="/community/:categoryId" element={<Community />} />
           <Route path="/community/topic/:topicId" element={<Community />} />
           <Route path="/changelog" element={<Changelog />} />
+          <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
           
           {/* Protected routes */}
           {loading ? (
@@ -78,7 +79,6 @@ function AppRoutes() {
               <Route path="/campaign-hub" element={<CampaignHub />} />
               <Route path="/campaigns/:campaignId" element={<CampaignHub />} />
               <Route path="/campaigns/:campaignId/dm/:sessionId?" element={<SessionDM />} />
-              <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
               <Route path="/demo/:demoId/dm/:sessionId?" element={<SessionDM />} />
               <Route path="/session/dm" element={<SessionDM />} />
               <Route path="/session/player" element={<SessionPlayer />} />

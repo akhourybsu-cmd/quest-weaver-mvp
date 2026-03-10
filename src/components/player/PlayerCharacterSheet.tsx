@@ -436,11 +436,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         ].map((stat) => (
           <div 
             key={stat.label}
-            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors"
+            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors parchment-inset"
           >
             <stat.icon className={`w-4 h-4 mx-auto mb-1 ${stat.color}`} />
             <div className="text-xl font-bold">{stat.value}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{stat.label}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-cinzel">{stat.label}</div>
           </div>
         ))}
       </div>

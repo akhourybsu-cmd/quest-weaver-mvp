@@ -128,20 +128,20 @@ const PlayerCharacterViewPage = () => {
               <h1 className="text-2xl md:text-3xl font-cinzel font-bold text-foreground tracking-wide truncate">
                 {character.name}
               </h1>
-              <div className="flex items-center gap-2 flex-wrap mt-2">
-                <Badge variant="outline" className="border-brass/50 text-brass font-cinzel text-xs tracking-wide">
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                <span className="fantasy-badge font-cinzel">
                   Level {character.level}
-                </Badge>
-                <Badge variant="outline" className="border-primary/50 text-primary text-xs">
+                </span>
+                <span className="fantasy-badge">
                   {character.class}
-                </Badge>
+                </span>
                 {character.subclass_name && (
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 text-xs">
+                  <span className="fantasy-badge">
                     {character.subclass_name}
-                  </Badge>
+                  </span>
                 )}
                 {character.level >= 3 && !character.subclass_name && (
-                  <Badge variant="outline" className="border-amber-500/50 text-amber-500 animate-pulse text-xs">
+                  <Badge variant="outline" className="border-warning-amber/50 text-warning-amber animate-pulse text-xs">
                     Subclass Available!
                   </Badge>
                 )}

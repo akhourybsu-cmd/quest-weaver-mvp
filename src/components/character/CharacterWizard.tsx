@@ -311,6 +311,8 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   useEffect(() => {
     if (open && !editCharacterId) {
       resetDraft();
+      setDraftId(null);
+      setCurrentStep(0);
     }
   }, [open, editCharacterId]);
 

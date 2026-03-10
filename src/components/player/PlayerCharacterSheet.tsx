@@ -169,12 +169,10 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   };
 
   useEffect(() => {
-    // Track if this effect instance is still active to prevent race conditions
     let isActive = true;
 
     const loadData = async () => {
       await fetchAllData();
-      // No need to check isActive here since individual fetches set state independently
     };
 
     loadData();
@@ -349,15 +347,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   };
 
   const getSourceBadgeColor = (source: string) => {
-    switch (source) {
-      case 'Class': return 'fantasy-badge';
-      case 'Subclass': return 'fantasy-badge';
-      case 'Ancestry': return 'fantasy-badge';
-      case 'Subancestry': return 'fantasy-badge';
-      case 'Background': return 'fantasy-badge';
-      case 'Feat': return 'fantasy-badge';
-      default: return 'fantasy-badge';
-    }
+    return 'fantasy-badge';
   };
 
   if (!character) {
@@ -388,16 +378,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   // === COLUMN CONTENT RENDERERS ===
 
   const renderLeftColumn = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* HP Section */}
       <div className="relative p-4 rounded-lg parchment-card border border-border">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-full bg-hp-red/15 border border-hp-red/25">
-            <Heart className="w-5 h-5 text-hp-red" />
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="p-1.5 rounded-full bg-hp-red/15 border border-hp-red/25">
+            <Heart className="w-4 h-4 text-hp-red" />
           </div>
-          <span className="font-cinzel font-semibold tracking-wide">Hit Points</span>
+          <span className="font-cinzel font-semibold tracking-wide text-sm">Hit Points</span>
         </div>
-        <div className="flex items-baseline gap-2 mb-2">
+        <div className="flex items-baseline gap-2 mb-2.5">
           <span className="text-4xl font-bold tabular-nums text-foreground">
             {character.current_hp}
           </span>
@@ -408,7 +398,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             </span>
           )}
         </div>
-        <div className="h-3 fantasy-hp-track rounded-full overflow-hidden">
+        <div className="h-3.5 fantasy-hp-track-embedded rounded-full overflow-hidden">
           <div 
             className={`h-full ${getHPColor()} transition-all duration-500 rounded-full`}
             style={{ width: `${Math.min(100, getHPPercentage())}%` }}
@@ -427,20 +417,20 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       )}
 
       {/* Core Stats Grid */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2.5">
         {[
-          { icon: Shield, label: 'AC', value: character.ac, color: 'text-brass' },
-          { icon: Zap, label: 'Speed', value: `${character.speed}`, color: 'text-primary' },
-          { icon: Star, label: 'Prof', value: `+${character.proficiency_bonus}`, color: 'text-secondary' },
-          { icon: BookOpen, label: 'Percep', value: character.passive_perception, color: 'text-muted-foreground' },
+          { icon: Shield, label: 'Armor Class', shortLabel: 'AC', value: character.ac, color: 'text-brass' },
+          { icon: Zap, label: 'Speed', shortLabel: 'Speed', value: `${character.speed} ft`, color: 'text-primary' },
+          { icon: Star, label: 'Proficiency', shortLabel: 'Prof', value: `+${character.proficiency_bonus}`, color: 'text-brass' },
+          { icon: BookOpen, label: 'Perception', shortLabel: 'Percep', value: character.passive_perception, color: 'text-muted-foreground' },
         ].map((stat) => (
           <div 
-            key={stat.label}
-            className="relative p-3 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors parchment-inset"
+            key={stat.shortLabel}
+            className="relative p-4 text-center rounded-lg bg-card border-2 border-brass/30 hover:border-brass/50 transition-colors parchment-inset"
           >
-            <stat.icon className={`w-4 h-4 mx-auto mb-1 ${stat.color}`} />
-            <div className="text-xl font-bold">{stat.value}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-cinzel">{stat.label}</div>
+            <stat.icon className={`w-5 h-5 mx-auto mb-1.5 ${stat.color}`} />
+            <div className="text-2xl font-bold">{stat.value}</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-cinzel mt-0.5">{stat.shortLabel}</div>
           </div>
         ))}
       </div>
@@ -471,35 +461,29 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Defenses */}
       {hasDefenses && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-brass" />
-            <span className="font-cinzel text-sm text-brass tracking-wide">Defenses</span>
+          <div className="fantasy-section-header flex items-center gap-2 !border-b-0 !pb-0 !mb-2">
+            <ShieldAlert className="w-4 h-4" />
+            <span>Defenses</span>
           </div>
           <div className="space-y-2">
             {character.resistances && character.resistances.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.resistances.map((r: string) => (
-                  <Badge key={r} variant="outline" className="bg-secondary/10 text-secondary border-secondary/30 text-xs">
-                    Resist: {r}
-                  </Badge>
+                  <span key={r} className="fantasy-badge text-[10px]">Resist: {r}</span>
                 ))}
               </div>
             )}
             {character.immunities && character.immunities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.immunities.map((i: string) => (
-                  <Badge key={i} variant="outline" className="bg-status-buff/10 text-status-buff border-status-buff/30 text-xs">
-                    Immune: {i}
-                  </Badge>
+                  <span key={i} className="fantasy-badge text-[10px]">Immune: {i}</span>
                 ))}
               </div>
             )}
             {character.vulnerabilities && character.vulnerabilities.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {character.vulnerabilities.map((v: string) => (
-                  <Badge key={v} variant="outline" className="bg-status-hp/10 text-status-hp border-status-hp/30 text-xs">
-                    Vuln: {v}
-                  </Badge>
+                  <span key={v} className="fantasy-badge text-[10px]">Vuln: {v}</span>
                 ))}
               </div>
             )}
@@ -510,18 +494,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Resources */}
       {resources.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-warning-amber" />
-            <span className="font-cinzel text-sm text-warning-amber tracking-wide">Resources</span>
+          <div className="fantasy-section-header flex items-center gap-2 !border-b-0 !pb-0 !mb-2">
+            <Flame className="w-4 h-4" />
+            <span>Resources</span>
           </div>
           <div className="space-y-2">
             {resources.map((res) => (
-              <div key={res.id} className="p-3 rounded-lg bg-warning-amber/5 border border-warning-amber/20">
+              <div key={res.id} className="p-3 rounded-lg parchment-card border border-border">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-sm">{res.label}</span>
-                  <Badge variant="outline" className="text-[10px] bg-muted/30">
-                    {res.recharge}
-                  </Badge>
+                  <span className="fantasy-badge text-[10px]">{res.recharge}</span>
                 </div>
                 <div className="flex gap-1">
                   {Array.from({ length: res.max_value }).map((_, i) => (
@@ -542,38 +524,37 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       )}
 
       {/* Level Up Button */}
-      <Button
-        variant="outline"
-        className="w-full border-brass/50 hover:border-brass hover:bg-brass/10 font-cinzel"
+      <button
+        className="w-full py-2.5 px-4 rounded-lg fantasy-level-up-btn flex items-center justify-center gap-2"
         onClick={() => setShowLevelUp(true)}
       >
-        <TrendingUp className="h-4 w-4 mr-2" />
+        <TrendingUp className="h-4 w-4" />
         Level Up
-      </Button>
+      </button>
     </div>
   );
 
   const renderMiddleColumn = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Ability Scores */}
       {abilities && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
-            <span className="font-cinzel text-sm text-brass tracking-widest uppercase">Abilities</span>
+            <span className="font-cinzel text-xs text-brass tracking-[0.15em] uppercase font-bold">Abilities</span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             {Object.entries(abilities).map(([key, value]) => {
               const mod = getAbilityModifier(value);
               return (
                 <div 
                   key={key} 
-                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
+                  className="relative text-center p-4 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1 font-cinzel">{key}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-brass mb-1.5 font-cinzel">{key}</div>
                   <div className="text-2xl font-bold">{value}</div>
-                  <div className={`text-sm font-semibold ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
+                  <div className={`text-sm font-semibold mt-0.5 ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
                     {formatModifier(mod)}
                   </div>
                 </div>
@@ -584,10 +565,10 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       )}
 
       {/* Saving Throws */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-brass" />
-          <span className="font-cinzel text-sm text-brass tracking-wide">Saving Throws</span>
+      <div className="space-y-3 mt-6">
+        <div className="fantasy-section-header flex items-center gap-2">
+          <Shield className="w-4 h-4" />
+          <span>Saving Throws</span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           {[
@@ -600,7 +581,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           ].map((save) => {
             const isProficient = saveProficiencies[save.key as keyof typeof saveProficiencies] || false;
             return (
-              <div key={save.label} className="flex justify-between items-center px-3 py-1.5 rounded bg-card/80 border border-border/50 parchment-inset">
+              <div key={save.label} className="flex justify-between items-center px-3 py-2 rounded-lg bg-card/80 border border-border/50 parchment-inset">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isProficient ? 'bg-brass shadow-[0_0_4px_hsl(var(--brass)/0.5)]' : 'bg-muted-foreground/30'}`} />
                   <span className="text-muted-foreground font-medium">{save.label}</span>
@@ -617,11 +598,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Skills */}
       {skills.length > 0 && abilities && (
         <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors parchment-inset">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg parchment-card border border-border hover:border-brass/40 transition-colors">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-brass" />
               <span className="font-cinzel text-sm tracking-wide">Skills</span>
-              <Badge variant="outline" className="text-xs">{skills.length}</Badge>
+              <span className="fantasy-badge text-[10px]">{skills.length}</span>
             </div>
             <ChevronDown className={`w-4 h-4 transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
@@ -632,11 +613,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                 const abilityScore = abilities[abilityKey];
                 const modifier = getSkillModifier(skill, abilityScore);
                 return (
-                  <div key={skill.skill} className="flex justify-between items-center px-2 py-1 rounded bg-muted/20">
+                  <div key={skill.skill} className="flex justify-between items-center px-2.5 py-1.5 rounded bg-muted/20 hover:bg-muted/40 transition-colors">
                     <span className="text-muted-foreground flex items-center gap-1 text-xs">
                       {skill.skill}
-                      {skill.expertise && <Badge variant="outline" className="text-[8px] h-3 px-1 bg-primary/20">E</Badge>}
-                      {skill.proficient && !skill.expertise && <span className="text-primary text-xs">●</span>}
+                      {skill.expertise && <span className="fantasy-badge text-[8px] !py-0">E</span>}
+                      {skill.proficient && !skill.expertise && <span className="text-brass text-xs">●</span>}
                     </span>
                     <span className={`font-mono font-bold ${modifier >= 0 ? 'text-foreground' : 'text-hp-red'}`}>
                       {formatModifier(modifier)}
@@ -652,7 +633,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Proficiencies */}
       {Object.keys(groupedProfs).length > 0 && (
         <Collapsible open={profOpen} onOpenChange={setProfOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-card/80 border border-border hover:bg-card transition-colors parchment-inset">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg parchment-card border border-border hover:border-brass/40 transition-colors">
             <div className="flex items-center gap-2">
               <Sword className="w-4 h-4 text-brass" />
               <span className="font-cinzel text-sm tracking-wide">Proficiencies</span>
@@ -662,12 +643,10 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
           <CollapsibleContent className="mt-3 space-y-3">
             {Object.entries(groupedProfs).map(([type, items]) => (
               <div key={type}>
-                <span className="text-xs text-muted-foreground capitalize font-medium">{type}</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="fantasy-subsection-label">{type}</span>
+                <div className="flex flex-wrap gap-1 mt-1.5">
                   {items.map((name) => (
-                    <Badge key={name} variant="secondary" className="text-xs bg-secondary/10 border-secondary/30">
-                      {name}
-                    </Badge>
+                    <span key={name} className="fantasy-badge text-[10px]">{name}</span>
                   ))}
                 </div>
               </div>
@@ -679,15 +658,13 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Languages */}
       {languages.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Languages className="w-4 h-4 text-brass" />
-            <span className="font-cinzel text-sm tracking-wide">Languages</span>
+          <div className="fantasy-section-header flex items-center gap-2 !border-b-0 !pb-0 !mb-2">
+            <Languages className="w-4 h-4" />
+            <span>Languages</span>
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {languages.map((lang) => (
-              <Badge key={lang.name} variant="outline" className="text-xs">
-                {lang.name}
-              </Badge>
+              <span key={lang.name} className="fantasy-badge">{lang.name}</span>
             ))}
           </div>
         </div>
@@ -696,23 +673,23 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
   );
 
   const renderRightColumn = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Spellcasting Stats */}
       {hasSpellcasting && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Wand2 className="w-4 h-4 text-primary" />
-            <span className="font-cinzel text-sm text-primary tracking-wide">Spellcasting</span>
+          <div className="fantasy-section-header flex items-center gap-2">
+            <Wand2 className="w-4 h-4" />
+            <span>Spellcasting</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             {[
               { label: 'Ability', value: character.spell_ability?.toUpperCase() },
               { label: 'Save DC', value: character.spell_save_dc },
               { label: 'Attack', value: character.spell_attack_mod && character.spell_attack_mod >= 0 ? `+${character.spell_attack_mod}` : character.spell_attack_mod },
             ].map((stat) => (
-              <div key={stat.label} className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
-                <div className="text-[10px] uppercase text-muted-foreground">{stat.label}</div>
-                <div className="text-lg font-bold text-primary">{stat.value}</div>
+              <div key={stat.label} className="text-center p-3 rounded-lg border-2 border-brass/30 parchment-inset bg-gradient-to-b from-brass/5 to-transparent">
+                <div className="text-[10px] uppercase text-muted-foreground font-cinzel tracking-wider">{stat.label}</div>
+                <div className="text-lg font-bold text-brass mt-0.5">{stat.value}</div>
               </div>
             ))}
           </div>
@@ -722,21 +699,21 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Spell Slots */}
       {spellSlots.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary" />
-            <span className="font-cinzel text-sm text-primary tracking-wide">Spell Slots</span>
+          <div className="fantasy-section-header flex items-center gap-2">
+            <BookOpen className="w-4 h-4" />
+            <span>Spell Slots</span>
           </div>
           <div className="space-y-2">
             {spellSlots.map((slot) => (
-              <div key={slot.spell_level} className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
-                <span className="text-sm text-muted-foreground">Level {slot.spell_level}</span>
-                <div className="flex gap-1">
+              <div key={slot.spell_level} className="flex items-center justify-between p-2.5 rounded-lg parchment-card border border-border">
+                <span className="text-sm text-muted-foreground font-medium">Level {slot.spell_level}</span>
+                <div className="flex gap-1.5">
                   {Array.from({ length: slot.max_slots }).map((_, i) => (
                     <div
                       key={i}
                       className={`w-4 h-4 rounded-full border-2 ${
                         i < slot.max_slots - slot.used_slots
-                          ? 'bg-primary border-primary shadow-[0_0_3px_hsl(var(--primary)/0.3)]'
+                          ? 'bg-brass border-brass shadow-[0_0_3px_hsl(var(--brass)/0.3)]'
                           : 'bg-card border-border'
                       }`}
                     />
@@ -751,28 +728,27 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Spellbook */}
       {spells.length > 0 && (
         <Collapsible open={spellsOpen} onOpenChange={setSpellsOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg parchment-card border border-border hover:border-brass/40 transition-colors">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="font-cinzel text-sm text-primary tracking-wide">Spellbook</span>
-              <Badge variant="outline" className="text-xs border-primary/30">{spells.length}</Badge>
+              <Sparkles className="w-4 h-4 text-brass" />
+              <span className="font-cinzel text-sm tracking-wide">Spellbook</span>
+              <span className="fantasy-badge text-[10px]">{spells.length}</span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-primary transition-transform ${spellsOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 transition-transform ${spellsOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-3">
             {spells.filter(s => s.spell.level === 0).length > 0 && (
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Cantrips</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="fantasy-subsection-label">Cantrips</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {spells.filter(s => s.spell.level === 0).map((s) => (
-                    <Badge 
+                    <span 
                       key={s.id} 
-                      variant="outline" 
-                      className="cursor-pointer hover:bg-primary/10 text-xs border-primary/30"
+                      className="fantasy-badge cursor-pointer hover:border-brass/80 transition-colors"
                       onClick={() => setSelectedSpell(s.spell)}
                     >
                       {s.spell.name}
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
@@ -782,19 +758,18 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               if (levelSpells.length === 0) return null;
               return (
                 <div key={level}>
-                  <span className="text-xs text-muted-foreground font-medium">Level {level}</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <span className="fantasy-subsection-label">Level {level}</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {levelSpells.map((s) => (
-                      <Badge 
+                      <span 
                         key={s.id} 
-                        variant={s.prepared ? "default" : "outline"}
-                        className="cursor-pointer hover:bg-primary/20 text-xs"
+                        className={`fantasy-badge cursor-pointer hover:border-brass/80 transition-colors ${s.prepared ? '!bg-brass/20 !border-brass/50' : ''}`}
                         onClick={() => setSelectedSpell(s.spell)}
                       >
                         {s.spell.name}
-                        {s.spell.concentration && <span className="ml-1 opacity-70">C</span>}
-                        {s.spell.ritual && <span className="ml-1 opacity-70">R</span>}
-                      </Badge>
+                        {s.spell.concentration && <span className="ml-1 opacity-60">C</span>}
+                        {s.spell.ritual && <span className="ml-1 opacity-60">R</span>}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -807,31 +782,31 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
       {/* Features & Abilities */}
       {(features.length > 0 || ancestryTraits.length > 0 || subancestryTraits.length > 0) && (
         <Collapsible open={featuresOpen} onOpenChange={setFeaturesOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg bg-brass/5 border border-brass/20 hover:bg-brass/10 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg parchment-card border border-border hover:border-brass/40 transition-colors">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-brass" />
-              <span className="font-cinzel text-sm text-brass tracking-wide">Features & Abilities</span>
-              <Badge variant="outline" className="text-xs border-brass/30">
+              <span className="font-cinzel text-sm tracking-wide">Features & Abilities</span>
+              <span className="fantasy-badge text-[10px]">
                 {features.length + ancestryTraits.length + subancestryTraits.length}
-              </Badge>
+              </span>
             </div>
             <ChevronDown className={`w-4 h-4 text-brass transition-transform ${featuresOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-4">
             {features.filter(f => f.source === 'Class').length > 0 && (
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Class Features</span>
-                <div className="space-y-1 mt-1">
+                <span className="fantasy-subsection-label">Class Features</span>
+                <div className="space-y-1.5 mt-2">
                   {features.filter(f => f.source === 'Class').map((feature) => (
                     <div 
                       key={feature.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+                      className="fantasy-feature-row flex items-center justify-between p-2 rounded-r-lg cursor-pointer hover:bg-brass/5 transition-colors"
                       onClick={() => setSelectedFeature(feature)}
                     >
                       <span className="text-sm font-medium">{feature.name}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Class')}`}>
+                      <span className={`text-[10px] ${getSourceBadgeColor('Class')}`}>
                         Lvl {feature.level}
-                      </Badge>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -839,18 +814,18 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             )}
             {features.filter(f => f.source === 'Subclass').length > 0 && (
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Subclass Features</span>
-                <div className="space-y-1 mt-1">
+                <span className="fantasy-subsection-label">Subclass Features</span>
+                <div className="space-y-1.5 mt-2">
                   {features.filter(f => f.source === 'Subclass').map((feature) => (
                     <div 
                       key={feature.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-secondary/5 border border-secondary/20 cursor-pointer hover:bg-secondary/10 transition-colors"
+                      className="fantasy-feature-row flex items-center justify-between p-2 rounded-r-lg cursor-pointer hover:bg-brass/5 transition-colors"
                       onClick={() => setSelectedFeature(feature)}
                     >
                       <span className="text-sm font-medium">{feature.name}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subclass')}`}>
+                      <span className={`text-[10px] ${getSourceBadgeColor('Subclass')}`}>
                         Lvl {feature.level}
-                      </Badge>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -858,18 +833,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             )}
             {ancestryTraits.length > 0 && (
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Ancestry Traits</span>
-                <div className="space-y-1 mt-1">
+                <span className="fantasy-subsection-label">Ancestry Traits</span>
+                <div className="space-y-1.5 mt-2">
                   {ancestryTraits.map((trait, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-accent/5 border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors"
+                      className="fantasy-feature-row flex items-center justify-between p-2 rounded-r-lg cursor-pointer hover:bg-brass/5 transition-colors"
                       onClick={() => setSelectedTrait(trait)}
                     >
                       <span className="text-sm font-medium">{trait.name}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Ancestry')}`}>
-                        Ancestry
-                      </Badge>
+                      <span className="fantasy-badge text-[10px]">Ancestry</span>
                     </div>
                   ))}
                 </div>
@@ -877,18 +850,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             )}
             {subancestryTraits.length > 0 && (
               <div>
-                <span className="text-xs text-muted-foreground font-medium">Subancestry Traits</span>
-                <div className="space-y-1 mt-1">
+                <span className="fantasy-subsection-label">Subancestry Traits</span>
+                <div className="space-y-1.5 mt-2">
                   {subancestryTraits.map((trait, idx) => (
                     <div 
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted transition-colors"
+                      className="fantasy-feature-row flex items-center justify-between p-2 rounded-r-lg cursor-pointer hover:bg-brass/5 transition-colors"
                       onClick={() => setSelectedTrait(trait)}
                     >
                       <span className="text-sm font-medium">{trait.name}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getSourceBadgeColor('Subancestry')}`}>
-                        Subancestry
-                      </Badge>
+                      <span className="fantasy-badge text-[10px]">Subancestry</span>
                     </div>
                   ))}
                 </div>
@@ -937,14 +908,14 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         <DialogContent variant="ornaments" className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Sparkles className="w-5 h-5 text-brass" />
               {selectedSpell?.name}
             </DialogTitle>
             <DialogDescription className="flex flex-wrap gap-2 mt-2">
-              <Badge variant="outline">{selectedSpell?.level === 0 ? 'Cantrip' : `Level ${selectedSpell?.level}`}</Badge>
-              <Badge variant="outline">{selectedSpell?.school}</Badge>
-              {selectedSpell?.concentration && <Badge variant="outline" className="bg-primary/10">Concentration</Badge>}
-              {selectedSpell?.ritual && <Badge variant="outline" className="bg-secondary/10">Ritual</Badge>}
+              <span className="fantasy-badge">{selectedSpell?.level === 0 ? 'Cantrip' : `Level ${selectedSpell?.level}`}</span>
+              <span className="fantasy-badge">{selectedSpell?.school}</span>
+              {selectedSpell?.concentration && <span className="fantasy-badge">Concentration</span>}
+              {selectedSpell?.ritual && <span className="fantasy-badge">Ritual</span>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
@@ -964,12 +935,12 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               }</div>
               <div><strong>Duration:</strong> {selectedSpell?.duration}</div>
             </div>
-            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <div className="p-3 rounded-lg parchment-card border border-border">
               {selectedSpell?.description}
             </div>
             {selectedSpell?.higher_levels && (
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <strong className="text-primary">At Higher Levels:</strong> {selectedSpell.higher_levels}
+              <div className="p-3 rounded-lg parchment-card border border-brass/30">
+                <strong className="text-brass">At Higher Levels:</strong> {selectedSpell.higher_levels}
               </div>
             )}
           </div>
@@ -985,13 +956,13 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               {selectedFeature?.name}
             </DialogTitle>
             <DialogDescription className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className={getSourceBadgeColor(selectedFeature?.source || '')}>
+              <span className={getSourceBadgeColor(selectedFeature?.source || '')}>
                 {selectedFeature?.source}
-              </Badge>
-              <Badge variant="outline">Level {selectedFeature?.level}</Badge>
+              </span>
+              <span className="fantasy-badge">Level {selectedFeature?.level}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm">
+          <div className="p-3 rounded-lg parchment-card border border-border text-sm">
             {selectedFeature?.description || 'No description available.'}
           </div>
         </DialogContent>
@@ -1002,11 +973,11 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
         <DialogContent variant="ornaments" className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-cinzel text-xl flex items-center gap-2">
-              <Star className="w-5 h-5 text-accent" />
+              <Star className="w-5 h-5 text-brass" />
               {selectedTrait?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm">
+          <div className="p-3 rounded-lg parchment-card border border-border text-sm">
             {selectedTrait?.description || 'No description available.'}
           </div>
         </DialogContent>

@@ -569,9 +569,9 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
               return (
                 <div 
                   key={key} 
-                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/10 to-transparent border-2 border-brass/40 hover:border-brass transition-colors"
+                  className="relative text-center p-3 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1">{key}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-brass mb-1 font-cinzel">{key}</div>
                   <div className="text-2xl font-bold">{value}</div>
                   <div className={`text-sm font-semibold ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
                     {formatModifier(mod)}

@@ -736,8 +736,8 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
                       key={i}
                       className={`w-4 h-4 rounded-full border-2 ${
                         i < slot.max_slots - slot.used_slots
-                          ? 'bg-primary border-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]'
-                          : 'bg-muted/30 border-muted-foreground/30'
+                          ? 'bg-primary border-primary shadow-[0_0_3px_hsl(var(--primary)/0.3)]'
+                          : 'bg-card border-border'
                       }`}
                     />
                   ))}

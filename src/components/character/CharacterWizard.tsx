@@ -1187,6 +1187,17 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
+      // Clean up any orphaned draft characters by this user (drafts that were never finalized)
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        await supabase
+          .from("characters")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("creation_status", "draft")
+          .neq("id", characterId!);
+      }
+
       toast({
         title: "Character Created!",
         description: `${draft.name} is ready for adventure.`,

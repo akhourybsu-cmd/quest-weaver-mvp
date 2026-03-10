@@ -13,6 +13,7 @@ interface CharacterPortraitEditorProps {
   characterName: string;
   currentPortraitUrl?: string | null;
   onPortraitUpdated: (newUrl: string | null) => void;
+  trigger?: React.ReactNode;
 }
 
 export const CharacterPortraitEditor = ({

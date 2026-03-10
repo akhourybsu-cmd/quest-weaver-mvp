@@ -67,6 +67,7 @@ function AppRoutes() {
           <Route path="/community/:categoryId" element={<Community />} />
           <Route path="/community/topic/:topicId" element={<Community />} />
           <Route path="/changelog" element={<Changelog />} />
+          <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
           
           {/* Protected routes */}
           {loading ? (

@@ -350,13 +350,13 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
 
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
-      case 'Class': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-      case 'Subclass': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'Ancestry': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      case 'Subancestry': return 'bg-teal-500/20 text-teal-300 border-teal-500/40';
-      case 'Background': return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'Feat': return 'bg-red-500/20 text-red-300 border-red-500/40';
-      default: return 'bg-muted text-muted-foreground';
+      case 'Class': return 'fantasy-badge';
+      case 'Subclass': return 'fantasy-badge';
+      case 'Ancestry': return 'fantasy-badge';
+      case 'Subancestry': return 'fantasy-badge';
+      case 'Background': return 'fantasy-badge';
+      case 'Feat': return 'fantasy-badge';
+      default: return 'fantasy-badge';
     }
   };
 

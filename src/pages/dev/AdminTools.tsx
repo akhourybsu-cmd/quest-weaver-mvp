@@ -451,6 +451,23 @@ const AdminTools = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Changelog Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5" />
+              Changelog Management
+            </CardTitle>
+            <CardDescription>Add and manage changelog entries from the database</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/changelog")} variant="outline" className="w-full">
+              <ScrollText className="h-4 w-4 mr-2" />
+              Open Changelog Manager
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle, RefreshCw, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CLASS_FEATURES_SRD } from "@/data/srd/classFeaturesSeed";
@@ -451,6 +451,23 @@ const AdminTools = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Changelog Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5" />
+              Changelog Management
+            </CardTitle>
+            <CardDescription>Add and manage changelog entries from the database</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/changelog")} variant="outline" className="w-full">
+              <ScrollText className="h-4 w-4 mr-2" />
+              Open Changelog Manager
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

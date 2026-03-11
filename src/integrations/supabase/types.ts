@@ -499,6 +499,68 @@ export type Database = {
           },
         ]
       }
+      changelog_changes: {
+        Row: {
+          created_at: string
+          description: string
+          entry_id: string
+          id: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          entry_id: string
+          id?: string
+          sort_order?: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          entry_id?: string
+          id?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_changes_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "changelog_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      changelog_entries: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          sort_order: number
+          title: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          sort_order?: number
+          title: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       character_abilities: {
         Row: {
           cha: number

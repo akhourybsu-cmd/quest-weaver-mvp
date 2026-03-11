@@ -465,6 +465,21 @@ const Index = ({ session }: IndexProps) => {
         </div>
       </section>
 
+      {/* Interactive Feature Showcase */}
+      <section className="py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-cinzel font-bold text-center mb-2">
+            See it in action
+          </h2>
+          <p className="text-center text-sm text-muted-foreground max-w-lg mx-auto mb-8">
+            {viewMode === "dm"
+              ? "Click through the DM's toolkit — encounters, NPCs, lore, and session prep."
+              : "Explore the player experience — character sheets, spells, inventory, and more."}
+          </p>
+          <FeatureShowcase viewMode={viewMode} />
+        </div>
+      </section>
+
       {/* Feature Tiles */}
       <section id="features" className="py-16 md:py-24">
         <div className="container mx-auto px-4">

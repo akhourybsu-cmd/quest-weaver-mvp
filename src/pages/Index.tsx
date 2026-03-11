@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
 import { Session } from "@supabase/supabase-js";
+import FeatureShowcase from "@/components/landing/FeatureShowcase";
 
 interface IndexProps {
   session: Session | null;
@@ -461,6 +462,21 @@ const Index = ({ session }: IndexProps) => {
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Feature Showcase */}
+      <section className="py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-cinzel font-bold text-center mb-2">
+            See it in action
+          </h2>
+          <p className="text-center text-sm text-muted-foreground max-w-lg mx-auto mb-8">
+            {viewMode === "dm"
+              ? "Click through the DM's toolkit — encounters, NPCs, lore, and session prep."
+              : "Explore the player experience — character sheets, spells, inventory, and more."}
+          </p>
+          <FeatureShowcase viewMode={viewMode} />
         </div>
       </section>
 

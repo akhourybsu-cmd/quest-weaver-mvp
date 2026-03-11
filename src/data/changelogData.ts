@@ -12,6 +12,28 @@ export interface ChangelogEntry {
 
 export const changelogData: ChangelogEntry[] = [
   {
+    version: "2.0.0",
+    date: "March 11, 2026",
+    title: "Interactive Showcase & Authentication",
+    changes: [
+      { type: "feature", description: "Interactive Feature Showcase on homepage with animated mock browser frames showcasing DM and Player experiences" },
+      { type: "feature", description: "Google Sign-In via OAuth integration for one-click authentication" },
+      { type: "feature", description: "Database-backed Changelog with admin management UI for updates without code deploys" },
+      { type: "improvement", description: "Redesigned sign-in/sign-up pages with Zod validation, password visibility toggle, and branded UI" },
+      { type: "improvement", description: "DM/Player toggle now controls both showcase slides and feature tiles on homepage" },
+    ],
+  },
+  {
+    version: "1.9.0",
+    date: "February 15, 2026",
+    title: "Telemetry & Timeline Logging",
+    changes: [
+      { type: "feature", description: "Analytics telemetry system for combat action tracking with latency measurement" },
+      { type: "feature", description: "Timeline auto-logging for sessions, encounters, quests, NPCs, items, and locations" },
+      { type: "improvement", description: "App version checking with auto-refresh on new deployments" },
+    ],
+  },
+  {
     version: "1.8.0",
     date: "December 4, 2025",
     title: "Image Integration & Visual Polish",

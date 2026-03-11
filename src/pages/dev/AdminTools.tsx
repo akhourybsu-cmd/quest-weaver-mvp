@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle, RefreshCw, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CLASS_FEATURES_SRD } from "@/data/srd/classFeaturesSeed";

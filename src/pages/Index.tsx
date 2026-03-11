@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
 import { Session } from "@supabase/supabase-js";
+import FeatureShowcase from "@/components/landing/FeatureShowcase";
 
 interface IndexProps {
   session: Session | null;

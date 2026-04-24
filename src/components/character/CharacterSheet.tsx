@@ -358,6 +358,26 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Passive Senses</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-3 gap-4">
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Perception</div>
+            <div className="text-2xl font-bold">{character.passive_perception ?? (10 + calculateModifier(abilities.wis))}</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Investigation</div>
+            <div className="text-2xl font-bold">{character.passive_investigation ?? (10 + calculateModifier(abilities.int))}</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Insight</div>
+            <div className="text-2xl font-bold">{character.passive_insight ?? (10 + calculateModifier(abilities.wis))}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Resource Panel */}
       <ResourcePanel characterId={character.id} canEdit={false} />
 

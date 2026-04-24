@@ -60,6 +60,7 @@ export function PartyRestManager({ campaignId, characters, onUpdate }: PartyRest
             bonus_action_used: false,
             reaction_used: false,
             pact_slots_used: 0,
+            luck_points_used: 0,
             mystic_arcanum_6_used: false,
             mystic_arcanum_7_used: false,
             mystic_arcanum_8_used: false,
@@ -72,15 +73,17 @@ export function PartyRestManager({ campaignId, characters, onUpdate }: PartyRest
           .from("character_resources")
           .select("id, max_value")
           .eq("character_id", char.id)
-          .in("recharge", ["short", "long"]);
+          .in("recharge", ["short", "long", "daily"]);
 
         if (resources) {
-          for (const r of resources) {
-            await supabase
-              .from("character_resources")
-              .update({ current_value: r.max_value })
-              .eq("id", r.id);
-          }
+          await Promise.all(
+            resources.map(r =>
+              supabase
+                .from("character_resources")
+                .update({ current_value: r.max_value })
+                .eq("id", r.id)
+            )
+          );
         }
 
         // Reset spell slots

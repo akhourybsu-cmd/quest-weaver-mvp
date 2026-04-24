@@ -4734,6 +4734,57 @@ export type Database = {
           },
         ]
       }
+      rules_cache: {
+        Row: {
+          content_key: string
+          content_name: string
+          content_slug: string | null
+          content_type: string
+          created_at: string
+          id: string
+          last_synced_at: string
+          normalized_json: Json
+          raw_json: Json
+          ruleset_version: string | null
+          source_api: string
+          source_document: string | null
+          source_url: string
+          updated_at: string
+        }
+        Insert: {
+          content_key: string
+          content_name: string
+          content_slug?: string | null
+          content_type: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          normalized_json: Json
+          raw_json: Json
+          ruleset_version?: string | null
+          source_api: string
+          source_document?: string | null
+          source_url: string
+          updated_at?: string
+        }
+        Update: {
+          content_key?: string
+          content_name?: string
+          content_slug?: string | null
+          content_type?: string
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          normalized_json?: Json
+          raw_json?: Json
+          ruleset_version?: string | null
+          source_api?: string
+          source_document?: string | null
+          source_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       save_prompts: {
         Row: {
           ability: Database["public"]["Enums"]["ability_score"]
@@ -6622,6 +6673,8 @@ export type Database = {
       }
       is_current_user_admin: { Args: never; Returns: boolean }
       reset_spell_slots: { Args: { char_id: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       ability_score: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA"

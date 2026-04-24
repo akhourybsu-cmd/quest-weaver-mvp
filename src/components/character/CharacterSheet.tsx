@@ -181,7 +181,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         </div>
 
         {/* Quick stats bar */}
-        <div className="grid grid-cols-6 gap-3 text-center">
+        <div className="grid grid-cols-4 md:grid-cols-7 gap-3 text-center">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">HP</span>
             <div className="space-y-1">
@@ -210,8 +210,8 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             <span className="text-lg font-bold">{character.exhaustion_level || 0}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Passive Per</span>
-            <span className="text-lg font-bold">{character.passive_perception}</span>
+            <span className="text-xs text-muted-foreground">Pass. Perc</span>
+            <span className="text-lg font-bold">{character.passive_perception ?? 10}</span>
           </div>
         </div>
       </div>

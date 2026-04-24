@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked } from "lucide-react";
+import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier } from "@/lib/characterRules";
+import { repairCharacterData } from "@/lib/characterRepair";
 import { SpellPreparationManager } from "@/components/spells/SpellPreparationManager";
 import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
 import { SpellSlotTracker } from "@/components/spells/SpellSlotTracker";
@@ -44,10 +45,40 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   const [showCustomSpell, setShowCustomSpell] = useState(false);
   const [showSpellbook, setShowSpellbook] = useState(false);
   const [showDefensesEditor, setShowDefensesEditor] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   useEffect(() => {
     loadCharacter();
   }, [characterId]);
+
+  const handleRepair = async () => {
+    setRepairing(true);
+    try {
+      const report = await repairCharacterData(characterId);
+      const parts: string[] = [];
+      if (report.skillsFixed) parts.push(`${report.skillsFixed} skill label(s) cleaned`);
+      if (report.languagesFixed) parts.push(`${report.languagesFixed} placeholder language(s) removed`);
+      if (report.toolsFixed) parts.push(`${report.toolsFixed} tool entry split`);
+      if (report.proficienciesAdded.length) parts.push(`added ${report.proficienciesAdded.join(", ")}`);
+      if (report.itemsEquipped.length) parts.push(`equipped ${report.itemsEquipped.join(", ")}`);
+      if (report.featuresAdded) parts.push(`${report.featuresAdded} class feature(s) added`);
+      if (report.acRecomputed) parts.push("AC recomputed");
+      if (report.passivePerceptionRecomputed) parts.push("passive Perception recomputed");
+      toast({
+        title: parts.length ? "Character repaired" : "Nothing to repair",
+        description: parts.length ? parts.join(" • ") : "No stale data found.",
+      });
+      await loadCharacter();
+    } catch (err) {
+      toast({
+        title: "Repair failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setRepairing(false);
+    }
+  };
 
   const loadCharacter = async () => {
     setLoading(true);
@@ -173,6 +204,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRepair} disabled={repairing}>
+              <Wrench className="h-4 w-4 mr-2" />
+              {repairing ? "Repairing…" : "Repair Stored Data"}
+            </Button>
             <Button variant="outline" size="sm">
               <StickyNote className="h-4 w-4 mr-2" />
               Quick Rest

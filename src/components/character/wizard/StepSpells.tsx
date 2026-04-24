@@ -74,8 +74,12 @@ const StepSpells = () => {
   // Compute spell slot info
   const slotInfo = useMemo(() => {
     if (!selectedClass) return null;
-    return getSpellSlotInfo([{ className: selectedClass.name, level: draft.level }]);
-  }, [selectedClass, draft.level]);
+    return getSpellSlotInfo([{
+      className: selectedClass.name,
+      level: draft.level,
+      subclass: selectedSubclass?.name,
+    }]);
+  }, [selectedClass, selectedSubclass, draft.level]);
 
   // Compute class spell access
   const spellAccess = useMemo<ClassSpellAccess | null>(() => {

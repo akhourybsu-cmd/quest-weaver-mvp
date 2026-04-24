@@ -1300,14 +1300,31 @@ export const LevelUpWizard = ({
     // instead of just the primary class level
     let slotInfo;
     if (characterClasses.length > 1) {
+      // Resolve subclass names so third-casters (EK / AT) are counted correctly
+      const subclassIds = characterClasses
+        .map(c => c.subclassId)
+        .filter((id): id is string => !!id);
+      let subclassNameById: Record<string, string> = {};
+      if (subclassIds.length > 0) {
+        const { data: scRows } = await supabase
+          .from("srd_subclasses")
+          .select("id, name")
+          .in("id", subclassIds);
+        subclassNameById = Object.fromEntries((scRows || []).map(r => [r.id, r.name]));
+      }
       // Build the updated class levels (with the class being leveled having +1)
       const updatedClasses = characterClasses.map(c => ({
         className: c.className,
         level: c.classId === selectedClassToLevel?.classId ? c.level + 1 : c.level,
+        subclass: c.subclassId ? subclassNameById[c.subclassId] : undefined,
       }));
       slotInfo = getSpellSlotInfo(updatedClasses);
     } else {
-      slotInfo = getSpellSlotInfo([{ className: character.class, level: newLevel }]);
+      slotInfo = getSpellSlotInfo([{
+        className: character.class,
+        level: newLevel,
+        subclass: subclassName || undefined,
+      }]);
     }
 
     if (slotInfo.shared) {

@@ -130,7 +130,7 @@ function getMaxSpellLevelFromSlots(slots: number[]): number {
 // ==================== MAIN API FUNCTIONS ====================
 
 export function getSpellSlotInfo(
-  classes: Array<{ className: string; level: number }>
+  classes: Array<{ className: string; level: number; subclass?: string }>
 ): SlotInfo {
   const result: SlotInfo = {};
 
@@ -147,7 +147,15 @@ export function getSpellSlotInfo(
     } else if (["Paladin", "Ranger"].includes(cls.className)) {
       halfCasterLevels += cls.level;
     } else if (["Eldritch Knight", "Arcane Trickster"].includes(cls.className)) {
-      thirdCasterLevels += cls.level;
+      // Legacy: caller passed subclass name as className
+      if (cls.level >= 3) thirdCasterLevels += cls.level;
+    } else if (
+      cls.subclass &&
+      ((cls.className === "Fighter" && cls.subclass === "Eldritch Knight") ||
+        (cls.className === "Rogue" && cls.subclass === "Arcane Trickster"))
+    ) {
+      // Third-caster subclasses unlock spellcasting at level 3
+      if (cls.level >= 3) thirdCasterLevels += cls.level;
     }
   }
 

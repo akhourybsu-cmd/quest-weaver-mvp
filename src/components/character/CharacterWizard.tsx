@@ -1163,7 +1163,11 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       // Write spell slots
       if (derived.spellAbility && classRules) {
         const { getSpellSlotInfo } = await import("@/lib/rules/spellRules");
-        const slotInfo = getSpellSlotInfo([{ className: draft.className || "", level: draft.level }]);
+        const slotInfo = getSpellSlotInfo([{
+          className: draft.className || "",
+          level: draft.level,
+          subclass: loadedSubclassName || undefined,
+        }]);
         const slotRows: Array<{ character_id: string; spell_level: number; max_slots: number; used_slots: number }> = [];
         
         if (slotInfo.shared) {

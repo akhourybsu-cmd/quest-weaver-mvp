@@ -8,8 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Search, BookOpen, Scroll, Loader2 } from "lucide-react";
+import { Plus, Search, BookOpen, Scroll, Loader2, Globe } from "lucide-react";
 import MonsterImportDialog from "./MonsterImportDialog";
+import { rulesApiService } from "@/lib/rulesApi/rulesApiService";
+import type { NormalizedRulesItem } from "@/lib/rulesApi/types";
+import { SourceLabel } from "@/components/reference/ReferenceShell";
 
 interface Monster {
   id: string;
@@ -42,11 +45,41 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
 
+  // Open5e Live API tab state
+  const [apiResults, setApiResults] = useState<NormalizedRulesItem[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiMeta, setApiMeta] = useState<{ source: any; fromCache?: boolean; fallbackUsed?: boolean }>({ source: null });
+  const [activeTab, setActiveTab] = useState<"catalog" | "homebrew" | "api">("catalog");
+
   useEffect(() => {
     if (open) {
       fetchMonsters();
     }
   }, [open]);
+
+  // Debounced API search when on the API tab
+  useEffect(() => {
+    if (!open || activeTab !== "api") return;
+    let alive = true;
+    setApiLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const r = await rulesApiService.getCreatures({ query: searchTerm || undefined, limit: 40 });
+        if (!alive) return;
+        setApiResults(r.items ?? []);
+        setApiMeta({ source: r.source, fromCache: r.from_cache, fallbackUsed: r.fallback_used });
+      } catch (e) {
+        if (alive) {
+          setApiResults([]);
+          toast({ title: "Open5e search failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+        }
+      } finally {
+        if (alive) setApiLoading(false);
+      }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeTab, searchTerm]);
 
   const fetchMonsters = async () => {
     setLoading(true);
@@ -71,21 +104,24 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
 
     setAdding(true);
     try {
-      const sourceType = catalogMonsters.find(m => m.id === selectedMonster.id) ? 'catalog' : 'homebrew';
-      
-      const { error } = await supabase.functions.invoke('add-monsters-to-encounter', {
-        body: {
-          encounterId,
-          monsters: [{
-            sourceType,
-            monsterId: selectedMonster.id,
-            quantity,
-            namePrefix: selectedMonster.name
-          }]
-        }
-      });
-
-      if (error) throw error;
+      // API monsters carry an "open5e:" prefix on their id; insert them directly.
+      if (selectedMonster.id.startsWith("open5e:")) {
+        await addApiMonsterToEncounter(selectedMonster);
+      } else {
+        const sourceType = catalogMonsters.find(m => m.id === selectedMonster.id) ? 'catalog' : 'homebrew';
+        const { error } = await supabase.functions.invoke('add-monsters-to-encounter', {
+          body: {
+            encounterId,
+            monsters: [{
+              sourceType,
+              monsterId: selectedMonster.id,
+              quantity,
+              namePrefix: selectedMonster.name,
+            }],
+          },
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: "Monsters Added",
@@ -105,6 +141,75 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
     } finally {
       setAdding(false);
     }
+  };
+
+  /**
+   * Insert API-sourced monster instances directly into encounter_monsters.
+   * Treated as 'homebrew' source_type because the API record is not persisted
+   * in monster_catalog (the rules_cache is read-only for compendium use).
+   */
+  const addApiMonsterToEncounter = async (m: Monster) => {
+    const dexScore = m.abilities?.dex ?? 10;
+    const initiativeBonus = Math.floor((dexScore - 10) / 2);
+    const allowedSizes = ["tiny", "small", "medium", "large", "huge", "gargantuan"];
+    const sizeRaw = (m.size || "medium").toLowerCase();
+    const size = allowedSizes.includes(sizeRaw) ? sizeRaw : "medium";
+    const groupKey = `${m.name}#${Date.now()}`;
+    const rows = Array.from({ length: quantity }, (_, i) => {
+      const suffix = quantity > 1 ? ` ${String.fromCharCode(65 + i)}` : "";
+      const roll = Math.floor(Math.random() * 20) + 1;
+      return {
+        encounter_id: encounterId,
+        source_type: "homebrew" as const,
+        source_monster_id: crypto.randomUUID(),
+        name: m.name,
+        display_name: `${m.name}${suffix}`,
+        group_key: groupKey,
+        size: size as any,
+        type: m.type || "creature",
+        ac: m.ac || 10,
+        hp_max: m.hp_avg || 1,
+        hp_current: m.hp_avg || 1,
+        abilities: m.abilities,
+        actions: (m.actions ?? []) as any,
+        traits: (m.traits ?? []) as any,
+        reactions: (m.reactions ?? []) as any,
+        legendary_actions: (m.legendary_actions ?? []) as any,
+        initiative: roll + initiativeBonus,
+        initiative_bonus: initiativeBonus,
+      };
+    });
+    const { error } = await supabase.from("encounter_monsters").insert(rows);
+    if (error) throw error;
+  };
+
+  /** Adapt a NormalizedRulesItem creature into the local Monster shape used by this dialog. */
+  const adaptApiMonster = (it: NormalizedRulesItem): Monster => {
+    const n = it.normalized_json as any;
+    const abilities = {
+      str: n.strength ?? n.str ?? 10,
+      dex: n.dexterity ?? n.dex ?? 10,
+      con: n.constitution ?? n.con ?? 10,
+      int: n.intelligence ?? n.int ?? 10,
+      wis: n.wisdom ?? n.wis ?? 10,
+      cha: n.charisma ?? n.cha ?? 10,
+    };
+    const hp = typeof n.hp === "number" ? n.hp : (n.hit_points ?? 1);
+    const ac = typeof n.ac === "number" ? n.ac : (n.armor_class ?? 10);
+    return {
+      id: `open5e:${it.key}`,
+      name: it.name,
+      type: (n.type?.name ?? n.type ?? "creature") as string,
+      size: (n.size?.name ?? n.size ?? "medium") as string,
+      cr: typeof (n.cr ?? n.challenge_rating) === "number" ? (n.cr ?? n.challenge_rating) : null,
+      ac,
+      hp_avg: hp,
+      abilities,
+      actions: n.actions ?? [],
+      traits: n.traits ?? n.special_abilities ?? [],
+      reactions: n.reactions ?? [],
+      legendary_actions: n.legendary_actions ?? [],
+    };
   };
 
   const filterMonsters = (monsters: Monster[]) => {

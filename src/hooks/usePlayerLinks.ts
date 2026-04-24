@@ -45,13 +45,11 @@ export const usePlayerLinks = (playerId?: string) => {
     if (!playerId) return { success: false };
 
     try {
-      // Validate code and get campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .select('id, name')
-        .eq('code', code)
-        .maybeSingle();
+      // Validate code via secure RPC (campaigns SELECT is now member-scoped)
+      const { data: rpcRows, error: campaignError } = await supabase
+        .rpc('find_campaign_by_code', { p_code: code });
 
+      const campaign = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
       if (campaignError) throw campaignError;
       if (!campaign) {
         toast({

@@ -11,6 +11,7 @@ import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
 import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
+import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
 
 // Wizard steps
 import StepBasics from "./wizard/StepBasics";
@@ -1064,6 +1065,60 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .from("character_spells")
           .upsert(spellsData);
         if (spellsError) throw spellsError;
+      }
+
+      // === Auto-prepare subclass spells (Domain/Oath/Circle) ===
+      // Adds the SRD subclass-granted always-prepared spells based on class+subclass+level.
+      if (draft.subclassId && draft.className && characterId) {
+        try {
+          const { data: scRow } = await supabase
+            .from("srd_subclasses")
+            .select("name")
+            .eq("id", draft.subclassId)
+            .maybeSingle();
+          const subclassName = scRow?.name;
+          if (subclassName) {
+            const key = `${draft.className}:${subclassName}`;
+            const autoPrepMap = AUTO_PREPARED_BY_SUBCLASS[key];
+            if (autoPrepMap) {
+              const allSpellNames: string[] = [];
+              for (const [lvlStr, names] of Object.entries(autoPrepMap)) {
+                if (parseInt(lvlStr, 10) <= draft.level) {
+                  allSpellNames.push(...names);
+                }
+              }
+              if (allSpellNames.length > 0) {
+                const { data: spellRows } = await supabase
+                  .from("srd_spells")
+                  .select("id, name")
+                  .in("name", allSpellNames);
+                if (spellRows && spellRows.length > 0) {
+                  const { data: existing } = await supabase
+                    .from("character_spells")
+                    .select("spell_id")
+                    .eq("character_id", characterId)
+                    .in("spell_id", spellRows.map(s => s.id));
+                  const existingIds = new Set((existing || []).map(s => s.spell_id));
+                  const toInsert = spellRows
+                    .filter(s => !existingIds.has(s.id))
+                    .map(s => ({
+                      character_id: characterId!,
+                      spell_id: s.id,
+                      known: true,
+                      prepared: true,
+                      is_always_prepared: true,
+                      source: 'subclass',
+                    }));
+                  if (toInsert.length > 0) {
+                    await supabase.from("character_spells").insert(toInsert);
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Subclass auto-prep failed:", e);
+        }
       }
 
       // Write character class levels (per-level HP tracking)

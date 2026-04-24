@@ -819,6 +819,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       }
 
       // === Fetch ancestry speed for the character record ===
+      // Subancestry traits can override speed (e.g. Wood Elf "Fleet of Foot" → 35 ft)
       let ancestrySpeed = 30;
       if (draft.ancestryId) {
         const { data: ancestryData } = await supabase
@@ -828,6 +829,27 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           .single();
         if (ancestryData?.speed) {
           ancestrySpeed = Number(ancestryData.speed) || 30;
+        }
+      }
+      if (draft.subAncestryId) {
+        const { data: subData } = await supabase
+          .from("srd_subancestries")
+          .select("name, traits")
+          .eq("id", draft.subAncestryId)
+          .single();
+        if (subData) {
+          const traits = Array.isArray(subData.traits) ? subData.traits : [];
+          // Look for an explicit speed override (e.g. "increases to 35 feet")
+          for (const t of traits) {
+            const desc = String((t as any)?.description ?? "").toLowerCase();
+            const setMatch = desc.match(/(?:speed (?:increases|becomes)\s*to|walking speed (?:is|becomes))\s*(\d+)\s*(?:feet|ft)/);
+            if (setMatch) {
+              ancestrySpeed = Math.max(ancestrySpeed, parseInt(setMatch[1], 10));
+            }
+          }
+          // Hard-coded fallbacks for known SRD subraces
+          const sn = String(subData.name || "").toLowerCase();
+          if (sn === "wood elf") ancestrySpeed = Math.max(ancestrySpeed, 35);
         }
       }
 

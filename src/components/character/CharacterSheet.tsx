@@ -181,7 +181,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         </div>
 
         {/* Quick stats bar */}
-        <div className="grid grid-cols-6 gap-3 text-center">
+        <div className="grid grid-cols-4 md:grid-cols-7 gap-3 text-center">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">HP</span>
             <div className="space-y-1">
@@ -210,8 +210,8 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
             <span className="text-lg font-bold">{character.exhaustion_level || 0}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Passive Per</span>
-            <span className="text-lg font-bold">{character.passive_perception}</span>
+            <span className="text-xs text-muted-foreground">Pass. Perc</span>
+            <span className="text-lg font-bold">{character.passive_perception ?? 10}</span>
           </div>
         </div>
       </div>
@@ -354,6 +354,26 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
           <div className="text-center p-3 rounded-lg bg-muted">
             <div className="text-sm text-muted-foreground mb-1">Speed</div>
             <div className="text-2xl font-bold">{character.speed} ft</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Passive Senses</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-3 gap-4">
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Perception</div>
+            <div className="text-2xl font-bold">{character.passive_perception ?? (10 + calculateModifier(abilities.wis))}</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Investigation</div>
+            <div className="text-2xl font-bold">{character.passive_investigation ?? (10 + calculateModifier(abilities.int))}</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Insight</div>
+            <div className="text-2xl font-bold">{character.passive_insight ?? (10 + calculateModifier(abilities.wis))}</div>
           </div>
         </CardContent>
       </Card>

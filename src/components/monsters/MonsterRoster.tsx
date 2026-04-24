@@ -21,6 +21,13 @@ interface EncounterMonster {
   hp_max: number;
   initiative: number;
   is_current_turn: boolean;
+  source_type?: "catalog" | "homebrew" | "api" | null;
+  source_api?: string | null;
+  source_key?: string | null;
+  source_slug?: string | null;
+  source_document?: string | null;
+  source_url?: string | null;
+  imported_from_rules_api?: boolean | null;
 }
 
 interface MonsterRosterProps {

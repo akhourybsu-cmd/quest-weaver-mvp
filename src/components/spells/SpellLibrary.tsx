@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { rulesApiService } from "@/lib/rulesApi/rulesApiService";
 
 interface Spell {
   id: string;
@@ -51,6 +52,8 @@ export function SpellLibrary() {
   const [filterLevel, setFilterLevel] = useState<number | null>(null);
   const [filterClass, setFilterClass] = useState<string>("All Classes");
   const [open, setOpen] = useState(false);
+  const [dataSource, setDataSource] = useState<"live" | "fallback" | "local" | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -60,17 +63,53 @@ export function SpellLibrary() {
 
   const loadSpells = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const { data, error } = await supabase
-        .from("srd_spells")
-        .select("*")
-        .order("level")
-        .order("name");
-
-      if (error) throw error;
-      setSpells(data || []);
+      // Primary: Open5e v2 (via rules-api edge function). Falls back to dnd5eapi server-side.
+      try {
+        const r = await rulesApiService.getSpells({ limit: 200 });
+        const mapped: Spell[] = r.items.map((it) => {
+          const raw = it.normalized_json as any;
+          const components: string[] = [];
+          if (raw?.requires_verbal_components) components.push("V");
+          if (raw?.requires_somatic_components) components.push("S");
+          if (raw?.requires_material_components) components.push("M");
+          return {
+            id: it.key,
+            name: it.name,
+            level: typeof raw?.level === "number" ? raw.level : parseInt(raw?.level ?? "0", 10) || 0,
+            school: raw?.school?.name ?? raw?.school ?? "",
+            casting_time: raw?.casting_time ?? raw?.casting_options?.[0]?.type ?? "",
+            range: raw?.range ?? raw?.range_text ?? "",
+            components: components.length ? components : (raw?.components ?? []),
+            duration: raw?.duration ?? "",
+            description: raw?.desc ?? raw?.description ?? "",
+            concentration: !!raw?.concentration,
+            ritual: !!raw?.ritual,
+            classes: Array.isArray(raw?.classes)
+              ? raw.classes.map((c: any) => (typeof c === "string" ? c : c?.name)).filter(Boolean)
+              : [],
+          };
+        });
+        mapped.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+        setSpells(mapped);
+        setDataSource(r.fallback_used ? "fallback" : "live");
+        return;
+      } catch (apiErr) {
+        // Local SRD table fallback so the UI never breaks.
+        const { data, error } = await supabase
+          .from("srd_spells")
+          .select("*")
+          .order("level")
+          .order("name");
+        if (error) throw error;
+        setSpells((data || []) as Spell[]);
+        setDataSource("local");
+        setErrorMsg("Rules reference is temporarily unavailable. Showing locally cached SRD spells.");
+      }
     } catch (error) {
       console.error("Error loading spells:", error);
+      setErrorMsg("Could not load spells.");
     } finally {
       setLoading(false);
     }
@@ -111,8 +150,17 @@ export function SpellLibrary() {
         <DialogHeader>
           <DialogTitle>Spell Library</DialogTitle>
           <DialogDescription>
-            Browse and search D&D 5E spells ({filteredSpells.length} spells)
+            Browse and search 5e SRD spells · {filteredSpells.length} shown
+            {dataSource === "live" && " · Source: Open5e v2"}
+            {dataSource === "fallback" && " · Source: D&D 5e SRD API (fallback)"}
+            {dataSource === "local" && " · Source: cached"}
           </DialogDescription>
+          <p className="text-xs text-muted-foreground">
+            5e SRD / open-license content. Not a complete official D&amp;D database.
+          </p>
+          {errorMsg && (
+            <p className="text-xs text-destructive">{errorMsg}</p>
+          )}
         </DialogHeader>
 
         {loading ? (

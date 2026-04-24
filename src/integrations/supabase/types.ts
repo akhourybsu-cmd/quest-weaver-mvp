@@ -2135,6 +2135,7 @@ export type Database = {
           hp_max: number
           id: string
           immunities: Json | null
+          imported_from_rules_api: boolean
           initiative: number
           initiative_bonus: number
           is_current_turn: boolean | null
@@ -2154,8 +2155,13 @@ export type Database = {
           senses: Json | null
           size: Database["public"]["Enums"]["monster_size"]
           skills: Json | null
-          source_monster_id: string
+          source_api: string | null
+          source_document: string | null
+          source_key: string | null
+          source_monster_id: string | null
+          source_slug: string | null
           source_type: Database["public"]["Enums"]["monster_source_type"]
+          source_url: string | null
           speed: Json
           traits: Json | null
           type: string
@@ -2174,6 +2180,7 @@ export type Database = {
           hp_max: number
           id?: string
           immunities?: Json | null
+          imported_from_rules_api?: boolean
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
@@ -2193,8 +2200,13 @@ export type Database = {
           senses?: Json | null
           size: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
-          source_monster_id: string
+          source_api?: string | null
+          source_document?: string | null
+          source_key?: string | null
+          source_monster_id?: string | null
+          source_slug?: string | null
           source_type: Database["public"]["Enums"]["monster_source_type"]
+          source_url?: string | null
           speed?: Json
           traits?: Json | null
           type: string
@@ -2213,6 +2225,7 @@ export type Database = {
           hp_max?: number
           id?: string
           immunities?: Json | null
+          imported_from_rules_api?: boolean
           initiative?: number
           initiative_bonus?: number
           is_current_turn?: boolean | null
@@ -2232,8 +2245,13 @@ export type Database = {
           senses?: Json | null
           size?: Database["public"]["Enums"]["monster_size"]
           skills?: Json | null
-          source_monster_id?: string
+          source_api?: string | null
+          source_document?: string | null
+          source_key?: string | null
+          source_monster_id?: string | null
+          source_slug?: string | null
           source_type?: Database["public"]["Enums"]["monster_source_type"]
+          source_url?: string | null
           speed?: Json
           traits?: Json | null
           type?: string
@@ -6724,7 +6742,7 @@ export type Database = {
         | "large"
         | "huge"
         | "gargantuan"
-      monster_source_type: "catalog" | "homebrew"
+      monster_source_type: "catalog" | "homebrew" | "api"
       save_prompt_status: "active" | "resolved" | "expired"
       target_scope_enum: "party" | "all" | "custom"
     }
@@ -6897,7 +6915,7 @@ export const Constants = {
       effect_tick_timing: ["start", "end", "round"],
       encounter_status: ["preparing", "active", "paused", "ended"],
       monster_size: ["tiny", "small", "medium", "large", "huge", "gargantuan"],
-      monster_source_type: ["catalog", "homebrew"],
+      monster_source_type: ["catalog", "homebrew", "api"],
       save_prompt_status: ["active", "resolved", "expired"],
       target_scope_enum: ["party", "all", "custom"],
     },

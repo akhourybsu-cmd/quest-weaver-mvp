@@ -16,6 +16,10 @@ const SCREEN_PROBES: Array<{ name: string; run: () => Promise<{ sample?: string 
       const r = await rulesApiService.getSpells({ limit: 1 });
       return { sample: r.items[0]?.name };
     } },
+  { name: "Bestiary", run: async () => {
+      const r = await rulesApiService.getCreatures({ query: "goblin", limit: 1 });
+      return { sample: r.items[0]?.name };
+    } },
   { name: "Conditions", run: async () => {
       const r = await rulesApiService.getConditions();
       return { sample: r.items[0]?.name };
@@ -34,6 +38,22 @@ const SCREEN_PROBES: Array<{ name: string; run: () => Promise<{ sample?: string 
     } },
   { name: "Backgrounds", run: async () => {
       const r = await rulesApiService.getBackgrounds();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Feats", run: async () => {
+      const r = await rulesApiService.getFeats();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Equipment", run: async () => {
+      const r = await rulesApiService.getEquipment({ limit: 1 });
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Magic Items", run: async () => {
+      const r = await rulesApiService.getMagicItems({ limit: 1 });
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Encounter Builder (live monster search)", run: async () => {
+      const r = await rulesApiService.getCreatures({ query: "dragon", limit: 1 });
       return { sample: r.items[0]?.name };
     } },
 ];

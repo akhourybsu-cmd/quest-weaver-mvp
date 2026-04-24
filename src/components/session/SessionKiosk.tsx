@@ -362,6 +362,7 @@ export const SessionKiosk = ({
                   max_hp: character.max_hp,
                   level: character.level,
                   con_save: character.con_save,
+                  class: character.class,
                 }}
               />
               <DiceRoller />

@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Heart, Shield, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import DamageInput from "@/components/combat/DamageInput";
 import { useCombatActions } from "@/hooks/useCombatActions";
+import MonsterSourceBadge from "@/components/monsters/MonsterSourceBadge";
 
 interface EncounterMonster {
   id: string;
@@ -21,6 +22,13 @@ interface EncounterMonster {
   hp_max: number;
   initiative: number;
   is_current_turn: boolean;
+  source_type?: "catalog" | "homebrew" | "api" | null;
+  source_api?: string | null;
+  source_key?: string | null;
+  source_slug?: string | null;
+  source_document?: string | null;
+  source_url?: string | null;
+  imported_from_rules_api?: boolean | null;
 }
 
 interface MonsterRosterProps {
@@ -195,6 +203,7 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
                       <Badge variant="outline" className="text-xs">
                         {totalHP} / {maxHP} HP
                       </Badge>
+                      <MonsterSourceBadge source={groupMonsters[0]} />
                     </div>
                   </div>
 
@@ -205,7 +214,10 @@ const MonsterRoster = ({ encounterId, currentRound }: MonsterRosterProps) => {
                         <div key={monster.id} className="p-3 space-y-2">
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium">{monster.display_name}</div>
+                              <div className="font-medium flex items-center gap-2 flex-wrap">
+                                {monster.display_name}
+                                <MonsterSourceBadge source={monster} showDetails />
+                              </div>
                               <div className="text-sm text-muted-foreground capitalize">
                                 {monster.size} {monster.type}
                               </div>

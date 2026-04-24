@@ -20,7 +20,7 @@ export interface ResourceProgression {
   key: string;
   label: string;
   formula: (level: number, abilityMod?: number) => number;
-  recharge: 'short' | 'long';
+  recharge: 'short' | 'long' | ((level: number) => 'short' | 'long');
   startLevel?: number;
 }
 
@@ -141,7 +141,8 @@ export const CLASS_LEVEL_UP_RULES: Record<string, ClassLevelUpRules> = {
         key: 'bardic_inspiration',
         label: 'Bardic Inspiration',
         formula: (level, chaMod = 0) => Math.max(1, chaMod),
-        recharge: 'long', // Becomes short rest at level 5
+        // SRD: Font of Inspiration (level 5) makes Bardic Inspiration recharge on a short rest
+        recharge: (level) => (level >= 5 ? 'short' : 'long'),
         startLevel: 1,
       },
     ],

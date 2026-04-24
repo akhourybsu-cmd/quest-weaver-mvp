@@ -1,13 +1,17 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Activity, BookOpen, Shield, Sparkles, Sword, Users } from "lucide-react";
+import { Activity, BookOpen, Shield, Sparkles, Sword, Users, Skull, Star, Backpack, Wand2 } from "lucide-react";
 
 const sections = [
+  { to: "/reference/bestiary", title: "Bestiary", desc: "Search SRD/open-license creatures and view full statblocks.", icon: Skull },
   { to: "/reference/conditions", title: "Conditions", desc: "Quick reference for the 15 SRD conditions.", icon: Shield },
-  { to: "/reference/rules", title: "Rules", desc: "Core 5e rules from the SRD 2024.", icon: BookOpen },
-  { to: "/reference/classes", title: "Classes", desc: "Browse the 12 SRD classes and their features.", icon: Sword },
+  { to: "/reference/rules", title: "Rules", desc: "Core 5e rules from the SRD.", icon: BookOpen },
+  { to: "/reference/classes", title: "Classes", desc: "Browse the SRD classes and their features.", icon: Sword },
   { to: "/reference/species", title: "Species", desc: "Playable species from the SRD.", icon: Users },
   { to: "/reference/backgrounds", title: "Backgrounds", desc: "Origin backgrounds from the SRD.", icon: Sparkles },
+  { to: "/reference/feats", title: "Feats", desc: "SRD feats and their prerequisites.", icon: Star },
+  { to: "/reference/equipment", title: "Equipment", desc: "Mundane SRD weapons, armor and gear.", icon: Backpack },
+  { to: "/reference/magic-items", title: "Magic Items", desc: "SRD magic items by rarity.", icon: Wand2 },
   { to: "/admin/rules-health", title: "Rules API Health", desc: "Live status of the Open5e + SRD APIs.", icon: Activity, admin: true },
 ];
 

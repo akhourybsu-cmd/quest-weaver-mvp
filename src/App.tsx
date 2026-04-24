@@ -34,6 +34,11 @@ const RulesReference = lazy(() => import("./pages/reference/RulesReference"));
 const ClassesReference = lazy(() => import("./pages/reference/ClassesReference"));
 const SpeciesReference = lazy(() => import("./pages/reference/SpeciesReference"));
 const BackgroundsReference = lazy(() => import("./pages/reference/BackgroundsReference"));
+const FeatsReference = lazy(() => import("./pages/reference/FeatsReference"));
+const BestiaryReference = lazy(() => import("./pages/reference/BestiaryReference"));
+const MonsterDetail = lazy(() => import("./pages/reference/MonsterDetail"));
+const EquipmentReference = lazy(() => import("./pages/reference/EquipmentReference"));
+const MagicItemsReference = lazy(() => import("./pages/reference/MagicItemsReference"));
 const BetaTools = lazy(() => import("./pages/BetaTools"));
 const BetaToolsLibrary = lazy(() => import("./pages/BetaToolsLibrary"));
 const BetaToolsGenerator = lazy(() => import("./pages/BetaToolsGenerator"));
@@ -115,6 +120,11 @@ function AppRoutes() {
               <Route path="/reference/classes" element={<ClassesReference />} />
               <Route path="/reference/species" element={<SpeciesReference />} />
               <Route path="/reference/backgrounds" element={<BackgroundsReference />} />
+              <Route path="/reference/feats" element={<FeatsReference />} />
+              <Route path="/reference/bestiary" element={<BestiaryReference />} />
+              <Route path="/reference/bestiary/:slug" element={<MonsterDetail />} />
+              <Route path="/reference/equipment" element={<EquipmentReference />} />
+              <Route path="/reference/magic-items" element={<MagicItemsReference />} />
               <Route path="/beta-tools" element={<BetaTools />} />
               <Route path="/beta-tools/library" element={<BetaToolsLibrary />} />
               <Route path="/beta-tools/generate/:toolId" element={<BetaToolsGenerator />} />

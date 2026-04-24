@@ -58,3 +58,42 @@ export function useRulesList(opts: {
 
   return { items, meta, loading, error };
 }
+
+/**
+ * Query-driven loader. Re-runs whenever `query` changes (debounced by caller).
+ * Used by screens with a server-side search box (Bestiary, Equipment, Magic Items).
+ */
+export function useRulesQuery(opts: {
+  query: string;
+  loader: (query: string) => Promise<RulesListResponse>;
+  enabled?: boolean;
+}) {
+  const { query, loader, enabled = true } = opts;
+  const [items, setItems] = useState<NormalizedRulesItem[]>([]);
+  const [meta, setMeta] = useState<{ source: RulesListResponse["source"] | null; fromCache?: boolean; fallbackUsed?: boolean }>({ source: null });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    setLoading(true);
+    setError(null);
+    const t = setTimeout(async () => {
+      try {
+        const r = await loader(query);
+        if (!alive) return;
+        setItems(r.items ?? []);
+        setMeta({ source: r.source, fromCache: r.from_cache, fallbackUsed: r.fallback_used });
+      } catch (e) {
+        if (alive) setError(e instanceof Error ? e.message : "Failed to load");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, enabled]);
+
+  return { items, meta, loading, error };
+}

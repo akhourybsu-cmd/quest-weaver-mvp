@@ -9,16 +9,47 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, RefreshCw, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 
+type ScreenStatus = { name: string; status: "Connected" | "Failed" | "Pending"; sample?: string; error?: string; latency_ms?: number };
+
+const SCREEN_PROBES: Array<{ name: string; run: () => Promise<{ sample?: string }> }> = [
+  { name: "Spell Library", run: async () => {
+      const r = await rulesApiService.getSpells({ limit: 1 });
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Conditions", run: async () => {
+      const r = await rulesApiService.getConditions();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Rules", run: async () => {
+      const r = await rulesApiService.getRules();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Classes", run: async () => {
+      const r = await rulesApiService.getClasses();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Species", run: async () => {
+      const r = await rulesApiService.getSpecies();
+      return { sample: r.items[0]?.name };
+    } },
+  { name: "Backgrounds", run: async () => {
+      const r = await rulesApiService.getBackgrounds();
+      return { sample: r.items[0]?.name };
+    } },
+];
+
 export default function RulesApiHealthCheck() {
   const { isAdmin, isLoading: roleLoading } = useIsAdmin();
   const navigate = useNavigate();
   const [data, setData] = useState<RulesHealthResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [screens, setScreens] = useState<ScreenStatus[]>([]);
 
   const run = async () => {
     setLoading(true);
     setError(null);
+    setScreens(SCREEN_PROBES.map((p) => ({ name: p.name, status: "Pending" })));
     try {
       const r = await rulesApiService.testApiHealth();
       setData(r);
@@ -27,6 +58,19 @@ export default function RulesApiHealthCheck() {
     } finally {
       setLoading(false);
     }
+    // Probe each screen in parallel.
+    const results = await Promise.all(
+      SCREEN_PROBES.map(async (p): Promise<ScreenStatus> => {
+        const t = Date.now();
+        try {
+          const out = await p.run();
+          return { name: p.name, status: "Connected", sample: out.sample, latency_ms: Date.now() - t };
+        } catch (e) {
+          return { name: p.name, status: "Failed", error: e instanceof Error ? e.message : String(e), latency_ms: Date.now() - t };
+        }
+      }),
+    );
+    setScreens(results);
   };
 
   useEffect(() => {
@@ -95,6 +139,35 @@ export default function RulesApiHealthCheck() {
               </CardDescription>
             </CardHeader>
           </Card>
+
+          {screens.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Screen verification</CardTitle>
+                <CardDescription>End-to-end smoke test for each Phase 1/2 reference screen.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {screens.map((s) => (
+                  <div key={s.name} className="flex items-center justify-between gap-3 text-sm border-b last:border-b-0 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {s.status === "Connected" ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" /> :
+                       s.status === "Pending" ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> :
+                       <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                      <span className="font-medium">{s.name}</span>
+                      {s.sample && <span className="text-xs text-muted-foreground truncate">· {s.sample}</span>}
+                      {s.error && <span className="text-xs text-destructive truncate">· {s.error}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {typeof s.latency_ms === "number" && <Badge variant="outline" className="text-[10px]">{s.latency_ms} ms</Badge>}
+                      <Badge variant={s.status === "Connected" ? "default" : s.status === "Pending" ? "secondary" : "destructive"} className="text-[10px]">
+                        {s.status === "Connected" ? "connected" : s.status === "Pending" ? "checking…" : "failed"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid gap-3">
             {data.checks.map((c) => (

@@ -28,6 +28,12 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AuditHarness = lazy(() => import("./pages/dev/AuditHarness"));
 const AdminTools = lazy(() => import("./pages/dev/AdminTools"));
 const RulesApiHealthCheck = lazy(() => import("./pages/dev/RulesApiHealthCheck"));
+const ReferenceHub = lazy(() => import("./pages/reference/ReferenceHub"));
+const ConditionsReference = lazy(() => import("./pages/reference/ConditionsReference"));
+const RulesReference = lazy(() => import("./pages/reference/RulesReference"));
+const ClassesReference = lazy(() => import("./pages/reference/ClassesReference"));
+const SpeciesReference = lazy(() => import("./pages/reference/SpeciesReference"));
+const BackgroundsReference = lazy(() => import("./pages/reference/BackgroundsReference"));
 const BetaTools = lazy(() => import("./pages/BetaTools"));
 const BetaToolsLibrary = lazy(() => import("./pages/BetaToolsLibrary"));
 const BetaToolsGenerator = lazy(() => import("./pages/BetaToolsGenerator"));
@@ -103,6 +109,12 @@ function AppRoutes() {
               <Route path="/audit" element={<AuditHarness />} />
               <Route path="/admin" element={<AdminTools />} />
               <Route path="/admin/rules-health" element={<RulesApiHealthCheck />} />
+              <Route path="/reference" element={<ReferenceHub />} />
+              <Route path="/reference/conditions" element={<ConditionsReference />} />
+              <Route path="/reference/rules" element={<RulesReference />} />
+              <Route path="/reference/classes" element={<ClassesReference />} />
+              <Route path="/reference/species" element={<SpeciesReference />} />
+              <Route path="/reference/backgrounds" element={<BackgroundsReference />} />
               <Route path="/beta-tools" element={<BetaTools />} />
               <Route path="/beta-tools/library" element={<BetaToolsLibrary />} />
               <Route path="/beta-tools/generate/:toolId" element={<BetaToolsGenerator />} />

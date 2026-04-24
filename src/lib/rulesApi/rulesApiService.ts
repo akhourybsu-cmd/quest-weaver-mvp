@@ -35,8 +35,9 @@ async function listByType(
   content_type: RulesContentType,
   query?: string,
   limit = 50,
+  document?: string,
 ): Promise<RulesListResponse> {
-  return invoke<RulesListResponse>({ action: "list", content_type, query, limit });
+  return invoke<RulesListResponse>({ action: "list", content_type, query, limit, document });
 }
 
 async function detail(content_type: RulesContentType, key: string): Promise<RulesDetailResponse> {
@@ -55,12 +56,12 @@ export const rulesApiService = {
     listByType("spell", filters?.query, filters?.limit),
   getSpellByKeyOrSlug: (keyOrSlug: string) => detail("spell", keyOrSlug),
 
-  getConditions: () => listByType("condition", undefined, 100),
-  getRules: () => listByType("rule", undefined, 100),
-  getClasses: () => listByType("class"),
-  getSpecies: () => listByType("species"),
-  getBackgrounds: () => listByType("background"),
-  getFeats: () => listByType("feat"),
+  getConditions: () => listByType("condition", undefined, 100, "core"),
+  getRules: () => listByType("rule", undefined, 200, "srd-2024"),
+  getClasses: () => listByType("class", undefined, 100, "srd-2024"),
+  getSpecies: () => listByType("species", undefined, 100, "srd-2024"),
+  getBackgrounds: () => listByType("background", undefined, 100, "srd-2024"),
+  getFeats: () => listByType("feat", undefined, 100, "srd-2024"),
   getEquipment: (filters?: { query?: string; limit?: number }) =>
     listByType("equipment", filters?.query, filters?.limit),
   getMagicItems: (filters?: { query?: string; limit?: number }) =>

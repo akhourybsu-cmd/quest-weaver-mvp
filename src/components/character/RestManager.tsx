@@ -17,6 +17,7 @@ interface RestManagerProps {
     max_hp: number;
     level: number;
     con_save: number;
+    class?: string;
   };
   onUpdate?: () => void;
 }
@@ -28,31 +29,43 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
   const handleShortRest = async () => {
     setLoading(true);
     try {
-      // BUG FIX: Restore resources from character_resources table, not JSON column
-      // Restore all resources with recharge: 'short'
+      // Restore all short-rest resources from character_resources
       const { data: resources, error: fetchError } = await supabase
         .from('character_resources')
-        .select('*')
+        .select('id, max_value')
         .eq('character_id', characterId)
         .eq('recharge', 'short');
 
       if (fetchError) throw fetchError;
 
-      // Update each short-rest resource to max
       let restoredCount = 0;
       if (resources && resources.length > 0) {
-        for (const resource of resources) {
-          await supabase
-            .from('character_resources')
-            .update({ current_value: resource.max_value })
-            .eq('id', resource.id);
-          restoredCount++;
-        }
+        await Promise.all(
+          resources.map(r =>
+            supabase
+              .from('character_resources')
+              .update({ current_value: r.max_value })
+              .eq('id', r.id)
+          )
+        );
+        restoredCount = resources.length;
       }
-      
+
+      // SRD: Warlock pact magic slots recharge on a SHORT rest
+      const isWarlock = character.class?.toLowerCase().includes('warlock');
+      let pactRestored = 0;
+      if (isWarlock) {
+        const { error: pactErr } = await supabase
+          .from('characters')
+          .update({ pact_slots_used: 0 })
+          .eq('id', characterId);
+        if (pactErr) throw pactErr;
+        pactRestored = 1;
+      }
+
       toast({
         title: "Short Rest Complete",
-        description: `${restoredCount} resource(s) restored. Use hit dice to regain HP.`,
+        description: `${restoredCount} resource(s) restored${pactRestored ? ' and pact slots refilled' : ''}. Use hit dice to regain HP.`,
       });
       onUpdate?.();
     } catch (error) {
@@ -77,26 +90,26 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
         character.hit_dice_total
       );
 
-      // BUG FIX: Restore resources from character_resources table
-      // Restore all resources with recharge: 'short' or 'long'
+      // SRD: long rest restores short, long, AND daily-recharge resources
       const { data: resources, error: fetchResourcesError } = await supabase
         .from('character_resources')
-        .select('*')
+        .select('id, max_value')
         .eq('character_id', characterId)
-        .in('recharge', ['short', 'long']);
+        .in('recharge', ['short', 'long', 'daily']);
 
       if (fetchResourcesError) throw fetchResourcesError;
 
-      // Update each resource to max
       let restoredCount = 0;
       if (resources && resources.length > 0) {
-        for (const resource of resources) {
-          await supabase
-            .from('character_resources')
-            .update({ current_value: resource.max_value })
-            .eq('id', resource.id);
-          restoredCount++;
-        }
+        await Promise.all(
+          resources.map(r =>
+            supabase
+              .from('character_resources')
+              .update({ current_value: r.max_value })
+              .eq('id', r.id)
+          )
+        );
+        restoredCount = resources.length;
       }
 
       // BUG FIX: Reset spell slots on long rest
@@ -107,7 +120,8 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
 
       if (spellSlotError) throw spellSlotError;
 
-      // Reset Warlock pact slots and Mystic Arcanum
+      // Long rest also clears exhaustion by 1 level (SRD), refills luck points,
+      // and resets Mystic Arcanum / pact slots.
       const { error: characterError } = await supabase
         .from('characters')
         .update({
@@ -117,6 +131,7 @@ const RestManager = ({ characterId, character, onUpdate }: RestManagerProps) => 
           death_save_fail: 0,
           hit_dice_current: newHitDice,
           pact_slots_used: 0,
+          luck_points_used: 0,
           mystic_arcanum_6_used: false,
           mystic_arcanum_7_used: false,
           mystic_arcanum_8_used: false,

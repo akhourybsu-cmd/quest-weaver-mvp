@@ -8,3 +8,6 @@ verify_jwt = true
  
  [functions.generate-asset]
  verify_jwt = true
+
+[functions.fetch-open5e-monsters]
+verify_jwt = true

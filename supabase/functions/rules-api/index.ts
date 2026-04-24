@@ -220,7 +220,7 @@ function rowToNormalized(row: any): NormalizedItem {
 }
 
 // ---------- Action handlers ----------
-async function handleList(content_type: ContentType, query: string | null, limit: number) {
+async function handleList(content_type: ContentType, query: string | null, limit: number, document: string | null) {
   const open5ePath = OPEN5E_PATHS[content_type];
   const dnd5Path = DND5E_PATHS[content_type];
   if (!open5ePath && !dnd5Path) return fail(`Unsupported content_type: ${content_type}`, 400);
@@ -230,6 +230,7 @@ async function handleList(content_type: ContentType, query: string | null, limit
     const qs = new URLSearchParams();
     qs.set("page_size", String(Math.min(limit, 100)));
     if (query) qs.set("name__icontains", query);
+    if (document) qs.set("document__key", document);
     const url = `${OPEN5E_V2}/${open5ePath}/?${qs.toString()}`;
     const r = await fetchJson(url);
     if (r.ok && Array.isArray(r.data?.results)) {
@@ -383,7 +384,7 @@ Deno.serve(async (req) => {
     }
     if (action === "list") {
       if (!content_type) return fail("content_type required", 400);
-      return await handleList(content_type, query, limit);
+      return await handleList(content_type, query, limit, url.searchParams.get("document"));
     }
     return fail(`Unknown action: ${action}`, 400);
   } catch (e) {

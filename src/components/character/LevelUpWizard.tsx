@@ -43,6 +43,7 @@ import {
   PACT_BOONS,
   ELDRITCH_INVOCATIONS,
   FeatureChoice,
+  resolveRecharge,
 } from "@/lib/rules/levelUpRules";
 
 interface LevelUpWizardProps {
@@ -1266,6 +1267,7 @@ export const LevelUpWizard = ({
         : 0;
 
       const maxValue = resource.formula(newLevel, abilityMod);
+      const concreteRecharge = resolveRecharge(resource.recharge, newLevel);
 
       // Check if resource exists
       const { data: existing } = await supabase
@@ -1278,7 +1280,7 @@ export const LevelUpWizard = ({
       if (existing) {
         await supabase
           .from("character_resources")
-          .update({ max_value: maxValue })
+          .update({ max_value: maxValue, recharge: concreteRecharge })
           .eq("id", existing.id);
       } else {
         await supabase.from("character_resources").insert({
@@ -1287,7 +1289,7 @@ export const LevelUpWizard = ({
           label: resource.label,
           max_value: maxValue,
           current_value: maxValue,
-          recharge: resource.recharge
+          recharge: concreteRecharge,
         });
       }
     }

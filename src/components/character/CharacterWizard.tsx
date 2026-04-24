@@ -11,6 +11,7 @@ import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
 import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
+import { resolveRecharge } from "@/lib/rules/levelUpRules";
 import { AUTO_PREPARED_BY_SUBCLASS } from "@/lib/rules/subclassSpells";
 
 // Wizard steps
@@ -1257,7 +1258,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               label: r.label,
               max_value: maxVal,
               current_value: maxVal,
-              recharge: r.recharge,
+              recharge: resolveRecharge(r.recharge, draft.level),
             };
           });
         if (resourceRows.length > 0) {

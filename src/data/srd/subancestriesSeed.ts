@@ -20,6 +20,18 @@ export const SUBANCESTRIES_SRD: SubancestrySeed[] = [
       { name: "Dwarven Toughness", description: "Your hit point maximum increases by 1, and it increases by 1 every time you gain a level." }
     ]
   },
+  {
+    ancestry_name: "Dwarf",
+    name: "Mountain Dwarf",
+    ability_bonuses: [{ ability: "str", bonus: 2 }],
+    traits: [
+      { name: "Dwarven Armor Training", description: "You have proficiency with light and medium armor." }
+    ],
+    proficiencies: [
+      { name: "Light Armor", type: "armor" },
+      { name: "Medium Armor", type: "armor" }
+    ]
+  },
 
   // =============== ELF SUBRACES ===============
   {
@@ -38,6 +50,38 @@ export const SUBANCESTRIES_SRD: SubancestrySeed[] = [
       { name: "Longbow", type: "weapon" }
     ]
   },
+  {
+    ancestry_name: "Elf",
+    name: "Wood Elf",
+    ability_bonuses: [{ ability: "wis", bonus: 1 }],
+    traits: [
+      { name: "Elf Weapon Training", description: "You have proficiency with the longsword, shortsword, shortbow, and longbow." },
+      { name: "Fleet of Foot", description: "Your base walking speed increases to 35 feet." },
+      { name: "Mask of the Wild", description: "You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena." }
+    ],
+    proficiencies: [
+      { name: "Longsword", type: "weapon" },
+      { name: "Shortsword", type: "weapon" },
+      { name: "Shortbow", type: "weapon" },
+      { name: "Longbow", type: "weapon" }
+    ]
+  },
+  {
+    ancestry_name: "Elf",
+    name: "Drow",
+    ability_bonuses: [{ ability: "cha", bonus: 1 }],
+    traits: [
+      { name: "Superior Darkvision", description: "Your darkvision has a radius of 120 feet." },
+      { name: "Sunlight Sensitivity", description: "You have disadvantage on attack rolls and on Wisdom (Perception) checks that rely on sight when you, the target of your attack, or whatever you are trying to perceive is in direct sunlight." },
+      { name: "Drow Magic", description: "You know the dancing lights cantrip. When you reach 3rd level, you can cast the faerie fire spell once per day. When you reach 5th level, you can also cast the darkness spell once per day. Charisma is your spellcasting ability for these spells." },
+      { name: "Drow Weapon Training", description: "You have proficiency with rapiers, shortswords, and hand crossbows." }
+    ],
+    proficiencies: [
+      { name: "Rapier", type: "weapon" },
+      { name: "Shortsword", type: "weapon" },
+      { name: "Hand Crossbow", type: "weapon" }
+    ]
+  },
 
   // =============== HALFLING SUBRACES ===============
   {
@@ -46,6 +90,14 @@ export const SUBANCESTRIES_SRD: SubancestrySeed[] = [
     ability_bonuses: [{ ability: "cha", bonus: 1 }],
     traits: [
       { name: "Naturally Stealthy", description: "You can attempt to hide even when you are obscured only by a creature that is at least one size larger than you." }
+    ]
+  },
+  {
+    ancestry_name: "Halfling",
+    name: "Stout",
+    ability_bonuses: [{ ability: "con", bonus: 1 }],
+    traits: [
+      { name: "Stout Resilience", description: "You have advantage on saving throws against poison, and you have resistance against poison damage." }
     ]
   },
 
@@ -60,6 +112,15 @@ export const SUBANCESTRIES_SRD: SubancestrySeed[] = [
     ],
     proficiencies: [
       { name: "Tinker's Tools", type: "tool" }
+    ]
+  },
+  {
+    ancestry_name: "Gnome",
+    name: "Forest Gnome",
+    ability_bonuses: [{ ability: "dex", bonus: 1 }],
+    traits: [
+      { name: "Natural Illusionist", description: "You know the minor illusion cantrip. Intelligence is your spellcasting ability for it." },
+      { name: "Speak with Small Beasts", description: "Through sounds and gestures, you can communicate simple ideas with Small or smaller beasts." }
     ]
   },
 

@@ -6670,6 +6670,15 @@ export type Database = {
         Returns: string[]
       }
       create_character_full: { Args: { payload: Json }; Returns: string }
+      find_campaign_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          id: string
+          live_session_id: string
+          name: string
+        }[]
+      }
       get_prepared_spell_count: { Args: { char_id: string }; Returns: number }
       get_user_campaign_role: {
         Args: { _campaign_id: string }

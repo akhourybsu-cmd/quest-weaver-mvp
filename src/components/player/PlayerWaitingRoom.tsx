@@ -37,11 +37,9 @@ export const PlayerWaitingRoom = () => {
     // Get campaign ID first to check for live session in parallel
     let campaignToCheck: string | null = null;
     if (campaignCode) {
-      const { data: campaign } = await supabase
-        .from('campaigns')
-        .select('id, live_session_id')
-        .eq('code', campaignCode)
-        .maybeSingle();
+      const { data: rpcRows } = await supabase
+        .rpc('find_campaign_by_code', { p_code: campaignCode });
+      const campaign = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
 
       if (campaign) {
         campaignToCheck = campaign.id;
@@ -97,11 +95,9 @@ export const PlayerWaitingRoom = () => {
       }
 
       // Get campaign ID (shouldn't hit this since we already checked above)
-      const { data: campaign } = await supabase
-        .from('campaigns')
-        .select('id')
-        .eq('code', campaignCode)
-        .maybeSingle();
+      const { data: rpcRows } = await supabase
+        .rpc('find_campaign_by_code', { p_code: campaignCode });
+      const campaign = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
 
       if (!campaign) {
         toast({ title: 'Campaign not found', description: 'Invalid campaign code', variant: 'destructive' });

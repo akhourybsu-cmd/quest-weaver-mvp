@@ -62,18 +62,30 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Fetch campaign
-      const { data: campaignData, error: campaignError } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('code', campaignCode)
-        .single();
+      // Fetch campaign via secure RPC (avoids exposing all campaigns to authenticated users)
+      const { data: rpcRows, error: campaignError } = await supabase
+        .rpc('find_campaign_by_code', { p_code: campaignCode });
 
-      if (campaignError || !campaignData) {
+      const lookupRow = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+      if (campaignError || !lookupRow) {
         console.error('Campaign not found:', campaignError);
         setIsLoading(false);
         return;
       }
+
+      // Try to fetch full row (works once RLS membership applies); fall back to RPC summary
+      const { data: fullCampaign } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('id', lookupRow.id)
+        .maybeSingle();
+
+      const campaignData = (fullCampaign ?? {
+        id: lookupRow.id,
+        name: lookupRow.name,
+        code: lookupRow.code,
+        dm_user_id: '',
+      }) as Campaign;
 
       setCampaign(campaignData);
 
@@ -83,7 +95,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('campaign_id', campaignData.id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (memberError || !memberData) {
         console.error('Member role not found:', memberError);

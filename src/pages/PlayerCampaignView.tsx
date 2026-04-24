@@ -93,8 +93,9 @@ export default function PlayerCampaignView() {
     try {
       if (!userId) return;
 
-      const { data: campaignData } = await supabase
-        .from('campaigns').select('id').eq('code', campaignCode).single();
+      const { data: rpcRows } = await supabase
+        .rpc('find_campaign_by_code', { p_code: campaignCode });
+      const campaignData = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
       if (!campaignData) return;
 
       const { data, error } = await supabase

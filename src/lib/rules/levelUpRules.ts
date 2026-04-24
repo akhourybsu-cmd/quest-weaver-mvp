@@ -24,6 +24,14 @@ export interface ResourceProgression {
   startLevel?: number;
 }
 
+/** Resolve a (possibly level-dependent) recharge into a concrete 'short' | 'long' string. */
+export function resolveRecharge(
+  recharge: ResourceProgression['recharge'],
+  level: number
+): 'short' | 'long' {
+  return typeof recharge === 'function' ? recharge(level) : recharge;
+}
+
 export interface ClassLevelUpRules {
   className: string;
   hitDie: number;

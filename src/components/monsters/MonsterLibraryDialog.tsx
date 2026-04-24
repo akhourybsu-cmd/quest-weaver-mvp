@@ -145,8 +145,9 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
 
   /**
    * Insert API-sourced monster instances directly into encounter_monsters.
-   * Treated as 'homebrew' source_type because the API record is not persisted
-   * in monster_catalog (the rules_cache is read-only for compendium use).
+   * Uses source_type='api' and stores source metadata (api, key, slug, document, url)
+   * so the encounter combat snapshot is self-contained and traceable back to the
+   * rules API item. We do NOT write to monster_catalog or homebrew_monsters.
    */
   const addApiMonsterToEncounter = async (m: Monster) => {
     const dexScore = m.abilities?.dex ?? 10;
@@ -155,13 +156,22 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
     const sizeRaw = (m.size || "medium").toLowerCase();
     const size = allowedSizes.includes(sizeRaw) ? sizeRaw : "medium";
     const groupKey = `${m.name}#${Date.now()}`;
+    // m.id is "open5e:<key>" — strip the prefix to get the rules-API key
+    const sourceKey = m.id.startsWith("open5e:") ? m.id.slice("open5e:".length) : m.id;
+    const sourceMeta = (m as any).__source ?? {};
     const rows = Array.from({ length: quantity }, (_, i) => {
       const suffix = quantity > 1 ? ` ${String.fromCharCode(65 + i)}` : "";
       const roll = Math.floor(Math.random() * 20) + 1;
       return {
         encounter_id: encounterId,
-        source_type: "homebrew" as const,
-        source_monster_id: crypto.randomUUID(),
+        source_type: "api" as any,
+        source_monster_id: null,
+        imported_from_rules_api: true,
+        source_api: sourceMeta.source_api ?? "open5e_v2",
+        source_key: sourceKey,
+        source_slug: sourceMeta.source_slug ?? null,
+        source_document: sourceMeta.source_document ?? null,
+        source_url: sourceMeta.source_url ?? null,
         name: m.name,
         display_name: `${m.name}${suffix}`,
         group_key: groupKey,
@@ -179,7 +189,7 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
         initiative_bonus: initiativeBonus,
       };
     });
-    const { error } = await supabase.from("encounter_monsters").insert(rows);
+    const { error } = await supabase.from("encounter_monsters").insert(rows as any);
     if (error) throw error;
   };
 
@@ -209,7 +219,14 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
       traits: n.traits ?? n.special_abilities ?? [],
       reactions: n.reactions ?? [],
       legendary_actions: n.legendary_actions ?? [],
-    };
+      // Stash source metadata for the add flow (not part of Monster type but used at insert time)
+      __source: {
+        source_api: it.source_api,
+        source_slug: it.slug,
+        source_document: it.source_document,
+        source_url: (n.url ?? n.document__url ?? null) as string | null,
+      },
+    } as Monster;
   };
 
   const filterMonsters = (monsters: Monster[]) => {

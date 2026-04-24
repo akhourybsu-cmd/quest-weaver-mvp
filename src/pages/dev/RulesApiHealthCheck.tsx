@@ -56,6 +56,21 @@ const SCREEN_PROBES: Array<{ name: string; run: () => Promise<{ sample?: string 
       const r = await rulesApiService.getCreatures({ query: "dragon", limit: 1 });
       return { sample: r.items[0]?.name };
     } },
+  { name: "Encounter Builder — API monster add (snapshot + source metadata)", run: async () => {
+      // Smoke-test the adapter shape: confirm a creature item carries the fields we
+      // need to build a self-contained combat snapshot AND traceable source metadata.
+      const r = await rulesApiService.getCreatures({ query: "goblin", limit: 1 });
+      const it = r.items[0];
+      if (!it) throw new Error("No creature returned");
+      const n = (it.normalized_json ?? {}) as any;
+      const hp = typeof n.hp === "number" ? n.hp : n.hit_points;
+      const ac = typeof n.ac === "number" ? n.ac : n.armor_class;
+      const hasSnapshot = Boolean(it.name) && hp != null && ac != null;
+      const hasSourceMeta = Boolean(it.source_api && it.key);
+      if (!hasSnapshot) throw new Error("Combat snapshot incomplete (missing hp/ac/name)");
+      if (!hasSourceMeta) throw new Error("Source metadata incomplete (missing source_api/key)");
+      return { sample: `${it.name} · AC ${ac} · HP ${hp} · src ${it.source_api}` };
+    } },
 ];
 
 export default function RulesApiHealthCheck() {

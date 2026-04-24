@@ -1258,7 +1258,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               label: r.label,
               max_value: maxVal,
               current_value: maxVal,
-              recharge: r.recharge,
+              recharge: resolveRecharge(r.recharge, draft.level),
             };
           });
         if (resourceRows.length > 0) {

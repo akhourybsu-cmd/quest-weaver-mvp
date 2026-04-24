@@ -281,15 +281,19 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
               />
             </div>
 
-            <Tabs defaultValue="catalog">
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as typeof activeTab); setSelectedMonster(null); }}>
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="catalog">
-                  <BookOpen className="w-4 h-4 mr-2" />
+                  <BookOpen className="w-4 h-4 mr-1" />
                   SRD ({catalogMonsters.length})
                 </TabsTrigger>
                 <TabsTrigger value="homebrew">
-                  <Scroll className="w-4 h-4 mr-2" />
+                  <Scroll className="w-4 h-4 mr-1" />
                   Homebrew ({homebrewMonsters.length})
+                </TabsTrigger>
+                <TabsTrigger value="api">
+                  <Globe className="w-4 h-4 mr-1" />
+                  Open5e Live
                 </TabsTrigger>
               </TabsList>
 
@@ -320,6 +324,30 @@ const MonsterLibraryDialog = ({ encounterId, onMonstersAdded }: MonsterLibraryDi
                       <p className="text-center text-muted-foreground py-8">No homebrew monsters yet</p>
                     ) : (
                       filterMonsters(homebrewMonsters).map(renderMonsterCard)
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="api" className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    Live SRD/open-license search via Open5e v2.
+                  </p>
+                  <SourceLabel source={apiMeta.source} fromCache={apiMeta.fromCache} fallbackUsed={apiMeta.fallbackUsed} />
+                </div>
+                <ScrollArea className="h-[440px]">
+                  <div className="space-y-2 pr-4">
+                    {apiLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      </div>
+                    ) : apiResults.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        {searchTerm ? "No matches in Open5e." : "Type a name to search live (e.g. goblin, ancient red dragon)."}
+                      </p>
+                    ) : (
+                      apiResults.map((it) => renderMonsterCard(adaptApiMonster(it)))
                     )}
                   </div>
                 </ScrollArea>

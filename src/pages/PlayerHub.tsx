@@ -11,7 +11,7 @@ const PlayerHub = () => {
 
   useEffect(() => {
     if (!authLoading && !session) {
-      navigate('/');
+      navigate(`/auth?redirect=${encodeURIComponent("/player-hub")}`, { replace: true });
     }
   }, [authLoading, session, navigate]);
 

@@ -14,12 +14,14 @@ import { PlayerNotesView } from "@/components/player/PlayerNotesView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Swords, Loader2, User } from "lucide-react";
+import { ArrowLeft, Swords, Loader2, User, ScrollText, Users, MapPin, Flag, BookOpen, Clock, NotebookPen, BookMarked } from "lucide-react";
 import CharacterSelectionDialog from "@/components/character/CharacterSelectionDialog";
 import { SessionKioskContainer } from "@/components/session/SessionKioskContainer";
 import { PlayerJournal } from "@/components/player/PlayerJournal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { MobileTabPicker } from "@/components/ui/MobileTabPicker";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function PlayerCampaignView() {
   const { campaignCode } = useParams();
@@ -33,6 +35,19 @@ export default function PlayerCampaignView() {
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [kioskOpen, setKioskOpen] = useState(false);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("quests");
+  const isMobile = useIsMobile();
+
+  const tabOptions = [
+    { value: "quests", label: "Quests", icon: ScrollText },
+    { value: "npcs", label: "NPCs", icon: Users },
+    { value: "locations", label: "Locations", icon: MapPin },
+    { value: "factions", label: "Factions", icon: Flag },
+    { value: "lore", label: "Lore", icon: BookOpen },
+    { value: "timeline", label: "Timeline", icon: Clock },
+    { value: "notes", label: "Notes", icon: NotebookPen },
+    { value: "journal", label: "Journal", icon: BookMarked },
+  ];
 
   useEffect(() => {
     if (!campaignCode) return;
@@ -220,17 +235,18 @@ export default function PlayerCampaignView() {
           )}
         </div>
 
-        <Tabs defaultValue="quests" className="mt-3">
-          <TabsList className="w-full flex overflow-x-auto justify-start gap-1">
-            <TabsTrigger value="quests">Quests</TabsTrigger>
-            <TabsTrigger value="npcs">NPCs</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-            <TabsTrigger value="factions">Factions</TabsTrigger>
-            <TabsTrigger value="lore">Lore</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
-            <TabsTrigger value="journal">Journal</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
+          {isMobile ? (
+            <div className="sticky z-30 bg-background/95 backdrop-blur py-2" style={{ top: "calc(var(--demo-bar-offset, 0px) + 3.25rem)" }}>
+              <MobileTabPicker value={activeTab} onValueChange={setActiveTab} options={tabOptions} />
+            </div>
+          ) : (
+            <TabsList className="w-full flex overflow-x-auto justify-start gap-1">
+              {tabOptions.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+              ))}
+            </TabsList>
+          )}
 
           <TabsContent value="quests" className="mt-4">
             <PlayerQuestTracker campaignId={campaign.id} />

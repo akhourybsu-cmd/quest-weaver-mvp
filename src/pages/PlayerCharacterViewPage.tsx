@@ -9,7 +9,8 @@ import { Camera, RotateCcw, Heart, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import LoreOrnamentDivider from '@/components/lore/ui/LoreOrnamentDivider';
@@ -77,15 +78,11 @@ const PlayerCharacterViewPage = () => {
     <PlayerPageLayout playerId={player.id} mobileTitle={character.name}>
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4 md:py-6">
         {/* Minimal back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/player/${player.id}/characters`)}
-          className="mb-3 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back
-        </Button>
+        <BackButton
+          fallback={`/player/${player.id}/characters`}
+          label="Back"
+          className="mb-3"
+        />
 
         {/* Regal Hero Banner */}
         <div className="relative mb-4 p-4 rounded-xl border-2 border-brass/40 parchment-card bg-gradient-to-r from-brass/8 via-card to-brass/8 overflow-hidden">

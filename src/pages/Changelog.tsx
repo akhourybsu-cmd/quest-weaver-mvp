@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Sparkles, Wrench, Bug, Rocket, Settings } from "lucide-react";
+import { Sparkles, Wrench, Bug, Rocket, Settings } from "lucide-react";
 import { changelogData, type ChangelogEntry } from "@/data/changelogData";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -16,7 +16,6 @@ const changeTypeMeta = {
 };
 
 const Changelog = () => {
-  const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
   const [entries, setEntries] = useState<ChangelogEntry[]>(changelogData);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -58,10 +57,7 @@ const Changelog = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
+          <BackButton fallback="/" label="Home" />
           <div className="flex-1">
             <h1 className="text-3xl font-cinzel font-bold">Changelog</h1>
             <p className="text-muted-foreground text-sm">What's new in Quest Weaver</p>

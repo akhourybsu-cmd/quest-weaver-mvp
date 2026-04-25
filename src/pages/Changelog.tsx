@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,7 @@ const changeTypeMeta = {
 };
 
 const Changelog = () => {
+  const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
   const [entries, setEntries] = useState<ChangelogEntry[]>(changelogData);
   const [showAdmin, setShowAdmin] = useState(false);

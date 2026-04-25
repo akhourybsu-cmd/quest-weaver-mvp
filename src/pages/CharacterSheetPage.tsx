@@ -115,8 +115,7 @@ const CharacterSheetPage = () => {
               aria-label="Level Up Character"
             >
               <TrendingUp className="h-4 w-4" />
-              <span className="hidden xs:inline sm:inline">Level Up</span>
-              <span className="inline xs:hidden sm:hidden">Lvl Up</span>
+              <span>Level Up</span>
             </Button>
           )}
         </div>

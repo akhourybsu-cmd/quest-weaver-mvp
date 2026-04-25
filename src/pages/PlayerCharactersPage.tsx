@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterList } from '@/components/player/PlayerCharacterList';
+import { BackButton } from '@/components/ui/back-button';
 import { Loader2 } from 'lucide-react';
 
 const PlayerCharactersPage = () => {
@@ -22,6 +23,11 @@ const PlayerCharactersPage = () => {
   return (
     <PlayerPageLayout playerId={player.id} mobileTitle="My Characters">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <BackButton fallback={`/player/${player.id}`} label="Back" className="mb-3 -ml-2 md:hidden" />
+        <div className="mb-6 hidden md:block">
+          <h1 className="text-4xl font-cinzel font-bold text-foreground">My Characters</h1>
+          <p className="text-muted-foreground mt-2">All the heroes you've brought to life</p>
+        </div>
         <PlayerCharacterList playerId={player.id} />
       </div>
     </PlayerPageLayout>

@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { BackButton } from "@/components/ui/back-button";
 import CharacterSheet from "@/components/character/CharacterSheet";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { TrendingUp } from "lucide-react";
+import { LevelUpWizard } from "@/components/character/LevelUpWizard";
 
 const CharacterSheetPage = () => {
   const { characterId } = useParams();
@@ -12,6 +15,10 @@ const CharacterSheetPage = () => {
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [resolvedCampaignId, setResolvedCampaignId] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [characterLevel, setCharacterLevel] = useState<number>(1);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     checkAccess();
@@ -58,7 +65,16 @@ const CharacterSheetPage = () => {
       }
 
       setResolvedCampaignId(character.campaign_id);
+      setIsOwner(isOwner);
       setHasAccess(true);
+
+      // Fetch level for the wizard
+      const { data: full } = await supabase
+        .from("characters")
+        .select("level")
+        .eq("id", characterId)
+        .maybeSingle();
+      if (full?.level) setCharacterLevel(full.level);
     } catch (error) {
       console.error("Error checking access:", error);
       toast({
@@ -86,19 +102,47 @@ const CharacterSheetPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b p-3 sm:p-4">
-        <BackButton
-          fallback={resolvedCampaignId ? `/campaigns/${resolvedCampaignId}` : "/campaign-hub"}
-          label="Back to Campaign"
-        />
+      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-3 sm:p-4">
+        <div className="flex items-center gap-2">
+          <BackButton
+            fallback={resolvedCampaignId ? `/campaigns/${resolvedCampaignId}` : "/campaign-hub"}
+            label="Back"
+          />
+          {isOwner && characterLevel < 20 && (
+            <Button
+              onClick={() => setShowLevelUp(true)}
+              className="ml-auto h-11 min-w-[44px] gap-2 bg-gradient-to-r from-brass to-brass/80 text-background hover:from-brass/90 hover:to-brass/70 font-cinzel font-semibold shadow-md"
+              aria-label="Level Up Character"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span>Level Up</span>
+            </Button>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 overflow-hidden">
         <CharacterSheet
+          key={refreshKey}
           characterId={characterId!}
           campaignId={resolvedCampaignId!}
         />
       </main>
+
+      {isOwner && (
+        <LevelUpWizard
+          key={`wizard-${characterLevel}`}
+          open={showLevelUp}
+          onOpenChange={setShowLevelUp}
+          characterId={characterId!}
+          currentLevel={characterLevel}
+          onComplete={() => {
+            setShowLevelUp(false);
+            setCharacterLevel((l) => l + 1);
+            setRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -32,7 +32,7 @@ export const MobileBottomNav = ({ playerId, activeCampaignCode, isDM }: MobileBo
     {
       icon: Swords,
       label: "Campaign",
-      path: activeCampaignCode ? `/player-campaign/${activeCampaignCode}` : `/player/${playerId}`,
+      path: activeCampaignCode ? `/player/campaign/${activeCampaignCode}` : `/player/${playerId}`,
       disabled: !activeCampaignCode,
     },
     { icon: ScrollText, label: "Notes", path: `/player/${playerId}/notes` },

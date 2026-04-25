@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, ChevronDown, Calendar, Swords, Flag, FileText, User, Package, Download, MapPin, Star, Play, Square } from "lucide-react";
+import { ChevronDown, Calendar, Swords, Flag, FileText, User, Package, Download, MapPin, Star, Play, Square } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 import { toast } from "sonner";
 import { format } from "date-fns";

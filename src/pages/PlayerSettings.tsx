@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
+import { BackButton } from '@/components/ui/back-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,6 +105,7 @@ const PlayerSettings = () => {
   return (
     <PlayerPageLayout playerId={player.id} mobileTitle="Settings">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <BackButton fallback={`/player/${player.id}`} label="Back" className="mb-3 -ml-2" />
         <div className="mb-8 hidden md:block">
           <h1 className="text-4xl font-cinzel font-bold text-foreground">Player Settings</h1>
           <p className="text-muted-foreground mt-2">Manage your player profile, account, and preferences</p>

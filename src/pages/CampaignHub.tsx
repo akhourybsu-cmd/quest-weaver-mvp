@@ -302,7 +302,7 @@ const CampaignHub = () => {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        navigate("/");
+        navigate(`/auth?redirect=${encodeURIComponent("/campaign-hub")}`);
         return;
       }
 
@@ -313,7 +313,21 @@ const CampaignHub = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCampaigns(data || []);
+      const dmCampaigns = data || [];
+      setCampaigns(dmCampaigns);
+
+      // If the user is not a DM of any campaign, but they ARE a player in some,
+      // route them to the Player Hub so they don't see an empty manager view.
+      if (dmCampaigns.length === 0) {
+        const { data: links } = await supabase
+          .from("player_campaign_links")
+          .select("id")
+          .limit(1);
+        if (links && links.length > 0) {
+          navigate("/player-hub", { replace: true });
+          return;
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error loading campaigns",

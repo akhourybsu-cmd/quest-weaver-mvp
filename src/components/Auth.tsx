@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -31,17 +31,29 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const getRedirectTarget = () => {
+    const fromParam = searchParams.get("redirect");
+    const fromState = (location.state as { from?: string } | null)?.from;
+    const target = fromParam || fromState || "/";
+    if (typeof target === "string" && target.startsWith("/") && !target.startsWith("//")) {
+      return target;
+    }
+    return "/";
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && event === 'SIGNED_IN') {
-        navigate('/');
+        navigate(getRedirectTarget(), { replace: true });
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/');
+        navigate(getRedirectTarget(), { replace: true });
       }
     });
 
@@ -52,8 +64,12 @@ const Auth = () => {
     if (googleLoading || loading) return;
     setGoogleLoading(true);
     try {
+      const target = getRedirectTarget();
+      const redirectUri = target === "/"
+        ? window.location.origin
+        : `${window.location.origin}${target}`;
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
       if (error) throw error;
     } catch (error: any) {
@@ -101,7 +117,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email: validation.data.email,
           password: validation.data.password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: { emailRedirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(getRedirectTarget())}` },
         });
         if (error) {
           if (error.message.includes("User already registered")) {

@@ -18,7 +18,10 @@ export const PlayerPageLayout = ({ playerId, mobileTitle, children }: PlayerPage
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex flex-col md:flex-row">
       {isMobile && (
-        <header className="sticky top-0 z-50 bg-card border-b border-brass/20 p-3 flex items-center gap-3">
+        <header
+          className="sticky z-40 bg-card border-b border-brass/20 p-3 flex items-center gap-3"
+          style={{ top: "var(--demo-bar-offset, 0px)" }}
+        >
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="shrink-0">

@@ -2,7 +2,7 @@ import { useDemo } from "@/contexts/DemoContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, RotateCcw, X, Eye } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,15 +28,17 @@ export function DemoBar() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 bg-arcanePurple/95 backdrop-blur-sm border-b border-brass/30 px-4 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <DemoBarOffset />
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-arcanePurple/95 backdrop-blur-sm border-b border-brass/30 px-3 py-2 sm:px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Badge variant="outline" className="border-brass/50 text-ink">
               <Eye className="w-3 h-3 mr-1" />
-              Demo Mode
+              <span className="hidden sm:inline">Demo Mode</span>
+              <span className="sm:hidden">Demo</span>
             </Badge>
             {campaign && (
-              <span className="text-sm font-medium text-ink">
+              <span className="text-sm font-medium text-ink truncate hidden sm:inline">
                 {campaign.name}
               </span>
             )}
@@ -46,27 +48,27 @@ export function DemoBar() {
                 {minutes}:{seconds.toString().padStart(2, "0")} remaining
               </span>
             </div>
-            <span className="text-xs text-ink/70">All changes are temporary</span>
+            <span className="text-xs text-ink/70 hidden lg:inline">All changes are temporary</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowResetDialog(true)}
-              className="text-ink hover:bg-brass/20"
+              className="text-ink hover:bg-brass/20 px-2 sm:px-3"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset Demo
+              <RotateCcw className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reset Demo</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowEndDialog(true)}
-              className="text-ink hover:bg-brass/20"
+              className="text-ink hover:bg-brass/20 px-2 sm:px-3"
             >
-              <X className="w-4 h-4 mr-2" />
-              End Demo
+              <X className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">End Demo</span>
             </Button>
           </div>
         </div>
@@ -110,4 +112,20 @@ export function DemoBar() {
       </AlertDialog>
     </>
   );
+}
+
+/**
+ * Sets a CSS variable `--demo-bar-offset` on <html> for the lifetime of the
+ * demo bar so sticky headers (PlayerPageLayout, CampaignManagerLayout) can
+ * stack below it instead of overlapping.
+ */
+function DemoBarOffset() {
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--demo-bar-offset", "3rem");
+    return () => {
+      root.style.removeProperty("--demo-bar-offset");
+    };
+  }, []);
+  return null;
 }

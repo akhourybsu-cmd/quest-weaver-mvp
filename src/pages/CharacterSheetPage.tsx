@@ -1,24 +1,24 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import CharacterSheet from "@/components/character/CharacterSheet";
 import { useToast } from "@/hooks/use-toast";
 
 const CharacterSheetPage = () => {
-  const { campaignId, characterId } = useParams();
+  const { characterId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [resolvedCampaignId, setResolvedCampaignId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAccess();
-  }, [characterId, campaignId]);
+  }, [characterId]);
 
   const checkAccess = async () => {
-    if (!characterId || !campaignId) {
+    if (!characterId) {
       navigate("/");
       return;
     }
@@ -26,7 +26,7 @@ const CharacterSheetPage = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate("/");
+        navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
         return;
       }
 
@@ -45,7 +45,7 @@ const CharacterSheetPage = () => {
       if (error) throw error;
 
       const isOwner = character.user_id === user.id;
-      const isDM = character.campaigns.dm_user_id === user.id;
+      const isDM = (character as any).campaigns?.dm_user_id === user.id;
 
       if (!isOwner && !isDM) {
         toast({
@@ -53,10 +53,11 @@ const CharacterSheetPage = () => {
           description: "You don't have permission to view this character.",
           variant: "destructive",
         });
-        navigate(`/campaign/${campaignId}`);
+        navigate("/campaign-hub");
         return;
       }
 
+      setResolvedCampaignId(character.campaign_id);
       setHasAccess(true);
     } catch (error) {
       console.error("Error checking access:", error);
@@ -85,21 +86,17 @@ const CharacterSheetPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b p-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/campaign/${campaignId}`)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Campaign
-        </Button>
+      <header className="border-b p-3 sm:p-4">
+        <BackButton
+          fallback={resolvedCampaignId ? `/campaigns/${resolvedCampaignId}` : "/campaign-hub"}
+          label="Back to Campaign"
+        />
       </header>
 
       <main className="flex-1 overflow-hidden">
         <CharacterSheet
           characterId={characterId!}
-          campaignId={campaignId!}
+          campaignId={resolvedCampaignId!}
         />
       </main>
     </div>

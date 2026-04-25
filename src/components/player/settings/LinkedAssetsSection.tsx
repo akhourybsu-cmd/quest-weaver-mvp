@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Swords, Shield, MessageSquare, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlayer } from '@/hooks/usePlayer';
 
 interface AssetCounts {
   characters: number;
@@ -22,10 +23,12 @@ interface AssetItem {
 const LinkedAssetsSection = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
+  const { player } = usePlayer();
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<AssetCounts>({ characters: 0, campaignsAsDM: 0, campaignsAsPlayer: 0, forumTopics: 0, forumReplies: 0 });
   const [characters, setCharacters] = useState<AssetItem[]>([]);
   const [dmCampaigns, setDmCampaigns] = useState<AssetItem[]>([]);
+  const [playerCampaigns, setPlayerCampaigns] = useState<Array<{ id: string; name: string; join_code: string }>>([]);
 
   useEffect(() => {
     if (userId) loadAssets();
@@ -46,13 +49,23 @@ const LinkedAssetsSection = () => {
     // We need to get the player id first
     const { data: playerData } = await supabase.from('players').select('id').eq('user_id', userId).single();
     let playerCampaignCount = 0;
+    let playerCampaignList: Array<{ id: string; name: string; join_code: string }> = [];
     if (playerData) {
       const { count } = await supabase.from('player_campaign_links').select('*', { count: 'exact', head: true }).eq('player_id', playerData.id);
       playerCampaignCount = count || 0;
+      const { data: linkRows } = await supabase
+        .from('player_campaign_links')
+        .select('campaign_id, campaigns:campaign_id(id, name, join_code)')
+        .eq('player_id', playerData.id);
+      playerCampaignList = (linkRows || [])
+        .map((r: any) => r.campaigns)
+        .filter(Boolean)
+        .map((c: any) => ({ id: c.id, name: c.name, join_code: c.join_code }));
     }
 
     setCharacters((charRes.data || []).map(c => ({ id: c.id, name: c.name })));
     setDmCampaigns((dmRes.data || []).map(c => ({ id: c.id, name: c.name })));
+    setPlayerCampaigns(playerCampaignList);
     setCounts({
       characters: charRes.data?.length || 0,
       campaignsAsDM: dmRes.data?.length || 0,
@@ -79,7 +92,10 @@ const LinkedAssetsSection = () => {
       label: 'Characters',
       count: counts.characters,
       items: characters,
-      onClick: (id: string) => navigate(`/characters/${id}`),
+      onClick: (id: string) =>
+        player
+          ? navigate(`/player/${player.id}/characters/${id}`)
+          : navigate(`/characters/${id}`),
     },
     {
       icon: <Shield className="w-5 h-5 text-brass" />,
@@ -92,7 +108,8 @@ const LinkedAssetsSection = () => {
       icon: <Users className="w-5 h-5 text-brass" />,
       label: 'Campaigns (as Player)',
       count: counts.campaignsAsPlayer,
-      items: [],
+      items: playerCampaigns.map(c => ({ id: c.join_code, name: c.name })),
+      onClick: (joinCode: string) => navigate(`/player/campaign/${joinCode}`),
     },
     {
       icon: <MessageSquare className="w-5 h-5 text-brass" />,

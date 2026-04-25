@@ -55,7 +55,15 @@ const Index = ({ session }: IndexProps) => {
     if (isAuthenticated) {
       navigate("/campaign-hub");
     } else {
-      navigate("/auth");
+      navigate("/auth?redirect=/campaign-hub");
+    }
+  };
+
+  const handleJoinAsPlayer = () => {
+    if (isAuthenticated) {
+      navigate("/player-hub");
+    } else {
+      navigate("/auth?redirect=/player-hub");
     }
   };
 
@@ -383,21 +391,41 @@ const Index = ({ session }: IndexProps) => {
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  onClick={handleStartSession}
-                  className="group shadow-lg hover:shadow-xl transition-all"
-                >
-                  {isAuthenticated
-                    ? "Go to Dashboard"
-                    : viewMode === "dm"
-                    ? "Start Free"
-                    : "Join as Player"}
-                  <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={handleTryDemo}>
-                  Try the Demo
-                </Button>
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      size="lg"
+                      onClick={() => navigate("/campaign-hub")}
+                      className="group shadow-lg hover:shadow-xl transition-all"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Open Campaign Hub
+                      <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => navigate("/player-hub")}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Open Player Hub
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      onClick={viewMode === "dm" ? handleStartSession : handleJoinAsPlayer}
+                      className="group shadow-lg hover:shadow-xl transition-all"
+                    >
+                      {viewMode === "dm" ? "Start Free" : "Join as Player"}
+                      <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={handleTryDemo}>
+                      Try the Demo
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 

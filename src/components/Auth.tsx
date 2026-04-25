@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { createDemo } from "@/lib/demoHelpers";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,11 @@ const Auth = () => {
 
   const isFormBusy = loading || googleLoading;
 
+  const handleTryDemo = () => {
+    const { demoId } = createDemo();
+    navigate(`/demo/${demoId}/campaign`);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Decorative background elements */}
@@ -284,6 +290,18 @@ const Auth = () => {
               {isLogin
                 ? "Don't have an account? Sign up"
                 : "Already have an account? Sign in"}
+            </button>
+          </div>
+
+          {/* Try the demo */}
+          <div className="text-center pt-2 border-t border-brass/10">
+            <button
+              type="button"
+              onClick={handleTryDemo}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors mt-3"
+              disabled={isFormBusy}
+            >
+              Just looking? <span className="underline underline-offset-2">Try the demo instead →</span>
             </button>
           </div>
         </CardContent>

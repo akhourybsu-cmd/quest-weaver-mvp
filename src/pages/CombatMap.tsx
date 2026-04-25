@@ -22,7 +22,6 @@ interface MapData {
 
 const CombatMap = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const campaignId = searchParams.get("campaign");
   const encounterId = searchParams.get("encounter");
   const isDM = searchParams.get("dm") === "true";

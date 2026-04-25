@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 import { useToast } from "@/hooks/use-toast";
 import MapViewer from "@/components/maps/MapViewer";
@@ -128,17 +129,13 @@ const WorldMap = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-card border-b border-brass/20 sticky top-0 z-40 shadow-sm">
+      <div
+        className="bg-card border-b border-brass/20 sticky z-40 shadow-sm"
+        style={{ top: "var(--demo-bar-offset, 0px)" }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton fallback={campaignId ? `/campaigns/${campaignId}` : "/campaign-hub"} label="Back" />
             <h1 className="text-xl font-cinzel font-bold">World Map</h1>
             {isDM && campaignId && (
               <MapUpload

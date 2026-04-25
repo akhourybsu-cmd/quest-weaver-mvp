@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Plus, Search, Book, Network, ArrowLeft, FileText } from "lucide-react";
+import { Plus, Search, Book, Network, FileText } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { toast } from "sonner";
 import LoreEditor from "@/components/lore/LoreEditor";
 import LorePageView from "@/components/lore/LorePageView";
@@ -127,11 +128,12 @@ export default function Lore() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-card border-b border-brass/20 shadow-sm">
+      <header
+        className="sticky z-40 bg-card border-b border-brass/20 shadow-sm"
+        style={{ top: "var(--demo-bar-offset, 0px)" }}
+      >
         <div className="container flex h-14 items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <BackButton fallback="/campaign-hub" label="Back" className="px-2" />
           <Book className="h-5 w-5 text-brass" />
           <h1 className="text-lg font-cinzel font-bold">Lore & Worldbuilding</h1>
         </div>

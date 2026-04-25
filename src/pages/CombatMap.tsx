@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import MapViewer from "@/components/maps/MapViewer";
 import MapUpload from "@/components/maps/MapUpload";
-import { ArrowLeft, Map } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Map } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 interface MapData {
   id: string;
@@ -22,7 +22,6 @@ interface MapData {
 
 const CombatMap = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const campaignId = searchParams.get("campaign");
   const encounterId = searchParams.get("encounter");
   const isDM = searchParams.get("dm") === "true";
@@ -73,17 +72,13 @@ const CombatMap = () => {
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="bg-card border-b border-brass/20 sticky top-0 z-40 shadow-sm">
+      <div
+        className="bg-card border-b border-brass/20 sticky z-40 shadow-sm"
+        style={{ top: "var(--demo-bar-offset, 0px)" }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton fallback={campaignId ? `/campaigns/${campaignId}` : "/campaign-hub"} label="Back" />
             
             <div className="flex items-center gap-2">
               <Map className="w-5 h-5 text-brass" />

@@ -162,14 +162,16 @@ const CharacterCard = ({ character, campaignId, onResumeCreation, onDelete, onRe
                 View Sheet
               </Button>
               <Button
-                size="icon"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowLevelUp(true);
                 }}
+                className="gap-1.5 px-3 border-brass/40 text-brass hover:bg-brass/10 hover:text-brass"
+                aria-label="Level Up"
               >
                 <TrendingUp className="h-4 w-4" />
+                <span className="text-xs font-cinzel font-semibold">Level Up</span>
               </Button>
             </>
           )}

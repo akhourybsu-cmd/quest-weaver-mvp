@@ -32,6 +32,15 @@ const StepBasics = () => {
   const [subclasses, setSubclasses] = useState<SrdSubclass[]>([]);
   const [selectedClass, setSelectedClass] = useState<SrdClass | null>(null);
   const [loading, setLoading] = useState(true);
+  const [levelInput, setLevelInput] = useState<string>(String(draft.level ?? 1));
+
+  // Sync local string state when draft.level changes externally (e.g. wizard reset)
+  useEffect(() => {
+    setLevelInput((prev) => {
+      const parsed = parseInt(prev, 10);
+      return parsed === draft.level ? prev : String(draft.level);
+    });
+  }, [draft.level]);
 
   useEffect(() => {
     SRD.classes().then(data => {
@@ -126,16 +135,37 @@ const StepBasics = () => {
             type="number"
             min={1}
             max={20}
-            value={draft.level}
-            onBlur={(e) => {
-              const val = parseInt(e.target.value) || 1;
-              setLevel(Math.max(1, Math.min(20, val)));
+            inputMode="numeric"
+            value={levelInput}
+            onChange={(e) => {
+              const raw = e.target.value;
+              // Allow empty or digit-only strings while typing
+              if (raw === "" || /^\d+$/.test(raw)) {
+                setLevelInput(raw);
+                const parsed = parseInt(raw, 10);
+                if (!isNaN(parsed) && parsed >= 1 && parsed <= 20) {
+                  setLevel(parsed);
+                }
+              }
             }}
-            onChange={(e) => { 
-              const level = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
-              setLevel(level);
+            onBlur={() => {
+              const parsed = parseInt(levelInput, 10);
+              if (isNaN(parsed)) {
+                // Restore last committed level
+                setLevelInput(String(draft.level));
+                return;
+              }
+              const clamped = Math.max(1, Math.min(20, parsed));
+              setLevel(clamped);
+              setLevelInput(String(clamped));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
             }}
           />
+          <p className="text-xs text-muted-foreground">Level 1–20</p>
         </div>
 
         <div className="space-y-2">

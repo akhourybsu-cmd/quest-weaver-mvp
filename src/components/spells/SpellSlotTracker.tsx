@@ -11,6 +11,16 @@ interface SpellSlotTrackerProps {
   characterId: string;
   characterLevel: number;
   characterClass: string;
+  /**
+   * Optional multiclass spell-slot map (level -> max slots), computed via
+   * `getSpellSlotsForClasses` in `@/lib/character/derivedStats`. When
+   * provided, it overrides the single-class SPELL_SLOTS_BY_LEVEL table
+   * and is used both to initialize missing rows and to reconcile
+   * `max_slots` in existing rows (so leveling a caster expands slots
+   * automatically). Pass `undefined` for legacy single-class behavior.
+   * Warlock pact slots are tracked separately and MUST be excluded.
+   */
+  multiclassSlots?: Record<number, number>;
 }
 
 // Standard spell slot progression
@@ -40,7 +50,8 @@ const SPELL_SLOTS_BY_LEVEL: Record<string, number[]> = {
 export const SpellSlotTracker = ({
   characterId,
   characterLevel,
-  characterClass
+  characterClass,
+  multiclassSlots,
 }: SpellSlotTrackerProps) => {
   const [spellSlots, setSpellSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +79,7 @@ export const SpellSlotTracker = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [characterId]);
+  }, [characterId, JSON.stringify(multiclassSlots)]);
 
   const loadSpellSlots = async () => {
     setLoading(true);
@@ -88,7 +99,17 @@ export const SpellSlotTracker = ({
         return;
       }
 
-      setSpellSlots(data);
+      // Reconcile max_slots against authoritative source (multiclass-aware
+      // when provided, else single-class table). Preserves used_slots and
+      // any DM-granted bonus_slots. Adds rows for newly-unlocked levels.
+      const desired = getDesiredMaxSlots();
+      await reconcileSlots(data, desired);
+      const { data: refreshed } = await supabase
+        .from("character_spell_slots")
+        .select("*")
+        .eq("character_id", characterId)
+        .order("spell_level");
+      setSpellSlots(refreshed || data);
     } catch (error) {
       console.error("Error loading spell slots:", error);
       toast.error("Failed to load spell slots");
@@ -97,16 +118,77 @@ export const SpellSlotTracker = ({
     }
   };
 
+  /**
+   * Returns level -> max_slots from the authoritative source:
+   * multiclassSlots if provided, else the single-class table.
+   */
+  const getDesiredMaxSlots = (): Record<number, number> => {
+    if (multiclassSlots && Object.keys(multiclassSlots).length > 0) {
+      // Normalize keys to numbers
+      const out: Record<number, number> = {};
+      for (const [k, v] of Object.entries(multiclassSlots)) {
+        const lvl = Number(k);
+        if (lvl >= 1 && lvl <= 9 && v > 0) out[lvl] = v;
+      }
+      return out;
+    }
+    const arr = SPELL_SLOTS_BY_LEVEL[characterLevel.toString()] || [];
+    const out: Record<number, number> = {};
+    arr.forEach((max, idx) => {
+      if (max > 0) out[idx + 1] = max;
+    });
+    return out;
+  };
+
+  /**
+   * Bring DB rows in line with `desired`:
+   *  - update max_slots if it changed (preserves used_slots/bonus_slots)
+   *  - insert new rows for levels that newly unlocked
+   *  - never deletes existing rows (in case of homebrew/bonus tracking)
+   */
+  const reconcileSlots = async (
+    existing: any[],
+    desired: Record<number, number>,
+  ) => {
+    const byLevel = new Map<number, any>();
+    for (const r of existing) byLevel.set(r.spell_level, r);
+
+    const updates: Array<PromiseLike<any>> = [];
+    for (const [lvlStr, max] of Object.entries(desired)) {
+      const lvl = Number(lvlStr);
+      const row = byLevel.get(lvl);
+      if (!row) {
+        updates.push(
+          supabase.from("character_spell_slots").insert({
+            character_id: characterId,
+            spell_level: lvl,
+            max_slots: max,
+            used_slots: 0,
+          }),
+        );
+      } else if (row.max_slots !== max) {
+        // Clamp used_slots to new max
+        const clampedUsed = Math.min(row.used_slots ?? 0, max);
+        updates.push(
+          supabase
+            .from("character_spell_slots")
+            .update({ max_slots: max, used_slots: clampedUsed })
+            .eq("id", row.id),
+        );
+      }
+    }
+    if (updates.length) await Promise.all(updates);
+  };
+
   const initializeSpellSlots = async () => {
-    const maxSlots = SPELL_SLOTS_BY_LEVEL[characterLevel.toString()] || [];
-    const slots = maxSlots
-      .map((max, index) => ({
-        character_id: characterId,
-        spell_level: index + 1,
-        max_slots: max,
-        used_slots: 0
-      }))
-      .filter(slot => slot.max_slots > 0);
+    const desired = getDesiredMaxSlots();
+    const slots = Object.entries(desired).map(([lvl, max]) => ({
+      character_id: characterId,
+      spell_level: Number(lvl),
+      max_slots: max,
+      used_slots: 0,
+    }));
+    if (slots.length === 0) return;
 
     const { error } = await supabase
       .from("character_spell_slots")

@@ -18,6 +18,7 @@ import {
   getClassBreakdown,
   getHitDiceByClass,
   formatHitDice,
+  getSpellSlotsForClasses,
 } from "@/lib/character/derivedStats";
 import { SpellPreparationManager } from "@/components/spells/SpellPreparationManager";
 import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
@@ -354,12 +355,17 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                 attacks={attacks}
                 equipment={equipment}
                 characterId={characterId}
+                classLineup={classLineup}
                 onUpdate={loadCharacter}
               />
             </TabsContent>
 
             <TabsContent value="features" className="mt-0">
-              <FeaturesTab features={features} feats={feats} />
+              <FeaturesTab
+                features={features}
+                feats={feats}
+                classLineup={classLineup}
+              />
             </TabsContent>
 
             {spells.length > 0 && (
@@ -368,6 +374,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                   spells={spells}
                   character={character}
                   abilities={abilities}
+                  classLineup={classLineup}
                   onOpenSpellPreparation={() => setShowSpellPreparation(true)}
                   onOpenCustomSpell={() => setShowCustomSpell(true)}
                   onOpenSpellbook={() => setShowSpellbook(true)}
@@ -622,8 +629,13 @@ const SkillsTab = ({ skills, abilities, profBonus, proficiencies, languages }: a
   );
 };
 
-const CombatTab = ({ character, attacks, equipment, characterId, onUpdate }: any) => {
-  const isWarlock = character.class?.toLowerCase().includes('warlock');
+const CombatTab = ({ character, attacks, equipment, characterId, classLineup, onUpdate }: any) => {
+  // Multiclass-aware Warlock check: any class in the lineup is Warlock,
+  // not just the primary one. Falls back to the legacy character.class
+  // when the lineup hasn't loaded yet.
+  const isWarlock = Array.isArray(classLineup) && classLineup.length > 0
+    ? classLineup.some((c: any) => (c.className || "").toLowerCase() === "warlock")
+    : character.class?.toLowerCase().includes('warlock');
   
   return (
     <div className="space-y-6">
@@ -720,7 +732,7 @@ const CombatTab = ({ character, attacks, equipment, characterId, onUpdate }: any
   );
 };
 
-const FeaturesTab = ({ features, feats }: any) => {
+const FeaturesTab = ({ features, feats, classLineup }: any) => {
   const groupedFeatures = features.reduce((acc: any, feature: any) => {
     if (!acc[feature.source]) {
       acc[feature.source] = [];
@@ -728,6 +740,21 @@ const FeaturesTab = ({ features, feats }: any) => {
     acc[feature.source].push(feature);
     return acc;
   }, {});
+
+  // Order: primary class first, then other classes (in lineup order),
+  // then any non-class sources (race, background, feat, etc.) alphabetically.
+  const lineupOrder: string[] = Array.isArray(classLineup)
+    ? [...classLineup]
+        .sort((a: any, b: any) => Number(b.isPrimary) - Number(a.isPrimary))
+        .map((c: any) => c.className)
+    : [];
+  const allSources = Object.keys(groupedFeatures);
+  const classSources = lineupOrder.filter((n) => allSources.includes(n));
+  const otherSources = allSources
+    .filter((s) => !classSources.includes(s))
+    .sort();
+  const orderedSources = [...classSources, ...otherSources];
+  const isMulticlass = lineupOrder.length > 1;
 
   return (
     <div className="space-y-6">
@@ -761,10 +788,21 @@ const FeaturesTab = ({ features, feats }: any) => {
       )}
 
       {/* Class Features Section */}
-      {Object.entries(groupedFeatures).map(([source, sourceFeatures]: [string, any]) => (
+      {orderedSources.map((source) => {
+        const sourceFeatures = groupedFeatures[source];
+        const isClassSource = lineupOrder.includes(source);
+        const isPrimary = isClassSource && lineupOrder[0] === source;
+        return (
         <Card key={source}>
           <CardHeader>
-            <CardTitle className="capitalize">{source} Features</CardTitle>
+            <CardTitle className="capitalize flex items-center gap-2">
+              <span>{source} Features</span>
+              {isMulticlass && isClassSource && (
+                <Badge variant={isPrimary ? "default" : "outline"} className="text-xs">
+                  {isPrimary ? "Primary" : "Multiclass"}
+                </Badge>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {sourceFeatures.map((feature: any) => (
@@ -780,7 +818,8 @@ const FeaturesTab = ({ features, feats }: any) => {
             ))}
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
       
       {features.length === 0 && (!feats || feats.length === 0) && (
         <Card>
@@ -793,7 +832,23 @@ const FeaturesTab = ({ features, feats }: any) => {
   );
 };
 
-const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpenCustomSpell, onOpenSpellbook }: any) => {
+const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPreparation, onOpenCustomSpell, onOpenSpellbook }: any) => {
+  // Compute multiclass spell slots from the canonical class lineup.
+  // `getSpellSlotsForClasses` already excludes Warlock (pact slots are
+  // tracked separately by WarlockPactSlots). When the lineup hasn't loaded
+  // yet, leave undefined so SpellSlotTracker falls back to its single-class
+  // table — matches legacy behavior.
+  const slotInfo = Array.isArray(classLineup) && classLineup.length > 0
+    ? getSpellSlotsForClasses(
+        classLineup.map((c: any) => ({
+          className: c.className,
+          level: c.level,
+          subclassName: undefined, // subclass name not on lineup; 1/3 caster opt-in handled elsewhere
+        })),
+      )
+    : undefined;
+  const multiclassSlots = slotInfo?.hasSlots ? slotInfo.slots : undefined;
+
   const groupedSpells = spells.reduce((acc: any, spell: any) => {
     const level = spell.spell?.level || 0;
     if (!acc[level]) {
@@ -860,6 +915,7 @@ const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpe
             characterId={character.id}
             characterLevel={character.level}
             characterClass={character.class}
+            multiclassSlots={multiclassSlots}
           />
         </>
       )}

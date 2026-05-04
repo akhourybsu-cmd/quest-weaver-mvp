@@ -831,7 +831,23 @@ const FeaturesTab = ({ features, feats, classLineup }: any) => {
   );
 };
 
-const SpellsTab = ({ spells, character, abilities, onOpenSpellPreparation, onOpenCustomSpell, onOpenSpellbook }: any) => {
+const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPreparation, onOpenCustomSpell, onOpenSpellbook }: any) => {
+  // Compute multiclass spell slots from the canonical class lineup.
+  // `getSpellSlotsForClasses` already excludes Warlock (pact slots are
+  // tracked separately by WarlockPactSlots). When the lineup hasn't loaded
+  // yet, leave undefined so SpellSlotTracker falls back to its single-class
+  // table — matches legacy behavior.
+  const slotInfo = Array.isArray(classLineup) && classLineup.length > 0
+    ? getSpellSlotsForClasses(
+        classLineup.map((c: any) => ({
+          className: c.className,
+          level: c.level,
+          subclassName: undefined, // subclass name not on lineup; 1/3 caster opt-in handled elsewhere
+        })),
+      )
+    : undefined;
+  const multiclassSlots = slotInfo?.hasSlots ? slotInfo.slots : undefined;
+
   const groupedSpells = spells.reduce((acc: any, spell: any) => {
     const level = spell.spell?.level || 0;
     if (!acc[level]) {

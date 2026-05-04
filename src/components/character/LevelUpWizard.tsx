@@ -238,36 +238,58 @@ export const LevelUpWizard = ({
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
 
   const newLevel = currentLevel + 1;
-  
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MULTICLASS-AWARE DERIVATIONS
+  //
+  // All level-up calculations (ASI gates, feature choices, cantrip gains,
+  // spells-known progression, Warlock invocation counts, pact boon, etc.)
+  // must be computed against the LEVELED CLASS and that class's INDIVIDUAL
+  // level — NOT the character's primary class or total level.
+  //
+  // For single-class characters `effectiveClassName` == character.class and
+  // `effectiveCurrentClassLevel` == currentLevel, so behavior is unchanged.
+  // ─────────────────────────────────────────────────────────────────────────
+  const effectiveClassName = selectedClassToLevel?.className || character?.class || "";
+  const leveledClassEntry = useMemo(
+    () => characterClasses.find(c => c.classId === selectedClassToLevel?.classId),
+    [characterClasses, selectedClassToLevel?.classId],
+  );
+  /** Current level in the class being leveled. Falls back to total level for legacy single-class characters. */
+  const effectiveCurrentClassLevel = leveledClassEntry?.level ?? currentLevel;
+  /** New level in the class being leveled (always +1 from current class level). */
+  const effectiveNewClassLevel = effectiveCurrentClassLevel + 1;
+
   // Detect third-caster subclass
   const isThirdCaster = isThirdCasterSubclass(subclassName);
-  
-  // Get class rules
-  const classRules = useMemo(() => {
-    return character?.class ? getClassRules(character.class) : null;
-  }, [character?.class]);
 
-  // Calculate what's needed at this level (with third-caster override)
+  // Get class rules for the LEVELED class
+  const classRules = useMemo(() => {
+    return effectiveClassName ? getClassRules(effectiveClassName) : null;
+  }, [effectiveClassName]);
+
+  // Calculate what's needed at this level (with third-caster override).
+  // Use per-class level so multiclassing works.
   const cantripGain = useMemo(() => {
-    if (isThirdCaster) return getThirdCasterCantripGain(currentLevel, newLevel);
-    if (!character?.class) return 0;
-    return getCantripGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
+    if (isThirdCaster) return getThirdCasterCantripGain(effectiveCurrentClassLevel, effectiveNewClassLevel);
+    if (!effectiveClassName) return 0;
+    return getCantripGain(effectiveClassName, effectiveCurrentClassLevel, effectiveNewClassLevel);
+  }, [effectiveClassName, effectiveCurrentClassLevel, effectiveNewClassLevel, isThirdCaster]);
 
   const spellsKnownGain = useMemo(() => {
-    if (isThirdCaster) return getThirdCasterSpellsKnownGain(currentLevel, newLevel);
-    if (!character?.class) return 0;
-    return getSpellsKnownGain(character.class, currentLevel, newLevel);
-  }, [character?.class, currentLevel, newLevel, isThirdCaster]);
+    if (isThirdCaster) return getThirdCasterSpellsKnownGain(effectiveCurrentClassLevel, effectiveNewClassLevel);
+    if (!effectiveClassName) return 0;
+    return getSpellsKnownGain(effectiveClassName, effectiveCurrentClassLevel, effectiveNewClassLevel);
+  }, [effectiveClassName, effectiveCurrentClassLevel, effectiveNewClassLevel, isThirdCaster]);
 
-  const isWizard = character?.class === "Wizard";
+  const isWizard = effectiveClassName === "Wizard";
   const wizardSpellsToAdd = isWizard ? 2 : 0;
 
   const maxSpellLevel = useMemo(() => {
-    if (isThirdCaster) return getThirdCasterMaxSpellLevel(newLevel);
-    if (!character?.class) return 0;
-    return getMaxSpellLevelForClass(character.class, newLevel);
-  }, [character?.class, newLevel, isThirdCaster]);
+    if (isThirdCaster) return getThirdCasterMaxSpellLevel(effectiveNewClassLevel);
+    if (!effectiveClassName) return 0;
+    return getMaxSpellLevelForClass(effectiveClassName, effectiveNewClassLevel);
+  }, [effectiveClassName, effectiveNewClassLevel, isThirdCaster]);
 
   const canSwapSpell = useMemo(() => {
     if (isThirdCaster) return true;
@@ -275,22 +297,26 @@ export const LevelUpWizard = ({
   }, [classRules, isThirdCaster]);
 
   const featureChoices = useMemo(() => {
-    if (!character?.class) return [];
-    return getFeatureChoicesAtLevel(character.class, newLevel);
-  }, [character?.class, newLevel]);
+    if (!effectiveClassName) return [];
+    return getFeatureChoicesAtLevel(effectiveClassName, effectiveNewClassLevel);
+  }, [effectiveClassName, effectiveNewClassLevel]);
 
+  // ASI is gated by the LEVELED class's individual level, never total level.
+  // (PHB p.163: "If a class grants you the Ability Score Improvement feature
+  // at certain levels, you gain it when you reach those levels in that
+  // class.")
   const hasASI = useMemo(() => {
-    if (!character?.class) return false;
-    return isASILevel(character.class, newLevel);
-  }, [character?.class, newLevel]);
+    if (!effectiveClassName) return false;
+    return isASILevel(effectiveClassName, effectiveNewClassLevel);
+  }, [effectiveClassName, effectiveNewClassLevel]);
 
-  // Warlock-specific
+  // Warlock-specific — driven by the Warlock class level, not character total.
   const invocationsToGain = useMemo(() => {
-    if (character?.class !== "Warlock") return 0;
-    const prevCount = getInvocationsKnownAtLevel(currentLevel);
-    const newCount = getInvocationsKnownAtLevel(newLevel);
+    if (effectiveClassName !== "Warlock") return 0;
+    const prevCount = getInvocationsKnownAtLevel(effectiveCurrentClassLevel);
+    const newCount = getInvocationsKnownAtLevel(effectiveNewClassLevel);
     return newCount - prevCount;
-  }, [character?.class, currentLevel, newLevel]);
+  }, [effectiveClassName, effectiveCurrentClassLevel, effectiveNewClassLevel]);
 
   const invocationReplaceCount = useMemo(() => {
     const choice = featureChoices.find(c => c.type === "invocation");
@@ -298,8 +324,8 @@ export const LevelUpWizard = ({
   }, [featureChoices]);
 
   const showPactBoon = useMemo(() => {
-    return character?.class === "Warlock" && newLevel === 3 && !currentPactBoon;
-  }, [character?.class, newLevel, currentPactBoon]);
+    return effectiveClassName === "Warlock" && effectiveNewClassLevel === 3 && !currentPactBoon;
+  }, [effectiveClassName, effectiveNewClassLevel, currentPactBoon]);
 
   // Sorcerer metamagic
   const metamagicToGain = useMemo(() => {

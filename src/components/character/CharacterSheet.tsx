@@ -354,12 +354,17 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                 attacks={attacks}
                 equipment={equipment}
                 characterId={characterId}
+                classLineup={classLineup}
                 onUpdate={loadCharacter}
               />
             </TabsContent>
 
             <TabsContent value="features" className="mt-0">
-              <FeaturesTab features={features} feats={feats} />
+              <FeaturesTab
+                features={features}
+                feats={feats}
+                classLineup={classLineup}
+              />
             </TabsContent>
 
             {spells.length > 0 && (

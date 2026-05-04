@@ -628,8 +628,13 @@ const SkillsTab = ({ skills, abilities, profBonus, proficiencies, languages }: a
   );
 };
 
-const CombatTab = ({ character, attacks, equipment, characterId, onUpdate }: any) => {
-  const isWarlock = character.class?.toLowerCase().includes('warlock');
+const CombatTab = ({ character, attacks, equipment, characterId, classLineup, onUpdate }: any) => {
+  // Multiclass-aware Warlock check: any class in the lineup is Warlock,
+  // not just the primary one. Falls back to the legacy character.class
+  // when the lineup hasn't loaded yet.
+  const isWarlock = Array.isArray(classLineup) && classLineup.length > 0
+    ? classLineup.some((c: any) => (c.className || "").toLowerCase() === "warlock")
+    : character.class?.toLowerCase().includes('warlock');
   
   return (
     <div className="space-y-6">

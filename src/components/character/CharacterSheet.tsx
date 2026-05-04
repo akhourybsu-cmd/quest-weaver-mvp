@@ -915,6 +915,7 @@ const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPrepa
             characterId={character.id}
             characterLevel={character.level}
             characterClass={character.class}
+            multiclassSlots={multiclassSlots}
           />
         </>
       )}

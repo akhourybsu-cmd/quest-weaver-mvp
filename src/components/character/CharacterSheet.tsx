@@ -18,6 +18,7 @@ import {
   getClassBreakdown,
   getHitDiceByClass,
   formatHitDice,
+  getSpellSlotsForClasses,
 } from "@/lib/character/derivedStats";
 import { SpellPreparationManager } from "@/components/spells/SpellPreparationManager";
 import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";

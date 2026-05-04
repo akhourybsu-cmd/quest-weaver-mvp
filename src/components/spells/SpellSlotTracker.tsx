@@ -153,7 +153,7 @@ export const SpellSlotTracker = ({
     const byLevel = new Map<number, any>();
     for (const r of existing) byLevel.set(r.spell_level, r);
 
-    const updates: Promise<any>[] = [];
+    const updates: Array<PromiseLike<any>> = [];
     for (const [lvlStr, max] of Object.entries(desired)) {
       const lvl = Number(lvlStr);
       const row = byLevel.get(lvl);

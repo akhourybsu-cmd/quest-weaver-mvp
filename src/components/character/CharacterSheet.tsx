@@ -368,6 +368,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
                   spells={spells}
                   character={character}
                   abilities={abilities}
+                  classLineup={classLineup}
                   onOpenSpellPreparation={() => setShowSpellPreparation(true)}
                   onOpenCustomSpell={() => setShowCustomSpell(true)}
                   onOpenSpellbook={() => setShowSpellbook(true)}

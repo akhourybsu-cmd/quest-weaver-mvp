@@ -11,6 +11,14 @@ import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2,
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier } from "@/lib/characterRules";
 import { repairCharacterData } from "@/lib/characterRepair";
+import { getCharacterClasses, type CharacterClassEntry } from "@/lib/character/classes";
+import {
+  getTotalLevel,
+  getProficiencyBonus,
+  getClassBreakdown,
+  getHitDiceByClass,
+  formatHitDice,
+} from "@/lib/character/derivedStats";
 import { SpellPreparationManager } from "@/components/spells/SpellPreparationManager";
 import { CustomSpellCreator } from "@/components/spells/CustomSpellCreator";
 import { SpellSlotTracker } from "@/components/spells/SpellSlotTracker";
@@ -41,6 +49,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   const [spells, setSpells] = useState<any[]>([]);
   const [feats, setFeats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classLineup, setClassLineup] = useState<CharacterClassEntry[]>([]);
   const [showSpellPreparation, setShowSpellPreparation] = useState(false);
   const [showCustomSpell, setShowCustomSpell] = useState(false);
   const [showSpellbook, setShowSpellbook] = useState(false);
@@ -172,6 +181,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         .order("level_gained");
       setFeats(featsData || []);
 
+      // Load canonical class lineup (multiclass-aware, with legacy fallback)
+      const lineup = await getCharacterClasses(characterId);
+      setClassLineup(lineup.classes);
+
     } catch (error) {
       console.error("Error loading character:", error);
       toast({
@@ -188,7 +201,21 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
     return <div className="flex items-center justify-center p-8">Loading character...</div>;
   }
 
-  const profBonus = calculateProficiencyBonus(character.level);
+  // Derive everything from the canonical class lineup so multiclass works.
+  // Falls back to characters.level if lineup couldn't load (defensive).
+  const totalLevel = classLineup.length
+    ? getTotalLevel(classLineup)
+    : character.level;
+  const profBonus = classLineup.length
+    ? getProficiencyBonus(classLineup)
+    : calculateProficiencyBonus(character.level);
+  const classBreakdown = classLineup.length
+    ? getClassBreakdown(classLineup)
+    : `${character.class ?? "—"} ${character.level}`;
+  const hitDiceLabel = classLineup.length
+    ? formatHitDice(getHitDiceByClass(classLineup))
+    : "—";
+  const isMulticlass = classLineup.length > 1;
   const hpPercent = (character.current_hp / character.max_hp) * 100;
 
   return (
@@ -199,9 +226,14 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
           <div>
             <h1 className="text-2xl font-bold">{character.name}</h1>
             <p className="text-sm text-muted-foreground">
-              Level {character.level} {character.class}
-              {character.subclass_name && ` • ${character.subclass_name}`}
+              Level {totalLevel} • {classBreakdown}
+              {!isMulticlass && character.subclass_name && ` • ${character.subclass_name}`}
             </p>
+            {hitDiceLabel !== "—" && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Hit Dice: {hitDiceLabel}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRepair} disabled={repairing}>

@@ -740,6 +740,8 @@ export const LevelUpWizard = ({
         level: newLevel,
         max_hp: (character?.max_hp || 0) + hpGain,
         current_hp: (character?.current_hp || 0) + hpGain,
+        // hit_dice_total mirrors total character level (sum of all class levels).
+        // For multiclass we compute the new total = current total + 1.
         hit_dice_total: newLevel,
         hit_dice_current: (character?.hit_dice_current || currentLevel) + 1,
         proficiency_bonus: newProfBonus,
@@ -833,8 +835,10 @@ export const LevelUpWizard = ({
         await supabase.from("character_level_history").insert({
           character_id: characterId,
           class_id: classData.id,
-          previous_level: currentLevel,
-          new_level: newLevel,
+          // Record the per-class level transition (e.g. Fighter 1 -> Fighter 2),
+          // not the character total level. Falls back to total for legacy chars.
+          previous_level: effectiveCurrentClassLevel,
+          new_level: effectiveNewClassLevel,
           hp_gained: hpGain,
           choices_made: {
             asi_or_feat: asiChoice,

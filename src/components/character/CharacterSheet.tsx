@@ -731,7 +731,7 @@ const CombatTab = ({ character, attacks, equipment, characterId, classLineup, on
   );
 };
 
-const FeaturesTab = ({ features, feats }: any) => {
+const FeaturesTab = ({ features, feats, classLineup }: any) => {
   const groupedFeatures = features.reduce((acc: any, feature: any) => {
     if (!acc[feature.source]) {
       acc[feature.source] = [];
@@ -739,6 +739,21 @@ const FeaturesTab = ({ features, feats }: any) => {
     acc[feature.source].push(feature);
     return acc;
   }, {});
+
+  // Order: primary class first, then other classes (in lineup order),
+  // then any non-class sources (race, background, feat, etc.) alphabetically.
+  const lineupOrder: string[] = Array.isArray(classLineup)
+    ? [...classLineup]
+        .sort((a: any, b: any) => Number(b.isPrimary) - Number(a.isPrimary))
+        .map((c: any) => c.className)
+    : [];
+  const allSources = Object.keys(groupedFeatures);
+  const classSources = lineupOrder.filter((n) => allSources.includes(n));
+  const otherSources = allSources
+    .filter((s) => !classSources.includes(s))
+    .sort();
+  const orderedSources = [...classSources, ...otherSources];
+  const isMulticlass = lineupOrder.length > 1;
 
   return (
     <div className="space-y-6">
@@ -772,10 +787,21 @@ const FeaturesTab = ({ features, feats }: any) => {
       )}
 
       {/* Class Features Section */}
-      {Object.entries(groupedFeatures).map(([source, sourceFeatures]: [string, any]) => (
+      {orderedSources.map((source) => {
+        const sourceFeatures = groupedFeatures[source];
+        const isClassSource = lineupOrder.includes(source);
+        const isPrimary = isClassSource && lineupOrder[0] === source;
+        return (
         <Card key={source}>
           <CardHeader>
-            <CardTitle className="capitalize">{source} Features</CardTitle>
+            <CardTitle className="capitalize flex items-center gap-2">
+              <span>{source} Features</span>
+              {isMulticlass && isClassSource && (
+                <Badge variant={isPrimary ? "default" : "outline"} className="text-xs">
+                  {isPrimary ? "Primary" : "Multiclass"}
+                </Badge>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {sourceFeatures.map((feature: any) => (
@@ -791,7 +817,8 @@ const FeaturesTab = ({ features, feats }: any) => {
             ))}
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
       
       {features.length === 0 && (!feats || feats.length === 0) && (
         <Card>

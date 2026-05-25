@@ -51,7 +51,7 @@ export type SrdBackground = {
   skill_proficiencies: Array<{ name: string }> | { choose?: number; from?: string[] };
   tool_proficiencies: Array<{ name: string }> | { choose?: number; from?: string[] };
   languages: Array<{ name: string }> | { choose?: number; from?: string[] };
-  feature: { name: string; description: string } | string;
+  feature: { name: string; description: string } | null;
   equipment: any[];
 };
 

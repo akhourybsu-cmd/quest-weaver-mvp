@@ -9,6 +9,8 @@ import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
+import { isValidStandardArray, validatePointBuy, detectArmorInItems, calculateAC } from "@/lib/characterRules";
+import { EQUIPMENT_BUNDLES } from "@/data/srd/equipmentBundlesSeed";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
 import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 import { resolveRecharge } from "@/lib/rules/levelUpRules";
@@ -169,11 +171,15 @@ function applyAncestryBonuses(baseScores: Record<string, number>, abilityBonuses
   return result;
 }
 
-function computeDerivedStats(draft: any, classRules: any) {
+function computeDerivedStats(
+  draft: any,
+  classRules: any,
+  bundleItems?: Array<{ name: string }>
+) {
   // Apply ancestry ability bonuses before computing modifiers
   const bonuses = draft.grants?.abilityBonuses || {};
   const scores = applyAncestryBonuses(draft.abilityScores, bonuses);
-  
+
   const abilityMod = (score: number) => Math.floor((score - 10) / 2);
   const conMod = abilityMod(scores.CON);
   const dexMod = abilityMod(scores.DEX);
@@ -236,10 +242,36 @@ function computeDerivedStats(draft: any, classRules: any) {
     spellAttackMod = profBonus + castingMod;
   }
   
+  // === Armor-aware AC calculation ===
+  const { armor: startingArmor, shield: hasShield } = detectArmorInItems(bundleItems ?? []);
+  const className = (draft.className || '').toLowerCase();
+  let ac: number;
+
+  if (startingArmor) {
+    // Equipped armor always overrides class unarmored defense
+    ac = calculateAC(scores.DEX, startingArmor, hasShield);
+  } else {
+    // Unarmored: apply class-specific unarmored defense
+    if (className === 'barbarian') {
+      // Barbarian Unarmored Defense: 10 + DEX mod + CON mod (shield is still usable)
+      ac = 10 + dexMod + conMod + (hasShield ? 2 : 0);
+    } else if (className === 'monk') {
+      // Monk Unarmored Defense: 10 + DEX mod + WIS mod (requires no shield)
+      // If a shield is somehow equipped, the monk cannot benefit from this feature
+      if (hasShield) {
+        ac = 10 + dexMod + 2;
+      } else {
+        ac = 10 + dexMod + wisMod;
+      }
+    } else {
+      ac = 10 + dexMod + (hasShield ? 2 : 0);
+    }
+  }
+
   return {
     maxHp,
     profBonus,
-    ac: 10 + dexMod,
+    ac,
     initiativeBonus: dexMod,
     passivePerception,
     passiveInvestigation,
@@ -578,11 +610,21 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         return !!(draft.name?.trim() && draft.classId && draft.className);
       case "Ancestry":
         return !!draft.ancestryId;
-      case "Abilities":
-        // BUG FIX: Validate ability scores are within valid range
+      case "Abilities": {
         const scores = Object.values(draft.abilityScores);
-        const allValid = scores.every(s => s >= 1 && s <= 20);
-        return allValid;
+        const method = draft.abilityMethod;
+        if (method === 'standard-array') {
+          return isValidStandardArray(scores);
+        } else if (method === 'point-buy') {
+          const pb = validatePointBuy(scores);
+          // Allow proceeding if scores are all in legal range (pointsUsed >= 0)
+          // and total cost does not exceed 27
+          return pb.pointsUsed >= 0 && pb.pointsUsed <= 27;
+        } else {
+          // Manual/rolled: accept any score in the standard 1-20 play range
+          return scores.every(s => s >= 1 && s <= 20);
+        }
+      }
       case "Background":
         return !!draft.backgroundId;
       case "Proficiencies":
@@ -780,16 +822,27 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
+      // === Resolve starting equipment bundle items for armor-aware AC ===
+      // Uses the synchronously-imported EQUIPMENT_BUNDLES constant — no async needed here
+      let bundleItemsForAC: Array<{ name: string }> = [];
+      if (draft.choices.equipmentBundleId && draft.className) {
+        const eqData = EQUIPMENT_BUNDLES.find(
+          e => e.className.toLowerCase() === draft.className!.toLowerCase()
+        );
+        const bundle = eqData?.bundles.find(b => b.id === draft.choices.equipmentBundleId);
+        bundleItemsForAC = (bundle?.items ?? eqData?.default ?? []) as Array<{ name: string }>;
+      }
+
       // === Compute derived stats ===
       const classRules = draft.className ? CLASS_LEVEL_UP_RULES[draft.className] : null;
       // finalAbilityScores already includes ancestry bonuses + ASI, so clear abilityBonuses
       // to prevent computeDerivedStats from double-applying them
-      const draftForStats = { 
-        ...draft, 
+      const draftForStats = {
+        ...draft,
         abilityScores: finalAbilityScores,
         grants: { ...draft.grants, abilityBonuses: {} },
       };
-      const derived = computeDerivedStats(draftForStats, classRules);
+      const derived = computeDerivedStats(draftForStats, classRules, bundleItemsForAC);
 
       // Upload portrait if one was selected
       let portraitUrl: string | null = null;
@@ -904,6 +957,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           int_save: derived.saves.int,
           wis_save: derived.saves.wis,
           cha_save: derived.saves.cha,
+          gold: 0,
         })
         .eq("id", characterId);
 
@@ -1032,7 +1086,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         if (langError) throw langError;
       }
 
-      // Write features (grants + level-up features)
+      // Write features: class/subclass/background features + ancestry traits + level-up choices
+      // character_features has no UNIQUE constraint, so we delete-then-insert to prevent
+      // duplicates when finalize is retried (e.g. on network error)
       const allFeatures = [
         ...draft.grants.features.map(f => ({
           character_id: characterId,
@@ -1040,6 +1096,15 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           name: f.name,
           level: f.level || 1,
           description: f.description || "",
+          data: {},
+        })),
+        // Ancestry and subancestry traits (Darkvision, Trance, Fey Ancestry, etc.)
+        ...draft.grants.traits.map(t => ({
+          character_id: characterId,
+          source: t.source || 'ancestry',
+          name: t.name,
+          level: 1,
+          description: t.description || "",
           data: {},
         })),
         ...levelUpFeatures.map(f => ({
@@ -1053,9 +1118,13 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
       ];
 
       if (allFeatures.length > 0) {
+        await supabase
+          .from("character_features")
+          .delete()
+          .eq("character_id", characterId);
         const { error: featuresError } = await supabase
           .from("character_features")
-          .upsert(allFeatures);
+          .insert(allFeatures);
         if (featuresError) throw featuresError;
       }
 
@@ -1191,7 +1260,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           level: draft.level,
           subclass: loadedSubclassName || undefined,
         }]);
-        const slotRows: Array<{ character_id: string; spell_level: number; max_slots: number; used_slots: number }> = [];
+        const slotRows: Array<{ character_id: string; spell_level: number; max_slots: number; used_slots: number; is_pact_magic: boolean }> = [];
         
         if (slotInfo.shared) {
           for (const [lvlStr, count] of Object.entries(slotInfo.shared.slots)) {
@@ -1200,23 +1269,18 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
               spell_level: Number(lvlStr),
               max_slots: count,
               used_slots: 0,
+              is_pact_magic: false,
             });
           }
         }
         if (slotInfo.pact) {
-          // BUG FIX: Warlock pact slots should be stored distinctly to avoid confusion
-          // Use a negative spell_level to distinguish from standard slots (convention: -1 for pact)
-          // Or better: just store at the actual pact level but mark differently
-          // For now, just ensure we don't have conflicting entries
-          const existingLevel = slotRows.find(r => r.spell_level === slotInfo.pact!.pactSlotLevel);
-          if (!existingLevel) {
-            slotRows.push({
-              character_id: characterId!,
-              spell_level: slotInfo.pact.pactSlotLevel,
-              max_slots: slotInfo.pact.pactSlots,
-              used_slots: 0,
-            });
-          }
+          slotRows.push({
+            character_id: characterId!,
+            spell_level: slotInfo.pact.pactSlotLevel,
+            max_slots: slotInfo.pact.pactSlots,
+            used_slots: 0,
+            is_pact_magic: true,
+          });
         }
         if (slotRows.length > 0) {
           const { error: slotsError } = await supabase
@@ -1269,16 +1333,9 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
         }
       }
 
-      // Clean up any orphaned draft characters by this user (drafts that were never finalized)
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (currentUser) {
-        await supabase
-          .from("characters")
-          .delete()
-          .eq("user_id", currentUser.id)
-          .eq("creation_status", "draft")
-          .neq("id", characterId!);
-      }
+      // The character record was already set to creation_status: 'complete' by the update above.
+      // Do NOT delete other draft characters for this user — another tab may be creating a
+      // different character simultaneously and those drafts are still in progress.
 
       toast({
         title: "Character Created!",

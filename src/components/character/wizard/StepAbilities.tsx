@@ -1,11 +1,10 @@
-import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateModifier } from "@/lib/dnd5e";
-import { Brain } from "lucide-react";
-import { STANDARD_ARRAY, validatePointBuy } from "@/lib/characterRules";
+import { Brain, AlertCircle } from "lucide-react";
+import { STANDARD_ARRAY, validatePointBuy, isValidStandardArray } from "@/lib/characterRules";
 import { useAtom, useSetAtom } from "jotai";
 import { draftAtom, setAbilityScoresAtom, setAbilityMethodAtom } from "@/state/characterWizard";
 
@@ -43,7 +42,24 @@ const StepAbilities = () => {
     });
   };
 
-  const pointBuyValidation = validatePointBuy(Object.values(draft.abilityScores));
+  const currentScores = Object.values(draft.abilityScores);
+  const pointBuyValidation = validatePointBuy(currentScores);
+
+  // Compute which standard array values are still unassigned (for the helper UI)
+  const standardArrayRemaining = (() => {
+    const counts: Record<number, number> = {};
+    for (const v of STANDARD_ARRAY) counts[v] = (counts[v] ?? 0) + 1;
+    for (const v of currentScores) {
+      if (counts[v] !== undefined && counts[v] > 0) counts[v]--;
+    }
+    const remaining: number[] = [];
+    for (const [val, count] of Object.entries(counts)) {
+      for (let i = 0; i < count; i++) remaining.push(Number(val));
+    }
+    return remaining.sort((a, b) => b - a);
+  })();
+
+  const standardArrayValid = isValidStandardArray(currentScores);
 
   return (
     <div className="space-y-6">
@@ -68,9 +84,26 @@ const StepAbilities = () => {
         <TabsContent value="standard-array" className="space-y-4 mt-6">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground mb-4">
-                Assign these values to your abilities: {STANDARD_ARRAY.join(", ")}
+              <p className="text-sm text-muted-foreground mb-3">
+                Assign each of these values to one ability (each used exactly once):
               </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {STANDARD_ARRAY.map((v, i) => {
+                  const remaining = standardArrayRemaining.filter(r => r === v).length;
+                  const total = STANDARD_ARRAY.filter(s => s === v).length;
+                  const used = total - remaining > 0;
+                  return (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
+                        used ? "bg-primary/10 border-primary/30 text-primary" : "border-muted-foreground/30 text-muted-foreground"
+                      }`}
+                    >
+                      {v}{used ? " ✓" : ""}
+                    </span>
+                  );
+                })}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {ABILITIES.map((ability) => (
                   <div key={ability.key} className="space-y-2">
@@ -85,6 +118,17 @@ const StepAbilities = () => {
                   </div>
                 ))}
               </div>
+              {!standardArrayValid && (
+                <div className="mt-4 flex items-start gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Each value from [15, 14, 13, 12, 10, 8] must be assigned exactly once.
+                    {standardArrayRemaining.length > 0 && (
+                      <> Still unassigned: {standardArrayRemaining.join(", ")}.</>
+                    )}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -97,9 +141,11 @@ const StepAbilities = () => {
                   You have 27 points to spend. Scores cost: 8=0, 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9
                 </p>
                 <p className="text-sm font-medium mt-2">
-                  Points Used: {pointBuyValidation.pointsUsed} / 27
-                  {pointBuyValidation.valid && <span className="text-green-600 ml-2">✓ Valid</span>}
-                  {!pointBuyValidation.valid && pointBuyValidation.pointsUsed > 27 && (
+                  Points Used: {pointBuyValidation.pointsUsed < 0 ? "—" : pointBuyValidation.pointsUsed} / 27
+                  {pointBuyValidation.valid && pointBuyValidation.pointsUsed === 27 && (
+                    <span className="text-green-600 ml-2">✓ Valid</span>
+                  )}
+                  {pointBuyValidation.pointsUsed > 27 && (
                     <span className="text-destructive ml-2">Too many points!</span>
                   )}
                 </p>

@@ -61,36 +61,38 @@ export const calculateMaxHP = (
 };
 
 /**
- * Calculate Armor Class
+ * Calculate Armor Class given DEX score, optional equipped armor, and optional shield.
+ * armor.dex_cap: undefined = light (full DEX), number = medium (capped), null = heavy (no DEX)
  */
 export const calculateAC = (
   dexScore: number,
-  armor?: { base_ac: number; dex_cap?: number },
+  armor?: { base_ac: number; dex_cap?: number | null },
   shield?: boolean
 ): number => {
   const dexMod = calculateModifier(dexScore);
   let ac = 10;
-  
+
   if (armor) {
     ac = armor.base_ac;
-    if (armor.dex_cap !== undefined) {
-      ac += Math.min(dexMod, armor.dex_cap);
-    } else if (armor.dex_cap === null) {
-      // Heavy armor, no dex bonus
+    if (armor.dex_cap === null) {
+      // Heavy armor: no DEX bonus regardless of modifier
       ac += 0;
+    } else if (armor.dex_cap !== undefined) {
+      // Medium armor: DEX bonus capped
+      ac += Math.min(dexMod, armor.dex_cap);
     } else {
-      // Light armor, full dex bonus
+      // Light armor: full DEX bonus
       ac += dexMod;
     }
   } else {
-    // Unarmored: 10 + DEX mod
+    // Unarmored: 10 + DEX mod (class-specific unarmored defense handled by callers)
     ac = 10 + dexMod;
   }
-  
+
   if (shield) {
     ac += 2;
   }
-  
+
   return ac;
 };
 
@@ -189,12 +191,14 @@ export const calculateAttackBonus = (
 /**
  * Validate point buy (27 points system)
  * Cost: 8=0, 9=1, 10=2, 11=3, 12=4, 13=5, 14=7, 15=9
+ * valid: true when all scores are in legal range AND total cost does not exceed 27
+ * (spending fewer than 27 points is permitted)
  */
 export const validatePointBuy = (scores: number[]): { valid: boolean; pointsUsed: number } => {
   const costTable: { [key: number]: number } = {
     8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9
   };
-  
+
   let totalPoints = 0;
   for (const score of scores) {
     if (score < 8 || score > 15) {
@@ -202,14 +206,74 @@ export const validatePointBuy = (scores: number[]): { valid: boolean; pointsUsed
     }
     totalPoints += costTable[score];
   }
-  
-  return { valid: totalPoints === 27, pointsUsed: totalPoints };
+
+  return { valid: totalPoints <= 27, pointsUsed: totalPoints };
 };
 
 /**
  * Standard array values
  */
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+
+/**
+ * Validate that the six ability scores match the standard array exactly (each value used once).
+ * Accepts scores in any order.
+ */
+export const isValidStandardArray = (scores: number[]): boolean => {
+  if (scores.length !== 6) return false;
+  const sorted = [...scores].sort((a, b) => b - a);
+  const expected = [...STANDARD_ARRAY].sort((a, b) => b - a);
+  return sorted.every((v, i) => v === expected[i]);
+};
+
+/**
+ * SRD armor stats lookup.
+ * dex_cap: undefined = light armor (full DEX added)
+ * dex_cap: number    = medium armor (DEX capped at this value)
+ * dex_cap: null      = heavy armor (no DEX added)
+ */
+export const ARMOR_STATS: Record<string, { base_ac: number; dex_cap?: number | null }> = {
+  // Light armor
+  "Padded": { base_ac: 11 },
+  "Leather Armor": { base_ac: 11 },
+  "Studded Leather": { base_ac: 12 },
+  // Medium armor
+  "Hide": { base_ac: 12, dex_cap: 2 },
+  "Chain Shirt": { base_ac: 13, dex_cap: 2 },
+  "Scale Mail": { base_ac: 14, dex_cap: 2 },
+  "Breastplate": { base_ac: 14, dex_cap: 2 },
+  "Half Plate": { base_ac: 15, dex_cap: 2 },
+  // Heavy armor
+  "Ring Mail": { base_ac: 14, dex_cap: null },
+  "Chain Mail": { base_ac: 16, dex_cap: null },
+  "Splint": { base_ac: 17, dex_cap: null },
+  "Plate": { base_ac: 18, dex_cap: null },
+};
+
+/**
+ * Scan a list of equipment items and return the first recognized armor piece and
+ * whether a shield is present.
+ */
+export const detectArmorInItems = (
+  items: Array<{ name: string }>
+): { armor?: { base_ac: number; dex_cap?: number | null }; shield: boolean } => {
+  let detectedArmor: { base_ac: number; dex_cap?: number | null } | undefined;
+  let shield = false;
+
+  for (const item of items) {
+    const name = item.name.trim();
+    if (ARMOR_STATS[name]) {
+      if (!detectedArmor || ARMOR_STATS[name].base_ac > detectedArmor.base_ac) {
+        detectedArmor = ARMOR_STATS[name];
+      }
+    }
+    if (name === "Shield" || name === "Wooden Shield") {
+      shield = true;
+    }
+  }
+
+  return { armor: detectedArmor, shield };
+};
 
 /**
  * Skills list with their associated abilities

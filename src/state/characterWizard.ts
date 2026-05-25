@@ -174,9 +174,20 @@ export const setAbilityScoresAtom = atom(
   }
 );
 
+// Default scores for each method so switching never carries over invalid values
+const ABILITY_METHOD_DEFAULTS: Record<string, WizardDraft['abilityScores']> = {
+  'standard-array': { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
+  'point-buy':      { STR: 8,  DEX: 8,  CON: 8,  INT: 8,  WIS: 8,  CHA: 8  },
+  'rolled':         { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+};
+
 export const setAbilityMethodAtom = atom(null, (get, set, method: string) => {
   const d = get(draftAtom);
-  set(draftAtom, { ...d, abilityMethod: method });
+  set(draftAtom, {
+    ...d,
+    abilityMethod: method,
+    abilityScores: ABILITY_METHOD_DEFAULTS[method] ?? d.abilityScores,
+  });
 });
 
 // Source-aware grant setter: sets grants for a specific source and recomputes merged grants

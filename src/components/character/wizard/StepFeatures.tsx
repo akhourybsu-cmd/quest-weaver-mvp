@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAtom } from "jotai";
@@ -186,8 +185,7 @@ const StepFeatures = () => {
           </AlertDescription>
         </Alert>
       ) : (
-        <ScrollArea className="h-[450px]">
-          <div className="space-y-4 pr-4">
+        <div className="space-y-4">
             {/* Features grouped by level */}
             {Object.entries(groupedFeatures)
               .sort(([a], [b]) => Number(a) - Number(b))
@@ -356,8 +354,7 @@ const StepFeatures = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </ScrollArea>
+        </div>
       )}
 
       {/* Feature Choice Dialog */}

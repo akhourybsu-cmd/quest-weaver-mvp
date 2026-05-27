@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles, LayoutList } from "lucide-react";
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
@@ -1384,7 +1385,7 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100vh] md:h-[95vh] p-0 flex flex-col fantasy-border-ornaments bg-gradient-to-br from-parchment/5 via-transparent to-brass/5">
+      <DialogContent className="max-w-full md:max-w-4xl lg:max-w-7xl h-[100dvh] md:h-[95dvh] p-0 flex flex-col fantasy-border-ornaments bg-gradient-to-br from-parchment/5 via-transparent to-brass/5">
         {/* Show loading state while seeding SRD data */}
         {isSeeding ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -1411,10 +1412,24 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
                     <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
                     <span className="font-cinzel">{STEPS[currentStep]}</span>
                   </p>
-                  <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
-                    <Save className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-2">Save & Exit</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* Summary sheet trigger — mobile only */}
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm" className="md:hidden border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
+                          <LayoutList className="h-4 w-4" />
+                          <span className="ml-2 text-xs">Summary</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="bottom" className="h-[80dvh] p-0 rounded-t-xl overflow-y-auto">
+                        <LiveSummaryPanel />
+                      </SheetContent>
+                    </Sheet>
+                    <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
+                      <Save className="h-4 w-4" />
+                      <span className="hidden sm:inline ml-2">Save & Exit</span>
+                    </Button>
+                  </div>
                 </div>
                 <Progress value={progress} className="mt-3 h-2 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass" />
               </div>

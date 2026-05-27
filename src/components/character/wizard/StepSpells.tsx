@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useAtom, useSetAtom } from "jotai";
@@ -342,22 +341,20 @@ const StepSpells = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-2">
-                  {filteredCantrips.map((spell) => (
-                    <SpellRow
-                      key={spell.id}
-                      spell={spell}
-                      selected={selectedCantrips.includes(spell.id)}
-                      onToggle={() => toggleKnown(spell.id)}
-                      disabled={
-                        !selectedCantrips.includes(spell.id) &&
-                        selectedCantrips.length >= cantripCount
-                      }
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="space-y-2">
+                {filteredCantrips.map((spell) => (
+                  <SpellRow
+                    key={spell.id}
+                    spell={spell}
+                    selected={selectedCantrips.includes(spell.id)}
+                    onToggle={() => toggleKnown(spell.id)}
+                    disabled={
+                      !selectedCantrips.includes(spell.id) &&
+                      selectedCantrips.length >= cantripCount
+                    }
+                  />
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -403,9 +400,8 @@ const StepSpells = () => {
                   )}
 
                 {/* Regular spells */}
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {(filteredLeveledSpells[lvl] || []).map((spell) => {
+                <div className="space-y-2">
+                  {(filteredLeveledSpells[lvl] || []).map((spell) => {
                       const isAuto = isAutoPrepared(spell.id, spellAccess);
                       if (isAuto) return null; // Skip auto-prepared in main list
 
@@ -436,7 +432,6 @@ const StepSpells = () => {
                       );
                     })}
                   </div>
-                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

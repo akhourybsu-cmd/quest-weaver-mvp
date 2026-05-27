@@ -1401,37 +1401,66 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
           <div className="flex flex-col md:flex-row flex-1 min-h-0">
             {/* Main wizard content */}
             <div className="flex-1 flex flex-col min-h-0">
-              {/* Header */}
-              <div className="p-4 md:p-6 border-b border-brass/20 flex-shrink-0">
-                <h2 className="text-xl md:text-2xl font-cinzel font-bold mb-2 text-brass tracking-wide">
-                  Character Creation Wizard
-                </h2>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}: </span>
-                    <span className="sm:hidden">{currentStep + 1}/{STEPS.length}: </span>
-                    <span className="font-cinzel">{STEPS[currentStep]}</span>
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {/* Summary sheet trigger — mobile only */}
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" size="sm" className="md:hidden border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
-                          <LayoutList className="h-4 w-4" />
-                          <span className="ml-2 text-xs">Summary</span>
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="bottom" className="h-[80dvh] p-0 rounded-t-xl overflow-y-auto">
-                        <LiveSummaryPanel />
-                      </SheetContent>
-                    </Sheet>
-                    <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all">
-                      <Save className="h-4 w-4" />
-                      <span className="hidden sm:inline ml-2">Save & Exit</span>
-                    </Button>
+              {/* ── Wizard header ─────────────────────────────────────── */}
+              <div className="flex-shrink-0 border-b border-brass/20">
+                {/* Top ornament line */}
+                <div className="h-px bg-gradient-to-r from-transparent via-brass/60 to-transparent" />
+
+                <div className="px-4 md:px-6 pt-4 pb-3.5">
+                  {/* Title row */}
+                  <div className="flex items-start justify-between gap-2 mb-3.5">
+                    <div>
+                      <p className="font-cinzel text-[9px] tracking-[0.3em] uppercase text-muted-foreground/60 leading-none mb-1.5">
+                        The Tome of Heroes
+                      </p>
+                      <h2 className="font-cinzel font-bold text-xl md:text-2xl text-foreground tracking-wide leading-tight">
+                        Character Creation
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                      {/* Summary sheet trigger — mobile only */}
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <Button variant="outline" size="sm" className="md:hidden border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all font-cinzel tracking-wide text-xs uppercase">
+                            <LayoutList className="h-4 w-4" />
+                            <span className="ml-2">Summary</span>
+                          </Button>
+                        </SheetTrigger>
+                        <SheetContent side="bottom" className="h-[80dvh] p-0 rounded-t-xl overflow-y-auto">
+                          <LiveSummaryPanel />
+                        </SheetContent>
+                      </Sheet>
+                      <Button variant="outline" size="sm" onClick={handleSaveAndExit} className="border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all font-cinzel tracking-wide text-xs uppercase">
+                        <Save className="h-4 w-4" />
+                        <span className="hidden sm:inline ml-2">Save & Exit</span>
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Step indicator */}
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-full border border-brass/50 bg-brass/10 flex items-center justify-center shrink-0">
+                      <span className="font-cinzel font-bold text-[11px] leading-none" style={{ color: "hsl(var(--brass))" }}>
+                        {currentStep + 1}
+                      </span>
+                    </div>
+                    <div className="w-px h-4 bg-brass/25 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-cinzel text-xs md:text-sm font-semibold text-foreground tracking-wider truncate">
+                        {STEPS[currentStep]}
+                      </p>
+                      <p className="font-cinzel text-[9px] tracking-widest uppercase text-muted-foreground/60 leading-none mt-0.5">
+                        Step {currentStep + 1} of {STEPS.length}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <Progress
+                    value={progress}
+                    className="h-1.5 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass [&>div]:transition-[width] [&>div]:duration-500"
+                  />
                 </div>
-                <Progress value={progress} className="mt-3 h-2 [&>div]:bg-gradient-to-r [&>div]:from-brass/70 [&>div]:to-brass" />
               </div>
 
               {/* Step content - Scrollable */}
@@ -1445,24 +1474,31 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
                 </div>
               </div>
 
-              {/* Navigation */}
-              <div className="p-4 md:p-6 border-t border-brass/20 flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={currentStep === 0}
-                  className="w-full sm:w-auto border-brass/30 hover:bg-brass/10 hover:text-brass active:scale-95 transition-all"
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                
-                {currentStep < STEPS.length - 1 ? (
-                  <Button onClick={handleNext} disabled={!canProceed()} className="w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-brass-foreground active:scale-95 transition-all">
-                    Next
-                    <ChevronRight className="ml-2 h-4 w-4" />
+              {/* ── Navigation ────────────────────────────────────────── */}
+              <div className="flex-shrink-0 border-t border-brass/20">
+                <div className="h-px bg-gradient-to-r from-transparent via-brass/40 to-transparent" />
+                <div className="p-4 md:p-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
+                  <Button
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={currentStep === 0}
+                    className="w-full sm:w-auto border-brass/30 hover:bg-brass/10 hover:text-brass font-cinzel tracking-wide text-xs uppercase active:scale-95 transition-all"
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" />
+                    Back
                   </Button>
-                ) : null}
+
+                  {currentStep < STEPS.length - 1 ? (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed()}
+                      className="w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide text-xs uppercase active:scale-95 transition-all shadow-md"
+                    >
+                      Next
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
 

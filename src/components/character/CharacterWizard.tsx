@@ -9,7 +9,8 @@ import { ChevronLeft, ChevronRight, Save, Loader2, Sparkles } from "lucide-react
 import { useAtom } from "jotai";
 import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
-import { isValidStandardArray, validatePointBuy, detectArmorInItems, calculateAC } from "@/lib/characterRules";
+import { isValidStandardArray, validatePointBuy } from "@/lib/characterRules";
+import { computeDerivedStats } from "@/lib/character/wizardDerivedStats";
 import { EQUIPMENT_BUNDLES } from "@/data/srd/equipmentBundlesSeed";
 import { getBackgroundSeedByName } from "@/data/srd/backgroundsSeed";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
@@ -161,130 +162,6 @@ function serializeGrants(grants: any) {
 }
 
 // === Helper: compute derived stats ===
-function applyAncestryBonuses(baseScores: Record<string, number>, abilityBonuses: Record<string, number>): Record<string, number> {
-  const result = { ...baseScores };
-  for (const [ability, bonus] of Object.entries(abilityBonuses)) {
-    const key = ability.toUpperCase();
-    if (key in result) {
-      result[key] += bonus;
-    }
-  }
-  return result;
-}
-
-function computeDerivedStats(
-  draft: any,
-  classRules: any,
-  bundleItems?: Array<{ name: string }>
-) {
-  // Apply ancestry ability bonuses before computing modifiers
-  const bonuses = draft.grants?.abilityBonuses || {};
-  const scores = applyAncestryBonuses(draft.abilityScores, bonuses);
-
-  const abilityMod = (score: number) => Math.floor((score - 10) / 2);
-  const conMod = abilityMod(scores.CON);
-  const dexMod = abilityMod(scores.DEX);
-  const wisMod = abilityMod(scores.WIS);
-  const intMod = abilityMod(scores.INT);
-  const chaMod = abilityMod(scores.CHA);
-  const strMod = abilityMod(scores.STR);
-  
-  const hitDie = classRules?.hitDie || 8;
-  const profBonus = Math.floor((draft.level - 1) / 4) + 2;
-  
-  // HP calculation: Level 1 = max hit die + CON mod. Levels 2+ from levelChoices or average
-  let maxHp = hitDie + conMod;
-  const levelChoices = draft.choices?.featureChoices?.levelChoices;
-  if (levelChoices && typeof levelChoices === 'object') {
-    for (let lvl = 2; lvl <= draft.level; lvl++) {
-      const lc = levelChoices[lvl];
-      const hpRoll = lc?.hpRoll ?? (Math.floor(hitDie / 2) + 1); // default to average
-      maxHp += hpRoll + conMod;
-    }
-  } else if (draft.level > 1) {
-    // No level choices recorded, use average for all levels
-    for (let lvl = 2; lvl <= draft.level; lvl++) {
-      maxHp += (Math.floor(hitDie / 2) + 1) + conMod;
-    }
-  }
-  maxHp = Math.max(maxHp, 1); // minimum 1 HP total per 5e rules
-  
-  // Check skill proficiencies for passive calculations
-  const allSkills = new Set([
-    ...Array.from(draft.grants?.skillProficiencies || []),
-    ...(draft.choices?.skills || []),
-  ]);
-  
-  const passivePerception = 10 + wisMod + (allSkills.has('Perception') ? profBonus : 0);
-  const passiveInvestigation = 10 + intMod + (allSkills.has('Investigation') ? profBonus : 0);
-  const passiveInsight = 10 + wisMod + (allSkills.has('Insight') ? profBonus : 0);
-  
-  // Saving throw values
-  const saveProficient = draft.grants?.savingThrows || new Set();
-  const saves = {
-    str: strMod + (saveProficient.has('STR') ? profBonus : 0),
-    dex: dexMod + (saveProficient.has('DEX') ? profBonus : 0),
-    con: conMod + (saveProficient.has('CON') ? profBonus : 0),
-    int: intMod + (saveProficient.has('INT') ? profBonus : 0),
-    wis: wisMod + (saveProficient.has('WIS') ? profBonus : 0),
-    cha: chaMod + (saveProficient.has('CHA') ? profBonus : 0),
-  };
-  
-  // Spellcasting stats
-  let spellAbility: string | null = null;
-  let spellSaveDC: number | null = null;
-  let spellAttackMod: number | null = null;
-  
-  if (classRules?.spellcasting?.ability) {
-    const abilityMap: Record<string, number> = { wis: wisMod, cha: chaMod, int: intMod };
-    const castingMod = abilityMap[classRules.spellcasting.ability] || 0;
-    spellAbility = classRules.spellcasting.ability.toUpperCase();
-    spellSaveDC = 8 + profBonus + castingMod;
-    spellAttackMod = profBonus + castingMod;
-  }
-  
-  // === Armor-aware AC calculation ===
-  const { armor: startingArmor, shield: hasShield } = detectArmorInItems(bundleItems ?? []);
-  const className = (draft.className || '').toLowerCase();
-  let ac: number;
-
-  if (startingArmor) {
-    // Equipped armor always overrides class unarmored defense
-    ac = calculateAC(scores.DEX, startingArmor, hasShield);
-  } else {
-    // Unarmored: apply class-specific unarmored defense
-    if (className === 'barbarian') {
-      // Barbarian Unarmored Defense: 10 + DEX mod + CON mod (shield is still usable)
-      ac = 10 + dexMod + conMod + (hasShield ? 2 : 0);
-    } else if (className === 'monk') {
-      // Monk Unarmored Defense: 10 + DEX mod + WIS mod (requires no shield)
-      // If a shield is somehow equipped, the monk cannot benefit from this feature
-      if (hasShield) {
-        ac = 10 + dexMod + 2;
-      } else {
-        ac = 10 + dexMod + wisMod;
-      }
-    } else {
-      ac = 10 + dexMod + (hasShield ? 2 : 0);
-    }
-  }
-
-  return {
-    maxHp,
-    profBonus,
-    ac,
-    initiativeBonus: dexMod,
-    passivePerception,
-    passiveInvestigation,
-    passiveInsight,
-    saves,
-    hitDie: `d${hitDie}`,
-    spellAbility,
-    spellSaveDC,
-    spellAttackMod,
-  };
-}
-
 const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: CharacterWizardProps) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);

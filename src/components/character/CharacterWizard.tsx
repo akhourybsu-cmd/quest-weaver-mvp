@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -289,10 +289,83 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
   const [currentStep, setCurrentStep] = useState(0);
   const [draftId, setDraftId] = useState<string | null>(editCharacterId || null);
   const [loading, setLoading] = useState(false);
-  
+
   const [draft, setDraft] = useAtom(draftAtom);
   const [, resetDraft] = useAtom(resetDraftAtom);
-  
+
+  // ── beforeunload flush refs ───────────────────────────────────────────────
+  // The beforeunload handler must be synchronous. We keep refs to the latest
+  // draft/step/open state and to the current session token so the handler can
+  // build and fire a keepalive PATCH without touching async code.
+  const sessionTokenRef = useRef<string | null>(null);
+  const flushDataRef = useRef({ draft, draftId, currentStep, open });
+
+  // Keep session token ref in sync
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      sessionTokenRef.current = data.session?.access_token ?? null;
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      sessionTokenRef.current = session?.access_token ?? null;
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Keep flush-data ref in sync with latest state
+  useEffect(() => {
+    flushDataRef.current = { draft, draftId, currentStep, open };
+  }, [draft, draftId, currentStep, open]);
+
+  // Register beforeunload listener once; handler reads from refs
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const { draft: d, draftId: id, currentStep: step, open: isOpen } = flushDataRef.current;
+      if (!isOpen || !id || !d.name || !sessionTokenRef.current) return;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+      const { portraitBlob: _blob, ...draftWithoutBlob } = d;
+      const wizardState = {
+        currentStep: step,
+        draft: {
+          ...draftWithoutBlob,
+          grants: serializeGrants(d.grants),
+          grantSources: {
+            class: serializeGrants(d.grantSources.class),
+            ancestry: serializeGrants(d.grantSources.ancestry),
+            subAncestry: serializeGrants(d.grantSources.subAncestry),
+            background: serializeGrants(d.grantSources.background),
+          },
+        },
+      };
+
+      // keepalive: true keeps the request alive after page unload.
+      // The Supabase JS client cannot set this flag, so we call the
+      // PostgREST REST API directly.
+      fetch(`${supabaseUrl}/rest/v1/characters?id=eq.${id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${sessionTokenRef.current}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          name: d.name,
+          class: d.className || "",
+          level: d.level,
+          creation_status: "draft",
+          wizard_state: wizardState,
+        }),
+        keepalive: true,
+      });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []); // registered once; state is read from refs
+
   // Auto-seed SRD data if missing
   const { isSeeding, seedComplete, seedingStatus } = useSRDAutoSeed();
 

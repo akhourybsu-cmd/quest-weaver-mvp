@@ -298,3 +298,37 @@ export const SKILLS = [
   { name: "Stealth", ability: "dex" },
   { name: "Survival", ability: "wis" },
 ] as const;
+
+// ─── Darkvision parsing ──────────────────────────────────────────────────────
+
+/**
+ * Scans an array of character feature rows for a darkvision trait and returns
+ * the range in feet. Returns 0 if no darkvision is found.
+ *
+ * Looks for any feature whose name includes "darkvision" (case-insensitive)
+ * and extracts the first number followed by "feet" or "ft" from the name then
+ * the description. Falls back to 60 ft (SRD default) if the trait is found but
+ * no explicit range is parseable.
+ */
+export function parseDarkvisionFt(
+  features: Array<{ name: string; description?: string | null }>
+): number {
+  for (const f of features) {
+    if (!/darkvision/i.test(f.name)) continue;
+
+    // Try name first (e.g. "Superior Darkvision (120 ft)")
+    const nameMatch = f.name.match(/(\d+)\s*(?:feet|ft)/i);
+    if (nameMatch) return parseInt(nameMatch[1], 10);
+
+    // Try description (e.g. "…within 60 feet of you…")
+    const desc = f.description ?? "";
+    const descMatch =
+      desc.match(/within\s+(\d+)\s*(?:feet|ft)/i) ??
+      desc.match(/(\d+)\s*(?:feet|ft)/i);
+    if (descMatch) return parseInt(descMatch[1], 10);
+
+    // Darkvision trait found but range not parseable — SRD default is 60 ft
+    return 60;
+  }
+  return 0;
+}

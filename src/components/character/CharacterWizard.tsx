@@ -11,6 +11,7 @@ import { draftAtom, resetDraftAtom } from "@/state/characterWizard";
 import { emptyGrants } from "@/lib/rules/5eRules";
 import { isValidStandardArray, validatePointBuy, detectArmorInItems, calculateAC } from "@/lib/characterRules";
 import { EQUIPMENT_BUNDLES } from "@/data/srd/equipmentBundlesSeed";
+import { getBackgroundSeedByName } from "@/data/srd/backgroundsSeed";
 import { useSRDAutoSeed } from "@/hooks/useSRDAutoSeed";
 import { CLASS_LEVEL_UP_RULES } from "@/lib/rules/levelUpRules";
 import { resolveRecharge } from "@/lib/rules/levelUpRules";
@@ -1380,6 +1381,38 @@ const CharacterWizard = ({ open, campaignId, onComplete, editCharacterId }: Char
             .from("character_equipment")
             .upsert(equipRows);
           if (eqError) console.error("Error writing equipment:", eqError);
+        }
+      }
+
+      // Write equipment from selected background
+      // The seed is authoritative; the DB column is used as a fallback for
+      // backgrounds that were seeded externally and may have additional items.
+      if (draft.backgroundId) {
+        const { data: bgRow } = await supabase
+          .from("srd_backgrounds")
+          .select("name, equipment")
+          .eq("id", draft.backgroundId)
+          .single();
+
+        if (bgRow) {
+          // Prefer the local seed (always up-to-date); fall back to DB column
+          const seed = getBackgroundSeedByName(bgRow.name);
+          const rawItems: string[] =
+            seed?.equipment ??
+            (Array.isArray(bgRow.equipment) ? (bgRow.equipment as string[]) : []);
+
+          if (rawItems.length > 0) {
+            const bgEquipRows = rawItems.map(itemName => ({
+              character_id: characterId!,
+              item_ref: String(itemName),
+              qty: 1,
+              equipped: false,
+            }));
+            const { error: bgEqError } = await supabase
+              .from("character_equipment")
+              .upsert(bgEquipRows);
+            if (bgEqError) console.error("Error writing background equipment:", bgEqError);
+          }
         }
       }
 

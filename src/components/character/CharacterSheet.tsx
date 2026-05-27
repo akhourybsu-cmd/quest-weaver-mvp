@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
-import { calculateSkillModifier } from "@/lib/characterRules";
+import { calculateSkillModifier, parseDarkvisionFt } from "@/lib/characterRules";
 import { repairCharacterData } from "@/lib/characterRepair";
 import { getCharacterClasses, type CharacterClassEntry } from "@/lib/character/classes";
 import {
@@ -322,11 +322,12 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 
           <div className="flex-1 overflow-y-auto p-6">
             <TabsContent value="overview" className="mt-0">
-              <OverviewTab 
-                character={character} 
+              <OverviewTab
+                character={character}
                 abilities={abilities}
                 profBonus={profBonus}
                 languages={languages}
+                features={features}
               />
             </TabsContent>
 
@@ -404,9 +405,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 };
 
 // Tab Components
-const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
+const OverviewTab = ({ character, abilities, profBonus, languages, features }: any) => {
   // BUG FIX: Use stored initiative_bonus which includes feats like Alert
   const initiative = character.initiative_bonus ?? calculateModifier(abilities.dex);
+  const darkvisionFt = parseDarkvisionFt(features ?? []);
   
   return (
     <div className="space-y-6">
@@ -436,7 +438,7 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
         <CardHeader>
           <CardTitle>Passive Senses</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="text-center p-3 rounded-lg bg-muted">
             <div className="text-sm text-muted-foreground mb-1">Perception</div>
             <div className="text-2xl font-bold">{character.passive_perception ?? (10 + calculateModifier(abilities.wis))}</div>
@@ -448,6 +450,12 @@ const OverviewTab = ({ character, abilities, profBonus, languages }: any) => {
           <div className="text-center p-3 rounded-lg bg-muted">
             <div className="text-sm text-muted-foreground mb-1">Insight</div>
             <div className="text-2xl font-bold">{character.passive_insight ?? (10 + calculateModifier(abilities.wis))}</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted">
+            <div className="text-sm text-muted-foreground mb-1">Darkvision</div>
+            <div className="text-2xl font-bold">
+              {darkvisionFt > 0 ? `${darkvisionFt} ft` : "—"}
+            </div>
           </div>
         </CardContent>
       </Card>

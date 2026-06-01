@@ -695,7 +695,7 @@ const CombatTab = ({ character, attacks, equipment, characterId, classLineup, on
                       <Button size="sm" variant="outline">Roll Damage</Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Attack: </span>
                       <span className="font-bold">+{attack.attack_bonus}</span>

@@ -858,6 +858,19 @@ const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPrepa
     : undefined;
   const multiclassSlots = slotInfo?.hasSlots ? slotInfo.slots : undefined;
 
+  // Derive warlock level from the canonical lineup (falls back to legacy
+  // characters.class match if lineup missing).
+  const warlockEntry = Array.isArray(classLineup)
+    ? classLineup.find(
+        (c: any) => (c.className || "").toLowerCase() === "warlock",
+      )
+    : null;
+  const warlockLevel =
+    warlockEntry?.level ??
+    ((character?.class || "").toLowerCase() === "warlock"
+      ? character?.level ?? 0
+      : 0);
+
   const groupedSpells = spells.reduce((acc: any, spell: any) => {
     const level = spell.spell?.level || 0;
     if (!acc[level]) {

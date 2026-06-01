@@ -42,6 +42,16 @@ export interface LevelUpPlan {
   };
   /** Hit-point gain at this level (rolled or fixed) */
   hpGain: number;
+  /**
+   * Optional extras merged into the character_level_history row written by
+   * this contract. Lets callers (LevelUpWizard) record the player's choices
+   * (subclass, ASI, spells, feats, etc.) on the same history row without
+   * needing a second insert.
+   */
+  historyExtras?: {
+    choicesMade?: Record<string, any> | null;
+    featuresGained?: Array<{ id: string; name: string }> | null;
+  };
 }
 
 export interface LevelUpResult {
@@ -124,6 +134,8 @@ export async function commitLevelUp(plan: LevelUpPlan, db: LevelUpDb): Promise<L
     previous_level: prevClassLevel,
     new_level: newClassLevel,
     hp_gained: hpGain,
+    choices_made: plan.historyExtras?.choicesMade ?? null,
+    features_gained: plan.historyExtras?.featuresGained ?? null,
   });
 
   // ── 4. character_spell_slots reconciliation ────────────────────────────

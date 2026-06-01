@@ -129,7 +129,7 @@ export const SRD = {
       .select("*")
       .order("name");
     if (error) throw error;
-    return (data || []) as SrdBackground[];
+    return (data || []) as unknown as SrdBackground[];
   },
 
   async spellsByClass(className: string): Promise<SrdSpell[]> {

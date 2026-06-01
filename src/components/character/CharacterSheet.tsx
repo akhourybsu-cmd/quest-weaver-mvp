@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LevelHistoryTimeline } from "./LevelHistoryTimeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -328,6 +329,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
               <StickyNote className="h-4 w-4 mr-2" />
               Notes
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="h-4 w-4 mr-2" />
+              History
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto p-6">
@@ -395,6 +400,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 
             <TabsContent value="notes" className="mt-0">
               <NotesTab character={character} />
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-0">
+              <LevelHistoryTimeline characterId={characterId} />
             </TabsContent>
           </div>
         </Tabs>

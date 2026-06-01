@@ -1210,7 +1210,7 @@ export const LevelUpWizard = ({
       }
 
       // Write character_class_levels entry for this level-up
-      const classIdForLevel = selectedClassToLevel?.classId || classData?.id;
+      const classIdForLevel = targetClassId;
       if (classIdForLevel) {
         await supabase.from("character_class_levels").upsert({
           character_id: characterId,

@@ -168,7 +168,7 @@ export const SpellPreparationManager = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="sm:max-w-3xl max-w-[100vw] w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-lg p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export const SpellPreparationManager = ({
             <p className="text-muted-foreground">Loading spells...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[min(500px,calc(100dvh-12rem))] pr-4">
             <div className="space-y-4">
               {Object.entries(spellsByLevel).map(([level, spells]: [string, any]) => (
                 <Card key={level}>

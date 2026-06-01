@@ -62,7 +62,7 @@ export const ResourcePanel = ({ characterId, canEdit = false }: ResourcePanelPro
                   size="sm"
                   variant="outline"
                   onClick={() => restoreResources('short')}
-                  className="h-7 text-xs"
+                  className="h-10 text-xs"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
                   Short Rest
@@ -73,7 +73,7 @@ export const ResourcePanel = ({ characterId, canEdit = false }: ResourcePanelPro
                   size="sm"
                   variant="outline"
                   onClick={() => restoreResources('long')}
-                  className="h-7 text-xs"
+                  className="h-10 text-xs"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
                   Long Rest
@@ -107,7 +107,7 @@ export const ResourcePanel = ({ characterId, canEdit = false }: ResourcePanelPro
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0"
+                        className="h-9 w-9 p-0"
                         onClick={() => handleResourceChange(resource.id, resource.current_value, resource.max_value, -1)}
                         disabled={resource.current_value <= 0}
                       >
@@ -116,7 +116,7 @@ export const ResourcePanel = ({ characterId, canEdit = false }: ResourcePanelPro
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0"
+                        className="h-9 w-9 p-0"
                         onClick={() => handleResourceChange(resource.id, resource.current_value, resource.max_value, 1)}
                         disabled={resource.current_value >= resource.max_value}
                       >

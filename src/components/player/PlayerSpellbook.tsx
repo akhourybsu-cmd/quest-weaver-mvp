@@ -349,7 +349,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
               </TabsList>
 
               <TabsContent value="prepared" className="mt-4">
-                <ScrollArea className="h-[500px] pr-4">
+                <ScrollArea className="h-[min(500px,60dvh)] pr-4">
                   {preparedSpells.length === 0 ? (
                     <PlayerEmptyState
                       icon={BookOpen}
@@ -363,7 +363,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
               </TabsContent>
 
               <TabsContent value="all" className="mt-4">
-                <ScrollArea className="h-[500px] pr-4">
+                <ScrollArea className="h-[min(500px,60dvh)] pr-4">
                   <SpellList spellsByLevel={allSpellsByLevel} />
                 </ScrollArea>
               </TabsContent>
@@ -387,7 +387,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
 
       {/* Spell Detail Dialog */}
       <Dialog open={!!selectedSpell} onOpenChange={() => setSelectedSpell(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-w-[100vw] w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-lg overflow-y-auto p-4 sm:p-6">
           {selectedSpell && (
             <>
               <DialogHeader>
@@ -400,7 +400,7 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
               </DialogHeader>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Level:</span>{" "}
                     {selectedSpell.level === 0 ? 'Cantrip' : `${selectedSpell.level}`}

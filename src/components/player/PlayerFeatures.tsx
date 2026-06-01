@@ -417,7 +417,7 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
                 description="Class features will appear here as you level up."
               />
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[min(400px,60dvh)] pr-4">
                 <div className="space-y-4">
                   {Object.entries(featuresBySource)
                     .sort(([a], [b]) => {
@@ -481,7 +481,7 @@ export function PlayerFeatures({ characterId }: PlayerFeaturesProps) {
                 description="Feats are typically gained at levels 4, 8, 12, 16, and 19."
               />
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[min(400px,60dvh)] pr-4">
                 <div className="space-y-2">
                   {feats.map((feat) => (
                     <Card

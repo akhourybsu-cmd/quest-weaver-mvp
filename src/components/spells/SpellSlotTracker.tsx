@@ -258,7 +258,7 @@ export const SpellSlotTracker = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Spell Slots</CardTitle>
-          <Button size="sm" variant="outline" onClick={longRest}>
+          <Button size="sm" variant="outline" className="min-h-[44px]" onClick={longRest}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Long Rest
           </Button>
@@ -289,7 +289,7 @@ export const SpellSlotTracker = ({
                       key={idx}
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      className="h-10 w-10 p-0"
                       onClick={() =>
                         isUsed
                           ? restoreSpellSlot(slot.id, slot.used_slots)

@@ -110,14 +110,14 @@ const PlayerCharacterViewPage = () => {
               {/* Outer decorative frame */}
               <div className="absolute -inset-1 rounded-lg border border-brass/30 pointer-events-none" />
               {/* Edit button overlay */}
-              <CharacterPortraitEditor
+                <CharacterPortraitEditor
                 characterId={character.id}
                 characterName={character.name}
                 currentPortraitUrl={character.portrait_url}
                 onPortraitUpdated={(newUrl) => setCharacter({ ...character, portrait_url: newUrl })}
                 trigger={
-                  <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-card border-2 border-brass/40 flex items-center justify-center hover:bg-brass/20 transition-colors cursor-pointer">
-                    <Camera className="w-3.5 h-3.5 text-brass" />
+                    <button className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-card border-2 border-brass/40 flex items-center justify-center hover:bg-brass/20 transition-colors cursor-pointer">
+                      <Camera className="w-4 h-4 text-brass" />
                   </button>
                 }
               />
@@ -180,16 +180,34 @@ const PlayerCharacterViewPage = () => {
               </Button>
             </div>
 
-            {/* Mobile flip button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="md:hidden shrink-0 gap-1.5 fantasy-flip-btn text-xs"
-            >
-              <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
-              {isFlipped ? 'Stats' : 'Story'}
-            </Button>
+            {/* Mobile: quick HP/AC + flip */}
+            <div className="md:hidden flex items-center gap-2 shrink-0">
+              <div className="text-center px-2 py-1 rounded-lg border border-brass/30 bg-card/80">
+                <div className="flex items-center gap-1">
+                  <Heart className="w-3 h-3 text-hp-red" />
+                  <span className="text-[10px] text-muted-foreground font-cinzel uppercase">HP</span>
+                </div>
+                <div className="text-sm font-bold tabular-nums leading-tight">
+                  {character.current_hp}<span className="text-muted-foreground text-xs">/{character.max_hp}</span>
+                </div>
+              </div>
+              <div className="text-center px-2 py-1 rounded-lg border border-brass/30 bg-card/80">
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-brass" />
+                  <span className="text-[10px] text-muted-foreground font-cinzel uppercase">AC</span>
+                </div>
+                <div className="text-sm font-bold tabular-nums leading-tight">{character.ac}</div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="min-h-[44px] gap-1.5 fantasy-flip-btn text-xs"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFlipped ? 'rotate-180' : ''}`} />
+                {isFlipped ? 'Stats' : 'Story'}
+              </Button>
+            </div>
           </div>
         </div>
 

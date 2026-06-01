@@ -1618,7 +1618,7 @@ export const LevelUpWizard = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-w-[100vw] w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-lg overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
@@ -1677,11 +1677,11 @@ export const LevelUpWizard = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 {hpRoll === null ? (
-                  <div className="flex gap-2">
-                    <Button onClick={rollHP} className="flex-1">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={rollHP} className="flex-1 min-h-[44px]">
                       Roll d{getHitDie()}
                     </Button>
-                    <Button onClick={takeAverage} variant="outline" className="flex-1">
+                    <Button onClick={takeAverage} variant="outline" className="flex-1 min-h-[44px]">
                       Take Average
                     </Button>
                   </div>

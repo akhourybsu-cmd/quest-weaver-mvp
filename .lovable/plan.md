@@ -77,11 +77,11 @@ Refactor the wizard's final confirm handler:
 
 ## Build order (smallest blast radius first)
 
-1. **Class lineup badge component** — pure presentational, ship to all 6 surfaces
-2. **Spell slot grouping** — visual restructure only, no data changes
-3. **LevelUpWizard Review step** — adds a step but no commit-path change yet
-4. **Wire commitLevelUp** — swap the writes, add smoke test
-5. **Level history timeline** — last because it's a new subtab, lowest risk if delayed
+1. **Class lineup badge component** — ✅ shipped (CharacterSheet, PartyRoster, PlayerProfile)
+2. **Spell slot grouping** — ✅ shipped (SpellcastingResources card)
+3. **LevelUpWizard Review step** — ✅ enriched with class delta, hit-die label, spell-slot diff
+4. **Wire commitLevelUp** — ✅ wired; contract writes (character_classes, history, multiclass shared slots, level/hit_dice_total) flow through `commitLevelUp` + `createSupabaseLevelUpDb` adapter. Tests updated to match real `spell_level` column.
+5. **Level history timeline** — pending, new subtab on Character Sheet
 
 Each step ships independently so you can sanity-check the preview after every milestone.
 

@@ -22,6 +22,10 @@ import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/Favored
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
 import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
+import { commitLevelUp, type LevelUpPlan } from "@/lib/character/levelUp";
+import { createSupabaseLevelUpDb } from "@/lib/character/levelUpSupabaseDb";
+import { DND_CLASSES } from "@/lib/dnd5e";
+import { getSpellSlotsForClasses } from "@/lib/character/derivedStats";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   isThirdCasterSubclass,
@@ -238,6 +242,50 @@ export const LevelUpWizard = ({
   const [featuresToGrant, setFeaturesToGrant] = useState<FeatureToGrant[]>([]);
 
   const newLevel = currentLevel + 1;
+
+  // ── Review-step diff: what's actually about to change ──────────────────
+  // Pure derivations (no DB calls). These power the Review card and exactly
+  // mirror the writes commitLevelUp will perform.
+  const previewHitDie = useMemo(
+    () =>
+      DND_CLASSES.find((c) => c.value === (selectedClassToLevel?.className || character?.class))
+        ?.hitDie ?? 8,
+    [selectedClassToLevel?.className, character?.class],
+  );
+  const previewSlotDiff = useMemo(() => {
+    if (!character) return [] as Array<{ level: number; prev: number; next: number }>;
+    const before = getSpellSlotsForClasses(
+      (characterClasses.length > 0
+        ? characterClasses
+        : [{ className: character.class, level: currentLevel } as any]
+      ).map((c: any) => ({
+        className: c.className,
+        level: c.level,
+        subclassName: c.classId === selectedClassToLevel?.classId ? subclassName ?? undefined : undefined,
+      })),
+    ).slots;
+    const after = getSpellSlotsForClasses(
+      (characterClasses.length > 0
+        ? characterClasses
+        : [{ className: character.class, level: currentLevel } as any]
+      ).map((c: any) => ({
+        className: c.className,
+        level:
+          c.classId === selectedClassToLevel?.classId || (!selectedClassToLevel && c.className === character.class)
+            ? (c.level ?? currentLevel) + 1
+            : c.level ?? currentLevel,
+        subclassName: c.classId === selectedClassToLevel?.classId ? subclassName ?? undefined : undefined,
+      })),
+    ).slots;
+    const levels = new Set<number>([
+      ...Object.keys(before).map(Number),
+      ...Object.keys(after).map(Number),
+    ]);
+    return [...levels]
+      .sort((a, b) => a - b)
+      .map((lvl) => ({ level: lvl, prev: before[lvl] ?? 0, next: after[lvl] ?? 0 }))
+      .filter((row) => row.prev !== row.next);
+  }, [character, characterClasses, currentLevel, selectedClassToLevel, subclassName]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // MULTICLASS-AWARE DERIVATIONS
@@ -735,6 +783,71 @@ export const LevelUpWizard = ({
       const hpGain = Math.max(1, hpRoll + conMod);
       const newProfBonus = Math.floor((newLevel - 1) / 4) + 2;
 
+      // ── SINGLE SOURCE OF TRUTH: contract writes via commitLevelUp ─────
+      // commitLevelUp owns:
+      //   • character_classes (bump leveled class)
+      //   • characters {level, hit_dice_total}
+      //   • character_level_history (per-class transition row + extras)
+      //   • character_spell_slots multiclass shared-slot reconciliation
+      // The wizard still performs all OTHER side-effect writes below
+      // (HP/derived stats, abilities, spells, features, choices, pact slots).
+      const targetClassId =
+        selectedClassToLevel?.classId ||
+        characterClasses.find((c) => c.isPrimary)?.classId ||
+        characterClasses[0]?.classId;
+      const targetClassName =
+        selectedClassToLevel?.className || character?.class || "";
+      const hitDieForTarget =
+        DND_CLASSES.find((c) => c.value === targetClassName)?.hitDie ?? 8;
+      if (targetClassId) {
+        const plan: LevelUpPlan = {
+          characterId,
+          currentClasses: characterClasses.map((c) => ({
+            rowId: null,
+            classId: c.classId,
+            className: c.className,
+            level: c.level,
+            isPrimary: c.isPrimary,
+            subclassId: c.subclassId ?? null,
+          })),
+          target: {
+            classId: targetClassId,
+            className: targetClassName,
+            hitDie: hitDieForTarget,
+            subclassName: subclassName ?? undefined,
+            // AddClassDialog pre-inserts new-multiclass rows at level 1 with
+            // in-memory level 0, so the update branch is correct and
+            // idempotent on class_level=1. Never take the insert branch here.
+            isNewMulticlass: false,
+          },
+          hpGain,
+          historyExtras: {
+            choicesMade: {
+              asi_or_feat: asiChoice,
+              feat_id: selectedFeat,
+              ability_increases: abilityIncreases,
+              new_spells: newSpells,
+              new_cantrips: newCantrips,
+              wizard_spellbook: wizardSpellbookSpells,
+              spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null,
+              fighting_style: fightingStyleChoice,
+              expertise: expertiseChoices,
+              metamagic: metamagicChoices,
+              pact_boon: pactBoonChoice,
+              invocations: newInvocations,
+              invocations_removed: invocationsToRemove,
+              magical_secrets: magicalSecretsSpells,
+              favored_enemy: favoredEnemyChoice,
+              favored_terrain: favoredTerrainChoice,
+              subclass_id: selectedSubclassId,
+              mystic_arcanum_spell: mysticArcanumSpellId,
+            },
+            featuresGained: featuresToGrant.map((f) => ({ id: f.id, name: f.name })),
+          },
+        };
+        await commitLevelUp(plan, createSupabaseLevelUpDb());
+      }
+
       // Calculate derived stats updates
       const charUpdates: Record<string, any> = {
         level: newLevel,
@@ -807,62 +920,8 @@ export const LevelUpWizard = ({
         .update(charUpdates)
         .eq("id", characterId);
 
-      // Update the specific class level in character_classes (for multiclass support)
-      if (selectedClassToLevel) {
-        const existingClass = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
-        if (existingClass && existingClass.level > 0) {
-          // Update existing class entry
-          await supabase
-            .from("character_classes")
-            .update({ class_level: existingClass.level + 1 })
-            .eq("character_id", characterId)
-            .eq("class_id", selectedClassToLevel.classId);
-        }
-        // Note: If this is a new multiclass (level 0), it was already inserted by AddClassDialog
-      }
-
-      // Record level history
-      const classIdForHistory = selectedClassToLevel?.classId;
-      const { data: classData } = classIdForHistory 
-        ? { data: { id: classIdForHistory } }
-        : await supabase
-            .from("srd_classes")
-            .select("id")
-            .eq("name", character?.class)
-            .single();
-
-      if (classData) {
-        await supabase.from("character_level_history").insert({
-          character_id: characterId,
-          class_id: classData.id,
-          // Record the per-class level transition (e.g. Fighter 1 -> Fighter 2),
-          // not the character total level. Falls back to total for legacy chars.
-          previous_level: effectiveCurrentClassLevel,
-          new_level: effectiveNewClassLevel,
-          hp_gained: hpGain,
-          choices_made: {
-            asi_or_feat: asiChoice,
-            feat_id: selectedFeat,
-            ability_increases: abilityIncreases,
-            new_spells: newSpells,
-            new_cantrips: newCantrips,
-            wizard_spellbook: wizardSpellbookSpells,
-            spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null,
-            fighting_style: fightingStyleChoice,
-            expertise: expertiseChoices,
-            metamagic: metamagicChoices,
-            pact_boon: pactBoonChoice,
-            invocations: newInvocations,
-            invocations_removed: invocationsToRemove,
-            magical_secrets: magicalSecretsSpells,
-            favored_enemy: favoredEnemyChoice,
-            favored_terrain: favoredTerrainChoice,
-            subclass_id: selectedSubclassId,
-            mystic_arcanum_spell: mysticArcanumSpellId,
-          },
-          features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
-        });
-      }
+      // (character_classes + character_level_history are written above by
+      // commitLevelUp — see "SINGLE SOURCE OF TRUTH" block.)
 
       // Add feat if selected
       if (asiChoice === "feat" && selectedFeat) {
@@ -1195,7 +1254,7 @@ export const LevelUpWizard = ({
       }
 
       // Write character_class_levels entry for this level-up
-      const classIdForLevel = selectedClassToLevel?.classId || classData?.id;
+      const classIdForLevel = targetClassId;
       if (classIdForLevel) {
         await supabase.from("character_class_levels").upsert({
           character_id: characterId,
@@ -1328,8 +1387,10 @@ export const LevelUpWizard = ({
   const updateSpellSlots = async () => {
     if (!classRules || classRules.spellcasting.type === 'none') return;
 
-    // BUG FIX: For multiclass characters, calculate spell slots using multiclass caster level
-    // instead of just the primary class level
+    // NOTE: Multiclass shared spell-slot reconciliation is handled by
+    // commitLevelUp at the top of handleComplete (single source of truth).
+    // This function now only handles Warlock pact-slot bookkeeping, which
+    // commitLevelUp intentionally leaves alone.
     let slotInfo;
     if (characterClasses.length > 1) {
       // Resolve subclass names so third-casters (EK / AT) are counted correctly
@@ -1359,32 +1420,7 @@ export const LevelUpWizard = ({
       }]);
     }
 
-    if (slotInfo.shared) {
-      for (const [level, count] of Object.entries(slotInfo.shared.slots)) {
-        const slotLevel = parseInt(level);
-        const slotCount = count as number;
-        const { data: existing } = await supabase
-          .from("character_spell_slots")
-          .select("id")
-          .eq("character_id", characterId)
-          .eq("spell_level", slotLevel)
-          .single();
-
-        if (existing) {
-          await supabase
-            .from("character_spell_slots")
-            .update({ max_slots: slotCount })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("character_spell_slots").insert([{
-            character_id: characterId,
-            spell_level: slotLevel,
-            max_slots: slotCount,
-            used_slots: 0
-          }]);
-        }
-      }
-    }
+    // Shared slots: owned by commitLevelUp. Skipped here on purpose.
 
     if (slotInfo.pact) {
       // Handle warlock pact slots - update or insert
@@ -2008,12 +2044,52 @@ export const LevelUpWizard = ({
                 <CardDescription>Confirm your choices before leveling up to {newLevel}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Class delta */}
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                    Class
+                  </p>
+                  <p className="font-serif text-lg">
+                    {(selectedClassToLevel?.className || character?.class) ?? "—"}{" "}
+                    <span className="text-muted-foreground">{effectiveCurrentClassLevel}</span>
+                    <span className="mx-2 text-primary">→</span>
+                    <span className="font-semibold">{effectiveNewClassLevel}</span>
+                  </p>
+                </div>
+
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                   <p className="text-sm font-medium">HP Gained</p>
                   <p className="text-3xl font-bold text-primary">
                     +{Math.max(1, (hpRoll || 0) + Math.floor(((character?.character_abilities?.[0]?.con || 10) - 10) / 2))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    +1d{previewHitDie} hit die ({useAverage ? "average" : "rolled"})
+                  </p>
                 </div>
+
+                {previewSlotDiff.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Spell Slots</p>
+                    <div className="space-y-1">
+                      {previewSlotDiff.map((row) => (
+                        <div
+                          key={row.level}
+                          className="flex items-center justify-between text-sm px-3 py-1.5 rounded border border-border/60 bg-muted/30"
+                        >
+                          <span className="text-muted-foreground">Level {row.level}</span>
+                          <span>
+                            <span className="text-muted-foreground">{row.prev}</span>
+                            <span className="mx-2 text-primary">→</span>
+                            <span className="font-semibold">{row.next}</span>
+                            {row.prev === 0 && (
+                              <Badge variant="outline" className="ml-2 text-[10px]">new</Badge>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <Separator />
 

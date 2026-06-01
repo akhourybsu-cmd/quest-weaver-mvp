@@ -22,6 +22,10 @@ import { FavoredTerrainSelector, FAVORED_TERRAIN_TYPES } from "./levelup/Favored
 import { MulticlassLevelUpStep } from "./levelup/MulticlassLevelUpStep";
 import { SubclassSelectionStep } from "./levelup/SubclassSelectionStep";
 import { MysticArcanumStep, getMysticArcanumSpellLevel } from "./levelup/MysticArcanumStep";
+import { commitLevelUp, type LevelUpPlan } from "@/lib/character/levelUp";
+import { createSupabaseLevelUpDb } from "@/lib/character/levelUpSupabaseDb";
+import { DND_CLASSES } from "@/lib/dnd5e";
+import { getSpellSlotsForClasses } from "@/lib/character/derivedStats";
 import type { AbilityKey } from "@/lib/rules/multiclassRules";
 import {
   isThirdCasterSubclass,

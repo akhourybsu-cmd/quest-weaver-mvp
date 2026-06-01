@@ -243,6 +243,50 @@ export const LevelUpWizard = ({
 
   const newLevel = currentLevel + 1;
 
+  // ── Review-step diff: what's actually about to change ──────────────────
+  // Pure derivations (no DB calls). These power the Review card and exactly
+  // mirror the writes commitLevelUp will perform.
+  const previewHitDie = useMemo(
+    () =>
+      DND_CLASSES.find((c) => c.value === (selectedClassToLevel?.className || character?.class))
+        ?.hitDie ?? 8,
+    [selectedClassToLevel?.className, character?.class],
+  );
+  const previewSlotDiff = useMemo(() => {
+    if (!character) return [] as Array<{ level: number; prev: number; next: number }>;
+    const before = getSpellSlotsForClasses(
+      (characterClasses.length > 0
+        ? characterClasses
+        : [{ className: character.class, level: currentLevel } as any]
+      ).map((c: any) => ({
+        className: c.className,
+        level: c.level,
+        subclassName: c.classId === selectedClassToLevel?.classId ? subclassName ?? undefined : undefined,
+      })),
+    ).slots;
+    const after = getSpellSlotsForClasses(
+      (characterClasses.length > 0
+        ? characterClasses
+        : [{ className: character.class, level: currentLevel } as any]
+      ).map((c: any) => ({
+        className: c.className,
+        level:
+          c.classId === selectedClassToLevel?.classId || (!selectedClassToLevel && c.className === character.class)
+            ? (c.level ?? currentLevel) + 1
+            : c.level ?? currentLevel,
+        subclassName: c.classId === selectedClassToLevel?.classId ? subclassName ?? undefined : undefined,
+      })),
+    ).slots;
+    const levels = new Set<number>([
+      ...Object.keys(before).map(Number),
+      ...Object.keys(after).map(Number),
+    ]);
+    return [...levels]
+      .sort((a, b) => a - b)
+      .map((lvl) => ({ level: lvl, prev: before[lvl] ?? 0, next: after[lvl] ?? 0 }))
+      .filter((row) => row.prev !== row.next);
+  }, [character, characterClasses, currentLevel, selectedClassToLevel, subclassName]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // MULTICLASS-AWARE DERIVATIONS
   //

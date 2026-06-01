@@ -151,9 +151,13 @@ export function PlayerProfile({ characterId }: PlayerProfileProps) {
         <CardContent className="space-y-4">
           <div>
             <h3 className="text-2xl font-bold">{character.name}</h3>
-            <p className="text-muted-foreground">
-              Level {character.level} {character.class}
-            </p>
+            <div className="mt-1">
+              <ClassLineupBadge
+                characterId={character.id}
+                fallbackClass={character.class}
+                fallbackLevel={character.level}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">

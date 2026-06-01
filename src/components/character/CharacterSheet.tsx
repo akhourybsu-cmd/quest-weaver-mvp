@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LevelHistoryTimeline } from "./LevelHistoryTimeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench } from "lucide-react";
+import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench, History as HistoryIcon } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier, parseDarkvisionFt } from "@/lib/characterRules";
 import { repairCharacterData } from "@/lib/characterRepair";
@@ -328,6 +329,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
               <StickyNote className="h-4 w-4 mr-2" />
               Notes
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <HistoryIcon className="h-4 w-4 mr-2" />
+              History
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto p-6">
@@ -395,6 +400,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
 
             <TabsContent value="notes" className="mt-0">
               <NotesTab character={character} />
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-0">
+              <LevelHistoryTimeline characterId={characterId} />
             </TabsContent>
           </div>
         </Tabs>

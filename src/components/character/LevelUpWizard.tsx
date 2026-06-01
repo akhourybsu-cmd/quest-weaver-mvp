@@ -1343,8 +1343,10 @@ export const LevelUpWizard = ({
   const updateSpellSlots = async () => {
     if (!classRules || classRules.spellcasting.type === 'none') return;
 
-    // BUG FIX: For multiclass characters, calculate spell slots using multiclass caster level
-    // instead of just the primary class level
+    // NOTE: Multiclass shared spell-slot reconciliation is handled by
+    // commitLevelUp at the top of handleComplete (single source of truth).
+    // This function now only handles Warlock pact-slot bookkeeping, which
+    // commitLevelUp intentionally leaves alone.
     let slotInfo;
     if (characterClasses.length > 1) {
       // Resolve subclass names so third-casters (EK / AT) are counted correctly
@@ -1374,32 +1376,7 @@ export const LevelUpWizard = ({
       }]);
     }
 
-    if (slotInfo.shared) {
-      for (const [level, count] of Object.entries(slotInfo.shared.slots)) {
-        const slotLevel = parseInt(level);
-        const slotCount = count as number;
-        const { data: existing } = await supabase
-          .from("character_spell_slots")
-          .select("id")
-          .eq("character_id", characterId)
-          .eq("spell_level", slotLevel)
-          .single();
-
-        if (existing) {
-          await supabase
-            .from("character_spell_slots")
-            .update({ max_slots: slotCount })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("character_spell_slots").insert([{
-            character_id: characterId,
-            spell_level: slotLevel,
-            max_slots: slotCount,
-            used_slots: 0
-          }]);
-        }
-      }
-    }
+    // Shared slots: owned by commitLevelUp. Skipped here on purpose.
 
     if (slotInfo.pact) {
       // Handle warlock pact slots - update or insert

@@ -1,39 +1,104 @@
-# Fix: Can't set character level between 1 and 20
+## Goal
 
-## The Bug
+Make the multiclass/level-up logic that was recently shored up (the tested `commitLevelUp` write contract) actually visible and trustworthy to players and DMs — and route the wizard's final write through that same function so the UI and tests share one code path.
 
-In the character creation wizard's "Basics" step, the Level field is a controlled number input that fights the user's typing:
+## Scope
 
-- It always shows `draft.level` (a parsed number), so the field can never be momentarily empty.
-- `onChange` and `onBlur` both immediately `parseInt` and clamp to 1–20 on every keystroke.
-- When a user clears the field to type a new number, `parseInt("")` → `NaN`, which falls back to `1`.
-- Result: typing "20" works (both digits parse cleanly along the way), and "1" is the fallback, but most levels in between (e.g. "5", "12") are nearly impossible to enter without the field snapping back to 1.
+Four visual surfaces + one logic refactor, applied everywhere a character is shown.
 
-File: `src/components/character/wizard/StepBasics.tsx` (lines ~123–138)
+---
 
-## The Fix
+### 1. LevelUpWizard "what's changing" preview (Player)
 
-Change the Level input to behave like a normal text-friendly number input:
+A new **Review** step inserted just before the final Confirm button.
 
-1. Hold the input as a local string state (`levelInput`) so it can be empty or partially typed without instantly being coerced.
-2. On `onChange`, accept any digit-only string (including empty) into local state. Don't clamp yet.
-3. On `onBlur` (and on Enter), parse and clamp to 1–20, then commit via `setLevel`. If empty/invalid on blur, restore to the last committed level (don't silently reset to 1 mid-typing).
-4. Sync local state back from `draft.level` when it changes externally (e.g. wizard reset).
-5. Keep the spinner arrows working by also committing on valid numeric `onChange` when the value parses to a whole number in range — but without clobbering the string while the user is mid-edit.
+- **Class delta** — "Wizard 2 → 3" with a soft brass arrow
+- **Hit points** — old max → new max, with the roll/average choice that produced it
+- **Hit dice** — "+1d6 Wizard"
+- **Spell slots** — diff rows ("Level 2: 3 → 3", "Level 3: 0 → 2 *new*")
+- **New features** — bullet list from `srd_class_features` / `srd_subclass_features` at the new level
+- **ASI/Feat** — if applicable, show the chosen ability bumps or feat name
 
-Also add a small helper hint under the field: "Level 1–20" so the constraint is visible.
+Reads from the same plan object the new commit function consumes, so the preview is literally the diff that will be written.
 
-## Files changed
+### 2. Class lineup badge (Character Sheet header + everywhere a character appears)
 
-- `src/components/character/wizard/StepBasics.tsx` — replace the Level `<Input>` block with the controlled-string pattern above.
+Replace flat `Level 5` with a class-breakdown pill row:
+
+```text
+[ Fighter 3 ] [ Wizard 2 ]   Total 5
+```
+
+- Primary class first, brass accent
+- Subclass tucked under name when chosen (e.g. *Fighter 3 — Champion*)
+- Single source: `getClassBreakdownLabel` from `src/lib/character/classes.ts`
+
+Applied to:
+- `CharacterSheet` header
+- `CharacterCard` (character list, party roster)
+- `PartyRoster` (DM view)
+- `PlayerProfile` / Player Hub character chip
+- `SessionDM` initiative row tooltip + `SessionPlayer` self-card
+- `CharacterSheetPage` sticky top bar (next to Level Up button)
+
+### 3. Spell slot tracker grouping (Character Sheet + Player Hub)
+
+Currently slots render as one flat row. New layout:
+
+- **Multiclass slots** section — slots 1-9 derived from the multiclass caster table
+- **Pact Magic** section (Warlock only) — separate row with refresh-on-short-rest label
+- **Mystic Arcanum** section (Warlock 11+) — already exists, just visually nested under Pact Magic
+- Subtle divider + section header in Cinzel
+
+Updates `SpellSlotTracker.tsx` and `PlayerSpellbook.tsx`.
+
+### 4. Level history timeline (Character Sheet — new "History" subtab)
+
+A vertical timeline reading from `character_level_history`:
+
+```text
+●  Level 5  ·  Wizard 2 → 3        +1d6 HP  ·  Level 3 slots unlocked
+●  Level 4  ·  Took Wizard 1       multiclass — Int 13 prereq met
+●  Level 3  ·  Fighter 2 → 3       Champion subclass chosen
+```
+
+Lives on the character sheet as a collapsible section (desktop sidebar / mobile new tab).
+
+### 5. Wire LevelUpWizard → commitLevelUp (single source of truth)
+
+Refactor the wizard's final confirm handler:
+
+- Build a `LevelUpPlan` object from wizard state (already mostly assembled for the Review step in #1)
+- Replace inline Supabase writes with a single `await commitLevelUp(plan, supabaseDb)` call
+- Keep wizard's "side effect" writes that aren't in commit scope (custom feature picks, prepared-spell deltas, ASI ability updates) as a separate pre-step inside a transaction-ish sequence
+- Add a `LevelUpWizard.integration.test.tsx` smoke test that mounts the wizard, clicks through Fighter 3 → 4, and asserts `commitLevelUp` was called with the right plan
+
+---
+
+## Build order (smallest blast radius first)
+
+1. **Class lineup badge component** — pure presentational, ship to all 6 surfaces
+2. **Spell slot grouping** — visual restructure only, no data changes
+3. **LevelUpWizard Review step** — adds a step but no commit-path change yet
+4. **Wire commitLevelUp** — swap the writes, add smoke test
+5. **Level history timeline** — last because it's a new subtab, lowest risk if delayed
+
+Each step ships independently so you can sanity-check the preview after every milestone.
+
+---
+
+## Technical notes
+
+- No DB migrations. Everything already exists: `character_classes`, `character_spell_slots`, `character_level_history`, `srd_class_features`, `srd_subclass_features`.
+- `commitLevelUp` already lives at `src/lib/character/levelUp.ts` with 8 passing tests covering the four multiclass scenarios.
+- Lineup badge reuses existing `getCharacterClasses` + `getClassBreakdownLabel` helpers.
+- Review step's slot-diff math comes from reusing the multiclass slot table already referenced in `commitLevelUp` reconciliation logic.
+- Honor existing tokens: ivory parchment bg, brass accents, Cinzel headers. No new color tokens.
+- Honor "Desktop-first responsive" core memory: timeline is sidebar on desktop, tab on mobile.
 
 ## Out of scope
 
-- No changes to `setLevelAtom`, level-up rules, or any other wizard step. The atom already stores a number; only the input UX is broken.
-
-## QA
-
-- At 411px viewport, open character creation, type "5", "12", "17" — each should stick.
-- Use the spinner arrows from 1 up to 20 — should increment normally.
-- Clear field and tab away — should snap back to last valid value, not 1.
-- Confirm Subclass "Unlocks at level N" badge updates as level changes.
+- Changing 5e rule math (HP averages, slot tables, prereqs) — already correct
+- Touching Warlock Pact Magic mechanics — only visual grouping
+- Multiclass spell preparation rebalancing — separate epic
+- Animations beyond existing magic-glow press effects

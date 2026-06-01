@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Users, Shield, Heart, Eye, Brain, Search as SearchIcon, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ClassLineupBadge } from "@/components/character/ClassLineupBadge";
 
 interface PartyCharacter {
   id: string;

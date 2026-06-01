@@ -2044,12 +2044,52 @@ export const LevelUpWizard = ({
                 <CardDescription>Confirm your choices before leveling up to {newLevel}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Class delta */}
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                    Class
+                  </p>
+                  <p className="font-serif text-lg">
+                    {(selectedClassToLevel?.className || character?.class) ?? "—"}{" "}
+                    <span className="text-muted-foreground">{effectiveCurrentClassLevel}</span>
+                    <span className="mx-2 text-primary">→</span>
+                    <span className="font-semibold">{effectiveNewClassLevel}</span>
+                  </p>
+                </div>
+
                 <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                   <p className="text-sm font-medium">HP Gained</p>
                   <p className="text-3xl font-bold text-primary">
                     +{Math.max(1, (hpRoll || 0) + Math.floor(((character?.character_abilities?.[0]?.con || 10) - 10) / 2))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    +1d{previewHitDie} hit die ({useAverage ? "average" : "rolled"})
+                  </p>
                 </div>
+
+                {previewSlotDiff.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Spell Slots</p>
+                    <div className="space-y-1">
+                      {previewSlotDiff.map((row) => (
+                        <div
+                          key={row.level}
+                          className="flex items-center justify-between text-sm px-3 py-1.5 rounded border border-border/60 bg-muted/30"
+                        >
+                          <span className="text-muted-foreground">Level {row.level}</span>
+                          <span>
+                            <span className="text-muted-foreground">{row.prev}</span>
+                            <span className="mx-2 text-primary">→</span>
+                            <span className="font-semibold">{row.next}</span>
+                            {row.prev === 0 && (
+                              <Badge variant="outline" className="ml-2 text-[10px]">new</Badge>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <Separator />
 

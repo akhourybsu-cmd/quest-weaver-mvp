@@ -933,11 +933,20 @@ const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPrepa
             </CardContent>
           </Card>
 
-          <SpellSlotTracker
+          <SpellcastingResources
             characterId={character.id}
+            characterName={character.name}
             characterLevel={character.level}
             characterClass={character.class}
             multiclassSlots={multiclassSlots}
+            warlockLevel={warlockLevel}
+            pactSlotsMax={character.pact_slots_max}
+            pactSlotsUsed={character.pact_slots_used}
+            pactSlotLevel={character.pact_slot_level}
+            arcanum6Used={character.mystic_arcanum_6_used}
+            arcanum7Used={character.mystic_arcanum_7_used}
+            arcanum8Used={character.mystic_arcanum_8_used}
+            arcanum9Used={character.mystic_arcanum_9_used}
           />
         </>
       )}

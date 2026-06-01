@@ -12,6 +12,7 @@ import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier, parseDarkvisionFt } from "@/lib/characterRules";
 import { repairCharacterData } from "@/lib/characterRepair";
 import { getCharacterClasses, type CharacterClassEntry } from "@/lib/character/classes";
+import { ClassLineupBadge } from "@/components/character/ClassLineupBadge";
 import {
   getTotalLevel,
   getProficiencyBonus,

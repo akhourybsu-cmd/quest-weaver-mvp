@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClassLineupBadge } from "@/components/character/ClassLineupBadge";
 import { Separator } from "@/components/ui/separator";
 import { 
   User, Heart, Lightbulb, Link2, AlertTriangle, 

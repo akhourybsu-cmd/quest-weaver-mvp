@@ -30,6 +30,7 @@ import { DefensesPanel } from "@/components/character/DefensesPanel";
 import { DefensesEditor } from "@/components/character/DefensesEditor";
 import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
 import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
+import { SpellcastingResources } from "@/components/spells/SpellcastingResources";
 import type { DamageType } from "@/lib/damageEngine";
 
 interface CharacterSheetProps {

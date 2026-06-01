@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Users, Shield, Heart, Eye, Brain, Search as SearchIcon, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ClassLineupBadge } from "@/components/character/ClassLineupBadge";
 
 interface PartyCharacter {
   id: string;
@@ -123,9 +124,14 @@ export function PartyRoster({ campaignId }: PartyRosterProps) {
                   {/* Name + Class */}
                   <div className="min-w-0 flex-1">
                     <h4 className="font-cinzel font-bold text-ink truncate">{char.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Level {char.level} {char.class}
-                    </p>
+                    <div className="mt-1">
+                      <ClassLineupBadge
+                        characterId={char.id}
+                        fallbackClass={char.class}
+                        fallbackLevel={char.level}
+                        size="sm"
+                      />
+                    </div>
                   </div>
 
                   {/* Inspiration toggle */}

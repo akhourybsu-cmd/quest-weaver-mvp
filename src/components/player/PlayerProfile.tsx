@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClassLineupBadge } from "@/components/character/ClassLineupBadge";
 import { Separator } from "@/components/ui/separator";
 import { 
   User, Heart, Lightbulb, Link2, AlertTriangle, 
@@ -151,9 +152,13 @@ export function PlayerProfile({ characterId }: PlayerProfileProps) {
         <CardContent className="space-y-4">
           <div>
             <h3 className="text-2xl font-bold">{character.name}</h3>
-            <p className="text-muted-foreground">
-              Level {character.level} {character.class}
-            </p>
+            <div className="mt-1">
+              <ClassLineupBadge
+                characterId={character.id}
+                fallbackClass={character.class}
+                fallbackLevel={character.level}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">

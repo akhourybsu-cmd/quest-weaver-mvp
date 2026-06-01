@@ -226,10 +226,18 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         <div className="flex items-start justify-between mb-3">
           <div>
             <h1 className="text-2xl font-bold">{character.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Level {totalLevel} • {classBreakdown}
-              {!isMulticlass && character.subclass_name && ` • ${character.subclass_name}`}
-            </p>
+            <div className="mt-1">
+              <ClassLineupBadge
+                classes={classLineup}
+                fallbackClass={character.class}
+                fallbackLevel={character.level}
+              />
+            </div>
+            {!isMulticlass && character.subclass_name && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {character.subclass_name}
+              </p>
+            )}
             {hitDiceLabel !== "—" && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 Hit Dice: {hitDiceLabel}

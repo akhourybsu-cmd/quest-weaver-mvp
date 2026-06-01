@@ -667,9 +667,6 @@ const CombatTab = ({ character, attacks, equipment, characterId, classLineup, on
           baseMaxHP={character.max_hp}
           onLevelChange={onUpdate}
         />
-        {isWarlock && (
-          <div className="md:col-span-1" aria-hidden />
-        )}
       </div>
 
       <Card>

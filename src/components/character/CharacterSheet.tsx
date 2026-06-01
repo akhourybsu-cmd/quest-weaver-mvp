@@ -330,7 +330,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
               Notes
             </TabsTrigger>
             <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2" />
+              <HistoryIcon className="h-4 w-4 mr-2" />
               History
             </TabsTrigger>
           </TabsList>

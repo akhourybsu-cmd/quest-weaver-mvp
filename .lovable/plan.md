@@ -81,7 +81,7 @@ Refactor the wizard's final confirm handler:
 2. **Spell slot grouping** — ✅ shipped (SpellcastingResources card)
 3. **LevelUpWizard Review step** — ✅ enriched with class delta, hit-die label, spell-slot diff
 4. **Wire commitLevelUp** — ✅ wired; contract writes (character_classes, history, multiclass shared slots, level/hit_dice_total) flow through `commitLevelUp` + `createSupabaseLevelUpDb` adapter. Tests updated to match real `spell_level` column.
-5. **Level history timeline** — pending, new subtab on Character Sheet
+5. **Level history timeline** — ✅ shipped as a new "History" tab on Character Sheet (`LevelHistoryTimeline.tsx`).
 
 Each step ships independently so you can sanity-check the preview after every milestone.
 

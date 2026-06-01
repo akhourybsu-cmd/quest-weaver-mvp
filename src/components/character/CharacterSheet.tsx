@@ -531,7 +531,7 @@ const AbilitiesTab = ({ abilities, saves, character, profBonus }: any) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {ABILITIES.map((ability) => {
           const score = abilities[ability.key];
           const modifier = calculateModifier(score);
@@ -540,9 +540,9 @@ const AbilitiesTab = ({ abilities, saves, character, profBonus }: any) => {
 
           return (
             <Card key={ability.key}>
-              <CardContent className="pt-6 text-center">
-                <div className="text-sm text-muted-foreground mb-2">{ability.label}</div>
-                <div className="text-4xl font-bold mb-2">{score}</div>
+              <CardContent className="pt-4 sm:pt-6 text-center px-2 sm:px-6">
+                <div className="text-xs sm:text-sm text-muted-foreground mb-2">{ability.label}</div>
+                <div className="text-3xl sm:text-4xl font-bold mb-2">{score}</div>
                 <div className="text-lg text-muted-foreground mb-3">
                   ({modifier >= 0 ? '+' : ''}{modifier})
                 </div>

@@ -237,7 +237,7 @@ export const MysticArcanumTracker: React.FC<MysticArcanumTrackerProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-xs"
+                    className="h-10 text-xs"
                     onClick={() => openSelectDialog(arcanum.level)}
                   >
                     <Plus className="h-3 w-3 mr-1" />
@@ -249,7 +249,7 @@ export const MysticArcanumTracker: React.FC<MysticArcanumTrackerProps> = ({
                 <Button
                   variant={arcanum.used ? 'ghost' : 'outline'}
                   size="sm"
-                  className="h-7"
+                  className="h-10 min-w-[4rem]"
                   disabled={arcanum.used}
                   onClick={() => useArcanum(arcanum.level)}
                 >

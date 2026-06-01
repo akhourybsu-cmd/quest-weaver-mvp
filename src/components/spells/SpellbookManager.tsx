@@ -175,7 +175,7 @@ export const SpellbookManager = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="sm:max-w-3xl max-w-[100vw] w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export const SpellbookManager = ({
                 <DialogTitle>Spellbook</DialogTitle>
                 <Badge variant="secondary">{characterClass}</Badge>
               </div>
-              <Button size="sm" onClick={() => setShowAddSpell(true)}>
+              <Button size="sm" className="min-h-[44px]" onClick={() => setShowAddSpell(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Spell
               </Button>
@@ -193,7 +193,7 @@ export const SpellbookManager = ({
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[min(500px,calc(100dvh-12rem))] pr-4">
             <div className="space-y-4">
               {Object.entries(spellbookByLevel).map(([level, spells]: [string, any]) => (
                 <Card key={level}>
@@ -223,8 +223,9 @@ export const SpellbookManager = ({
                           </p>
                         </div>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
+                          className="h-10 w-10 shrink-0"
                           onClick={() => setSpellToRemove(entry.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -246,7 +247,7 @@ export const SpellbookManager = ({
       </Dialog>
 
       <Dialog open={showAddSpell} onOpenChange={setShowAddSpell}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="sm:max-w-2xl max-w-[100vw] w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Add Spell to Spellbook</DialogTitle>
             <DialogDescription>
@@ -260,7 +261,7 @@ export const SpellbookManager = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          <ScrollArea className="h-[500px]">
+          <ScrollArea className="h-[min(500px,calc(100dvh-14rem))]">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

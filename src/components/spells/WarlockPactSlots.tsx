@@ -100,7 +100,7 @@ export const WarlockPactSlots: React.FC<WarlockPactSlotsProps> = ({
           <Button 
             variant="ghost" 
             size="sm" 
-            className={`h-7 px-2 gap-1 ${remaining === 0 ? 'text-muted-foreground' : ''}`}
+            className={`h-10 px-3 gap-1 ${remaining === 0 ? 'text-muted-foreground' : ''}`}
           >
             <Moon className="h-3 w-3" />
             <span className="text-xs font-mono">{remaining}/{pactSlotsMax}</span>

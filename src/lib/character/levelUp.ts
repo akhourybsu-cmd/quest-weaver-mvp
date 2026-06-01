@@ -22,7 +22,7 @@ export interface LevelUpDb {
   update(table: string, match: Record<string, any>, values: Record<string, any>): Promise<void>;
   upsert(table: string, rows: any | any[]): Promise<void>;
   /** existing character_spell_slots rows, used for reconciliation */
-  listSpellSlots(characterId: string): Promise<Array<{ slot_level: number; max_slots: number; used_slots: number; bonus_slots: number }>>;
+  listSpellSlots(characterId: string): Promise<Array<{ spell_level: number; max_slots: number; used_slots: number; bonus_slots: number }>>;
 }
 
 export interface LevelUpPlan {
@@ -50,7 +50,7 @@ export interface LevelUpResult {
   /** Total character level after the level-up */
   newTotalLevel: number;
   /** Spell-slot reconciliation actions taken */
-  slotActions: Array<{ slot_level: number; action: "insert" | "update" | "noop"; max_slots: number }>;
+  slotActions: Array<{ spell_level: number; action: "insert" | "update" | "noop"; max_slots: number }>;
   /** Final class lineup after writes */
   newClasses: CharacterClassEntry[];
 }
@@ -136,7 +136,7 @@ export async function commitLevelUp(plan: LevelUpPlan, db: LevelUpDb): Promise<L
     })),
   );
   const existingRows = await db.listSpellSlots(characterId);
-  const existingByLevel = new Map(existingRows.map((r) => [r.slot_level, r]));
+  const existingByLevel = new Map(existingRows.map((r) => [r.spell_level, r]));
   const slotActions: LevelUpResult["slotActions"] = [];
 
   // INSERT or UPDATE slots that the multiclass table now grants
@@ -146,25 +146,25 @@ export async function commitLevelUp(plan: LevelUpPlan, db: LevelUpDb): Promise<L
     if (!row) {
       await db.insert("character_spell_slots", {
         character_id: characterId,
-        slot_level: slotLevel,
+        spell_level: slotLevel,
         max_slots: max,
         used_slots: 0,
         bonus_slots: 0,
       });
-      slotActions.push({ slot_level: slotLevel, action: "insert", max_slots: max });
+      slotActions.push({ spell_level: slotLevel, action: "insert", max_slots: max });
     } else if (row.max_slots !== max) {
       // Clamp used_slots to the new max; preserve bonus_slots; never delete rows.
       await db.update(
         "character_spell_slots",
-        { character_id: characterId, slot_level: slotLevel },
+        { character_id: characterId, spell_level: slotLevel },
         {
           max_slots: max,
           used_slots: Math.min(row.used_slots, max),
         },
       );
-      slotActions.push({ slot_level: slotLevel, action: "update", max_slots: max });
+      slotActions.push({ spell_level: slotLevel, action: "update", max_slots: max });
     } else {
-      slotActions.push({ slot_level: slotLevel, action: "noop", max_slots: max });
+      slotActions.push({ spell_level: slotLevel, action: "noop", max_slots: max });
     }
   }
 

@@ -668,13 +668,7 @@ const CombatTab = ({ character, attacks, equipment, characterId, classLineup, on
           onLevelChange={onUpdate}
         />
         {isWarlock && (
-          <WarlockPactSlots
-            characterId={characterId}
-            characterName={character.name}
-            pactSlotsMax={character.pact_slots_max || 1}
-            pactSlotsUsed={character.pact_slots_used || 0}
-            pactSlotLevel={character.pact_slot_level || 1}
-          />
+          <div className="md:col-span-1" aria-hidden />
         )}
       </div>
 

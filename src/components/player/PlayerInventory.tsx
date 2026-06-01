@@ -113,7 +113,7 @@ export function PlayerInventory({ characterId, campaignId }: PlayerInventoryProp
   };
 
   const ItemList = ({ items }: { items: Holding[] }) => (
-    <ScrollArea className="h-[300px] pr-4">
+    <ScrollArea className="h-[min(300px,60dvh)] pr-4">
       {items.length === 0 ? (
         <PlayerEmptyState
           icon={Backpack}

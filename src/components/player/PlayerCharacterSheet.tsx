@@ -525,7 +525,7 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
 
       {/* Level Up Button */}
       <button
-        className="w-full py-2.5 px-4 rounded-lg fantasy-level-up-btn flex items-center justify-center gap-2"
+        className="w-full min-h-[44px] py-2.5 px-4 rounded-lg fantasy-level-up-btn flex items-center justify-center gap-2"
         onClick={() => setShowLevelUp(true)}
       >
         <TrendingUp className="h-4 w-4" />
@@ -544,16 +544,16 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
             <span className="font-cinzel text-xs text-brass tracking-[0.15em] uppercase font-bold">Abilities</span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brass/50 to-transparent" />
           </div>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
             {Object.entries(abilities).map(([key, value]) => {
               const mod = getAbilityModifier(value);
               return (
                 <div 
                   key={key} 
-                  className="relative text-center p-4 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
+                  className="relative text-center p-2.5 sm:p-4 rounded-lg bg-gradient-to-b from-brass/8 to-transparent border-2 border-brass/40 hover:border-brass transition-colors parchment-inset"
                 >
                   <div className="text-[10px] font-bold uppercase tracking-widest text-brass mb-1.5 font-cinzel">{key}</div>
-                  <div className="text-2xl font-bold">{value}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{value}</div>
                   <div className={`text-sm font-semibold mt-0.5 ${mod >= 0 ? 'text-buff-green' : 'text-hp-red'}`}>
                     {formatModifier(mod)}
                   </div>

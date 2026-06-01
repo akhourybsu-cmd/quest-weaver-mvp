@@ -132,7 +132,7 @@ export function PlayerQuestTracker({ campaignId }: PlayerQuestTrackerProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[calc(100vh-28rem)] min-h-[200px] pr-4">
+        <ScrollArea className="h-[calc(100dvh-28rem)] min-h-[200px] pr-4">
           <div className="space-y-3">
             {availableQuests.length > 0 && (
               <div className="space-y-2">

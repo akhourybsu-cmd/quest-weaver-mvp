@@ -228,7 +228,7 @@ export function PlayerJournal({ campaignId, characterId }: PlayerJournalProps) {
         </SheetContent>
       </Sheet>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)] min-h-[300px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100dvh-12rem)] min-h-[300px]">
         {/* Left: Note list */}
         <div className="lg:col-span-1 flex flex-col gap-3 min-h-0">
           <div className="flex items-center gap-2 shrink-0">

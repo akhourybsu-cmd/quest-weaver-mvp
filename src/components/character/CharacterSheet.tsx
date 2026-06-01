@@ -30,6 +30,7 @@ import { DefensesPanel } from "@/components/character/DefensesPanel";
 import { DefensesEditor } from "@/components/character/DefensesEditor";
 import { ExhaustionManager } from "@/components/combat/ExhaustionManager";
 import { WarlockPactSlots } from "@/components/spells/WarlockPactSlots";
+import { SpellcastingResources } from "@/components/spells/SpellcastingResources";
 import type { DamageType } from "@/lib/damageEngine";
 
 interface CharacterSheetProps {
@@ -666,15 +667,6 @@ const CombatTab = ({ character, attacks, equipment, characterId, classLineup, on
           baseMaxHP={character.max_hp}
           onLevelChange={onUpdate}
         />
-        {isWarlock && (
-          <WarlockPactSlots
-            characterId={characterId}
-            characterName={character.name}
-            pactSlotsMax={character.pact_slots_max || 1}
-            pactSlotsUsed={character.pact_slots_used || 0}
-            pactSlotLevel={character.pact_slot_level || 1}
-          />
-        )}
       </div>
 
       <Card>
@@ -866,6 +858,19 @@ const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPrepa
     : undefined;
   const multiclassSlots = slotInfo?.hasSlots ? slotInfo.slots : undefined;
 
+  // Derive warlock level from the canonical lineup (falls back to legacy
+  // characters.class match if lineup missing).
+  const warlockEntry = Array.isArray(classLineup)
+    ? classLineup.find(
+        (c: any) => (c.className || "").toLowerCase() === "warlock",
+      )
+    : null;
+  const warlockLevel =
+    warlockEntry?.level ??
+    ((character?.class || "").toLowerCase() === "warlock"
+      ? character?.level ?? 0
+      : 0);
+
   const groupedSpells = spells.reduce((acc: any, spell: any) => {
     const level = spell.spell?.level || 0;
     if (!acc[level]) {
@@ -928,11 +933,20 @@ const SpellsTab = ({ spells, character, abilities, classLineup, onOpenSpellPrepa
             </CardContent>
           </Card>
 
-          <SpellSlotTracker
+          <SpellcastingResources
             characterId={character.id}
+            characterName={character.name}
             characterLevel={character.level}
             characterClass={character.class}
             multiclassSlots={multiclassSlots}
+            warlockLevel={warlockLevel}
+            pactSlotsMax={character.pact_slots_max}
+            pactSlotsUsed={character.pact_slots_used}
+            pactSlotLevel={character.pact_slot_level}
+            arcanum6Used={character.mystic_arcanum_6_used}
+            arcanum7Used={character.mystic_arcanum_7_used}
+            arcanum8Used={character.mystic_arcanum_8_used}
+            arcanum9Used={character.mystic_arcanum_9_used}
           />
         </>
       )}

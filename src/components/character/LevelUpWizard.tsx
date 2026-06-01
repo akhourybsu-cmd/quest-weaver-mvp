@@ -739,6 +739,71 @@ export const LevelUpWizard = ({
       const hpGain = Math.max(1, hpRoll + conMod);
       const newProfBonus = Math.floor((newLevel - 1) / 4) + 2;
 
+      // ── SINGLE SOURCE OF TRUTH: contract writes via commitLevelUp ─────
+      // commitLevelUp owns:
+      //   • character_classes (bump leveled class)
+      //   • characters {level, hit_dice_total}
+      //   • character_level_history (per-class transition row + extras)
+      //   • character_spell_slots multiclass shared-slot reconciliation
+      // The wizard still performs all OTHER side-effect writes below
+      // (HP/derived stats, abilities, spells, features, choices, pact slots).
+      const targetClassId =
+        selectedClassToLevel?.classId ||
+        characterClasses.find((c) => c.isPrimary)?.classId ||
+        characterClasses[0]?.classId;
+      const targetClassName =
+        selectedClassToLevel?.className || character?.class || "";
+      const hitDieForTarget =
+        DND_CLASSES.find((c) => c.value === targetClassName)?.hitDie ?? 8;
+      if (targetClassId) {
+        const plan: LevelUpPlan = {
+          characterId,
+          currentClasses: characterClasses.map((c) => ({
+            rowId: null,
+            classId: c.classId,
+            className: c.className,
+            level: c.level,
+            isPrimary: c.isPrimary,
+            subclassId: c.subclassId ?? null,
+          })),
+          target: {
+            classId: targetClassId,
+            className: targetClassName,
+            hitDie: hitDieForTarget,
+            subclassName: subclassName ?? undefined,
+            // AddClassDialog pre-inserts new-multiclass rows at level 1 with
+            // in-memory level 0, so the update branch is correct and
+            // idempotent on class_level=1. Never take the insert branch here.
+            isNewMulticlass: false,
+          },
+          hpGain,
+          historyExtras: {
+            choicesMade: {
+              asi_or_feat: asiChoice,
+              feat_id: selectedFeat,
+              ability_increases: abilityIncreases,
+              new_spells: newSpells,
+              new_cantrips: newCantrips,
+              wizard_spellbook: wizardSpellbookSpells,
+              spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null,
+              fighting_style: fightingStyleChoice,
+              expertise: expertiseChoices,
+              metamagic: metamagicChoices,
+              pact_boon: pactBoonChoice,
+              invocations: newInvocations,
+              invocations_removed: invocationsToRemove,
+              magical_secrets: magicalSecretsSpells,
+              favored_enemy: favoredEnemyChoice,
+              favored_terrain: favoredTerrainChoice,
+              subclass_id: selectedSubclassId,
+              mystic_arcanum_spell: mysticArcanumSpellId,
+            },
+            featuresGained: featuresToGrant.map((f) => ({ id: f.id, name: f.name })),
+          },
+        };
+        await commitLevelUp(plan, createSupabaseLevelUpDb());
+      }
+
       // Calculate derived stats updates
       const charUpdates: Record<string, any> = {
         level: newLevel,
@@ -811,62 +876,8 @@ export const LevelUpWizard = ({
         .update(charUpdates)
         .eq("id", characterId);
 
-      // Update the specific class level in character_classes (for multiclass support)
-      if (selectedClassToLevel) {
-        const existingClass = characterClasses.find(c => c.classId === selectedClassToLevel.classId);
-        if (existingClass && existingClass.level > 0) {
-          // Update existing class entry
-          await supabase
-            .from("character_classes")
-            .update({ class_level: existingClass.level + 1 })
-            .eq("character_id", characterId)
-            .eq("class_id", selectedClassToLevel.classId);
-        }
-        // Note: If this is a new multiclass (level 0), it was already inserted by AddClassDialog
-      }
-
-      // Record level history
-      const classIdForHistory = selectedClassToLevel?.classId;
-      const { data: classData } = classIdForHistory 
-        ? { data: { id: classIdForHistory } }
-        : await supabase
-            .from("srd_classes")
-            .select("id")
-            .eq("name", character?.class)
-            .single();
-
-      if (classData) {
-        await supabase.from("character_level_history").insert({
-          character_id: characterId,
-          class_id: classData.id,
-          // Record the per-class level transition (e.g. Fighter 1 -> Fighter 2),
-          // not the character total level. Falls back to total for legacy chars.
-          previous_level: effectiveCurrentClassLevel,
-          new_level: effectiveNewClassLevel,
-          hp_gained: hpGain,
-          choices_made: {
-            asi_or_feat: asiChoice,
-            feat_id: selectedFeat,
-            ability_increases: abilityIncreases,
-            new_spells: newSpells,
-            new_cantrips: newCantrips,
-            wizard_spellbook: wizardSpellbookSpells,
-            spell_swap: spellToSwap ? { from: spellToSwap, to: swapReplacement } : null,
-            fighting_style: fightingStyleChoice,
-            expertise: expertiseChoices,
-            metamagic: metamagicChoices,
-            pact_boon: pactBoonChoice,
-            invocations: newInvocations,
-            invocations_removed: invocationsToRemove,
-            magical_secrets: magicalSecretsSpells,
-            favored_enemy: favoredEnemyChoice,
-            favored_terrain: favoredTerrainChoice,
-            subclass_id: selectedSubclassId,
-            mystic_arcanum_spell: mysticArcanumSpellId,
-          },
-          features_gained: featuresToGrant.map(f => ({ id: f.id, name: f.name }))
-        });
-      }
+      // (character_classes + character_level_history are written above by
+      // commitLevelUp — see "SINGLE SOURCE OF TRUTH" block.)
 
       // Add feat if selected
       if (asiChoice === "feat" && selectedFeat) {

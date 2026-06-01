@@ -225,10 +225,10 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
   return (
     <div className="h-full flex flex-col">
       {/* Header - Always visible */}
-      <div className="sticky top-0 z-10 bg-background border-b p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h1 className="text-2xl font-bold">{character.name}</h1>
+      <div className="sticky top-0 z-10 bg-background border-b p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{character.name}</h1>
             <div className="mt-1">
               <ClassLineupBadge
                 classes={classLineup}
@@ -247,12 +247,13 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleRepair} disabled={repairing}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="min-h-[44px]" onClick={handleRepair} disabled={repairing}>
               <Wrench className="h-4 w-4 mr-2" />
-              {repairing ? "Repairing…" : "Repair Stored Data"}
+              <span className="hidden sm:inline">{repairing ? "Repairing…" : "Repair Stored Data"}</span>
+              <span className="sm:hidden">{repairing ? "Repairing…" : "Repair"}</span>
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="min-h-[44px]">
               <StickyNote className="h-4 w-4 mr-2" />
               Quick Rest
             </Button>
@@ -260,7 +261,7 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         </div>
 
         {/* Quick stats bar */}
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-3 text-center">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 sm:gap-3 text-center">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">HP</span>
             <div className="space-y-1">
@@ -298,44 +299,44 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
       {/* Tabbed content */}
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="w-full justify-start border-b rounded-none px-4">
+          <TabsList className="w-full justify-start border-b rounded-none px-2 sm:px-4 overflow-x-auto flex-nowrap whitespace-nowrap">
             <TabsTrigger value="overview">
               <User className="h-4 w-4 mr-2" />
-              Overview
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
             <TabsTrigger value="abilities">
               <Zap className="h-4 w-4 mr-2" />
-              Abilities
+              <span className="hidden sm:inline">Abilities</span>
             </TabsTrigger>
             <TabsTrigger value="skills">
               <BookOpen className="h-4 w-4 mr-2" />
-              Skills
+              <span className="hidden sm:inline">Skills</span>
             </TabsTrigger>
             <TabsTrigger value="combat">
               <Sword className="h-4 w-4 mr-2" />
-              Combat
+              <span className="hidden sm:inline">Combat</span>
             </TabsTrigger>
             <TabsTrigger value="features">
               <Sparkles className="h-4 w-4 mr-2" />
-              Features
+              <span className="hidden sm:inline">Features</span>
             </TabsTrigger>
             {spells.length > 0 && (
               <TabsTrigger value="spells">
                 <Sparkles className="h-4 w-4 mr-2" />
-                Spells
+                <span className="hidden sm:inline">Spells</span>
               </TabsTrigger>
             )}
             <TabsTrigger value="notes">
               <StickyNote className="h-4 w-4 mr-2" />
-              Notes
+              <span className="hidden sm:inline">Notes</span>
             </TabsTrigger>
             <TabsTrigger value="history">
               <HistoryIcon className="h-4 w-4 mr-2" />
-              History
+              <span className="hidden sm:inline">History</span>
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6">
             <TabsContent value="overview" className="mt-0">
               <OverviewTab
                 character={character}

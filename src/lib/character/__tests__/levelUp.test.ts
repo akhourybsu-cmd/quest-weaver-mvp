@@ -10,7 +10,7 @@ interface Write {
   values: any;
 }
 
-function makeDb(initialSlots: Array<{ slot_level: number; max_slots: number; used_slots: number; bonus_slots: number }> = []) {
+function makeDb(initialSlots: Array<{ spell_level: number; max_slots: number; used_slots: number; bonus_slots: number }> = []) {
   const writes: Write[] = [];
   // mutable slot store, so reconciliation reads reflect prior writes
   const slotStore = [...initialSlots];
@@ -21,7 +21,7 @@ function makeDb(initialSlots: Array<{ slot_level: number; max_slots: number; use
         writes.push({ table, op: "insert", values: r });
         if (table === "character_spell_slots") {
           slotStore.push({
-            slot_level: r.slot_level,
+            spell_level: r.spell_level,
             max_slots: r.max_slots,
             used_slots: r.used_slots ?? 0,
             bonus_slots: r.bonus_slots ?? 0,
@@ -32,7 +32,7 @@ function makeDb(initialSlots: Array<{ slot_level: number; max_slots: number; use
     async update(table, match, values) {
       writes.push({ table, op: "update", match, values });
       if (table === "character_spell_slots") {
-        const row = slotStore.find((s) => s.slot_level === match.slot_level);
+        const row = slotStore.find((s) => s.spell_level === match.spell_level);
         if (row) Object.assign(row, values);
       }
     },
@@ -125,8 +125,8 @@ describe("commitLevelUp — add a new class (Fighter 3 → Fighter 3 / Wizard 1)
     // Multiclass spellcaster level: Fighter (martial) 0 + Wizard 1 = 1 → 2 first-level slots
     const slotInserts = writes.filter((w) => w.table === "character_spell_slots" && w.op === "insert");
     expect(slotInserts).toHaveLength(1);
-    expect(slotInserts[0].values).toMatchObject({ slot_level: 1, max_slots: 2, used_slots: 0 });
-    expect(result.slotActions).toEqual([{ slot_level: 1, action: "insert", max_slots: 2 }]);
+    expect(slotInserts[0].values).toMatchObject({ spell_level: 1, max_slots: 2, used_slots: 0 });
+    expect(result.slotActions).toEqual([{ spell_level: 1, action: "insert", max_slots: 2 }]);
   });
 });
 
@@ -134,7 +134,7 @@ describe("commitLevelUp — level secondary class (Fighter 3 / Wizard 2 → Wiza
   it("bumps Wizard's class level (not Fighter's), records Wizard 2→3, expands slot table", async () => {
     // Wizard 2 currently grants 3 L1 slots (from multiclass table at caster level 2).
     const { db, writes } = makeDb([
-      { slot_level: 1, max_slots: 3, used_slots: 1, bonus_slots: 0 },
+      { spell_level: 1, max_slots: 3, used_slots: 1, bonus_slots: 0 },
     ]);
     const result = await commitLevelUp(
       basePlan({
@@ -155,18 +155,18 @@ describe("commitLevelUp — level secondary class (Fighter 3 / Wizard 2 → Wiza
 
     // Caster level 3 (Wizard 3, Fighter contributes 0): 4 L1 + 2 L2
     const slotWrites = writes.filter((w) => w.table === "character_spell_slots");
-    const l1 = slotWrites.find((w) => (w.values?.slot_level ?? w.match?.slot_level) === 1);
-    const l2 = slotWrites.find((w) => (w.values?.slot_level ?? w.match?.slot_level) === 2);
+    const l1 = slotWrites.find((w) => (w.values?.spell_level ?? w.match?.spell_level) === 1);
+    const l2 = slotWrites.find((w) => (w.values?.spell_level ?? w.match?.spell_level) === 2);
     expect(l1?.op).toBe("update");
     expect(l1?.values).toMatchObject({ max_slots: 4, used_slots: 1 }); // used preserved (1 ≤ 4)
     expect(l2?.op).toBe("insert");
-    expect(l2?.values).toMatchObject({ slot_level: 2, max_slots: 2 });
+    expect(l2?.values).toMatchObject({ spell_level: 2, max_slots: 2 });
   });
 
   it("clamps used_slots when new max is lower than previous used count", async () => {
     // Contrived: previously had used=3 at L1; if multiclass shrinks max to 2, used must clamp.
     const { db, writes } = makeDb([
-      { slot_level: 1, max_slots: 4, used_slots: 3, bonus_slots: 1 },
+      { spell_level: 1, max_slots: 4, used_slots: 3, bonus_slots: 1 },
     ]);
     // Single Wizard 1 → 2 L1 slots
     await commitLevelUp(
@@ -188,14 +188,14 @@ describe("commitLevelUp — level secondary class (Fighter 3 / Wizard 2 → Wiza
 describe("commitLevelUp — Warlock + full caster (Wizard 3 / Warlock 2 → Warlock 3)", () => {
   it("excludes Warlock from multiclass slot table — pact slot rows are not touched", async () => {
     // Pre-existing rows: multiclass slots from Wizard 3 (caster level 3 = 4×L1 + 2×L2)
-    // PLUS a Warlock pact-slot row at slot_level 1 with max_slots that should NOT be overwritten.
+    // PLUS a Warlock pact-slot row at spell_level 1 with max_slots that should NOT be overwritten.
     // We simulate the pact slots living in the same table by adding a "high" row not in the
     // multiclass desired set; reconciliation must leave it alone.
     const { db, writes, slotStore } = makeDb([
-      { slot_level: 1, max_slots: 4, used_slots: 0, bonus_slots: 0 },
-      { slot_level: 2, max_slots: 2, used_slots: 0, bonus_slots: 0 },
-      // Pretend slot_level 9 is being used as a sentinel for pact slots in this test
-      { slot_level: 9, max_slots: 99, used_slots: 0, bonus_slots: 0 },
+      { spell_level: 1, max_slots: 4, used_slots: 0, bonus_slots: 0 },
+      { spell_level: 2, max_slots: 2, used_slots: 0, bonus_slots: 0 },
+      // Pretend spell_level 9 is being used as a sentinel for pact slots in this test
+      { spell_level: 9, max_slots: 99, used_slots: 0, bonus_slots: 0 },
     ]);
 
     const result = await commitLevelUp(
@@ -223,14 +223,14 @@ describe("commitLevelUp — Warlock + full caster (Wizard 3 / Warlock 2 → Warl
     expect(updates).toHaveLength(0);
 
     // Sentinel pact-slot row preserved
-    const pact = slotStore.find((r) => r.slot_level === 9);
-    expect(pact).toEqual({ slot_level: 9, max_slots: 99, used_slots: 0, bonus_slots: 0 });
+    const pact = slotStore.find((r) => r.spell_level === 9);
+    expect(pact).toEqual({ spell_level: 9, max_slots: 99, used_slots: 0, bonus_slots: 0 });
 
     // Result reports 2 noop actions for L1/L2
     expect(result.slotActions).toEqual(
       expect.arrayContaining([
-        { slot_level: 1, action: "noop", max_slots: 4 },
-        { slot_level: 2, action: "noop", max_slots: 2 },
+        { spell_level: 1, action: "noop", max_slots: 4 },
+        { spell_level: 2, action: "noop", max_slots: 2 },
       ]),
     );
   });

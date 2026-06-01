@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench } from "lucide-react";
+import { Heart, Shield, Zap, User, Sword, Sparkles, BookOpen, StickyNote, Wand2, BookMarked, Wrench, History as HistoryIcon } from "lucide-react";
 import { calculateModifier, calculateProficiencyBonus } from "@/lib/dnd5e";
 import { calculateSkillModifier, parseDarkvisionFt } from "@/lib/characterRules";
 import { repairCharacterData } from "@/lib/characterRepair";

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Activity, BookOpen, Shield, Sparkles, Sword, Users, Skull, Star, Backpack, Wand2 } from "lucide-react";
+import { Activity, BookOpen, Shield, Sparkles, Sword, Users, Skull, Star, Backpack, Wand2, Library } from "lucide-react";
 
 const sections = [
+  { to: "/rules-library", title: "Rules Library", desc: "Search the source-aware open compendium with source & license badges.", icon: Library },
   { to: "/reference/bestiary", title: "Bestiary", desc: "Search SRD/open-license creatures and view full statblocks.", icon: Skull },
   { to: "/reference/conditions", title: "Conditions", desc: "Quick reference for the 15 SRD conditions.", icon: Shield },
   { to: "/reference/rules", title: "Rules", desc: "Core 5e rules from the SRD.", icon: BookOpen },

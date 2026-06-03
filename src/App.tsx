@@ -29,6 +29,7 @@ const AuditHarness = lazy(() => import("./pages/dev/AuditHarness"));
 const AdminTools = lazy(() => import("./pages/dev/AdminTools"));
 const RulesApiHealthCheck = lazy(() => import("./pages/dev/RulesApiHealthCheck"));
 const ReferenceHub = lazy(() => import("./pages/reference/ReferenceHub"));
+const RulesLibrary = lazy(() => import("./pages/RulesLibrary"));
 const ConditionsReference = lazy(() => import("./pages/reference/ConditionsReference"));
 const RulesReference = lazy(() => import("./pages/reference/RulesReference"));
 const ClassesReference = lazy(() => import("./pages/reference/ClassesReference"));
@@ -117,6 +118,7 @@ function AppRoutes() {
               <Route path="/admin" element={<AdminTools />} />
               <Route path="/admin/rules-health" element={<RulesApiHealthCheck />} />
               <Route path="/reference" element={<ReferenceHub />} />
+              <Route path="/rules-library" element={<RulesLibrary />} />
               <Route path="/reference/conditions" element={<ConditionsReference />} />
               <Route path="/reference/rules" element={<RulesReference />} />
               <Route path="/reference/classes" element={<ClassesReference />} />

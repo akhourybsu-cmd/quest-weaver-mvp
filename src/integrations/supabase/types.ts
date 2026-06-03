@@ -2809,6 +2809,57 @@ export type Database = {
           },
         ]
       }
+      import_batches: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          error_count: number
+          errors: Json
+          finished_at: string | null
+          id: string
+          imported: number
+          params: Json | null
+          provider: string
+          skipped: number
+          source_key: string
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          error_count?: number
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          params?: Json | null
+          provider: string
+          skipped?: number
+          source_key: string
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          error_count?: number
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          imported?: number
+          params?: Json | null
+          provider?: string
+          skipped?: number
+          source_key?: string
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       initiative: {
         Row: {
           combatant_id: string | null
@@ -4761,6 +4812,7 @@ export type Database = {
           created_at: string
           id: string
           last_synced_at: string
+          license_type: string | null
           normalized_json: Json
           raw_json: Json
           ruleset_version: string | null
@@ -4777,6 +4829,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_synced_at?: string
+          license_type?: string | null
           normalized_json: Json
           raw_json: Json
           ruleset_version?: string | null
@@ -4793,6 +4846,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_synced_at?: string
+          license_type?: string | null
           normalized_json?: Json
           raw_json?: Json
           ruleset_version?: string | null
@@ -4800,6 +4854,60 @@ export type Database = {
           source_document?: string | null
           source_url?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rules_sources: {
+        Row: {
+          attribution: string
+          created_at: string
+          id: string
+          is_enabled: boolean
+          is_official: boolean
+          key: string
+          license: string
+          license_url: string | null
+          name: string
+          provider: string
+          ruleset: string
+          sort_order: number
+          updated_at: string
+          upstream_url: string | null
+          version: string | null
+        }
+        Insert: {
+          attribution: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          is_official?: boolean
+          key: string
+          license: string
+          license_url?: string | null
+          name: string
+          provider: string
+          ruleset: string
+          sort_order?: number
+          updated_at?: string
+          upstream_url?: string | null
+          version?: string | null
+        }
+        Update: {
+          attribution?: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          is_official?: boolean
+          key?: string
+          license?: string
+          license_url?: string | null
+          name?: string
+          provider?: string
+          ruleset?: string
+          sort_order?: number
+          updated_at?: string
+          upstream_url?: string | null
+          version?: string | null
         }
         Relationships: []
       }
@@ -5755,36 +5863,48 @@ export type Database = {
           created_at: string | null
           id: string
           languages: Json
+          license: string
           name: string
           options: Json
           proficiencies: Json
+          ruleset: string
           size: string
+          source_key: string
           speed: number
           traits: Json
+          upstream_url: string | null
         }
         Insert: {
           ability_bonuses?: Json
           created_at?: string | null
           id?: string
           languages?: Json
+          license?: string
           name: string
           options?: Json
           proficiencies?: Json
+          ruleset?: string
           size: string
+          source_key?: string
           speed?: number
           traits?: Json
+          upstream_url?: string | null
         }
         Update: {
           ability_bonuses?: Json
           created_at?: string | null
           id?: string
           languages?: Json
+          license?: string
           name?: string
           options?: Json
           proficiencies?: Json
+          ruleset?: string
           size?: string
+          source_key?: string
           speed?: number
           traits?: Json
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -5796,9 +5916,13 @@ export type Database = {
           created_at: string | null
           dex_cap: number | null
           id: string
+          license: string
           name: string
+          ruleset: string
+          source_key: string
           stealth_disadv: boolean | null
           strength_min: number | null
+          upstream_url: string | null
           weight: number | null
         }
         Insert: {
@@ -5808,9 +5932,13 @@ export type Database = {
           created_at?: string | null
           dex_cap?: number | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
+          source_key?: string
           stealth_disadv?: boolean | null
           strength_min?: number | null
+          upstream_url?: string | null
           weight?: number | null
         }
         Update: {
@@ -5820,9 +5948,13 @@ export type Database = {
           created_at?: string | null
           dex_cap?: number | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
+          source_key?: string
           stealth_disadv?: boolean | null
           strength_min?: number | null
+          upstream_url?: string | null
           weight?: number | null
         }
         Relationships: []
@@ -5834,9 +5966,13 @@ export type Database = {
           feature: string | null
           id: string
           languages: Json
+          license: string | null
           name: string
+          ruleset: string | null
           skill_proficiencies: Json
+          source_key: string | null
           tool_proficiencies: Json
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -5844,9 +5980,13 @@ export type Database = {
           feature?: string | null
           id?: string
           languages?: Json
+          license?: string | null
           name: string
+          ruleset?: string | null
           skill_proficiencies?: Json
+          source_key?: string | null
           tool_proficiencies?: Json
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -5854,9 +5994,13 @@ export type Database = {
           feature?: string | null
           id?: string
           languages?: Json
+          license?: string | null
           name?: string
+          ruleset?: string | null
           skill_proficiencies?: Json
+          source_key?: string | null
           tool_proficiencies?: Json
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -5868,7 +6012,11 @@ export type Database = {
           description: string
           id: string
           level: number
+          license: string
           name: string
+          ruleset: string
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           choices?: Json | null
@@ -5877,7 +6025,11 @@ export type Database = {
           description: string
           id?: string
           level: number
+          license?: string
           name: string
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           choices?: Json | null
@@ -5886,7 +6038,11 @@ export type Database = {
           description?: string
           id?: string
           level?: number
+          license?: string
           name?: string
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: [
           {
@@ -5903,34 +6059,46 @@ export type Database = {
           created_at: string | null
           hit_die: number
           id: string
+          license: string
           name: string
           proficiencies: Json
+          ruleset: string
           saving_throws: string[]
+          source_key: string
           spellcasting_ability: string | null
           spellcasting_progression: string | null
           starting_equipment: Json
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           hit_die: number
           id?: string
+          license?: string
           name: string
           proficiencies?: Json
+          ruleset?: string
           saving_throws?: string[]
+          source_key?: string
           spellcasting_ability?: string | null
           spellcasting_progression?: string | null
           starting_equipment?: Json
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           hit_die?: number
           id?: string
+          license?: string
           name?: string
           proficiencies?: Json
+          ruleset?: string
           saving_throws?: string[]
+          source_key?: string
           spellcasting_ability?: string | null
           spellcasting_progression?: string | null
           starting_equipment?: Json
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -5940,24 +6108,36 @@ export type Database = {
           description: string | null
           document: string | null
           id: string
+          license: string
           name: string
+          ruleset: string
           slug: string | null
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -5997,9 +6177,13 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          license: string
           name: string
           properties: Json | null
+          ruleset: string
+          source_key: string
           type: string
+          upstream_url: string | null
           weight: number | null
         }
         Insert: {
@@ -6007,9 +6191,13 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          license?: string
           name: string
           properties?: Json | null
+          ruleset?: string
+          source_key?: string
           type: string
+          upstream_url?: string | null
           weight?: number | null
         }
         Update: {
@@ -6017,9 +6205,13 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          license?: string
           name?: string
           properties?: Json | null
+          ruleset?: string
+          source_key?: string
           type?: string
+          upstream_url?: string | null
           weight?: number | null
         }
         Relationships: []
@@ -6031,8 +6223,12 @@ export type Database = {
           description: string | null
           grants: Json | null
           id: string
+          license: string | null
           name: string
           prerequisites: Json | null
+          ruleset: string | null
+          source_key: string | null
+          upstream_url: string | null
         }
         Insert: {
           ability_increases?: Json | null
@@ -6040,8 +6236,12 @@ export type Database = {
           description?: string | null
           grants?: Json | null
           id?: string
+          license?: string | null
           name: string
           prerequisites?: Json | null
+          ruleset?: string | null
+          source_key?: string | null
+          upstream_url?: string | null
         }
         Update: {
           ability_increases?: Json | null
@@ -6049,8 +6249,12 @@ export type Database = {
           description?: string | null
           grants?: Json | null
           id?: string
+          license?: string | null
           name?: string
           prerequisites?: Json | null
+          ruleset?: string | null
+          source_key?: string | null
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6058,20 +6262,32 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          license: string
           name: string
+          ruleset: string
           script: string | null
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
           script?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
           script?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6081,33 +6297,45 @@ export type Database = {
           description: string | null
           document: string | null
           id: string
+          license: string
           name: string
           rarity: string | null
           requires_attunement: boolean | null
+          ruleset: string
           slug: string | null
+          source_key: string
           type: string | null
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name: string
           rarity?: string | null
           requires_attunement?: boolean | null
+          ruleset?: string
           slug?: string | null
+          source_key?: string
           type?: string | null
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name?: string
           rarity?: string | null
           requires_attunement?: boolean | null
+          ruleset?: string
           slug?: string | null
+          source_key?: string
           type?: string | null
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6117,24 +6345,36 @@ export type Database = {
           description: string | null
           document: string | null
           id: string
+          license: string
           name: string
+          ruleset: string
           slug: string | null
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6144,27 +6384,39 @@ export type Database = {
           description: string | null
           document: string | null
           id: string
+          license: string
           name: string
           parent: string | null
+          ruleset: string
           slug: string | null
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name: string
           parent?: string | null
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
           document?: string | null
           id?: string
+          license?: string
           name?: string
           parent?: string | null
+          ruleset?: string
           slug?: string | null
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6227,14 +6479,18 @@ export type Database = {
           higher_levels: string | null
           id: string
           level: number
+          license: string
           material: string | null
           name: string
           range: string
           ritual: boolean | null
+          ruleset: string
           scaling_description: string | null
           scaling_type: string | null
           scaling_value: string | null
           school: string
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           casting_time: string
@@ -6247,14 +6503,18 @@ export type Database = {
           higher_levels?: string | null
           id?: string
           level: number
+          license?: string
           material?: string | null
           name: string
           range: string
           ritual?: boolean | null
+          ruleset?: string
           scaling_description?: string | null
           scaling_type?: string | null
           scaling_value?: string | null
           school: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           casting_time?: string
@@ -6267,14 +6527,18 @@ export type Database = {
           higher_levels?: string | null
           id?: string
           level?: number
+          license?: string
           material?: string | null
           name?: string
           range?: string
           ritual?: boolean | null
+          ruleset?: string
           scaling_description?: string | null
           scaling_type?: string | null
           scaling_value?: string | null
           school?: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6284,27 +6548,39 @@ export type Database = {
           ancestry_id: string
           created_at: string | null
           id: string
+          license: string
           name: string
           options: Json
+          ruleset: string
+          source_key: string
           traits: Json
+          upstream_url: string | null
         }
         Insert: {
           ability_bonuses?: Json
           ancestry_id: string
           created_at?: string | null
           id?: string
+          license?: string
           name: string
           options?: Json
+          ruleset?: string
+          source_key?: string
           traits?: Json
+          upstream_url?: string | null
         }
         Update: {
           ability_bonuses?: Json
           ancestry_id?: string
           created_at?: string | null
           id?: string
+          license?: string
           name?: string
           options?: Json
+          ruleset?: string
+          source_key?: string
           traits?: Json
+          upstream_url?: string | null
         }
         Relationships: [
           {
@@ -6323,8 +6599,12 @@ export type Database = {
           description: string
           id: string
           level: number
+          license: string
           name: string
+          ruleset: string
+          source_key: string
           subclass_id: string
+          upstream_url: string | null
         }
         Insert: {
           choices?: Json | null
@@ -6332,8 +6612,12 @@ export type Database = {
           description: string
           id?: string
           level: number
+          license?: string
           name: string
+          ruleset?: string
+          source_key?: string
           subclass_id: string
+          upstream_url?: string | null
         }
         Update: {
           choices?: Json | null
@@ -6341,8 +6625,12 @@ export type Database = {
           description?: string
           id?: string
           level?: number
+          license?: string
           name?: string
+          ruleset?: string
+          source_key?: string
           subclass_id?: string
+          upstream_url?: string | null
         }
         Relationships: [
           {
@@ -6360,24 +6648,36 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          license: string
           name: string
+          ruleset: string
+          source_key: string
           unlock_level: number
+          upstream_url: string | null
         }
         Insert: {
           class_id: string
           created_at?: string | null
           description?: string | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
+          source_key?: string
           unlock_level?: number
+          upstream_url?: string | null
         }
         Update: {
           class_id?: string
           created_at?: string | null
           description?: string | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
+          source_key?: string
           unlock_level?: number
+          upstream_url?: string | null
         }
         Relationships: [
           {
@@ -6395,21 +6695,33 @@ export type Database = {
           cost_gp: number | null
           created_at: string | null
           id: string
+          license: string
           name: string
+          ruleset: string
+          source_key: string
+          upstream_url: string | null
         }
         Insert: {
           category: string
           cost_gp?: number | null
           created_at?: string | null
           id?: string
+          license?: string
           name: string
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Update: {
           category?: string
           cost_gp?: number | null
           created_at?: string | null
           id?: string
+          license?: string
           name?: string
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
         }
         Relationships: []
       }
@@ -6421,8 +6733,12 @@ export type Database = {
           damage: string
           damage_type: string
           id: string
+          license: string
           name: string
           properties: string[] | null
+          ruleset: string
+          source_key: string
+          upstream_url: string | null
           weight: number | null
         }
         Insert: {
@@ -6432,8 +6748,12 @@ export type Database = {
           damage: string
           damage_type: string
           id?: string
+          license?: string
           name: string
           properties?: string[] | null
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
           weight?: number | null
         }
         Update: {
@@ -6443,8 +6763,12 @@ export type Database = {
           damage?: string
           damage_type?: string
           id?: string
+          license?: string
           name?: string
           properties?: string[] | null
+          ruleset?: string
+          source_key?: string
+          upstream_url?: string | null
           weight?: number | null
         }
         Relationships: []

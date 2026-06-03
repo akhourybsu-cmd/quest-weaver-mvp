@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Library, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Loader2, CircleSlash } from "lucide-react";
+import { Library, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Loader2, CircleSlash, DownloadCloud } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { RULES_SOURCES, sourceLabel } from "@/lib/rules/sources";
 import {
   listRecentImportBatches,
@@ -31,6 +34,9 @@ const RulesSourcesPanel = () => {
   const [spellCounts, setSpellCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncContentType, setSyncContentType] = useState<string>("spells");
+  const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +66,29 @@ const RulesSourcesPanel = () => {
   useEffect(() => {
     load();
   }, []);
+
+  const runOpen5eSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-rules-source", {
+        body: { source_key: "open5e", content_type: syncContentType, max_rows: 2000 },
+      });
+      if (error) throw error;
+      toast({
+        title: `Open5e sync: ${data?.status ?? "done"}`,
+        description: `${data?.imported ?? 0} imported · ${data?.skipped ?? 0} skipped · ${data?.errorCount ?? 0} errors`,
+      });
+      await load();
+    } catch (e) {
+      toast({
+        title: "Sync failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <Card>
@@ -153,6 +182,35 @@ const RulesSourcesPanel = () => {
           <h3 className="text-xs font-cinzel uppercase tracking-widest text-muted-foreground mb-2">
             Recent imports
           </h3>
+
+          <div className="flex flex-wrap items-center gap-2 mb-3 p-3 rounded-md border border-border/40 bg-muted/30">
+            <span className="text-xs text-muted-foreground">Sync Open5e →</span>
+            <Select value={syncContentType} onValueChange={setSyncContentType}>
+              <SelectTrigger className="h-8 w-[160px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="spells">spells</SelectItem>
+                <SelectItem value="monsters">monsters</SelectItem>
+                <SelectItem value="magic-items">magic-items</SelectItem>
+                <SelectItem value="conditions">conditions</SelectItem>
+                <SelectItem value="backgrounds">backgrounds</SelectItem>
+                <SelectItem value="feats">feats</SelectItem>
+                <SelectItem value="races">races</SelectItem>
+                <SelectItem value="classes">classes</SelectItem>
+                <SelectItem value="weapons">weapons</SelectItem>
+                <SelectItem value="armor">armor</SelectItem>
+                <SelectItem value="sections">sections</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={runOpen5eSync} disabled={syncing} className="gap-1.5 h-8">
+              {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
+              Run sync
+            </Button>
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              Writes to rules_cache only · logged to import_batches
+            </span>
+          </div>
 
           {error ? (
             <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded-md p-3">

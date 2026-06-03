@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircle, RefreshCw, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import RulesSourcesPanel from "@/components/admin/RulesSourcesPanel";
 import { CLASS_FEATURES_SRD } from "@/data/srd/classFeaturesSeed";
 import { SUBCLASSES_SRD, SUBCLASS_FEATURES_SRD } from "@/data/srd/subclassesSeed";
 import { SUBANCESTRIES_SRD } from "@/data/srd/subancestriesSeed";
@@ -451,6 +452,9 @@ const AdminTools = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Rules Sources & Imports (Phase 3) */}
+        <RulesSourcesPanel />
 
         {/* Changelog Management */}
         <Card>

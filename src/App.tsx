@@ -52,6 +52,7 @@ const PlayerCharacterViewPage = lazy(() => import("@/pages/PlayerCharacterViewPa
 const PlayerNotes = lazy(() => import("@/pages/PlayerNotes"));
 const Community = lazy(() => import("./pages/Community"));
 const Changelog = lazy(() => import("./pages/Changelog"));
+const Attribution = lazy(() => import("./pages/Attribution"));
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ function AppRoutes() {
           <Route path="/community/:categoryId" element={<Community />} />
           <Route path="/community/topic/:topicId" element={<Community />} />
           <Route path="/changelog" element={<Changelog />} />
+          <Route path="/attribution" element={<Attribution />} />
           <Route path="/demo/:demoId/campaign" element={<DemoCampaignHub />} />
           
           {/* Protected routes */}

@@ -15,6 +15,13 @@ import {
   type ImportBatchStatus,
 } from "@/lib/rules/rulesSourcesDb";
 
+// Content types each provider can sync (mirrors the edge providers in
+// supabase/functions/_shared/rulesProviders.ts).
+const SOURCE_SYNC_TYPES: Record<string, string[]> = {
+  "open5e": ["spells", "monsters", "magic-items", "conditions", "backgrounds", "feats", "races", "classes", "weapons", "armor", "sections"],
+  "dnd5eapi-2014": ["spells", "monsters", "magic-items", "conditions", "backgrounds", "feats", "races", "classes"],
+};
+
 const STATUS_STYLE: Record<ImportBatchStatus, { icon: typeof CheckCircle2; cls: string }> = {
   succeeded: { icon: CheckCircle2, cls: "text-emerald-600 border-emerald-500/40" },
   partial:   { icon: AlertCircle,  cls: "text-amber-600 border-amber-500/40" },
@@ -35,8 +42,18 @@ const RulesSourcesPanel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncSource, setSyncSource] = useState<string>("open5e");
   const [syncContentType, setSyncContentType] = useState<string>("spells");
   const { toast } = useToast();
+
+  const syncTypeOptions = SOURCE_SYNC_TYPES[syncSource] ?? [];
+  const providerSources = RULES_SOURCES.filter((s) => s.isEnabled && SOURCE_SYNC_TYPES[s.key]);
+
+  const onChangeSource = (s: string) => {
+    setSyncSource(s);
+    const types = SOURCE_SYNC_TYPES[s] ?? [];
+    if (!types.includes(syncContentType)) setSyncContentType(types[0] ?? "spells");
+  };
 
   const load = async () => {
     setLoading(true);
@@ -67,15 +84,15 @@ const RulesSourcesPanel = () => {
     load();
   }, []);
 
-  const runOpen5eSync = async () => {
+  const runSync = async () => {
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-rules-source", {
-        body: { source_key: "open5e", content_type: syncContentType, max_rows: 2000 },
+        body: { source_key: syncSource, content_type: syncContentType, max_rows: 2000 },
       });
       if (error) throw error;
       toast({
-        title: `Open5e sync: ${data?.status ?? "done"}`,
+        title: `${sourceLabel(syncSource)} sync: ${data?.status ?? "done"}`,
         description: `${data?.imported ?? 0} imported · ${data?.skipped ?? 0} skipped · ${data?.errorCount ?? 0} errors`,
       });
       await load();
@@ -184,26 +201,29 @@ const RulesSourcesPanel = () => {
           </h3>
 
           <div className="flex flex-wrap items-center gap-2 mb-3 p-3 rounded-md border border-border/40 bg-muted/30">
-            <span className="text-xs text-muted-foreground">Sync Open5e →</span>
-            <Select value={syncContentType} onValueChange={setSyncContentType}>
-              <SelectTrigger className="h-8 w-[160px] text-xs">
+            <span className="text-xs text-muted-foreground">Sync</span>
+            <Select value={syncSource} onValueChange={onChangeSource}>
+              <SelectTrigger className="h-8 w-[150px] text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="spells">spells</SelectItem>
-                <SelectItem value="monsters">monsters</SelectItem>
-                <SelectItem value="magic-items">magic-items</SelectItem>
-                <SelectItem value="conditions">conditions</SelectItem>
-                <SelectItem value="backgrounds">backgrounds</SelectItem>
-                <SelectItem value="feats">feats</SelectItem>
-                <SelectItem value="races">races</SelectItem>
-                <SelectItem value="classes">classes</SelectItem>
-                <SelectItem value="weapons">weapons</SelectItem>
-                <SelectItem value="armor">armor</SelectItem>
-                <SelectItem value="sections">sections</SelectItem>
+                {providerSources.map((s) => (
+                  <SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={runOpen5eSync} disabled={syncing} className="gap-1.5 h-8">
+            <span className="text-xs text-muted-foreground">→</span>
+            <Select value={syncContentType} onValueChange={setSyncContentType}>
+              <SelectTrigger className="h-8 w-[150px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {syncTypeOptions.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={runSync} disabled={syncing} className="gap-1.5 h-8">
               {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DownloadCloud className="h-3.5 w-3.5" />}
               Run sync
             </Button>

@@ -5,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Library, Loader2, Search, Scale, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowLeft, Library, Loader2, Search, Scale, Sparkles, AlertCircle, SlidersHorizontal, Filter } from "lucide-react";
 import RulesEntityDrawer from "@/components/rules/RulesEntityDrawer";
+import CampaignSourceSettings from "@/components/campaign/CampaignSourceSettings";
+import { useCampaign } from "@/contexts/CampaignContext";
+import { useCampaignEnabledSources, isSourceEnabledForCampaign } from "@/lib/rules/campaignSources";
 import {
   searchLibrary,
   getLibraryFacets,
@@ -34,6 +37,13 @@ export default function RulesLibrary() {
 
   const [selected, setSelected] = useState<CanonicalEntity | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Campaign context: when present, gate the library to the campaign's enabled
+  // sources. Global browse (no ?code=) shows everything.
+  const { campaign, role } = useCampaign();
+  const { enabled: campaignSources, refresh: refreshCampaignSources } = useCampaignEnabledSources(campaign?.id);
+  const [showCampaignSettings, setShowCampaignSettings] = useState(false);
+  const isDM = role === "DM";
 
   // Debounce the search box.
   useEffect(() => {
@@ -65,8 +75,16 @@ export default function RulesLibrary() {
   }, [debounced, contentType, sourceKey, ruleset]);
 
   const sourceOptions = useMemo(
-    () => enabledRulesSources().filter((s) => (facets?.bySource[s.key] ?? 0) > 0),
-    [facets]
+    () => enabledRulesSources().filter(
+      (s) => (facets?.bySource[s.key] ?? 0) > 0 && isSourceEnabledForCampaign(campaignSources, s.key)
+    ),
+    [facets, campaignSources]
+  );
+
+  // Gate results to the campaign's enabled sources (no-op when unconfigured/global).
+  const visibleResults = useMemo(
+    () => results.filter((e) => isSourceEnabledForCampaign(campaignSources, e.sourceKey)),
+    [results, campaignSources]
   );
   const rulesetOptions = useMemo(
     () => Object.keys(facets?.byRuleset ?? {}).filter((r) => r !== "unknown").sort(),
@@ -106,6 +124,36 @@ export default function RulesLibrary() {
             Search the open-licensed compendium. Every entry is labelled with its source and license.
           </p>
         </div>
+
+        {/* Campaign scope banner + DM source settings */}
+        {campaign && (
+          <div className="mb-5">
+            <div className="flex items-center justify-between gap-2 rounded-md border border-brass/20 bg-brass/5 px-3 py-2">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Filter className="h-3.5 w-3.5 text-brass" />
+                {campaignSources === null
+                  ? <>Showing <strong className="text-foreground">all sources</strong> for <strong className="text-foreground">{campaign.name}</strong> (no source filter configured).</>
+                  : <>Filtered to <strong className="text-foreground">{campaign.name}</strong>'s enabled sources.</>}
+              </p>
+              {isDM && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs border-brass/30 hover:bg-brass/10 hover:text-brass shrink-0"
+                  onClick={() => setShowCampaignSettings((v) => !v)}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  {showCampaignSettings ? "Hide" : "Sources"}
+                </Button>
+              )}
+            </div>
+            {isDM && showCampaignSettings && (
+              <div className="mt-3">
+                <CampaignSourceSettings campaignId={campaign.id} onChanged={refreshCampaignSources} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-2 mb-5">
@@ -154,7 +202,7 @@ export default function RulesLibrary() {
         {/* Result meta */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-cinzel tracking-widest uppercase text-muted-foreground">
-            {loading ? "Searching…" : `${results.length} result${results.length === 1 ? "" : "s"}`}
+            {loading ? "Searching…" : `${visibleResults.length} result${visibleResults.length === 1 ? "" : "s"}`}
             {facets ? ` · ${facets.total} in library` : ""}
           </p>
         </div>
@@ -169,19 +217,21 @@ export default function RulesLibrary() {
           <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
             <Loader2 className="h-5 w-5 animate-spin" /> Searching the archives…
           </div>
-        ) : results.length === 0 ? (
+        ) : visibleResults.length === 0 ? (
           <div className="text-center py-16">
             <Sparkles className="h-7 w-7 text-brass/50 mx-auto mb-3" />
             <p className="font-cinzel text-foreground mb-1">No entries found</p>
             <p className="font-cormorant italic text-muted-foreground text-sm max-w-sm mx-auto">
               {facets && facets.total === 0
                 ? "The library is empty. An admin can populate it from /admin → Sync from Open5e."
+                : campaignSources !== null
+                ? "No entries from this campaign's enabled sources. A DM can adjust sources above."
                 : "Try a different search or relax the filters."}
             </p>
           </div>
         ) : (
           <div className="grid gap-2.5 sm:grid-cols-2">
-            {results.map((e) => (
+            {visibleResults.map((e) => (
               <Card
                 key={e.id}
                 className="fantasy-section p-3 cursor-pointer hover:border-brass/50 transition-colors"

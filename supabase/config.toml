@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.fetch-open5e-monsters]
 verify_jwt = true
+
+[functions.sync-rules-source]
+verify_jwt = true

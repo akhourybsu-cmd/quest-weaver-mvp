@@ -5,6 +5,7 @@ import { ExternalLink, Scale, BookMarked } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SimpleMarkdown } from "@/components/reference/SimpleMarkdown";
 import { contentTypeLabel, type CanonicalEntity } from "@/lib/rules/cacheAdapter";
+import LibraryAddActions from "@/components/rules/LibraryAddActions";
 
 /**
  * Detail drawer for a single library entity. Read-only; renders the canonical
@@ -61,6 +62,9 @@ export default function RulesEntityDrawer({
                 </p>
               )}
             </div>
+
+            {/* Add to encounter / character (5a / 5b) */}
+            <LibraryAddActions entity={entity} />
 
             {/* Attribution footer */}
             <div className="mt-6 pt-4 border-t border-brass/20 space-y-2">

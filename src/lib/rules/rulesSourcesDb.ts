@@ -2,12 +2,11 @@
  * Data access for the Phase 2 rules-source tables (import_batches) and live
  * source-labelled content counts.
  *
- * NOTE: the generated src/integrations/supabase/types.ts has not yet been
- * regenerated for the Phase 2 migration, so `import_batches` and the new
- * `source_key` columns are not in the typed `Database` schema. We localize the
- * necessary `any` cast here (rather than hand-editing the generated types file)
- * so the rest of the app stays strongly typed. Once types are regenerated these
- * casts become harmless.
+ * As of the Phase 2 migration being applied and types.ts regenerated, these
+ * tables/columns are in the generated `Database` schema, so this module uses the
+ * typed Supabase client directly — no `any` cast needed. The only narrowing is
+ * mapping the DB's `status` (typed as `string`) onto our domain union, which is
+ * constrained by a CHECK constraint at the database level.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -35,21 +34,20 @@ export interface ImportBatchRow {
   created_at: string;
 }
 
-// Localized escape hatch around the not-yet-regenerated generated types.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
-
 /** Most recent import/sync runs, newest first. */
 export async function listRecentImportBatches(
   limit = 20
 ): Promise<ImportBatchRow[]> {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("import_batches")
     .select("*")
     .order("started_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []) as ImportBatchRow[];
+  return (data ?? []).map((r) => ({
+    ...r,
+    status: r.status as ImportBatchStatus,
+  })) as ImportBatchRow[];
 }
 
 /**
@@ -61,11 +59,11 @@ export async function listRecentImportBatches(
 export async function getBuilderSpellCountsBySource(): Promise<
   Record<string, number>
 > {
-  const { data, error } = await db.from("srd_spells").select("source_key");
+  const { data, error } = await supabase.from("srd_spells").select("source_key");
   if (error) throw error;
   const counts: Record<string, number> = {};
-  for (const row of (data ?? []) as Array<{ source_key: string | null }>) {
-    const key = row.source_key ?? "(unlabelled)";
+  for (const row of data ?? []) {
+    const key = (row as { source_key: string | null }).source_key ?? "(unlabelled)";
     counts[key] = (counts[key] ?? 0) + 1;
   }
   return counts;

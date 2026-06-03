@@ -17,6 +17,32 @@ const SRD_V2_KEY = "srd-2014";        // v2 endpoints use document__key=srd-2014
 // Known SRD document slugs to accept
 const SRD_SLUGS = new Set(["5esrd", "wotc-srd", "srd"]);
 
+// ── Source stamping (Phase 2 policy) ──
+// srd_* are canonical SRD 5.1-compatible BUILDER tables. ONLY SRD 5.1 source
+// documents may be written here. Every row this function writes is therefore
+// stamped srd-5.1. Broader Open5e / A5E / third-party content belongs in the
+// source-aware rules_cache / rules_entities layer (Phase 4+), never mixed in.
+const SRD_SOURCE = {
+  source_key: "srd-5.1",
+  ruleset: "2014",
+  license: "CC-BY-4.0",
+  upstream_url: "https://dnd.wizards.com/resources/systems-reference-document",
+} as const;
+
+// SRD 5.1 document identifiers (Open5e v1 slugs + v2 keys). Note: 'srd-2024'
+// (SRD 5.2.1) is intentionally EXCLUDED — it is not SRD 5.1 and must not enter
+// srd_* during Phase 2.
+const SRD_51_DOCS = new Set(["srd", "srd-2014", "wotc-srd", "5esrd"]);
+
+/** True only when an upstream document is positively identified as SRD 5.1. */
+function isSrd51Doc(doc: unknown): boolean {
+  const d = doc as { key?: string; slug?: string } | string | null | undefined;
+  const key = String(
+    (typeof d === "string" ? d : d?.key ?? d?.slug) ?? ""
+  ).toLowerCase();
+  return SRD_51_DOCS.has(key);
+}
+
 interface ImportResult {
   entity: string;
   imported: number;
@@ -79,8 +105,26 @@ serve(async (req) => {
           );
 
           const results: ImportResult[] = [];
-          const shouldImport = (category: string) => 
+          const shouldImport = (category: string) =>
             categories.length === 0 || categories.includes(category);
+
+          // Open an import batch row for admin sync tracking.
+          let batchId: string | null = null;
+          {
+            const { data: batch } = await supabase
+              .from('import_batches')
+              .insert({
+                source_key: 'srd-5.1',
+                provider: 'open5e',
+                content_type: categories.length === 1 ? categories[0] : null,
+                status: 'running',
+                params: { categories, cleanFirst },
+                triggered_by: user.id,
+              })
+              .select('id')
+              .single();
+            batchId = batch?.id ?? null;
+          }
 
           if (shouldImport('languages')) {
             console.log("Importing languages...");
@@ -144,6 +188,24 @@ serve(async (req) => {
           console.log("Import completed!");
           for (const r of results) {
             console.log(`  ${r.entity}: ${r.imported} imported, ${r.skipped} skipped, ${r.errors.length} errors`);
+          }
+
+          // Finalize the import batch with aggregate counts.
+          if (batchId) {
+            const imported = results.reduce((n, r) => n + r.imported, 0);
+            const skipped = results.reduce((n, r) => n + r.skipped, 0);
+            const errors = results.flatMap((r) => r.errors);
+            await supabase
+              .from('import_batches')
+              .update({
+                status: errors.length === 0 ? 'succeeded' : (imported > 0 ? 'partial' : 'failed'),
+                imported,
+                skipped,
+                error_count: errors.length,
+                errors,
+                finished_at: new Date().toISOString(),
+              })
+              .eq('id', batchId);
           }
         } catch (error) {
           console.error('Background import error:', error);
@@ -259,7 +321,7 @@ async function importLanguages(supabase: any): Promise<ImportResult> {
   ];
 
   for (const lang of languages) {
-    const { error } = await supabase.from('srd_languages').upsert(lang, { onConflict: 'name' });
+    const { error } = await supabase.from('srd_languages').upsert({ ...lang, ...SRD_SOURCE }, { onConflict: 'name' });
     if (error) result.errors.push(`${lang.name}: ${error.message}`);
     else result.imported++;
   }
@@ -290,6 +352,7 @@ async function importClasses(supabase: any): Promise<ImportResult> {
         starting_equipment: cls.equipment ? (typeof cls.equipment === 'string' ? [cls.equipment] : cls.equipment) : [],
         spellcasting_progression: cls.spellcasting_ability ? 'full' : null,
         spellcasting_ability: cls.spellcasting_ability?.toLowerCase() || null,
+        ...SRD_SOURCE,
       };
 
       const { error } = await supabase.from('srd_classes').upsert(classData, { onConflict: 'name' });
@@ -308,6 +371,7 @@ async function importClasses(supabase: any): Promise<ImportResult> {
                 name: arch.name,
                 unlock_level: 3,
                 description: arch.desc || '',
+                ...SRD_SOURCE,
               }, { onConflict: 'class_id,name' });
             }
           }
@@ -339,7 +403,8 @@ async function importAncestries(supabase: any): Promise<ImportResult> {
         languages: race.languages ? race.languages.split(',').map((l: string) => l.trim()) : [],
         traits: race.traits ? (typeof race.traits === 'string' ? [{ name: 'Racial Traits', description: race.traits }] : race.traits) : [],
         proficiencies: [],
-        options: {}
+        options: {},
+        ...SRD_SOURCE,
       };
 
       const { data: inserted, error } = await supabase
@@ -358,7 +423,8 @@ async function importAncestries(supabase: any): Promise<ImportResult> {
               ancestry_id: inserted.id,
               name: subrace.name,
               traits: subrace.desc || '',
-              ability_bonuses: subrace.asi || []
+              ability_bonuses: subrace.asi || [],
+              ...SRD_SOURCE,
             }, { onConflict: 'ancestry_id,name' });
           }
         }
@@ -375,13 +441,17 @@ async function importBackgrounds(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Backgrounds', imported: 0, skipped: 0, errors: [] };
   
   try {
-    // Fetch broadly (many sources) since SRD only has 1 background (Acolyte)
+    // Fetch broadly, then strictly filter to SRD 5.1 documents only. Non-SRD
+    // backgrounds (PHB/Open5e/etc.) must NOT enter the canonical builder table.
     const backgrounds = await fetchAllPages(`${OPEN5E_BASE}/v2/backgrounds/?limit=100`);
 
-    // Track names to skip duplicates from different sources
+    // Track names to skip duplicates
     const imported = new Set<string>();
 
     for (const bg of backgrounds) {
+      // Phase 2 policy: only SRD 5.1 documents may populate srd_backgrounds.
+      // Checked BEFORE dedup so a non-SRD entry can't shadow an SRD one.
+      if (!isSrd51Doc(bg.document ?? bg.document__slug)) { result.skipped++; continue; }
       if (imported.has(bg.name)) { result.skipped++; continue; }
       imported.add(bg.name);
 
@@ -417,7 +487,8 @@ async function importBackgrounds(supabase: any): Promise<ImportResult> {
         tool_proficiencies: toolProfs,
         languages,
         equipment,
-        feature: feature?.desc || bg.desc || ''
+        feature: feature?.desc || bg.desc || '',
+        ...SRD_SOURCE,
       }, { onConflict: 'name' });
 
       if (error) result.errors.push(`${bg.name}: ${error.message}`);
@@ -452,7 +523,8 @@ async function importArmor(supabase: any): Promise<ImportResult> {
         strength_min: armor.strength_score_required || null,
         stealth_disadv: armor.grants_stealth_disadvantage || false,
         cost_gp: 0,
-        weight: 0
+        weight: 0,
+        ...SRD_SOURCE,
       }, { onConflict: 'name' });
 
       if (error) result.errors.push(`${armor.name}: ${error.message}`);
@@ -497,7 +569,8 @@ async function importWeapons(supabase: any): Promise<ImportResult> {
         damage_type: damageType,
         properties,
         cost_gp: 0,
-        weight: 0
+        weight: 0,
+        ...SRD_SOURCE,
       }, { onConflict: 'name' });
 
       if (error) result.errors.push(`${weapon.name}: ${error.message}`);
@@ -560,7 +633,8 @@ async function importSpells(supabase: any): Promise<ImportResult> {
         ritual: isRitual,
         description: spell.desc || '',
         higher_levels: spell.higher_level || null,
-        classes: classesArray
+        classes: classesArray,
+        ...SRD_SOURCE,
       }, { onConflict: 'name' });
 
       if (error) {
@@ -582,20 +656,26 @@ async function importFeats(supabase: any): Promise<ImportResult> {
   const result: ImportResult = { entity: 'Feats', imported: 0, skipped: 0, errors: [] };
   
   try {
-    // v2 feats from all documents (only 1 SRD feat exists — Grappler)
-    // We import broadly to give users a wider selection
+    // Fetch broadly, then strictly filter to SRD 5.1 (only "Grappler" qualifies).
+    // Non-SRD feats must NOT enter the canonical builder table during Phase 2.
     const feats = await fetchAllPages(`${OPEN5E_BASE}/v2/feats/?limit=100`);
-    
-    // Track names we've already imported to skip duplicates from different sources
+
+    // Track names we've already imported to skip duplicates
     const imported = new Set<string>();
-    
+
     for (const feat of feats) {
       if (!feat.desc || feat.desc.trim().length === 0) {
         result.skipped++;
         continue;
       }
-      
-      // Skip duplicate names from different source books
+
+      // Phase 2 policy: only SRD 5.1 documents may populate srd_feats.
+      if (!isSrd51Doc(feat.document ?? feat.document__slug)) {
+        result.skipped++;
+        continue;
+      }
+
+      // Skip duplicate names
       if (imported.has(feat.name)) {
         result.skipped++;
         continue;
@@ -606,6 +686,7 @@ async function importFeats(supabase: any): Promise<ImportResult> {
         name: feat.name,
         description: feat.desc || null,
         prerequisites: feat.prerequisite ? { raw: feat.prerequisite } : null,
+        ...SRD_SOURCE,
       }, { onConflict: 'name' });
       
       if (error) result.errors.push(`${feat.name}: ${error.message}`);
@@ -630,6 +711,7 @@ async function importConditions(supabase: any): Promise<ImportResult> {
         name: condition.name,
         description: condition.desc || null,
         document: condition.document?.key || SRD_V2_KEY,
+        ...SRD_SOURCE,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${condition.slug}: ${error.message}`);
@@ -659,6 +741,7 @@ async function importMagicItems(supabase: any): Promise<ImportResult> {
           : !!item.requires_attunement,
         description: item.desc || null,
         document: item.document__slug || SRD_V1_SLUG,
+        ...SRD_SOURCE,
       }, { onConflict: 'slug' });
       
       if (error) result.errors.push(`${item.slug}: ${error.message}`);

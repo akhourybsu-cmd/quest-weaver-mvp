@@ -39,9 +39,13 @@ export const SRDDataSeeder = () => {
         description: `${label} import is running in the background. Check edge function logs for progress.`,
       });
     } catch (error: any) {
+      console.error("[SRD import] error:", error);
+      const desc = [error?.code && `[${error.code}]`, error?.message, error?.details, error?.hint && `hint: ${error.hint}`]
+        .filter(Boolean)
+        .join(" — ") || "Unknown error";
       toast({
         title: "Error",
-        description: error.message,
+        description: desc,
         variant: "destructive",
       });
     } finally {

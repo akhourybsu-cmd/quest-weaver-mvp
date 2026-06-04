@@ -55,7 +55,7 @@ export const RulesEngineSeeder = () => {
           });
 
         if (error) {
-          errors.push(`Failed to seed ${seed.name}: ${error.message}`);
+          errors.push(`Failed to seed ${seed.name}: [${error.code ?? '?'}] ${error.message}${error.details ? ' — ' + error.details : ''}${error.hint ? ' — hint: ' + error.hint : ''}`);
         } else {
           classFeatureCount++;
         }
@@ -78,7 +78,7 @@ export const RulesEngineSeeder = () => {
           });
 
         if (error) {
-          errors.push(`Failed to seed feat ${feat.name}: ${error.message}`);
+          errors.push(`Failed to seed feat ${feat.name}: [${error.code ?? '?'}] ${error.message}${error.details ? ' — ' + error.details : ''}${error.hint ? ' — hint: ' + error.hint : ''}`);
         } else {
           featCount++;
         }

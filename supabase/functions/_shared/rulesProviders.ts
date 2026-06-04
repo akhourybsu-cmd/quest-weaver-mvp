@@ -101,8 +101,9 @@ function isV2(endpoint: string): boolean {
 
 function open5eUrl(endpoint: string, pageSize: number): string {
   const sep = endpoint.includes("?") ? "&" : "?";
-  // v1 supports document__slug=5esrd to filter to the SRD only.
-  const srdFilter = isV2(endpoint) ? "" : "&document__slug=5esrd";
+  // Open5e v1 SRD 5.1 document slug is `wotc-srd` (the `5esrd` slug returns 0 results
+  // for monsters/magicitems/etc.). v2 endpoints already scope themselves to SRD-2014.
+  const srdFilter = isV2(endpoint) ? "" : "&document__slug__iexact=wotc-srd";
   return `${OPEN5E_BASE}${endpoint}${sep}format=json&limit=${pageSize}${srdFilter}`;
 }
 

@@ -113,9 +113,6 @@ const AdminTools = () => {
 
       const classMap = new Map(classes.map(c => [c.name, c.id]));
       
-      // Clear existing and insert
-      await supabase.from("srd_class_features").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      
       const features = CLASS_FEATURES_SRD.map(f => ({
         class_id: classMap.get(f.class_name),
         name: f.name,
@@ -125,7 +122,9 @@ const AdminTools = () => {
         ...SRD_STAMP,
       })).filter(f => f.class_id);
 
-      const { error } = await supabase.from("srd_class_features").insert(features);
+      const { error } = await supabase
+        .from("srd_class_features")
+        .upsert(features, { onConflict: "class_id,level,name" });
       if (error) throw error;
 
       toast({ title: "Success", description: `Seeded ${features.length} class features` });
@@ -144,12 +143,7 @@ const AdminTools = () => {
       if (!classes?.length) throw new Error("No classes found - seed classes first");
 
       const classMap = new Map(classes.map(c => [c.name, c.id]));
-      
-      // Clear existing
-      await supabase.from("srd_subclass_features").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("srd_subclasses").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      
-      // Insert subclasses
+
       const subclasses = SUBCLASSES_SRD.map(s => ({
         class_id: classMap.get(s.class_name),
         name: s.name,
@@ -160,7 +154,7 @@ const AdminTools = () => {
 
       const { data: insertedSubclasses, error: subclassError } = await supabase
         .from("srd_subclasses")
-        .insert(subclasses)
+        .upsert(subclasses, { onConflict: "class_id,name" })
         .select("id, name");
       
       if (subclassError) throw subclassError;
@@ -180,7 +174,9 @@ const AdminTools = () => {
       }).filter(Boolean);
 
       if (features.length > 0) {
-        const { error: featureError } = await supabase.from("srd_subclass_features").insert(features);
+        const { error: featureError } = await supabase
+          .from("srd_subclass_features")
+          .upsert(features as any, { onConflict: "subclass_id,level,name" });
         if (featureError) throw featureError;
       }
 
@@ -200,9 +196,7 @@ const AdminTools = () => {
       if (!ancestries?.length) throw new Error("No ancestries found");
 
       const ancestryMap = new Map(ancestries.map(a => [a.name, a.id]));
-      
-      await supabase.from("srd_subancestries").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      
+
       const subancestries = SUBANCESTRIES_SRD.map(s => ({
         ancestry_id: ancestryMap.get(s.ancestry_name),
         name: s.name,
@@ -212,7 +206,9 @@ const AdminTools = () => {
         ...SRD_STAMP,
       })).filter(s => s.ancestry_id);
 
-      const { error } = await supabase.from("srd_subancestries").insert(subancestries);
+      const { error } = await supabase
+        .from("srd_subancestries")
+        .upsert(subancestries, { onConflict: "ancestry_id,name" });
       if (error) throw error;
 
       toast({ title: "Success", description: `Seeded ${subancestries.length} subancestries` });
@@ -227,10 +223,16 @@ const AdminTools = () => {
   const seedTools = async () => {
     setSeeding(prev => ({ ...prev, tools: true }));
     try {
-      await supabase.from("srd_tools").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-      const tools = TOOLS_SRD.map(t => ({ ...t, ...SRD_STAMP }));
-      const { error } = await supabase.from("srd_tools").insert(tools);
+      // srd_tools only has: name, category, cost_gp (+ provenance). Strip extras.
+      const tools = TOOLS_SRD.map(t => ({
+        name: t.name,
+        category: t.category,
+        cost_gp: t.cost_gp,
+        ...SRD_STAMP,
+      }));
+      const { error } = await supabase
+        .from("srd_tools")
+        .upsert(tools, { onConflict: "name" });
       if (error) throw error;
 
       toast({ title: "Success", description: `Seeded ${TOOLS_SRD.length} tools` });

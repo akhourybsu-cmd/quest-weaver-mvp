@@ -1,104 +1,60 @@
 ## Goal
 
-Make the multiclass/level-up logic that was recently shored up (the tested `commitLevelUp` write contract) actually visible and trustworthy to players and DMs — and route the wizard's final write through that same function so the UI and tests share one code path.
+Unblock the SRD seed buttons (root cause: RLS "Admins can insert" lockdown on `srd_class_features`, `srd_subclasses`, `srd_subclass_features`, `srd_subancestries`, `srd_tools`) and make any future seed failure self-diagnosing.
 
-## Scope
+## Step 1 — Grant admin (you, manual, no code)
 
-Four visual surfaces + one logic refactor, applied everywhere a character is shown.
+Run in the Lovable Cloud SQL editor (bypasses RLS):
 
----
+```sql
+select id, email from auth.users order by created_at desc;
 
-### 1. LevelUpWizard "what's changing" preview (Player)
-
-A new **Review** step inserted just before the final Confirm button.
-
-- **Class delta** — "Wizard 2 → 3" with a soft brass arrow
-- **Hit points** — old max → new max, with the roll/average choice that produced it
-- **Hit dice** — "+1d6 Wizard"
-- **Spell slots** — diff rows ("Level 2: 3 → 3", "Level 3: 0 → 2 *new*")
-- **New features** — bullet list from `srd_class_features` / `srd_subclass_features` at the new level
-- **ASI/Feat** — if applicable, show the chosen ability bumps or feat name
-
-Reads from the same plan object the new commit function consumes, so the preview is literally the diff that will be written.
-
-### 2. Class lineup badge (Character Sheet header + everywhere a character appears)
-
-Replace flat `Level 5` with a class-breakdown pill row:
-
-```text
-[ Fighter 3 ] [ Wizard 2 ]   Total 5
+insert into public.user_roles (user_id, role)
+values ('<your-user-id>', 'admin')
+on conflict do nothing;
 ```
 
-- Primary class first, brass accent
-- Subclass tucked under name when chosen (e.g. *Fighter 3 — Champion*)
-- Single source: `getClassBreakdownLabel` from `src/lib/character/classes.ts`
+Sign out / back in so `is_current_user_admin()` returns true for the session. This alone makes the existing seed buttons work — no code change required.
 
-Applied to:
-- `CharacterSheet` header
-- `CharacterCard` (character list, party roster)
-- `PartyRoster` (DM view)
-- `PlayerProfile` / Player Hub character chip
-- `SessionDM` initiative row tooltip + `SessionPlayer` self-card
-- `CharacterSheetPage` sticky top bar (next to Level Up button)
+## Step 2 — Belt-and-suspenders: stamp provenance on every seeder insert
 
-### 3. Spell slot tracker grouping (Character Sheet + Player Hub)
+In `src/pages/dev/AdminTools.tsx` (and any sibling seeder that touches the locked-down tables), add `source_key: 'srd-5.1'`, `ruleset: 'dnd-5e'`, `license: 'OGL-1.0a'` to every insert payload for:
 
-Currently slots render as one flat row. New layout:
+- `srd_class_features`
+- `srd_subclasses`
+- `srd_subclass_features`
+- `srd_subancestries` (also explicitly send `ability_bonuses: []`, `options: {}` — defaults exist but explicit is safer)
+- `srd_tools`
 
-- **Multiclass slots** section — slots 1-9 derived from the multiclass caster table
-- **Pact Magic** section (Warlock only) — separate row with refresh-on-short-rest label
-- **Mystic Arcanum** section (Warlock 11+) — already exists, just visually nested under Pact Magic
-- Subtle divider + section header in Cinzel
+Schema defaults already cover these, so this is purely making provenance explicit and future-proof against any drift.
 
-Updates `SpellSlotTracker.tsx` and `PlayerSpellbook.tsx`.
+## Step 3 — Surface full Postgres error in seed toasts
 
-### 4. Level history timeline (Character Sheet — new "History" subtab)
+Every seeder `catch` block currently shows only `error.message`. Update them to show `code`, `message`, `details`, and `hint` from the Supabase error object so the next failure is unambiguous (RLS vs not-null vs missing column vs FK).
 
-A vertical timeline reading from `character_level_history`:
+Pattern:
 
-```text
-●  Level 5  ·  Wizard 2 → 3        +1d6 HP  ·  Level 3 slots unlocked
-●  Level 4  ·  Took Wizard 1       multiclass — Int 13 prereq met
-●  Level 3  ·  Fighter 2 → 3       Champion subclass chosen
+```ts
+const desc = [error.code && `[${error.code}]`, error.message, error.details, error.hint]
+  .filter(Boolean).join(' — ');
+toast({ title: "Seed failed", description: desc, variant: "destructive" });
 ```
 
-Lives on the character sheet as a collapsible section (desktop sidebar / mobile new tab).
+Also log the full error object to `console.error` for copy/paste.
 
-### 5. Wire LevelUpWizard → commitLevelUp (single source of truth)
+Apply to seeders in:
+- `src/pages/dev/AdminTools.tsx`
+- `src/components/admin/SRDDataSeeder.tsx`
+- `src/components/admin/SRDImportButton.tsx`
+- `src/components/admin/SpellScalingSeedButton.tsx`
+- `src/components/dev/RulesEngineSeeder.tsx`
 
-Refactor the wizard's final confirm handler:
+## Step 4 — Verify
 
-- Build a `LevelUpPlan` object from wizard state (already mostly assembled for the Review step in #1)
-- Replace inline Supabase writes with a single `await commitLevelUp(plan, supabaseDb)` call
-- Keep wizard's "side effect" writes that aren't in commit scope (custom feature picks, prepared-spell deltas, ASI ability updates) as a separate pre-step inside a transaction-ish sequence
-- Add a `LevelUpWizard.integration.test.tsx` smoke test that mounts the wizard, clicks through Fighter 3 → 4, and asserts `commitLevelUp` was called with the right plan
-
----
-
-## Build order (smallest blast radius first)
-
-1. **Class lineup badge component** — ✅ shipped (CharacterSheet, PartyRoster, PlayerProfile)
-2. **Spell slot grouping** — ✅ shipped (SpellcastingResources card)
-3. **LevelUpWizard Review step** — ✅ enriched with class delta, hit-die label, spell-slot diff
-4. **Wire commitLevelUp** — ✅ wired; contract writes (character_classes, history, multiclass shared slots, level/hit_dice_total) flow through `commitLevelUp` + `createSupabaseLevelUpDb` adapter. Tests updated to match real `spell_level` column.
-5. **Level history timeline** — ✅ shipped as a new "History" tab on Character Sheet (`LevelHistoryTimeline.tsx`).
-
-Each step ships independently so you can sanity-check the preview after every milestone.
-
----
-
-## Technical notes
-
-- No DB migrations. Everything already exists: `character_classes`, `character_spell_slots`, `character_level_history`, `srd_class_features`, `srd_subclass_features`.
-- `commitLevelUp` already lives at `src/lib/character/levelUp.ts` with 8 passing tests covering the four multiclass scenarios.
-- Lineup badge reuses existing `getCharacterClasses` + `getClassBreakdownLabel` helpers.
-- Review step's slot-diff math comes from reusing the multiclass slot table already referenced in `commitLevelUp` reconciliation logic.
-- Honor existing tokens: ivory parchment bg, brass accents, Cinzel headers. No new color tokens.
-- Honor "Desktop-first responsive" core memory: timeline is sidebar on desktop, tab on mobile.
+After Step 1, on `/admin` re-run each previously-silent seeder (class features, subclasses, subclass features, subancestries, tools). Confirm row counts move via `supabase--read_query`. If anything still fails, the new toast tells us exactly which constraint/policy fired.
 
 ## Out of scope
 
-- Changing 5e rule math (HP averages, slot tables, prereqs) — already correct
-- Touching Warlock Pact Magic mechanics — only visual grouping
-- Multiclass spell preparation rebalancing — separate epic
-- Animations beyond existing magic-glow press effects
+- No RLS migration changes (the admin-only policies are intentional).
+- No edge function changes (service role already bypasses RLS; spells/conditions sync confirmed working).
+- No changes to `import-srd-core` / `sync-rules-source`.

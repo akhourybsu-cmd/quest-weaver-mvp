@@ -89,8 +89,11 @@ export const SRDImportButton = () => {
         title: "SRD Import Started",
         description: data.message || "Import is running in the background.",
       });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    } catch (err: any) {
+      console.error("[SRD import] error:", err);
+      const errorMessage = [err?.code && `[${err.code}]`, err?.message, err?.details, err?.hint && `hint: ${err.hint}`]
+        .filter(Boolean)
+        .join(" — ") || (err instanceof Error ? err.message : "Unknown error occurred");
       setError(errorMessage);
       toast({
         title: "Import Failed",

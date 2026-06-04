@@ -29,6 +29,26 @@ const AdminTools = () => {
   const [stats, setStats] = useState<SRDStats | null>(null);
   const [seeding, setSeeding] = useState<Record<string, boolean>>({});
 
+  // SRD provenance stamp (defaults exist in schema, but explicit is safer).
+  const SRD_STAMP = { source_key: "srd-5.1", ruleset: "dnd-5e", license: "OGL-1.0a" } as const;
+
+  const formatPgError = (error: unknown): string => {
+    const e = error as { code?: string; message?: string; details?: string; hint?: string } | null;
+    if (!e) return "Unknown error";
+    return [e.code && `[${e.code}]`, e.message, e.details, e.hint && `hint: ${e.hint}`]
+      .filter(Boolean)
+      .join(" — ");
+  };
+
+  const showSeedError = (label: string, error: unknown) => {
+    console.error(`[${label}] seed error:`, error);
+    toast({
+      title: `${label} failed`,
+      description: formatPgError(error),
+      variant: "destructive",
+    });
+  };
+
   useEffect(() => {
     const checkAccess = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -101,7 +121,8 @@ const AdminTools = () => {
         name: f.name,
         level: f.level,
         description: f.description,
-        choices: f.choices || []
+        choices: f.choices || [],
+        ...SRD_STAMP,
       })).filter(f => f.class_id);
 
       const { error } = await supabase.from("srd_class_features").insert(features);
@@ -110,7 +131,7 @@ const AdminTools = () => {
       toast({ title: "Success", description: `Seeded ${features.length} class features` });
       await refreshStats();
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to seed", variant: "destructive" });
+      showSeedError("Class Features", error);
     } finally {
       setSeeding(prev => ({ ...prev, classFeatures: false }));
     }
@@ -133,7 +154,8 @@ const AdminTools = () => {
         class_id: classMap.get(s.class_name),
         name: s.name,
         unlock_level: s.unlock_level,
-        description: s.description
+        description: s.description,
+        ...SRD_STAMP,
       })).filter(s => s.class_id);
 
       const { data: insertedSubclasses, error: subclassError } = await supabase
@@ -152,7 +174,8 @@ const AdminTools = () => {
           subclass_id: subclassId,
           name: f.name,
           level: f.level,
-          description: f.description
+          description: f.description,
+          ...SRD_STAMP,
         } : null;
       }).filter(Boolean);
 
@@ -164,7 +187,7 @@ const AdminTools = () => {
       toast({ title: "Success", description: `Seeded ${subclasses.length} subclasses and ${features.length} features` });
       await refreshStats();
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to seed", variant: "destructive" });
+      showSeedError("Subclasses", error);
     } finally {
       setSeeding(prev => ({ ...prev, subclasses: false }));
     }
@@ -183,7 +206,10 @@ const AdminTools = () => {
       const subancestries = SUBANCESTRIES_SRD.map(s => ({
         ancestry_id: ancestryMap.get(s.ancestry_name),
         name: s.name,
-        traits: s.traits
+        traits: s.traits,
+        ability_bonuses: (s as any).ability_bonuses ?? [],
+        options: (s as any).options ?? {},
+        ...SRD_STAMP,
       })).filter(s => s.ancestry_id);
 
       const { error } = await supabase.from("srd_subancestries").insert(subancestries);
@@ -192,7 +218,7 @@ const AdminTools = () => {
       toast({ title: "Success", description: `Seeded ${subancestries.length} subancestries` });
       await refreshStats();
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to seed", variant: "destructive" });
+      showSeedError("Subancestries", error);
     } finally {
       setSeeding(prev => ({ ...prev, subancestries: false }));
     }
@@ -202,14 +228,15 @@ const AdminTools = () => {
     setSeeding(prev => ({ ...prev, tools: true }));
     try {
       await supabase.from("srd_tools").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      
-      const { error } = await supabase.from("srd_tools").insert(TOOLS_SRD);
+
+      const tools = TOOLS_SRD.map(t => ({ ...t, ...SRD_STAMP }));
+      const { error } = await supabase.from("srd_tools").insert(tools);
       if (error) throw error;
 
       toast({ title: "Success", description: `Seeded ${TOOLS_SRD.length} tools` });
       await refreshStats();
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to seed", variant: "destructive" });
+      showSeedError("Tools", error);
     } finally {
       setSeeding(prev => ({ ...prev, tools: false }));
     }
@@ -234,7 +261,7 @@ const AdminTools = () => {
         setSeeding(prev => ({ ...prev, spells: false }));
       }, 5000);
     } catch (error) {
-      toast({ title: "Import Failed", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+      showSeedError("Spell Import", error);
       setSeeding(prev => ({ ...prev, spells: false }));
     }
   };

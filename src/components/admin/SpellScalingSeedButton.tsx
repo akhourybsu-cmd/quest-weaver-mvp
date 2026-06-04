@@ -48,11 +48,14 @@ const SpellScalingSeedButton = () => {
         title: "Spell scaling data seeded",
         description: `Updated ${updated} spells. ${notFound} spells not found in database.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error seeding spell scaling:', error);
+      const desc = [error?.code && `[${error.code}]`, error?.message, error?.details, error?.hint && `hint: ${error.hint}`]
+        .filter(Boolean)
+        .join(" — ") || "Failed to seed spell scaling";
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to seed spell scaling",
+        description: desc,
         variant: "destructive",
       });
     } finally {

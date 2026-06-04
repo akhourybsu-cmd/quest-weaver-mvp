@@ -136,8 +136,14 @@ export function PlayerSpellbook({ characterId, characterName, characterClass, ch
       .eq("known", true);
 
     if (data) {
+      // Library spells (5c) carry their data in library_json (spell_id NULL);
+      // fall back to it so they appear alongside SRD spells, and drop any row
+      // with neither (defensive — prevents the name deref below from crashing).
+      const rows = (data as any[])
+        .map((r) => ({ ...r, srd_spells: r.srd_spells ?? r.library_json ?? null }))
+        .filter((r) => r.srd_spells);
       // Sort client-side to avoid unreliable foreign table ordering
-      const sorted = (data as any[]).sort((a, b) => {
+      const sorted = rows.sort((a, b) => {
         const levelA = a.srd_spells?.level ?? 0;
         const levelB = b.srd_spells?.level ?? 0;
         if (levelA !== levelB) return levelA - levelB;

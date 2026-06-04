@@ -10,6 +10,7 @@ import {
   listCampaignEncounters,
   addCreatureToEncounter,
   addItemToCharacter,
+  addSpellToCharacter,
   type TargetOption,
 } from "@/lib/rules/libraryActions";
 
@@ -23,6 +24,7 @@ export default function LibraryAddActions({ entity }: { entity: CanonicalEntity 
   const { campaign, role } = useCampaign();
   const isCreature = entity.contentType === "creature";
   const isItem = entity.contentType === "magic_item" || entity.contentType === "equipment";
+  const isSpell = entity.contentType === "spell";
 
   const [targets, setTargets] = useState<TargetOption[]>([]);
   const [target, setTarget] = useState<string>("");
@@ -32,11 +34,10 @@ export default function LibraryAddActions({ entity }: { entity: CanonicalEntity 
   // Which mode applies?
   const mode: "encounter" | "character" | null = isCreature
     ? "encounter"
-    : isItem
+    : isItem || isSpell
     ? "character"
     : null;
   const canEncounter = isCreature && !!campaign && role === "DM";
-  const canCharacter = isItem; // characters fetched are the user's own
 
   useEffect(() => {
     if (!mode) return;
@@ -64,6 +65,9 @@ export default function LibraryAddActions({ entity }: { entity: CanonicalEntity 
       if (mode === "encounter") {
         await addCreatureToEncounter(entity, target);
         toast.success(`${entity.name} added to encounter.`);
+      } else if (isSpell) {
+        await addSpellToCharacter(entity, target);
+        toast.success(`${entity.name} added to character's spells.`);
       } else {
         await addItemToCharacter(entity, target);
         toast.success(`${entity.name} added to character.`);

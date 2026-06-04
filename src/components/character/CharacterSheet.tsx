@@ -175,7 +175,9 @@ const CharacterSheet = ({ characterId, campaignId }: CharacterSheetProps) => {
         .from("character_spells")
         .select("*, spell:srd_spells(*)")
         .eq("character_id", characterId);
-      setSpells(spellsData || []);
+      // Library spells (5c) carry their data in library_json with spell_id NULL;
+      // fall back to it so they render alongside SRD spells.
+      setSpells(((spellsData || []) as any[]).map((r) => ({ ...r, spell: r.spell ?? r.library_json ?? null })));
 
       // Load feats
       const { data: featsData } = await supabase

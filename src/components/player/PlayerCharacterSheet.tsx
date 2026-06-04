@@ -275,12 +275,15 @@ export function PlayerCharacterSheet({ characterId }: PlayerCharacterSheetProps)
     const { data } = await supabase
       .from("character_spells")
       .select(`
-        id, prepared, known,
+        id, prepared, known, library_json,
         spell:srd_spells(id, name, level, school, casting_time, range, components, duration, concentration, ritual, description, higher_levels)
       `)
       .eq("character_id", characterId);
     if (data) {
-      const validSpells = data.filter(s => s.spell !== null) as CharacterSpell[];
+      // Library spells (5c) carry their data in library_json; fall back to it.
+      const validSpells = (data as any[])
+        .map((s) => ({ ...s, spell: s.spell ?? s.library_json ?? null }))
+        .filter((s) => s.spell !== null) as CharacterSpell[];
       setSpells(validSpells);
     }
   };

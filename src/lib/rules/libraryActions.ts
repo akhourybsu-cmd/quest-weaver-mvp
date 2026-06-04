@@ -60,6 +60,53 @@ export async function addItemToCharacter(entity: CanonicalEntity, characterId: s
   if (error) throw error;
 }
 
+/**
+ * Insert a library spell into a character's spell list (Phase 5c).
+ * Stores spell_id = NULL + an srd_spells-shaped library_json so existing read
+ * paths can render it via a `srd_spells ?? library_json` fallback.
+ */
+export async function addSpellToCharacter(entity: CanonicalEntity, characterId: string): Promise<void> {
+  const n = (entity.normalized ?? {}) as Record<string, any>;
+  const level =
+    typeof n.level_int === "number" ? n.level_int
+    : typeof n.level === "number" ? n.level
+    : parseInt(String(n.level ?? "0"), 10) || 0;
+  const components =
+    Array.isArray(n.components) ? n.components.join(", ")
+    : typeof n.components === "string" ? n.components
+    : null;
+
+  const library_json = {
+    id: `lib:${entity.key}`,
+    name: entity.name,
+    level,
+    school: n.school?.name ?? n.school ?? null,
+    casting_time: n.casting_time ?? null,
+    range: n.range ?? null,
+    components,
+    duration: n.duration ?? null,
+    concentration: typeof n.concentration === "boolean" ? n.concentration : n.concentration === "yes",
+    ritual: typeof n.ritual === "boolean" ? n.ritual : n.ritual === "yes",
+    description: entity.fullDescription || n.desc || "",
+    higher_levels: n.higher_level ?? n.higher_levels ?? null,
+    classes: [],
+    _source: { source_key: entity.sourceKey, content_key: entity.key },
+  };
+
+  const { error } = await supabase.from("character_spells").insert({
+    character_id: characterId,
+    spell_id: null,
+    known: true,
+    prepared: false,
+    source: "library",
+    library_json,
+    source_key: entity.sourceKey,
+    source_api: entity.sourceApi,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
+  if (error) throw error;
+}
+
 function abilityScore(n: Record<string, unknown>, full: string, abbr: string): number {
   const v = (n[full] ?? n[abbr]) as number | undefined;
   return typeof v === "number" ? v : 10;

@@ -6,6 +6,7 @@ import { ArrowLeft, Shield, Database, Sparkles, Loader2, CheckCircle, AlertCircl
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RulesSourcesPanel from "@/components/admin/RulesSourcesPanel";
+import { getRulesSource } from "@/lib/rules/sources";
 import { CLASS_FEATURES_SRD } from "@/data/srd/classFeaturesSeed";
 import { SUBCLASSES_SRD, SUBCLASS_FEATURES_SRD } from "@/data/srd/subclassesSeed";
 import { SUBANCESTRIES_SRD } from "@/data/srd/subancestriesSeed";
@@ -29,8 +30,13 @@ const AdminTools = () => {
   const [stats, setStats] = useState<SRDStats | null>(null);
   const [seeding, setSeeding] = useState<Record<string, boolean>>({});
 
-  // SRD provenance stamp (defaults exist in schema, but explicit is safer).
-  const SRD_STAMP = { source_key: "srd-5.1", ruleset: "dnd-5e", license: "OGL-1.0a" } as const;
+  // SRD provenance stamp — sourced from the canonical registry so it can't drift
+  // from the column defaults / existing rows (srd-5.1 → ruleset "2014", CC-BY-4.0).
+  const SRD_STAMP = {
+    source_key: "srd-5.1",
+    ruleset: getRulesSource("srd-5.1")?.ruleset ?? "2014",
+    license: getRulesSource("srd-5.1")?.license ?? "CC-BY-4.0",
+  };
 
   const formatPgError = (error: unknown): string => {
     const e = error as { code?: string; message?: string; details?: string; hint?: string } | null;

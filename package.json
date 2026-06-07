@@ -53,6 +53,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "fabric": "^6.7.1",
+    "framer-motion": "^12.40.0",
     "happy-dom": "^20.0.5",
     "input-otp": "^1.4.2",
     "jotai": "^2.15.0",

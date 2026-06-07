@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { PlayerNavigation } from '@/components/player/PlayerNavigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -17,6 +19,7 @@ interface PlayerPageLayoutProps {
 export const PlayerPageLayout = ({ playerId, mobileTitle, children }: PlayerPageLayoutProps) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
   const { userId } = useAuth();
   const [isDM, setIsDM] = useState(false);
   const [activeCampaignCode, setActiveCampaignCode] = useState<string | undefined>();
@@ -38,15 +41,25 @@ export const PlayerPageLayout = ({ playerId, mobileTitle, children }: PlayerPage
   }, [userId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brass/5 flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background relative">
+      {/* Ambient premium backdrop */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-brass/[0.06]" />
+        <div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] rounded-full bg-brass/[0.05] blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 w-[40rem] h-[40rem] rounded-full bg-primary/[0.05] blur-3xl" />
+      </div>
+
       {isMobile && (
-        <header
-          className="sticky z-40 bg-card border-b border-brass/20 p-3 flex items-center gap-3"
-          style={{ top: "var(--demo-bar-offset, 0px)" }}
+        <motion.header
+          initial={{ y: -12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="sticky z-40 bg-card/80 backdrop-blur-md border-b border-brass/20 px-3 py-3 flex items-center gap-3"
+          style={{ top: 'var(--demo-bar-offset, 0px)' }}
         >
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0">
+              <Button variant="ghost" size="icon" className="shrink-0 hover:bg-brass/10 hover:text-brass">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -54,17 +67,25 @@ export const PlayerPageLayout = ({ playerId, mobileTitle, children }: PlayerPage
               <PlayerNavigation playerId={playerId} />
             </SheetContent>
           </Sheet>
-          <h1 className="font-cinzel font-bold text-foreground truncate min-w-0 flex-1">
+          <h1 className="font-cinzel font-bold text-foreground truncate min-w-0 flex-1 tracking-wide">
             {mobileTitle}
           </h1>
-        </header>
+          <div className="h-1.5 w-1.5 rotate-45 bg-brass/60 rounded-sm shrink-0" />
+        </motion.header>
       )}
 
       {!isMobile && <PlayerNavigation playerId={playerId} />}
 
-      <div className="flex-1 overflow-auto pb-20 md:pb-0">
-        {children}
-      </div>
+      <main className="flex-1 overflow-auto pb-24 md:pb-0">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {children}
+        </motion.div>
+      </main>
 
       <MobileBottomNav playerId={playerId} activeCampaignCode={activeCampaignCode} isDM={isDM} />
     </div>

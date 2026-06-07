@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlayer } from "@/hooks/usePlayer";
 import { PlayerPageLayout } from "@/components/player/PlayerPageLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { PlayerQuestTracker } from "@/components/player/PlayerQuestTracker";
 import { PlayerNPCDirectory } from "@/components/player/PlayerNPCDirectory";
 import { PlayerLocationsView } from "@/components/player/PlayerLocationsView";
@@ -235,51 +236,70 @@ export default function PlayerCampaignView() {
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
-          {isMobile ? (
-            <div className="sticky z-30 bg-background/95 backdrop-blur py-2" style={{ top: "calc(var(--demo-bar-offset, 0px) + 3.25rem)" }}>
-              <MobileTabPicker value={activeTab} onValueChange={setActiveTab} options={tabOptions} />
-            </div>
-          ) : (
-            <TabsList className="w-full flex overflow-x-auto justify-start gap-1">
-              {tabOptions.map((t) => (
-                <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
-              ))}
-            </TabsList>
-          )}
+        {/* Tab bar */}
+        {isMobile ? (
+          <div className="sticky z-30 bg-background/95 backdrop-blur py-2 mt-3" style={{ top: "calc(var(--demo-bar-offset, 0px) + 3.25rem)" }}>
+            <MobileTabPicker value={activeTab} onValueChange={setActiveTab} options={tabOptions} />
+          </div>
+        ) : (
+          <div className="relative flex items-center gap-0.5 overflow-x-auto scrollbar-hide mt-3 border-b border-brass/20">
+            {tabOptions.map((t) => {
+              const Icon = t.icon;
+              const active = activeTab === t.value;
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setActiveTab(t.value)}
+                  className={cn(
+                    "relative flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-cinzel tracking-wide whitespace-nowrap shrink-0 transition-colors",
+                    active ? "text-brass" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {t.label}
+                  {active && (
+                    <motion.div
+                      layoutId="campaignTabIndicator"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      className="absolute left-2 right-2 bottom-0 h-0.5 rounded-full bg-brass shadow-[0_0_8px_hsl(var(--brass)/0.5)]"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-          <TabsContent value="quests" className="mt-4">
-            <PlayerQuestTracker campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="npcs" className="mt-4">
-            <PlayerNPCDirectory campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="locations" className="mt-4">
-            <PlayerLocationsView campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="factions" className="mt-4">
-            <PlayerFactionsView campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="lore" className="mt-4">
-            <PlayerLoreView campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="timeline" className="mt-4">
-            <PlayerTimelineView campaignId={campaign.id} />
-          </TabsContent>
-          <TabsContent value="notes" className="mt-4">
-            {player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
-          </TabsContent>
-          <TabsContent value="journal" className="mt-4">
-            {character?.id ? (
-              <PlayerJournal campaignId={campaign.id} characterId={character.id} />
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="font-cinzel text-lg mb-1">No Character Assigned</p>
-                <p className="text-sm">Assign a character to this campaign to start journaling.</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* Animated tab content */}
+        <div className="mt-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {activeTab === "quests" && <PlayerQuestTracker campaignId={campaign.id} />}
+              {activeTab === "npcs" && <PlayerNPCDirectory campaignId={campaign.id} />}
+              {activeTab === "locations" && <PlayerLocationsView campaignId={campaign.id} />}
+              {activeTab === "factions" && <PlayerFactionsView campaignId={campaign.id} />}
+              {activeTab === "lore" && <PlayerLoreView campaignId={campaign.id} />}
+              {activeTab === "timeline" && <PlayerTimelineView campaignId={campaign.id} />}
+              {activeTab === "notes" && player && <PlayerNotesView playerId={player.id} campaignId={campaign.id} />}
+              {activeTab === "journal" && (
+                character?.id ? (
+                  <PlayerJournal campaignId={campaign.id} characterId={character.id} />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="font-cinzel text-lg mb-1">No Character Assigned</p>
+                    <p className="text-sm">Assign a character to this campaign to start journaling.</p>
+                  </div>
+                )
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       {campaign && (

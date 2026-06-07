@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -226,10 +227,22 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {characters.map((character) => (
-            <Card
+          {characters.map((character, idx) => {
+            const hpPct = character.max_hp > 0
+              ? Math.max(0, Math.min(100, (character.current_hp / character.max_hp) * 100))
+              : 0;
+            const hpFill = hpPct > 50 ? 'fantasy-hp-fill' : hpPct > 25 ? 'fantasy-hp-fill-warn' : 'fantasy-hp-fill-crit';
+            return (
+            <motion.div
               key={character.id}
-              className="rounded-xl bg-card fantasy-character-card cursor-pointer overflow-hidden"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.4), ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.99 }}
+            >
+            <Card
+              className="rounded-xl bg-card fantasy-character-card cursor-pointer overflow-hidden h-full"
               onClick={() => handleCharacterClick(character.id)}
             >
               <CardHeader className="pb-3 pt-5 px-5">
@@ -314,8 +327,12 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                 </div>
               </CardHeader>
               {/* Stat shelf */}
-              <CardContent className="pt-0 px-5 pb-4">
-                <div className="grid grid-cols-3 gap-3 p-2.5 rounded-lg fantasy-folio-shelf mt-1">
+              <CardContent className="pt-0 px-5 pb-4 space-y-2.5">
+                {/* HP bar */}
+                <div className="h-1.5 rounded-full overflow-hidden fantasy-hp-track-embedded">
+                  <div className={`h-full rounded-full transition-[width] duration-500 ${hpFill}`} style={{ width: `${hpPct}%` }} />
+                </div>
+                <div className="grid grid-cols-3 gap-3 p-2.5 rounded-lg fantasy-folio-shelf">
                   <div className="flex items-center gap-2 text-sm">
                     <Heart className="w-4 h-4 text-hp-red" />
                     <span className="font-medium tabular-nums">{character.current_hp}/{character.max_hp}</span>
@@ -331,7 +348,9 @@ export const PlayerCharacterList = ({ playerId }: PlayerCharacterListProps) => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            </motion.div>
+            );
+          })}
         </div>
       )}
 

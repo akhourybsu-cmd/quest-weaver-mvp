@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { PlayerCharacterSheet } from '@/components/player/PlayerCharacterSheet';
@@ -214,14 +215,13 @@ const PlayerCharacterViewPage = () => {
         {/* Ornamental divider between header and sheet */}
         <LoreOrnamentDivider className="!my-3" />
 
-        {/* 3D Flip Container */}
+        {/* 3D Flip Container — both faces stay mounted (no refetch on flip) */}
         <div style={{ perspective: '2000px' }}>
-          <div
-            className="relative transition-transform duration-700 ease-in-out"
-            style={{
-              transformStyle: 'preserve-3d',
-              transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            }}
+          <motion.div
+            className="relative"
+            animate={{ rotateY: isFlipped ? 180 : 0 }}
+            transition={{ type: 'spring', stiffness: 55, damping: 13 }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
             {/* Front — Mechanical Sheet */}
             <div
@@ -241,7 +241,7 @@ const PlayerCharacterViewPage = () => {
             >
               <CharacterNarrativeSheet characterId={character.id} />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </PlayerPageLayout>

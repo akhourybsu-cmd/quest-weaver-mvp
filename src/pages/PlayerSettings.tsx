@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { usePlayer } from '@/hooks/usePlayer';
 import { PlayerPageLayout } from '@/components/player/PlayerPageLayout';
 import { BackButton } from '@/components/ui/back-button';
@@ -107,8 +108,14 @@ const PlayerSettings = () => {
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         <BackButton fallback={`/player/${player.id}`} label="Back" className="mb-3 -ml-2" />
         <div className="mb-8 hidden md:block">
-          <h1 className="text-4xl font-cinzel font-bold text-foreground">Player Settings</h1>
-          <p className="text-muted-foreground mt-2">Manage your player profile, account, and preferences</p>
+          <p className="font-cinzel text-brass/60 tracking-[0.3em] text-xs uppercase mb-2">Player Settings</p>
+          <h1 className="text-4xl font-cinzel font-bold text-foreground tracking-wide">Your Profile</h1>
+          <p className="text-muted-foreground font-cormorant text-lg italic mt-1">Manage your identity, account, and preferences</p>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="h-px w-20 bg-gradient-to-r from-transparent to-brass/50" />
+            <div className="w-2 h-2 rotate-45 bg-brass/70 rounded-sm" />
+            <div className="h-px w-20 bg-gradient-to-l from-transparent to-brass/50" />
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -175,16 +182,24 @@ const PlayerSettings = () => {
           </Card>
 
           {/* Forum Identity */}
-          <ForumIdentitySection name={name} avatarUrl={avatarUrl} color={color} />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}>
+            <ForumIdentitySection name={name} avatarUrl={avatarUrl} color={color} />
+          </motion.div>
 
           {/* Account Management */}
-          <AccountSection />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+            <AccountSection />
+          </motion.div>
 
           {/* Linked Assets */}
-          <LinkedAssetsSection />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }}>
+            <LinkedAssetsSection />
+          </motion.div>
 
           {/* Preferences */}
-          <PreferencesSection />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}>
+            <PreferencesSection />
+          </motion.div>
         </div>
       </div>
     </PlayerPageLayout>

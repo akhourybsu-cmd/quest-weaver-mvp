@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Loader2, ScrollText, Search, Pin, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format } from 'date-fns';
@@ -227,10 +228,19 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
                   <p className="text-sm">No notes match your search</p>
                 </div>
               ) : (
-                filteredNotes.map(note => (
-                  <Card key={note.id}
+                filteredNotes.map((note, idx) => (
+                  <motion.div
+                    key={note.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.3) }}
+                    whileHover={{ x: 2 }}
+                  >
+                  <Card
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedNote?.id === note.id ? 'border-brass bg-brass/5' : 'border-border'
+                      selectedNote?.id === note.id
+                        ? 'border-brass bg-brass/5 border-l-[3px] border-l-brass shadow-[0_0_12px_hsl(var(--brass)/0.12)]'
+                        : 'border-border hover:border-brass/40'
                     }`}
                     onClick={() => handleSelectNote(note)}>
                     <CardHeader className="pb-3">
@@ -257,6 +267,7 @@ export function PlayerNotesView({ playerId, campaignId }: PlayerNotesViewProps) 
                       </CardContent>
                     )}
                   </Card>
+                  </motion.div>
                 ))
               )}
             </div>

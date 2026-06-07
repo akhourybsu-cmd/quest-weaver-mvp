@@ -29,8 +29,14 @@ const PlayerNotes = () => {
             <h1 className="text-2xl font-cinzel font-bold text-foreground">Shared Notes</h1>
           </div>
           <div className="hidden md:block">
-            <h1 className="text-4xl font-cinzel font-bold text-foreground">Shared Notes</h1>
-            <p className="text-muted-foreground mt-2">View notes and information your DM has shared with you</p>
+            <p className="font-cinzel text-brass/60 tracking-[0.3em] text-xs uppercase mb-2">From the Dungeon Master</p>
+            <h1 className="text-4xl font-cinzel font-bold text-foreground tracking-wide">Shared Notes</h1>
+            <p className="text-muted-foreground font-cormorant text-lg italic mt-1">Lore and secrets your DM has shared with you</p>
+            <div className="flex items-center gap-3 mt-4">
+              <div className="h-px w-20 bg-gradient-to-r from-transparent to-brass/50" />
+              <div className="w-2 h-2 rotate-45 bg-brass/70 rounded-sm" />
+              <div className="h-px w-20 bg-gradient-to-l from-transparent to-brass/50" />
+            </div>
           </div>
         </div>
         <PlayerNotesView playerId={player.id} />

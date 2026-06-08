@@ -573,11 +573,17 @@ const Index = ({ session }: IndexProps) => {
             {features.map((feature, idx) => {
               const Icon = feature.icon;
               return (
-                <Card
+                <motion.div
                   key={idx}
-                  className="relative p-4 sm:p-6 rounded-2xl border-2 border-secondary/30 hover:border-secondary/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group min-w-0"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: Math.min((idx % 3) * 0.08, 0.24), ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary border-2 border-secondary flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <Card
+                  className="relative h-full p-4 sm:p-6 rounded-2xl border-2 border-brass/30 hover:border-brass/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group min-w-0"
+                >
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary border-2 border-brass flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <Icon className="w-4 h-4 text-primary-foreground" />
                   </div>
 
@@ -591,6 +597,7 @@ const Index = ({ session }: IndexProps) => {
                     </p>
                   </div>
                 </Card>
+                </motion.div>
               );
             })}
           </div>
@@ -629,9 +636,16 @@ const Index = ({ session }: IndexProps) => {
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
-                <Card
+                <motion.div
                   key={idx}
-                  className="p-6 rounded-xl border border-secondary/30 text-center space-y-3 hover:border-secondary/50 transition-colors"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: Math.min(idx * 0.08, 0.32), ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ y: -4 }}
+                >
+                <Card
+                  className="h-full p-6 rounded-xl border border-brass/30 text-center space-y-3 hover:border-brass/50 transition-colors"
                 >
                   <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                     <Icon className="w-6 h-6 text-primary" />
@@ -639,6 +653,7 @@ const Index = ({ session }: IndexProps) => {
                   <h4 className="font-cinzel font-semibold">{item.title}</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 </Card>
+                </motion.div>
               );
             })}
           </div>
@@ -657,7 +672,14 @@ const Index = ({ session }: IndexProps) => {
           </p>
 
           <div className="max-w-3xl mx-auto">
-            <div className="rounded-2xl border-2 border-secondary/30 bg-card p-8 shadow-xl text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="relative overflow-hidden rounded-2xl border-2 border-brass/30 bg-card/70 backdrop-blur-sm p-8 shadow-xl text-center"
+            >
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brass/60 to-transparent" />
               <div className="flex flex-wrap justify-center gap-2 mb-6">
                 {[
                   "Initiative Tracker",
@@ -674,11 +696,15 @@ const Index = ({ session }: IndexProps) => {
                   </Badge>
                 ))}
               </div>
-              <Button size="lg" onClick={handleTryDemo} className="shadow-lg">
+              <Button
+                size="lg"
+                onClick={handleTryDemo}
+                className="bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide uppercase text-sm shadow-lg"
+              >
                 <Play className="w-4 h-4 mr-2" />
                 Launch Demo
               </Button>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -724,12 +750,18 @@ const Index = ({ session }: IndexProps) => {
             ].map((card, idx) => {
               const Icon = card.icon;
               return (
-                <Card
+                <motion.div
                   key={idx}
-                  className="p-6 rounded-2xl border-2 border-secondary/30 space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: Math.min(idx * 0.1, 0.3), ease: [0.22, 1, 0.36, 1] }}
+                >
+                <Card
+                  className="h-full p-6 rounded-2xl border-2 border-brass/30 space-y-4"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-secondary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 border-2 border-brass flex items-center justify-center">
                       <Icon className="w-5 h-5 text-primary" />
                     </div>
                     <h4 className="font-cinzel font-semibold text-lg">{card.title}</h4>
@@ -737,12 +769,13 @@ const Index = ({ session }: IndexProps) => {
                   <ul className="space-y-2">
                     {card.points.map((point, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <ChevronRight className="w-4 h-4 text-secondary mt-0.5 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-brass mt-0.5 shrink-0" />
                         {point}
                       </li>
                     ))}
                   </ul>
                 </Card>
+                </motion.div>
               );
             })}
           </div>
@@ -751,20 +784,44 @@ const Index = ({ session }: IndexProps) => {
 
       {/* Final CTA Banner */}
       <section className="py-16 md:py-24 bg-gradient-to-b from-background to-card">
-        <div className="container mx-auto px-4 text-center space-y-8">
-          <h2 className="text-3xl md:text-5xl font-cinzel font-bold max-w-3xl mx-auto leading-tight">
-            Bring order to chaos — run tonight's session with Quest Weaver.
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="container mx-auto px-4 text-center space-y-8"
+        >
+          <h2 className="text-3xl md:text-5xl font-cinzel font-bold max-w-3xl mx-auto leading-tight tracking-wide">
+            Bring order to chaos — run tonight's session with <span className="text-brass">Quest Weaver.</span>
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={handleStartSession} className="shadow-lg">
-              {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button size="lg" variant="outline" onClick={handleTryDemo}>
-              Try the Demo
-            </Button>
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-brass/50" />
+            <div className="w-2 h-2 rotate-45 bg-brass/70 rounded-sm" />
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-brass/50" />
           </div>
-        </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                size="lg"
+                onClick={handleStartSession}
+                className="w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide uppercase text-sm shadow-lg"
+              >
+                {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleTryDemo}
+                className="w-full sm:w-auto border-brass/40 hover:bg-brass/10 hover:text-brass font-cinzel tracking-wide uppercase text-sm"
+              >
+                Try the Demo
+              </Button>
+            </motion.div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Footer */}

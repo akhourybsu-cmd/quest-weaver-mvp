@@ -697,12 +697,23 @@ const CampaignHub = () => {
             </div>
           )}
           <div className="flex items-center justify-between mb-1 relative z-10">
-          {/* Breadcrumb - subtle inline */}
-            <span className="hidden sm:inline text-xs text-brass/60">
-              <a href="/" className="hover:text-brass transition-colors">Home</a>
-              <span className="mx-1.5">›</span>
-              <span className="text-brass/80">Campaign Manager</span>
-            </span>
+          {/* Left: hub switcher + breadcrumb */}
+            <div className="flex items-center gap-2 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/player-hub")}
+                className="h-8 px-2 text-brass/80 hover:text-brass hover:bg-brass/10 font-cinzel tracking-wide text-xs"
+                title="Switch to your Player Hub"
+              >
+                <Shield className="w-4 h-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Player Hub</span>
+              </Button>
+              <span className="hidden sm:inline text-xs text-brass/60">
+                <span className="mx-1 text-brass/30">·</span>
+                <span className="text-brass/80">Campaign Manager</span>
+              </span>
+            </div>
 
             <div className="flex items-center gap-2 sm:gap-3 bg-obsidian/70 backdrop-blur-sm rounded-lg px-2 py-1">
               {activeCampaign && <SessionControl campaignId={activeCampaign.id} />}

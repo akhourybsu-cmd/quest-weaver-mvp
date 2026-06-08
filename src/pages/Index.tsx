@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { createDemo, cleanupExpiredDemos } from "@/lib/demoHelpers";
 import { Session } from "@supabase/supabase-js";
+import { motion } from "framer-motion";
 import FeatureShowcase from "@/components/landing/FeatureShowcase";
 
 interface IndexProps {
@@ -179,7 +180,14 @@ const Index = ({ session }: IndexProps) => {
     "px-3 py-2 text-sm font-medium hover:text-primary transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md";
 
   return (
-    <div className="min-h-screen bg-background font-inter">
+    <div className="min-h-screen bg-background font-inter relative">
+      {/* Ambient premium backdrop */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-brass/[0.06]" />
+        <div className="absolute -top-40 -left-40 w-[44rem] h-[44rem] rounded-full bg-brass/[0.06] blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-[44rem] h-[44rem] rounded-full bg-primary/[0.05] blur-3xl" />
+      </div>
+
       {/* Navbar */}
       <nav
         className={`sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b transition-all duration-200 ${
@@ -232,7 +240,7 @@ const Index = ({ session }: IndexProps) => {
                   variant="outline"
                   onClick={() => navigate("/player-hub")}
                   size="default"
-                  className="group h-10 px-5 transition-all duration-200"
+                  className="group h-10 px-5 border-brass/40 hover:bg-brass/10 hover:text-brass font-cinzel tracking-wide text-xs uppercase transition-all duration-200"
                 >
                   <Shield className="w-4 h-4 mr-1.5" />
                   Player Hub
@@ -240,7 +248,7 @@ const Index = ({ session }: IndexProps) => {
                 <Button
                   onClick={() => navigate("/campaign-hub")}
                   size="default"
-                  className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                  className="group h-10 px-5 bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide text-xs uppercase shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <Crown className="w-4 h-4 mr-1.5" />
                   Campaign Hub
@@ -251,7 +259,7 @@ const Index = ({ session }: IndexProps) => {
               <Button
                 onClick={handleStartSession}
                 size="default"
-                className="group h-10 px-5 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                className="group h-10 px-5 bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide text-xs uppercase shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
               >
                 Get Started
                 <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -379,59 +387,90 @@ const Index = ({ session }: IndexProps) => {
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column */}
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-cinzel font-bold leading-tight">
-                Run 5e sessions like a seasoned DM.
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-6"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-brass/30 bg-brass/5 px-3 py-1">
+                <Sparkles className="w-3.5 h-3.5 text-brass" />
+                <span className="font-cinzel text-[11px] tracking-[0.2em] uppercase text-brass/90">
+                  For Dungeon Masters &amp; Players
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-cinzel font-bold leading-tight tracking-wide">
+                Run 5e sessions like a <span className="text-brass">seasoned DM.</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
+              <p className="text-lg md:text-xl text-muted-foreground max-w-xl font-cormorant italic">
                 {viewMode === "dm"
                   ? "AI-powered worldbuilding, real-time combat, and every tool you need — initiative, loot, lore, and story — in perfect sync."
                   : "Full character sheets, inventory, quest tracking, and combat actions — all synced with your DM's table in real time."}
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 {isAuthenticated ? (
                   <>
-                    <Button
-                      size="lg"
-                      onClick={() => navigate("/campaign-hub")}
-                      className="group shadow-lg hover:shadow-xl transition-all"
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      Open Campaign Hub
-                      <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={() => navigate("/player-hub")}
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Open Player Hub
-                    </Button>
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        size="lg"
+                        onClick={() => navigate("/campaign-hub")}
+                        className="group w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide uppercase text-sm shadow-lg"
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        Open Campaign Hub
+                        <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => navigate("/player-hub")}
+                        className="w-full sm:w-auto border-brass/40 hover:bg-brass/10 hover:text-brass font-cinzel tracking-wide uppercase text-sm"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Open Player Hub
+                      </Button>
+                    </motion.div>
                   </>
                 ) : (
                   <>
-                    <Button
-                      size="lg"
-                      onClick={viewMode === "dm" ? handleStartSession : handleJoinAsPlayer}
-                      className="group shadow-lg hover:shadow-xl transition-all"
-                    >
-                      {viewMode === "dm" ? "Start Free" : "Join as Player"}
-                      <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
-                    </Button>
-                    <Button size="lg" variant="outline" onClick={handleTryDemo}>
-                      Try the Demo
-                    </Button>
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        size="lg"
+                        onClick={viewMode === "dm" ? handleStartSession : handleJoinAsPlayer}
+                        className="group w-full sm:w-auto bg-gradient-to-r from-brass/80 to-brass hover:from-brass hover:to-brass/90 text-black font-cinzel tracking-wide uppercase text-sm shadow-lg"
+                      >
+                        {viewMode === "dm" ? "Start Free" : "Join as Player"}
+                        <Play className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform" />
+                      </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={handleTryDemo}
+                        className="w-full sm:w-auto border-brass/40 hover:bg-brass/10 hover:text-brass font-cinzel tracking-wide uppercase text-sm"
+                      >
+                        Try the Demo
+                      </Button>
+                    </motion.div>
                   </>
                 )}
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Column - Stats Highlight */}
-            <div className="relative">
-              <div className="rounded-2xl border-2 border-secondary/30 bg-card/80 backdrop-blur p-6 shadow-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="relative"
+            >
+              <div className="relative rounded-2xl border border-brass/30 bg-card/70 backdrop-blur-sm p-6 shadow-xl overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brass/60 to-transparent" />
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { value: "20+", label: "DM & Player Tools", icon: Layers },
@@ -441,53 +480,63 @@ const Index = ({ session }: IndexProps) => {
                   ].map((stat, idx) => {
                     const StatIcon = stat.icon;
                     return (
-                      <div
+                      <motion.div
                         key={idx}
-                        className="rounded-xl border border-secondary/20 bg-background/50 p-4 text-center space-y-2 hover:border-secondary/50 transition-colors"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 + idx * 0.08 }}
+                        whileHover={{ y: -3 }}
+                        className="rounded-xl border border-brass/20 bg-background/50 p-4 text-center space-y-2 hover:border-brass/50 transition-colors"
                       >
-                        <StatIcon className="w-6 h-6 mx-auto text-secondary" />
-                        <p className="text-2xl font-cinzel font-bold text-primary">{stat.value}</p>
-                        <p className="text-xs text-muted-foreground">{stat.label}</p>
-                      </div>
+                        <StatIcon className="w-6 h-6 mx-auto text-brass" />
+                        <p className="text-2xl font-cinzel font-bold text-foreground">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground font-cinzel tracking-wide uppercase">{stat.label}</p>
+                      </motion.div>
                     );
                   })}
                 </div>
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <Dices className="w-4 h-4 text-secondary" />
+                  <Dices className="w-4 h-4 text-brass" />
                   <span className="font-cormorant italic">No signup required to demo</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* DM vs Player Toggle */}
-      <section className="border-y border-secondary/20 bg-card/50">
+      <section className="border-y border-brass/20 bg-card/40 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <p className="text-sm font-medium">Show me features for:</p>
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              <button
-                onClick={() => setViewMode("dm")}
-                className={`px-6 py-2 text-sm font-medium transition-colors ${
-                  viewMode === "dm"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background hover:bg-muted"
-                }`}
-              >
-                Dungeon Master
-              </button>
-              <button
-                onClick={() => setViewMode("player")}
-                className={`px-6 py-2 text-sm font-medium transition-colors ${
-                  viewMode === "player"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background hover:bg-muted"
-                }`}
-              >
-                Player
-              </button>
+            <p className="text-sm font-cinzel tracking-wide text-muted-foreground uppercase text-xs">Show me features for</p>
+            <div className="relative flex rounded-xl border border-brass/30 bg-background/60 p-1">
+              {([
+                { key: "dm", label: "Dungeon Master", icon: Crown },
+                { key: "player", label: "Player", icon: Shield },
+              ] as const).map((opt) => {
+                const Icon = opt.icon;
+                const active = viewMode === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => setViewMode(opt.key)}
+                    className={`relative flex items-center gap-2 px-5 py-2 text-sm font-cinzel tracking-wide rounded-lg transition-colors ${
+                      active ? "text-black" : "text-muted-foreground hover:text-brass"
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="homeViewModeToggle"
+                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        className="absolute inset-0 rounded-lg bg-gradient-to-r from-brass/80 to-brass shadow-md"
+                      />
+                    )}
+                    <Icon className="w-4 h-4 relative z-10" />
+                    <span className="relative z-10">{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
